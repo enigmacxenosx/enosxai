@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "outputDirectory": "artifacts/enosx-assistant/dist/public",
+  "outputDirectory": "dist/public",
   "rewrites": [
     {
       "source": "/(.*)",

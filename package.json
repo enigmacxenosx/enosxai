@@ -4,9 +4,9 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "vite --config vite.config.ts --host 0.0.0.0",
-    "build": "vite build --config vite.config.ts",
-    "serve": "vite preview --config vite.config.ts --host 0.0.0.0",
+    "dev": "cd mockup-sandbox && npm run dev",
+    "build": "cd mockup-sandbox && npm run build",
+    "serve": "cd mockup-sandbox && npm run preview",
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "devDependencies": {

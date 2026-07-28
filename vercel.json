@@ -1,0 +1,10 @@
+{
+  "version": 2,
+  "outputDirectory": "artifacts/enosx-assistant/dist/public",
+  "rewrites": [
+    {
+      "source": "/(.*)",
+      "destination": "/index.html"
+    }
+  ]
+}

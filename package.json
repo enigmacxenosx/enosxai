@@ -4,9 +4,9 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "cd mockup-sandbox && npm run dev",
-    "build": "cd mockup-sandbox && npm run build",
-    "serve": "cd mockup-sandbox && npm run preview",
+    "dev": "cd mockup-sandbox && pnpm dev",
+    "build": "cd mockup-sandbox && pnpm build",
+    "serve": "cd mockup-sandbox && pnpm preview",
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "devDependencies": {

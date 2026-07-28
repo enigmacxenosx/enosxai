@@ -1,5 +1,5 @@
 packages:
-  - artifacts/*
+  - enosx-app
   - lib/*
   - lib/integrations/*
   - scripts

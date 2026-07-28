@@ -90,7 +90,7 @@ export default function ChatPage() {
   const { play: playSound } = useSoundEffects();
   const { activeWindow } = useActiveWindow();
   const { getAppSpecificSuggestions } = useContextAwareMessages();
-  const { fileContext, getFileContextMessage } = useFileContext();
+  const { fileContext, getFileContextMessage, loadFile } = useFileContext();
 
   const [isGodModeActive, setIsGodModeActive] = useState(false);
   const [showGodTerminal, setShowGodTerminal] = useState(false);
@@ -434,7 +434,7 @@ export default function ChatPage() {
           )}
         </AnimatePresence>
 
-        <FileDropZone />
+        <FileDropZone onFileSelected={loadFile} />
       </main>
     </div>
     </GlobalLayout>

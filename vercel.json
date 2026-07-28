@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "outputDirectory": "dist/public",
+  "outputDirectory": "enosx-app/dist/public",
   "rewrites": [
     {
       "source": "/(.*)",

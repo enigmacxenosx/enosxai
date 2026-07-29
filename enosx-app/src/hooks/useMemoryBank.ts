@@ -4,7 +4,7 @@
  * Stores user preferences, project details, and key facts in localStorage.
  * Provides a "Memory Context" that is automatically injected into AI prompts.
  */
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 
 export interface MemoryEntry {
   id: string;
@@ -18,6 +18,46 @@ const STORAGE_KEY = "enosx_memory_bank";
 
 export function useMemoryBank() {
   const [memories, setMemories] = useState<MemoryEntry[]>([]);
+
+  // System-level memories that are always present but not necessarily stored in localStorage
+  const systemMemories = useMemo<MemoryEntry[]>(() => [
+    {
+      id: "sys-1",
+      category: "system",
+      content: "I am ENOSX AI, an autonomous AI agent developed by Enosx Technologies. My mission is to transform businesses with cutting-edge AI and tech solutions.",
+      timestamp: new Date(),
+    },
+    {
+      id: "sys-2",
+      category: "system",
+      content: "My architecture is built using React, TypeScript, and Tailwind CSS. I use a glassmorphic, iridescent design language inspired by cyberpunk aesthetics.",
+      timestamp: new Date(),
+    },
+    {
+      id: "sys-3",
+      category: "system",
+      content: "I have deep integration with GitHub, allowing me to browse repositories, edit files, and push changes directly via the GitHub REST API. I support multiple PAT tokens for different accounts.",
+      timestamp: new Date(),
+    },
+    {
+      id: "sys-4",
+      category: "system",
+      content: "I possess browser automation capabilities, including reading webpages, extracting links, clicking elements, filling forms, and taking screenshots.",
+      timestamp: new Date(),
+    },
+    {
+      id: "sys-5",
+      category: "system",
+      content: "I feature a 'God Mode' for advanced system-level operations and a 'Screen Guide' for interactive assistance.",
+      timestamp: new Date(),
+    },
+    {
+      id: "sys-6",
+      category: "system",
+      content: "My codebase is organized into a monorepo structure with an 'enosx-app' for the frontend, 'lib' for shared logic and API clients, and 'scripts' for utility tasks.",
+      timestamp: new Date(),
+    },
+  ], []);
 
   // Load memories on mount
   useEffect(() => {
@@ -57,22 +97,24 @@ export function useMemoryBank() {
   }, []);
 
   const getMemoryContext = useCallback(() => {
-    if (memories.length === 0) return "";
+    const allMemories = [...systemMemories, ...memories];
     
-    const contextLines = memories
+    if (allMemories.length === 0) return "";
+    
+    const contextLines = allMemories
       .filter(m => m.category !== 'skill' && m.category !== 'agent')
       .map(m => `- [${m.category.toUpperCase()}]: ${m.content}`);
     
-    const skillLines = memories
+    const skillLines = allMemories
       .filter(m => m.category === 'skill')
       .map(m => `- [SKILL]: ${m.content}`);
 
-    const agentLines = memories
+    const agentLines = allMemories
       .filter(m => m.category === 'agent')
       .map(m => `- [SPECIALIZED AGENT]: ${m.content}`);
 
-    return `\n\nUSER LONG-TERM MEMORY:\n${contextLines.join("\n")}\n${skillLines.join("\n")}\n${agentLines.join("\n")}\nUse this context to personalize your responses.`;
-  }, [memories]);
+    return `\n\nUSER LONG-TERM MEMORY & SYSTEM KNOWLEDGE:\n${contextLines.join("\n")}\n${skillLines.join("\n")}\n${agentLines.join("\n")}\nUse this context to personalize your responses and understand your own capabilities.`;
+  }, [memories, systemMemories]);
 
   return {
     memories,

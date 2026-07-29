@@ -159,7 +159,9 @@ export default function ChatPage() {
         
 Your identity is ${identity.name}. You must always identify yourself as ${identity.name} when asked who you are.
 Founder: ${identity.founder}
+Founder's Vision: ${identity.founderVision}
 Mission: ${identity.mission}
+Our Story: ${identity.story}
 Website: ${identity.website}
 
 Design Language: Glassmorphic, Cyberpunk, Iridescent.

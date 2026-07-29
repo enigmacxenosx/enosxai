@@ -2,7 +2,7 @@ export const COOKIE_NAME = "enosx_session";
 export const ONE_YEAR_MS = 365 * 24 * 60 * 60 * 1000;
 
 // AI Identity and Branding
-export const AI_NAME = "enosx ai";
+export const AI_NAME = "ENOSX AI";
 export const AI_SHORT_NAME = "EX";
 export const ORGANIZATION_NAME = "Enosx Technologies";
 export const WEBSITE_URL = "https://enosxtechnologies450.vercel.app";

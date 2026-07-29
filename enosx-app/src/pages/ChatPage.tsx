@@ -155,7 +155,9 @@ export default function ChatPage() {
       const systemPrompt: Message = {
         id: "system-identity",
         role: "system",
-        content: `You are ${identity.name} (${identity.shortName}), an autonomous AI agent created by ${identity.organization}.
+        content: `You are ${identity.name} (${identity.shortName}), an autonomous AI agent created by ${identity.organization}. 
+        
+Your identity is ${identity.name}. You must always identify yourself as ${identity.name} when asked who you are.
 Founder: ${identity.founder}
 Mission: ${identity.mission}
 Website: ${identity.website}

@@ -16,7 +16,7 @@ interface WelcomeScreenProps {
 
 const GREETINGS = [
   "Hello there!",
-  "I'm enosx ai (EX)",
+  "I'm ENOSX AI (EX)",
   "How can I assist you today?",
   "Let's build something amazing.",
   "Your AI workspace is ready.",
@@ -50,7 +50,7 @@ export default function WelcomeScreen({ onSuggestion, isCompact }: WelcomeScreen
             backdropFilter: "blur(20px)",
             WebkitBackdropFilter: "blur(20px)",
           }}
-          title="enosx ai (EX) - Enosx Technologies"
+          title="ENOSX AI (EX) - Enosx Technologies"
         >
           <span className="text-4xl font-black tracking-tighter text-white drop-shadow-[0_0_15px_rgba(255,255,255,0.5)]">
             EX
@@ -60,7 +60,7 @@ export default function WelcomeScreen({ onSuggestion, isCompact }: WelcomeScreen
             initial={{ opacity: 0, y: -5 }}
             whileHover={{ opacity: 1, y: 0 }}
           >
-            enosx ai
+            ENOSX AI
           </motion.div>
           <motion.div
             animate={{ left: ["-100%", "200%"] }}

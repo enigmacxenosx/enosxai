@@ -16,10 +16,12 @@ interface WelcomeScreenProps {
 
 const GREETINGS = [
   "Hello there!",
-  "Hii its Enosx",
+  "I'm enosx ai (EX)",
   "How can I assist you today?",
   "Let's build something amazing.",
-  "Your AI workspace is ready."
+  "Your AI workspace is ready.",
+  "Powered by Enosx Technologies",
+  "Ready to transform your workflow."
 ];
 
 export default function WelcomeScreen({ onSuggestion, isCompact }: WelcomeScreenProps) {
@@ -37,21 +39,29 @@ export default function WelcomeScreen({ onSuggestion, isCompact }: WelcomeScreen
   return (
     <div className="h-full flex flex-col items-center justify-center px-6 py-8 overflow-y-auto">
       <div className="max-w-2xl w-full flex flex-col items-center gap-8">
-        {/* Glass EX Logo */}
+        {/* Glass EX Logo with Branding */}
         <motion.div
           initial={{ scale: 0.8, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
           transition={{ duration: 1.5, ease: [0.23, 1, 0.32, 1] }}
-          className="relative w-24 h-24 mb-4 flex items-center justify-center rounded-2xl border border-white/10 shadow-[0_0_40px_rgba(124,111,247,0.3)] overflow-hidden"
+          className="relative w-24 h-24 mb-4 flex items-center justify-center rounded-2xl border border-white/10 shadow-[0_0_40px_rgba(124,111,247,0.3)] overflow-hidden group"
           style={{
             background: "linear-gradient(135deg, rgba(255, 255, 255, 0.08) 0%, rgba(255, 255, 255, 0.04) 100%)",
             backdropFilter: "blur(20px)",
             WebkitBackdropFilter: "blur(20px)",
           }}
+          title="enosx ai (EX) - Enosx Technologies"
         >
           <span className="text-4xl font-black tracking-tighter text-white drop-shadow-[0_0_15px_rgba(255,255,255,0.5)]">
             EX
           </span>
+          <motion.div
+            className="absolute -bottom-8 left-1/2 -translate-x-1/2 text-xs font-semibold text-white/60 whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity"
+            initial={{ opacity: 0, y: -5 }}
+            whileHover={{ opacity: 1, y: 0 }}
+          >
+            enosx ai
+          </motion.div>
           <motion.div
             animate={{ left: ["-100%", "200%"] }}
             transition={{ duration: 3, repeat: Infinity, ease: "easeInOut", repeatDelay: 1 }}
@@ -79,6 +89,14 @@ export default function WelcomeScreen({ onSuggestion, isCompact }: WelcomeScreen
               {GREETINGS[greetingIndex]}
             </motion.h2>
           </AnimatePresence>
+          <motion.p
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.3, duration: 0.6 }}
+            className="text-sm text-white/50 mt-4"
+          >
+            Powered by Enosx Technologies
+          </motion.p>
 
         </motion.div>
 

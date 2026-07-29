@@ -345,11 +345,11 @@ export function useGitHub() {
       const res = await fetch(
         `https://api.github.com/repos/${repo.fullName}/contents/${path}`,
         {
-          method: 'PUT',
+          method: "PUT",
           headers: {
             Authorization: `Bearer ${account.token}`,
-            Accept: 'application/vnd.github+json',
-            'Content-Type': 'application/json',
+            Accept: "application/vnd.github+json",
+            "Content-Type": "application/json",
           },
           body: JSON.stringify({ message: commitMessage, content: encodedContent, branch: repo.branch }),
         }
@@ -361,6 +361,93 @@ export function useGitHub() {
       setError(err instanceof Error ? err.message : 'Create file failed');
       setLoading(false);
       return false;
+    }
+  }, [state.activeAccount, state.currentRepo, setLoading, setError]);
+
+  const deleteFile = useCallback(async (path: string, commitMessage: string): Promise<boolean> => {
+    const account = state.activeAccount;
+    const repo = state.currentRepo;
+    if (!account || !repo) return false;
+    setLoading(true);
+    try {
+      // First, get the file SHA
+      const getRes = await fetch(
+        `https://api.github.com/repos/${repo.fullName}/contents/${path}?ref=${repo.branch}`,
+        { headers: { Authorization: `Bearer ${account.token}`, Accept: "application/vnd.github+json" } }
+      );
+      if (!getRes.ok) throw new Error('Failed to fetch file for deletion');
+      const fileData = await getRes.json();
+      
+      // Delete the file
+      const deleteRes = await fetch(
+        `https://api.github.com/repos/${repo.fullName}/contents/${path}`,
+        {
+          method: "DELETE",
+          headers: {
+            Authorization: `Bearer ${account.token}`,
+            Accept: "application/vnd.github+json",
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ message: commitMessage, sha: fileData.sha, branch: repo.branch }),
+        }
+      );
+      if (!deleteRes.ok) throw new Error('Failed to delete file');
+      setLoading(false);
+      return true;
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Delete file failed');
+      setLoading(false);
+      return false;
+    }
+  }, [state.activeAccount, state.currentRepo, setLoading, setError]);
+
+  const createPullRequest = useCallback(async (title: string, head: string, base: string, body?: string): Promise<any> => {
+    const account = state.activeAccount;
+    const repo = state.currentRepo;
+    if (!account || !repo) return null;
+    setLoading(true);
+    try {
+      const res = await fetch(
+        `https://api.github.com/repos/${repo.fullName}/pulls`,
+        {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${account.token}`,
+            Accept: "application/vnd.github+json",
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ title, head, base, body: body || "" }),
+        }
+      );
+      if (!res.ok) throw new Error('Failed to create pull request');
+      const prData = await res.json();
+      setLoading(false);
+      return prData;
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Create PR failed');
+      setLoading(false);
+      return null;
+    }
+  }, [state.activeAccount, state.currentRepo, setLoading, setError]);
+
+  const getPullRequests = useCallback(async (state_filter: 'open' | 'closed' | 'all' = 'open'): Promise<any[]> => {
+    const account = state.activeAccount;
+    const repo = state.currentRepo;
+    if (!account || !repo) return [];
+    setLoading(true);
+    try {
+      const res = await fetch(
+        `https://api.github.com/repos/${repo.fullName}/pulls?state=${state_filter}&per_page=50`,
+        { headers: { Authorization: `Bearer ${account.token}`, Accept: "application/vnd.github+json" } }
+      );
+      if (!res.ok) throw new Error('Failed to fetch pull requests');
+      const prs = await res.json();
+      setLoading(false);
+      return prs;
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Fetch PRs failed');
+      setLoading(false);
+      return [];
     }
   }, [state.activeAccount, state.currentRepo, setLoading, setError]);
 
@@ -392,6 +479,9 @@ export function useGitHub() {
     updateFile,
     pushChanges,
     createFile,
+    deleteFile,
+    createPullRequest,
+    getPullRequests,
     setRepos,
     setFiles,
   };

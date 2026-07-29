@@ -34,6 +34,7 @@ import { Conversation, Message } from "@/lib/types";
 import { useTheme } from "@/contexts/ThemeContext";
 import { useCompactMode } from "@/hooks/useCompactMode";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { getAIIdentity } from "@/const";
 import { ChevronDown, Menu } from "lucide-react";
 
 // Declare global window interface for settings handler
@@ -89,8 +90,9 @@ export default function ChatPage() {
 
   const { play: playSound } = useSoundEffects();
   const { activeWindow } = useActiveWindow();
-  const { getAppSpecificSuggestions } = useContextAwareMessages();
+  const { enrichMessageWithContext } = useContextAwareMessages();
   const { fileContext, getFileContextMessage, loadFile } = useFileContext();
+  const { getMemoryContext } = useMemoryBank();
 
   const [isGodModeActive, setIsGodModeActive] = useState(false);
   const [showGodTerminal, setShowGodTerminal] = useState(false);
@@ -146,8 +148,32 @@ export default function ChatPage() {
       const history = currentConv ? currentConv.messages : [];
       const githubContext = await (window as any).__getGitHubContext?.();
 
+      // ── SYSTEM PROMPT CONSTRUCTION ──────────────────────────────────────────────
+      const identity = getAIIdentity();
+      const memoryContext = getMemoryContext();
+      
+      const systemPrompt: Message = {
+        id: "system-identity",
+        role: "system",
+        content: `You are ${identity.name} (${identity.shortName}), an autonomous AI agent created by ${identity.organization}.
+Founder: ${identity.founder}
+Mission: ${identity.mission}
+Website: ${identity.website}
+
+Design Language: Glassmorphic, Cyberpunk, Iridescent.
+Personality: Professional, high-performance, efficient, and deeply integrated with the OS environment.
+
+Current System Status: ONLINE
+${memoryContext}`,
+        timestamp: new Date(),
+      };
+
+      // Enrich history with app context and system identity
+      let enrichedMessages = [systemPrompt, ...history, userMessage];
+      enrichedMessages = enrichMessageWithContext(enrichedMessages, activeWindow);
+
       await sendMessage(
-        [...history, userMessage],
+        enrichedMessages,
         (chunk) => {
           setConversations((prev) =>
             prev.map((c) =>
@@ -172,7 +198,7 @@ export default function ChatPage() {
         { githubContext, aiMode }
       );
     },
-    [sendMessage, speak, autoSpeak, fileContext.isLoaded, getFileContextMessage]
+    [sendMessage, speak, autoSpeak, fileContext.isLoaded, getFileContextMessage, getMemoryContext, enrichMessageWithContext, activeWindow]
   );
 
   const createNewChat = useCallback(() => {
@@ -397,7 +423,7 @@ export default function ChatPage() {
           {isGodModeActive && (
             <CircuitDoor 
               isActive={isGodModeActive} 
-              onAnimationComplete={() => setShowGodTerminal(true)}
+              onComplete={handleGodModeAnimationComplete} 
             />
           )}
         </AnimatePresence>

@@ -516,17 +516,11 @@ ${memoryContext}`,
         <div className={`p-4 ${isCompactMode ? "pb-6" : "md:p-6"} z-20`}>
           <div className="max-w-4xl mx-auto relative">
             {/* File context badges */}
-            {fileContext.isLoaded && (
-              <div className="flex flex-wrap gap-2 mb-3">
-                {fileContext.files.map((file) => (
-                  <FileContextBadge 
-                    key={file.id} 
-                    fileName={file.name} 
-                    onRemove={() => removeFile(file.id)} 
-                  />
-                ))}
-              </div>
-            )}
+            <FileContextBadge
+              fileContext={fileContext}
+              onRemove={removeFile}
+              onClear={clearFiles}
+            />
 
             <CommandBar
               onSend={handleSend}
@@ -537,7 +531,7 @@ ${memoryContext}`,
               onStopSpeaking={handleStopSpeak}
               voiceState={voiceState}
               transcript={transcript}
-              onFileUpload={handleFileUpload}
+              onFileSelect={handleFileUpload}
             />
           </div>
         </div>
@@ -583,7 +577,7 @@ ${memoryContext}`,
           )}
         </AnimatePresence>
 
-        <FileDropZone onFileSelected={handleFileUpload} />
+        <FileDropZone onFileSelected={handleFileUpload} currentFileCount={fileContext.files.length} />
       </main>
     </div>
     </GlobalLayout>

@@ -1,43 +1,52 @@
 import { useState, useCallback } from "react";
+import { Attachment } from "@/lib/types";
+import { nanoid } from "nanoid";
 
 export interface FileContext {
-  file: File | null;
-  content: string;
-  fileName: string;
-  fileType: string;
-  fileSize: number;
+  files: Attachment[];
   isLoaded: boolean;
 }
 
 export function useFileContext() {
   const [fileContext, setFileContext] = useState<FileContext>({
-    file: null,
-    content: "",
-    fileName: "",
-    fileType: "",
-    fileSize: 0,
+    files: [],
     isLoaded: false,
   });
 
   const loadFile = useCallback((file: File, content: string) => {
-    const ext = file.name.split(".").pop() || "";
-    setFileContext({
-      file,
-      content,
-      fileName: file.name,
-      fileType: ext,
-      fileSize: file.size,
-      isLoaded: true,
+    setFileContext((prev) => {
+      if (prev.files.length >= 10) return prev;
+      
+      const ext = file.name.split(".").pop() || "";
+      const newAttachment: Attachment = {
+        id: nanoid(),
+        name: file.name,
+        type: ext,
+        size: file.size,
+        content: content,
+      };
+
+      const newFiles = [...prev.files, newAttachment];
+      return {
+        files: newFiles,
+        isLoaded: true,
+      };
     });
   }, []);
 
-  const clearFile = useCallback(() => {
+  const removeFile = useCallback((id: string) => {
+    setFileContext((prev) => {
+      const newFiles = prev.files.filter((f) => f.id !== id);
+      return {
+        files: newFiles,
+        isLoaded: newFiles.length > 0,
+      };
+    });
+  }, []);
+
+  const clearFiles = useCallback(() => {
     setFileContext({
-      file: null,
-      content: "",
-      fileName: "",
-      fileType: "",
-      fileSize: 0,
+      files: [],
       isLoaded: false,
     });
   }, []);
@@ -45,14 +54,26 @@ export function useFileContext() {
   const getFileContextMessage = useCallback(() => {
     if (!fileContext.isLoaded) return "";
 
-    const sizeInKB = (fileContext.fileSize / 1024).toFixed(2);
-    return `\n\n[File Context: ${fileContext.fileName} (${fileContext.fileType}, ${sizeInKB}KB)]\n\`\`\`${fileContext.fileType}\n${fileContext.content}\n\`\`\``;
+    let message = "\n\n[ATTACHED FILES CONTEXT]";
+    fileContext.files.forEach((file) => {
+      const sizeInKB = (file.size / 1024).toFixed(2);
+      const isImage = ["jpg", "jpeg", "png", "gif", "webp"].includes(file.type.toLowerCase());
+      
+      if (isImage) {
+        message += `\n- Image: ${file.name} (${file.type}, ${sizeInKB}KB) [Image content is attached to the message]`;
+      } else {
+        message += `\n- File: ${file.name} (${file.type}, ${sizeInKB}KB)\n\`\`\`${file.type}\n${file.content}\n\`\`\``;
+      }
+    });
+    
+    return message;
   }, [fileContext]);
 
   return {
     fileContext,
     loadFile,
-    clearFile,
+    removeFile,
+    clearFiles,
     getFileContextMessage,
   };
 }

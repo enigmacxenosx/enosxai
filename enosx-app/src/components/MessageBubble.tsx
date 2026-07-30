@@ -142,12 +142,33 @@ export default function MessageBubble({
           ) : (
             <div className="relative">
               {isUser ? (
-                <p
-                  className="text-sm leading-relaxed"
-                  style={{ color: config.text }}
-                >
-                  {message.content}
-                </p>
+                <div className="flex flex-col gap-3">
+                  {message.attachments && message.attachments.length > 0 && (
+                    <div className="flex flex-wrap gap-2 mb-1">
+                      {message.attachments.map((att) => {
+                        const isImage = ["jpg", "jpeg", "png", "gif", "webp"].includes(att.type.toLowerCase());
+                        if (!isImage) return null;
+                        return (
+                          <motion.img
+                            key={att.id}
+                            src={att.content}
+                            alt={att.name}
+                            initial={{ opacity: 0, scale: 0.9 }}
+                            animate={{ opacity: 1, scale: 1 }}
+                            className="max-w-[200px] max-h-[200px] rounded-lg border border-white/10 shadow-lg object-cover cursor-pointer hover:scale-[1.02] transition-transform"
+                            onClick={() => window.open(att.content, '_blank')}
+                          />
+                        );
+                      })}
+                    </div>
+                  )}
+                  <p
+                    className="text-sm leading-relaxed"
+                    style={{ color: config.text }}
+                  >
+                    {message.content}
+                  </p>
+                </div>
               ) : (
                 <div
                   className="prose-crimson text-sm"

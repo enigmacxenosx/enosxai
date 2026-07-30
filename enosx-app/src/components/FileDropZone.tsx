@@ -6,16 +6,18 @@
 
 import { useState, useRef, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Upload, File, CheckCircle2, AlertCircle } from "lucide-react";
+import { Upload, File, CheckCircle2, AlertCircle, Image as ImageIcon } from "lucide-react";
 import { useTheme } from "@/contexts/ThemeContext";
 import { useTactileSounds } from "@/hooks/useTactileSounds";
+import { toast } from "sonner";
 
 interface FileDropZoneProps {
   onFileSelected: (file: File, content: string) => void;
   isActive?: boolean;
+  currentFileCount: number;
 }
 
-const SUPPORTED_TYPES = [
+const SUPPORTED_TEXT_TYPES = [
   "text/plain",
   "text/markdown",
   "application/json",
@@ -30,7 +32,14 @@ const SUPPORTED_TYPES = [
   "text/css",
 ];
 
-export default function FileDropZone({ onFileSelected, isActive = true }: FileDropZoneProps) {
+const SUPPORTED_IMAGE_TYPES = [
+  "image/jpeg",
+  "image/png",
+  "image/gif",
+  "image/webp",
+];
+
+export default function FileDropZone({ onFileSelected, isActive = true, currentFileCount }: FileDropZoneProps) {
   const { config } = useTheme();
   const [isDragActive, setIsDragActive] = useState(false);
   const [uploadStatus, setUploadStatus] = useState<"idle" | "loading" | "success" | "error">("idle");
@@ -40,8 +49,16 @@ export default function FileDropZone({ onFileSelected, isActive = true }: FileDr
 
   const handleFile = useCallback(
     async (file: File) => {
-      // Validate file type
-      if (!SUPPORTED_TYPES.includes(file.type) && !file.name.match(/\.(txt|md|json|js|ts|py|java|c|cpp|xml|html|css)$/i)) {
+      if (currentFileCount >= 10) {
+        toast.error("Maximum 10 files allowed");
+        playError();
+        return;
+      }
+
+      const isText = SUPPORTED_TEXT_TYPES.includes(file.type) || file.name.match(/\.(txt|md|json|js|ts|py|java|c|cpp|xml|html|css)$/i);
+      const isImage = SUPPORTED_IMAGE_TYPES.includes(file.type) || file.name.match(/\.(jpg|jpeg|png|gif|webp)$/i);
+
+      if (!isText && !isImage) {
         setUploadStatus("error");
         setUploadMessage(`Unsupported file type: ${file.type || file.name.split(".").pop()}`);
         playError();
@@ -62,7 +79,19 @@ export default function FileDropZone({ onFileSelected, isActive = true }: FileDr
       playPop();
 
       try {
-        const content = await file.text();
+        let content = "";
+        if (isText) {
+          content = await file.text();
+        } else if (isImage) {
+          // Convert image to base64
+          content = await new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = () => resolve(reader.result as string);
+            reader.onerror = reject;
+            reader.readAsDataURL(file);
+          });
+        }
+
         setUploadStatus("success");
         setUploadMessage(`Loaded: ${file.name}`);
         playSuccess();
@@ -75,7 +104,7 @@ export default function FileDropZone({ onFileSelected, isActive = true }: FileDr
         setTimeout(() => setUploadStatus("idle"), 3000);
       }
     },
-    [onFileSelected, playPop, playSuccess, playError]
+    [onFileSelected, playPop, playSuccess, playError, currentFileCount]
   );
 
   const handleDragEnter = useCallback((e: React.DragEvent) => {
@@ -103,12 +132,18 @@ export default function FileDropZone({ onFileSelected, isActive = true }: FileDr
       e.stopPropagation();
       setIsDragActive(false);
 
-      const files = e.dataTransfer.files;
+      const files = Array.from(e.dataTransfer.files);
       if (files.length > 0) {
-        handleFile(files[0]);
+        // Process up to remaining slots
+        const remainingSlots = 10 - currentFileCount;
+        files.slice(0, remainingSlots).forEach(file => handleFile(file));
+        
+        if (files.length > remainingSlots) {
+          toast.warning(`Only ${remainingSlots} more files could be added (max 10 total)`);
+        }
       }
     },
-    [handleFile]
+    [handleFile, currentFileCount]
   );
 
   if (!isActive) return null;
@@ -156,8 +191,10 @@ export default function FileDropZone({ onFileSelected, isActive = true }: FileDr
                 <motion.div
                   animate={{ y: [0, -10, 0] }}
                   transition={{ duration: 2, repeat: Infinity }}
+                  className="flex gap-4"
                 >
                   <Upload size={48} style={{ color: config.accent }} />
+                  <ImageIcon size={48} style={{ color: config.accent }} />
                 </motion.div>
 
                 <div className="text-center">
@@ -165,13 +202,16 @@ export default function FileDropZone({ onFileSelected, isActive = true }: FileDr
                     className="text-2xl font-bold mb-2"
                     style={{ color: config.text }}
                   >
-                    Drop Your File Here
+                    Drop Your Files Here
                   </h3>
                   <p
                     className="text-sm"
                     style={{ color: config.textMuted }}
                   >
-                    Code, markdown, JSON, or text files supported
+                    Images, Code, Markdown, or JSON (Max 10 files)
+                  </p>
+                  <p className="text-xs mt-2" style={{ color: config.accent }}>
+                    {currentFileCount} / 10 files uploaded
                   </p>
                 </div>
 

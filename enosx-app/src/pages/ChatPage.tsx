@@ -14,6 +14,7 @@ import CommandBar, { type AIMode } from "@/components/CommandBar";
 import WelcomeScreen from "@/components/WelcomeScreen";
 import PulseOrb from "@/components/PulseOrb";
 import FileDropZone from "@/components/FileDropZone";
+import FileContextBadge from "@/components/FileContextBadge";
 import GodModeTerminal from "@/components/GodModeTerminal";
 import CircuitDoor from "@/components/CircuitDoor";
 import GitHubPanel from "@/components/GitHubPanel";
@@ -91,7 +92,7 @@ export default function ChatPage() {
   const { play: playSound } = useSoundEffects();
   const { activeWindow } = useActiveWindow();
   const { enrichMessageWithContext } = useContextAwareMessages();
-  const { fileContext, getFileContextMessage, loadFile } = useFileContext();
+  const { fileContext, getFileContextMessage, loadFile, removeFile, clearFiles } = useFileContext();
   const { getMemoryContext } = useMemoryBank();
 
   const [isGodModeActive, setIsGodModeActive] = useState(false);
@@ -126,7 +127,11 @@ export default function ChatPage() {
         role: "user",
         content: messageContent,
         timestamp: new Date(),
+        attachments: fileContext.isLoaded ? [...fileContext.files] : undefined,
       };
+
+      // Clear files after sending
+      clearFiles();
 
       const assistantId = nanoid();
       const assistantMessage: Message = {
@@ -464,7 +469,16 @@ ${memoryContext}`,
           )}
         </AnimatePresence>
 
-        <FileDropZone onFileSelected={loadFile} />
+          <FileDropZone 
+            onFileSelected={loadFile} 
+            currentFileCount={fileContext.files.length} 
+          />
+          
+          <FileContextBadge 
+            fileContext={fileContext} 
+            onRemove={removeFile} 
+            onClear={clearFiles} 
+          />
       </main>
     </div>
     </GlobalLayout>

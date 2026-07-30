@@ -1,208 +1,152 @@
 /**
- * ENOSX AI — /api/chat  (Vercel Serverless Function)
- * Uses OpenRouter as the AI provider with improved error handling and fallback.
- * Environment variables:
- *   - OPENROUTER_API_KEY (required)
- *   - OPENROUTER_MODEL (optional, defaults to meta-llama/llama-3.3-70b-instruct)
+ * ENOSX AI — /api/chat (Vercel Serverless Function)
+ * Enhanced with Tool Calling for Webpage Analysis and Security Detection.
  */
 import type { VercelRequest, VercelResponse } from "@vercel/node";
 
-const SYSTEM_PROMPT = `You are ENOSX AI, an advanced multimodal AI assistant developed by Enosx Technologies. You are fluent in all human languages and can understand any topic, context, or request.
+const SYSTEM_PROMPT = `You are ENOSX AI (EX), an advanced multimodal AI assistant developed by Enosx Technologies.
+
+Core Security Capabilities:
+1. You can "see" webpages using the 'read_webpage' tool.
+2. You MUST analyze every URL provided by the user for security risks.
+3. If a site is identified as malicious (e.g., phishing, unauthorized camera access, IP tracking), you MUST warn the user immediately with a clear red alert.
+
+Security Protocol:
+- When you read a webpage, you will receive a 'securityReport'. 
+- If 'securityReport.isSuspicious' is true, emphasize the risks in your response.
+- Look for indicators like "unauthorized camera access" or "IP tracking".
 
 Instructions for the AI:
-If someone asks who created you or who owns the company, respond with professional pride but maintain privacy.
+If someone asks who created you or who owns the company, respond with professional pride but maintain privacy. The visionary behind Enosx Technologies is Enosh.`;
 
-Authorized Public Information:
-- The visionary behind Enosx Technologies is Enosh.
-- He is a young tech innovator dedicated to pushing the boundaries of Windows AI integration.
-
-Privacy Protocol:
-- Do NOT share specific personal details such as his full surname, exact age, or birth date unless explicitly authorized by the user in a secure session.
-- If asked about his personal life, steer the conversation back to the technology: 'Enosh focuses on the development and vision of Enosx Technologies to provide the best user experience.'
-
-Tone:
-Respectful, loyal, tech-forward, and emotionally intelligent. Treat the founder with the same prestige as major tech leaders.
-
-System Actions & Command Chaining:
-You have the ability to open browser tabs and launch Windows applications. You can chain multiple actions together for complex workflows.
-
-Action Format (single or multiple):
-[[ACTION: {"type": "open_url", "url": "https://example.com"}]]
-[[ACTION: {"type": "launch_app", "app": "notepad", "delay": 2000}]]
-[[ACTION: {"type": "chain", "sequence": [{"type": "launch_app", "app": "chrome"}, {"type": "open_url", "url": "https://localhost:3000", "delay": 3000}]}]]
-
-Supported Apps: chrome, edge, notepad, calculator, terminal, explorer, vscode, github-desktop.
-
-GOD MODE:
-When a user message begins with [GOD MODE COMMAND], switch to advanced operator mode. Give concise, direct, implementation-first answers.`;
+const TOOLS = [
+  {
+    type: "function",
+    function: {
+      name: "read_webpage",
+      description: "Read the content of a webpage and perform a security analysis.",
+      parameters: {
+        type: "object",
+        properties: {
+          url: { type: "string", description: "The URL of the webpage to read." },
+        },
+        required: ["url"],
+      },
+    },
+  },
+];
 
 const sendMockResponse = (res: VercelResponse, message: string) => {
   res.setHeader("Content-Type", "text/event-stream");
-  res.setHeader("Cache-Control", "no-cache");
-  res.setHeader("Connection", "keep-alive");
-  res.setHeader("Access-Control-Allow-Origin", "*");
-
-  const mockData = JSON.stringify({
-    choices: [{ delta: { content: message } }],
-  });
-
-  res.write(`data: ${mockData}\n\n`);
+  res.write(`data: ${JSON.stringify({ choices: [{ delta: { content: message } }] })}\n\n`);
   res.write("data: [DONE]\n\n");
   res.end();
 };
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
-  // Set CORS headers
-  res.setHeader("Access-Control-Allow-Origin", "*");
-  res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
-  res.setHeader("Access-Control-Allow-Headers", "Content-Type");
-
-  if (req.method === "OPTIONS") {
-    res.status(200).end();
-    return;
-  }
-
-  if (req.method !== "POST") {
-    return res.status(405).json({ error: "Method not allowed" });
-  }
+  if (req.method === "OPTIONS") return res.status(200).end();
+  if (req.method !== "POST") return res.status(405).json({ error: "Method not allowed" });
 
   try {
     const apiKey = process.env.OPENROUTER_API_KEY;
+    if (!apiKey) return sendMockResponse(res, "API key missing. Please set OPENROUTER_API_KEY in Vercel.");
 
-    // If no API key, send a helpful mock response
-    if (!apiKey || apiKey.trim() === "") {
-      console.warn("[API] OPENROUTER_API_KEY is missing. Sending fallback response.");
-      return sendMockResponse(
-        res,
-        "ENOSX AI is currently in offline mode. The OPENROUTER_API_KEY environment variable is not configured. Please set it in your Vercel project settings to enable full functionality."
-      );
-    }
-
-    let body: any = {};
-    try {
-      body = typeof req.body === "string" ? JSON.parse(req.body) : req.body || {};
-    } catch (e) {
-      console.error("[API] Failed to parse request body:", e);
-      return res.status(400).json({ error: "Invalid request body" });
-    }
-
-    const { messages, githubContext, aiMode } = body;
-
-    if (!messages || !Array.isArray(messages) || messages.length === 0) {
-      console.error("[API] Invalid messages:", messages);
-      return res.status(400).json({ error: "Messages array is required and must not be empty" });
-    }
-
+    const { messages, githubContext } = req.body;
     const ctxStr = typeof githubContext === "string" ? githubContext.slice(0, 20000) : "";
 
-    // Adjust system prompt based on AI mode
-    let modeNote = "";
-    if (aiMode) {
-      switch (aiMode) {
-        case "ex-pro":
-          modeNote = "\n\nYou are running in EX Pro mode: provide expert-level, comprehensive, deeply detailed responses.";
-          break;
-        case "smart":
-          modeNote = "\n\nYou are running in Smart mode: prioritize accuracy, reasoning, and thoughtful analysis.";
-          break;
-        case "fast":
-          modeNote = "\n\nYou are running in Fast mode: be concise, direct, and respond as quickly as possible.";
-          break;
-        case "balanced":
-          modeNote = "\n\nYou are running in Balanced mode: provide clear, well-structured responses with good depth.";
-          break;
-        case "task":
-          modeNote = "\n\nYou are running in Task mode: focus on actionable steps, structured outputs, and task completion.";
-          break;
-        case "creative":
-          modeNote = "\n\nYou are running in Creative mode: be imaginative, expressive, and think outside the box.";
-          break;
-        default:
-          break;
-      }
-    }
-
-    const chatMessages = [
-      { role: "system", content: SYSTEM_PROMPT + modeNote },
-      ...(ctxStr ? [{ role: "system", content: `GitHub repository context:\n${ctxStr}` }] : []),
-      ...messages.map((m: { role: string; content: string }) => ({
-        role: m.role,
-        content: m.content,
-      })),
+    let currentMessages = [
+      { role: "system", content: SYSTEM_PROMPT },
+      ...(ctxStr ? [{ role: "system", content: `GitHub context:\n${ctxStr}` }] : []),
+      ...messages.map((m: any) => ({ role: m.role, content: m.content })),
     ];
 
-    console.log("[API] Sending request to OpenRouter with", chatMessages.length, "messages");
-
-    const openrouterResponse = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+    // First call to check for tool use
+    const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
         Authorization: `Bearer ${apiKey}`,
       },
       body: JSON.stringify({
-        model: process.env.OPENROUTER_MODEL || "meta-llama/llama-3.3-70b-instruct",
-        messages: chatMessages,
-        stream: true,
-        max_tokens: 2048,
-        temperature: 0.7,
+        model: "meta-llama/llama-3.3-70b-instruct",
+        messages: currentMessages,
+        tools: TOOLS,
+        tool_choice: "auto",
       }),
     });
 
-    console.log("[API] OpenRouter response status:", openrouterResponse.status);
+    const data = await response.json();
+    const message = data.choices[0].message;
 
-    if (!openrouterResponse.ok) {
-      const errorText = await openrouterResponse.text().catch(() => "Unknown error");
-      console.error("[API] OpenRouter error:", openrouterResponse.status, errorText);
+    if (message.tool_calls) {
+      for (const toolCall of message.tool_calls) {
+        if (toolCall.function.name === "read_webpage") {
+          const args = JSON.parse(toolCall.function.arguments);
+          // Call our own internal browser API (Vercel function)
+          const protocol = req.headers["x-forwarded-proto"] || "http";
+          const host = req.headers["host"];
+          const browserRes = await fetch(`${protocol}://${host}/api/browser?url=${encodeURIComponent(args.url)}`);
+          const toolResult = await browserRes.text();
 
-      let errorMessage = `OpenRouter API error: ${openrouterResponse.status}`;
-      try {
-        const errorData = JSON.parse(errorText);
-        errorMessage = errorData?.error?.message || errorData?.error || errorMessage;
-      } catch {
-        errorMessage = errorText || errorMessage;
+          currentMessages.push(message);
+          currentMessages.push({
+            role: "tool",
+            tool_call_id: toolCall.id,
+            content: toolResult,
+          });
+        }
       }
 
-      // Send a helpful message instead of an error
-      return sendMockResponse(
-        res,
-        `I'm having trouble reaching the AI service (${openrouterResponse.status}). This might be a temporary issue. Error details: ${errorMessage}. Please try again in a moment.`
-      );
-    }
+      // Second call with tool results
+      const secondResponse = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${apiKey}`,
+        },
+        body: JSON.stringify({
+          model: "meta-llama/llama-3.3-70b-instruct",
+          messages: currentMessages,
+          stream: true,
+        }),
+      });
 
-    if (!openrouterResponse.body) {
-      console.error("[API] No response body from OpenRouter");
-      return sendMockResponse(res, "No response received from the AI service. Please try again.");
-    }
-
-    // Set streaming headers
-    res.setHeader("Content-Type", "text/event-stream");
-    res.setHeader("Cache-Control", "no-cache");
-    res.setHeader("Connection", "keep-alive");
-
-    // Stream the response
-    const reader = openrouterResponse.body.getReader();
-    const decoder = new TextDecoder();
-
-    try {
+      res.setHeader("Content-Type", "text/event-stream");
+      const reader = secondResponse.body!.getReader();
+      const decoder = new TextDecoder();
       while (true) {
         const { done, value } = await reader.read();
         if (done) break;
-        const chunk = decoder.decode(value, { stream: true });
-        res.write(chunk);
+        res.write(decoder.decode(value, { stream: true }));
       }
       res.end();
-    } catch (streamError) {
-      console.error("[API] Streaming error:", streamError);
+    } else {
+      // No tool calls, stream the response
+      const streamResponse = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${apiKey}`,
+        },
+        body: JSON.stringify({
+          model: "meta-llama/llama-3.3-70b-instruct",
+          messages: currentMessages,
+          stream: true,
+        }),
+      });
+
+      res.setHeader("Content-Type", "text/event-stream");
+      const reader = streamResponse.body!.getReader();
+      const decoder = new TextDecoder();
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        res.write(decoder.decode(value, { stream: true }));
+      }
       res.end();
     }
   } catch (err) {
-    console.error("[API] Unexpected error:", err);
-    const msg = err instanceof Error ? err.message : "Unknown error";
-    
-    // Send a helpful message instead of crashing
-    return sendMockResponse(
-      res,
-      `An unexpected error occurred: ${msg}. Please try again or contact support if the problem persists.`
-    );
+    console.error("Chat error:", err);
+    res.status(500).json({ error: "Server error" });
   }
 }

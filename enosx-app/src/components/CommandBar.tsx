@@ -58,14 +58,14 @@ export const AI_MODES: AIModeOption[] = [
   },
   {
     id: "balanced",
-    label: "Balanced",
+    label: "Analysis",
     color: "#f59e0b",
     bgColor: "rgba(245,158,11,0.15)",
     borderColor: "rgba(245,158,11,0.4)",
   },
   {
     id: "task",
-    label: "Task",
+    label: "Research",
     color: "#ef4444",
     bgColor: "rgba(239,68,68,0.15)",
     borderColor: "rgba(239,68,68,0.4)",

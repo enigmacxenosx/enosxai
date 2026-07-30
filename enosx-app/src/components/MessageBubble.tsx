@@ -222,16 +222,28 @@ export default function MessageBubble({
     setTimeout(() => setCopied(false), 2000);
   };
 
-  const handleDownload = () => {
-    const blob = new Blob([message.content], { type: "text/markdown" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `enosx-document-${new Date().getTime()}.md`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
+  const handleDownload = (format: 'md' | 'pdf' = 'md') => {
+    if (format === 'md') {
+      const blob = new Blob([message.content], { type: "text/markdown" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `enosx-doc-${new Date().getTime()}.md`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    } else if (format === 'pdf') {
+      // @ts-ignore
+      const { jsPDF } = window.jspdf;
+      const doc = new jsPDF();
+      
+      // Basic PDF generation logic
+      const splitText = doc.splitTextToSize(message.content.replace(/[*#`]/g, ''), 180);
+      doc.setFontSize(12);
+      doc.text(splitText, 15, 20);
+      doc.save(`enosx-doc-${new Date().getTime()}.pdf`);
+    }
   };
 
   return (
@@ -371,29 +383,44 @@ export default function MessageBubble({
 
             {!isUser && (
               <>
-                <motion.button
-                  whileHover={{ scale: 1.1 }}
-                  whileTap={{ scale: 0.9 }}
-                  onClick={() => (isSpeaking ? onStopSpeak() : onSpeak(message.content))}
-                  className="w-7 h-7 rounded-lg flex items-center justify-center transition-all duration-150"
-                  style={{
-                    background: isSpeaking
-                      ? `rgba(${config.accentRgb}, 0.12)`
-                      : "rgba(255,255,255,0.04)",
-                    border: isSpeaking
-                      ? `1px solid rgba(${config.accentRgb}, 0.3)`
-                      : "1px solid rgba(255,255,255,0.07)",
-                    color: isSpeaking ? config.accent : config.textMuted,
-                  }}
-                  title={isSpeaking ? "Stop speaking" : "Speak"}
-                >
-                  {isSpeaking ? <VolumeX size={12} /> : <Volume2 size={12} />}
-                </motion.button>
+	                <motion.button
+	                  whileHover={{ scale: 1.1 }}
+	                  whileTap={{ scale: 0.9 }}
+	                  onClick={() => (isSpeaking ? onStopSpeak() : onSpeak(message.content))}
+	                  className="w-7 h-7 rounded-lg flex items-center justify-center transition-all duration-150"
+	                  style={{
+	                    background: isSpeaking
+	                      ? `rgba(${config.accentRgb}, 0.12)`
+	                      : "rgba(255,255,255,0.04)",
+	                    border: isSpeaking
+	                      ? `1px solid rgba(${config.accentRgb}, 0.3)`
+	                      : "1px solid rgba(255,255,255,0.07)",
+	                    color: isSpeaking ? config.accent : config.textMuted,
+	                  }}
+	                  title={isSpeaking ? "Stop speaking" : "Speak"}
+	                >
+	                  {isSpeaking ? <VolumeX size={12} /> : <Volume2 size={12} />}
+	                </motion.button>
+
+                  <motion.button
+                    whileHover={{ scale: 1.1 }}
+                    whileTap={{ scale: 0.9 }}
+                    onClick={(e) => { e.stopPropagation(); handleDownload('pdf'); }}
+                    className="w-7 h-7 rounded-lg flex items-center justify-center transition-all duration-150"
+                    style={{
+                      background: "rgba(255,255,255,0.04)",
+                      border: "1px solid rgba(255,255,255,0.07)",
+                      color: config.textMuted,
+                    }}
+                    title="Export as PDF"
+                  >
+                    <FileText size={12} />
+                  </motion.button>
 
                 <motion.button
                   whileHover={{ scale: 1.1 }}
                   whileTap={{ scale: 0.9 }}
-                  onClick={handleDownload}
+                  onClick={(e) => { e.stopPropagation(); handleDownload('md'); }}
                   className="w-7 h-7 rounded-lg flex items-center justify-center transition-all duration-150"
                   style={{
                     background: "rgba(255,255,255,0.04)",

@@ -1,7 +1,6 @@
 /*
  * ENOSX AI — useOpenRouter
- * Calls OpenRouter API with model selection based on AI mode and content type.
- * API key is read from VITE_OPENROUTER_API_KEY environment variable.
+ * Calls OpenRouter API with tool support for web search and scraping.
  */
 
 import { useState, useCallback } from "react";
@@ -9,213 +8,197 @@ import { Message } from "@/lib/types";
 
 const OPENROUTER_API_URL = "https://openrouter.ai/api/v1/chat/completions";
 const OPENROUTER_API_KEY = import.meta.env.VITE_OPENROUTER_API_KEY || "";
+const SERPER_API_KEY = import.meta.env.VITE_SERPER_API_KEY || "";
 
-// ── Model mapping per AI mode ────────────────────────────────────────────────────
-// Each mode maps to a specific OpenRouter model slug.
-// Vision models are used when images are detected in the conversation.
 const MODELS = {
-  // ── Text models (no images) ────────────────────────────────────────────────────
   text: {
     "ex":        "meta-llama/llama-4-maverick",
-    "ex-pro":    "anthropic/claude-sonnet-4",
+    "ex-pro":    "anthropic/claude-3.5-sonnet",
     "smart":     "anthropic/claude-3.5-sonnet",
     "fast":      "google/gemini-2.5-flash",
-    "balanced":  "openai/gpt-4.1-mini",
-    "task":      "deepseek/deepseek-chat-v3-0324:free",
-    "creative":  "anthropic/claude-sonnet-4",
+    "balanced":  "openai/gpt-4o-mini",
+    "task":      "deepseek/deepseek-chat",
+    "creative":  "anthropic/claude-3.5-sonnet",
   },
-  // ── Vision models (images detected) ───────────────────────────────────────────
   vision: {
     "ex":        "meta-llama/llama-4-maverick",
-    "ex-pro":    "anthropic/claude-sonnet-4",
+    "ex-pro":    "anthropic/claude-3.5-sonnet",
     "smart":     "anthropic/claude-3.5-sonnet",
     "fast":      "google/gemini-2.5-flash",
-    "balanced":  "openai/gpt-4.1-mini",
+    "balanced":  "openai/gpt-4o-mini",
     "task":      "google/gemini-2.0-flash-exp:free",
-    "creative":  "anthropic/claude-sonnet-4",
+    "creative":  "anthropic/claude-3.5-sonnet",
   },
 } as const;
 
-const DEFAULT_TEXT_MODEL = "meta-llama/llama-4-maverick";
-const DEFAULT_VISION_MODEL = "google/gemini-2.0-flash-exp:free";
+const TOOLS = [
+  {
+    type: "function",
+    function: {
+      name: "web_search",
+      description: "Search the internet for real-time information, news, or specific queries.",
+      parameters: {
+        type: "object",
+        properties: {
+          query: { type: "string", description: "The search query" }
+        },
+        required: ["query"]
+      }
+    }
+  },
+  {
+    type: "function",
+    function: {
+      name: "web_scrape",
+      description: "Extract the full text content and markdown from a specific URL.",
+      parameters: {
+        type: "object",
+        properties: {
+          url: { type: "string", description: "The URL of the webpage to read" }
+        },
+        required: ["url"]
+      }
+    }
+  }
+];
 
 export function useOpenRouter() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const executeTool = async (name: string, args: any) => {
+    if (name === "web_search") {
+      if (!SERPER_API_KEY) return "Error: Search API key missing.";
+      try {
+        const res = await fetch("https://google.serper.dev/search", {
+          method: "POST",
+          headers: { "X-API-KEY": SERPER_API_KEY, "Content-Type": "application/json" },
+          body: JSON.stringify({ q: args.query })
+        });
+        const data = await res.json();
+        return JSON.stringify(data.organic?.slice(0, 5) || "No results found.");
+      } catch (e) { return "Search failed."; }
+    }
+    if (name === "web_scrape") {
+      try {
+        const res = await fetch(`https://r.jina.ai/${args.url}`);
+        const text = await res.text();
+        return text.slice(0, 8000);
+      } catch (e) { return "Scraping failed."; }
+    }
+    return "Unknown tool.";
+  };
 
   const sendMessage = useCallback(
     async (
       messages: Message[],
       onChunk: (chunk: string) => void,
       onDone: () => void,
-      options?: { githubContext?: string; aiMode?: string }
+      options?: { aiMode?: string; githubContext?: string }
     ) => {
       setIsLoading(true);
       setError(null);
 
-      // Validate API key
       if (!OPENROUTER_API_KEY) {
-        const fallbackMsg =
-          "API key is not configured. Please set VITE_OPENROUTER_API_KEY in your environment variables.";
-        onChunk(fallbackMsg);
+        onChunk("API key missing.");
         onDone();
         setIsLoading(false);
         return;
       }
 
       try {
-        // Check if any message has image attachments
-        const hasImages = messages.some(
-          (m) =>
-            m.attachments?.some(
-              (a) =>
-                ["image/jpeg", "image/png", "image/gif", "image/webp"].includes(
-                  a.type.toLowerCase()
-                ) || a.name.match(/\.(jpg|jpeg|png|gif|webp)$/i)
-            )
-        );
-
+        const hasImages = messages.some(m => m.attachments?.some(a => a.type.startsWith("image/")));
         const aiMode = (options?.aiMode as keyof typeof MODELS.text) || "ex";
-        const modelKey = hasImages ? "vision" : "text";
-        const model =
-          MODELS[modelKey][aiMode] ||
-          (hasImages ? DEFAULT_VISION_MODEL : DEFAULT_TEXT_MODEL);
+        const model = hasImages ? MODELS.vision[aiMode] : MODELS.text[aiMode];
 
-        const formattedMessages = messages.map((m) => {
-          const images =
-            m.attachments?.filter(
-              (a) =>
-                ["image/jpeg", "image/png", "image/gif", "image/webp"].includes(
-                  a.type.toLowerCase()
-                ) || a.name.match(/\.(jpg|jpeg|png|gif|webp)$/i)
-            ) || [];
+        let currentMessages = messages.map(m => ({
+          role: m.role,
+          content: m.content
+        }));
 
-          if (images.length > 0 && m.role === "user") {
-            return {
-              role: m.role,
-              content: [
-                { type: "text", text: m.content },
-                ...images.map((img) => ({
-                  type: "image_url",
-                  image_url: {
-                    url: img.content.startsWith("data:")
-                      ? img.content
-                      : `data:${img.type};base64,${img.content}`,
-                  },
-                })),
-              ],
-            };
-          }
+        let toolCalls: any[] = [];
+        let isToolCallPending = false;
 
-          return {
-            role: m.role,
-            content: m.content,
-          };
-        });
-
-        const response = await fetch(OPENROUTER_API_URL, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${OPENROUTER_API_KEY}`,
-            "HTTP-Referer":
-              import.meta.env.VITE_SITE_URL || "https://enosx.vercel.app",
-            "X-Title": "ENOSX AI",
-          },
-          body: JSON.stringify({
-            model: model,
-            messages: formattedMessages,
-            stream: true,
-            max_tokens: 4096,
-            temperature: 0.7,
-          }),
-        });
-
-        if (!response.ok) {
-          let errData: any = {};
-          try {
-            errData = await response.json();
-          } catch (e) {
-            console.error("Failed to parse error response:", e);
-          }
-          const errorMsg =
-            errData?.error?.message ||
-            errData?.error ||
-            `API error: ${response.status}`;
-          console.error("[useOpenRouter] API Error:", {
-            status: response.status,
-            error: errorMsg,
-            errData,
-            model,
+        const callAI = async () => {
+          const response = await fetch(OPENROUTER_API_URL, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${OPENROUTER_API_KEY}`,
+              "HTTP-Referer": "https://enosx.vercel.app",
+              "X-Title": "ENOSX AI",
+            },
+            body: JSON.stringify({
+              model,
+              messages: currentMessages,
+              tools: TOOLS,
+              stream: true,
+            }),
           });
 
-          let fallbackMsg = `I'm having trouble connecting to the AI service (${response.status}). Error: ${errorMsg}`;
-          if (response.status === 401) {
-            fallbackMsg =
-              "API authentication failed. Please verify your OpenRouter API key is valid and set correctly in the environment variables.";
-          } else if (response.status === 429) {
-            fallbackMsg =
-              "Rate limit exceeded. Please wait a moment and try again.";
-          }
-          onChunk(fallbackMsg);
-          onDone();
-          setIsLoading(false);
-          return;
-        }
+          if (!response.ok) throw new Error(`API Error: ${response.status}`);
 
-        const reader = response.body?.getReader();
-        const decoder = new TextDecoder();
+          const reader = response.body?.getReader();
+          if (!reader) throw new Error("No reader available");
+          
+          const decoder = new TextDecoder();
+          let fullContent = "";
 
-        if (!reader) {
-          throw new Error("No response body from API");
-        }
+          while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
 
-        let buffer = "";
-        let hasReceivedData = false;
+            const chunks = decoder.decode(value).split("\n");
+            for (const chunk of chunks) {
+              if (!chunk.startsWith("data: ")) continue;
+              const data = chunk.slice(6);
+              if (data === "[DONE]") continue;
 
-        while (true) {
-          const { done, value } = await reader.read();
-          if (done) break;
-
-          buffer += decoder.decode(value, { stream: true });
-          const lines = buffer.split("\n");
-          buffer = lines.pop() || "";
-
-          for (const line of lines) {
-            const trimmedLine = line.trim();
-            if (!trimmedLine) continue;
-
-            if (trimmedLine.startsWith("data: ")) {
-              const data = trimmedLine.slice(6).trim();
-              if (data === "[DONE]") {
-                onDone();
-                setIsLoading(false);
-                return;
-              }
               try {
                 const parsed = JSON.parse(data);
-                const content = parsed.choices?.[0]?.delta?.content;
-                if (content) {
-                  hasReceivedData = true;
-                  onChunk(content);
+                const delta = parsed.choices[0].delta;
+
+                if (delta.content) {
+                  fullContent += delta.content;
+                  onChunk(delta.content);
                 }
-              } catch (e) {
-                // Ignore parsing errors for partial chunks
-              }
+
+                if (delta.tool_calls) {
+                  isToolCallPending = true;
+                  delta.tool_calls.forEach((tc: any) => {
+                    if (!toolCalls[tc.index]) toolCalls[tc.index] = tc;
+                    if (tc.function?.name) toolCalls[tc.index].function.name = tc.function.name;
+                    if (tc.function?.arguments) toolCalls[tc.index].function.arguments = (toolCalls[tc.index].function.arguments || "") + tc.function.arguments;
+                  });
+                }
+              } catch (e) {}
             }
           }
-        }
 
-        if (!hasReceivedData) {
-          onChunk("No response received from the AI. Please try again.");
-        }
+          if (isToolCallPending) {
+            onChunk("\n\n*Analyzing web content...*\n\n");
+            currentMessages.push({ role: "assistant", content: fullContent, tool_calls: toolCalls } as any);
+            
+            for (const tc of toolCalls) {
+              const result = await executeTool(tc.function.name, JSON.parse(tc.function.arguments));
+              currentMessages.push({
+                role: "tool",
+                tool_call_id: tc.id,
+                name: tc.function.name,
+                content: result
+              } as any);
+            }
+            
+            toolCalls = [];
+            isToolCallPending = false;
+            await callAI(); // Recursive call for final response
+          }
+        };
 
+        await callAI();
         onDone();
       } catch (err) {
-        const msg = err instanceof Error ? err.message : "Unknown error";
-        onChunk(
-          `I encountered an error: ${msg}. Please check your connection and try again.`
-        );
+        onChunk(`Error: ${err instanceof Error ? err.message : "Unknown"}`);
         onDone();
       } finally {
         setIsLoading(false);

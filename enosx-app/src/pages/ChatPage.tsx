@@ -248,21 +248,29 @@ export default function ChatPage() {
       // ── SYSTEM PROMPT CONSTRUCTION ──────────────────────────────────────────────
       const identity = getAIIdentity();
       const memoryContext = getMemoryContext();
+      const leadershipInfo = identity.leadership.map(l => `- ${l.name}: ${l.role} (${l.specialty})`).join('\n');
       
       const systemPrompt: Message = {
         id: "system-identity",
         role: "system",
-        content: `You are ${identity.name} (${identity.shortName}), an autonomous AI agent created by ${identity.organization}. 
-        
-Your identity is ${identity.name}. You must always identify yourself as ${identity.name} when asked who you are.
-Founder: ${identity.founder}
-Founder's Vision: ${identity.founderVision}
+        content: `You are ${identity.name} (${identity.shortName}), an autonomous AI agent created by ${identity.organization}.
+Founder & CEO: ${identity.founder}
 Mission: ${identity.mission}
 Our Story: ${identity.story}
+Founder's Vision: ${identity.founderVision}
 Website: ${identity.website}
+
+Leadership Team:
+${leadershipInfo}
 
 Design Language: Glassmorphic, Cyberpunk, Iridescent.
 Personality: Professional, high-performance, efficient, and deeply integrated with the OS environment.
+
+Capabilities:
+1. You can help with AI Strategy, E-Commerce solutions, and Business Innovation.
+2. You can generate professional documents, reports, and code.
+3. You have "Document Generation" enabled: Whenever you provide long-form content, reports, or structured data, the user can download it directly from the chat interface using the download icon.
+4. You are powered by OpenRouter's flexible AI architecture, allowing for the best model selection for any task.
 
 Current System Status: ONLINE
 ${memoryContext}`,
@@ -299,7 +307,7 @@ ${memoryContext}`,
         { githubContext, aiMode }
       );
     },
-    [sendMessage, speak, autoSpeak, fileContext.isLoaded, getFileContextMessage, getMemoryContext, enrichMessageWithContext, activeWindow]
+    [sendMessage, speak, autoSpeak, fileContext.isLoaded, getFileContextMessage, getMemoryContext, enrichMessageWithContext, activeWindow, clearFiles]
   );
 
   const createNewChat = useCallback(() => {
@@ -507,9 +515,21 @@ ${memoryContext}`,
 
         <div className={`p-4 ${isCompactMode ? "pb-6" : "md:p-6"} z-20`}>
           <div className="max-w-4xl mx-auto relative">
+            {/* File context badges */}
+            {fileContext.isLoaded && (
+              <div className="flex flex-wrap gap-2 mb-3">
+                {fileContext.files.map((file) => (
+                  <FileContextBadge 
+                    key={file.id} 
+                    fileName={file.name} 
+                    onRemove={() => removeFile(file.id)} 
+                  />
+                ))}
+              </div>
+            )}
+
             <CommandBar
               onSend={handleSend}
-              onFileSelect={handleFileUpload}
               isLoading={isLoading}
               isVoiceSupported={isVoiceSupported}
               onStartVoice={handleStartVoice}
@@ -517,6 +537,7 @@ ${memoryContext}`,
               onStopSpeaking={handleStopSpeak}
               voiceState={voiceState}
               transcript={transcript}
+              onFileUpload={handleFileUpload}
             />
           </div>
         </div>
@@ -562,16 +583,7 @@ ${memoryContext}`,
           )}
         </AnimatePresence>
 
-          <FileDropZone 
-            onFileSelected={handleFileUpload} 
-            currentFileCount={fileContext.files.length} 
-          />
-          
-          <FileContextBadge 
-            fileContext={fileContext} 
-            onRemove={removeFile} 
-            onClear={clearFiles} 
-          />
+        <FileDropZone onFileSelected={handleFileUpload} />
       </main>
     </div>
     </GlobalLayout>

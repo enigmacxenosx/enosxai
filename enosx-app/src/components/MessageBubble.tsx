@@ -1,12 +1,12 @@
 /*
  * ENOSX AI — MessageBubble
  * Animated message bubbles with streaming text, markdown, voice playback
- * Features: fade-in spring, streaming cursor, copy, speak, glassmorphism
+ * Features: fade-in spring, streaming cursor, copy, speak, glassmorphism, document download
  */
 
-import { useState, useEffect, useRef } from "react";
+import { useState } from "react";
 import { motion } from "framer-motion";
-import { Copy, Volume2, VolumeX, Check, FileText } from "lucide-react";
+import { Copy, Volume2, VolumeX, Check, Download, FileText } from "lucide-react";
 import { Message } from "@/lib/types";
 import { useTheme } from "@/contexts/ThemeContext";
 import { useWallpaper } from "@/contexts/WallpaperContext";
@@ -98,6 +98,18 @@ export default function MessageBubble({
     setTimeout(() => setCopied(false), 2000);
   };
 
+  const handleDownload = () => {
+    const blob = new Blob([message.content], { type: "text/markdown" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `enosx-document-${new Date().getTime()}.md`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 18, scale: 0.97 }}
@@ -111,8 +123,6 @@ export default function MessageBubble({
       }}
       className={`flex gap-3 ${isUser ? "flex-row-reverse" : "flex-row"}`}
     >
-      {/* Avatar removed - no icons for user/bot */}
-
       {/* Bubble */}
       <div className={`flex flex-col gap-1 max-w-[90%] ${isUser ? "items-end" : "items-start"}`}>
         <motion.div
@@ -185,7 +195,7 @@ export default function MessageBubble({
                               <FileText size={18} />
                             </div>
                             <div className="flex flex-col min-w-0">
-                              <span className="text-xs font-medium truncate text-white/90 group-hover:text-white">
+                              <span className="text-sm font-medium truncate text-white/90 group-hover:text-white">
                                 {att.name}
                               </span>
                               <span className="text-[10px] text-white/40">
@@ -224,13 +234,13 @@ export default function MessageBubble({
             initial={{ opacity: 0, y: 4 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.2 }}
-            className={`flex items-center gap-1 ${isUser ? "flex-row-reverse" : "flex-row"}`}
+            className={`flex items-center gap-1.5 ${isUser ? "flex-row-reverse" : "flex-row"}`}
           >
             <motion.button
               whileHover={{ scale: 1.1 }}
               whileTap={{ scale: 0.9 }}
               onClick={handleCopy}
-              className="w-6 h-6 rounded-lg flex items-center justify-center transition-all duration-150"
+              className="w-7 h-7 rounded-lg flex items-center justify-center transition-all duration-150"
               style={{
                 background: "rgba(255,255,255,0.04)",
                 border: "1px solid rgba(255,255,255,0.07)",
@@ -238,32 +248,49 @@ export default function MessageBubble({
               }}
               title="Copy"
             >
-              {copied ? <Check size={10} /> : <Copy size={10} />}
+              {copied ? <Check size={12} /> : <Copy size={12} />}
             </motion.button>
 
             {!isUser && (
-              <motion.button
-                whileHover={{ scale: 1.1 }}
-                whileTap={{ scale: 0.9 }}
-                onClick={() => (isSpeaking ? onStopSpeak() : onSpeak(message.content))}
-                className="w-6 h-6 rounded-lg flex items-center justify-center transition-all duration-150"
-                style={{
-                  background: isSpeaking
-                    ? `rgba(${config.accentRgb}, 0.12)`
-                    : "rgba(255,255,255,0.04)",
-                  border: isSpeaking
-                    ? `1px solid rgba(${config.accentRgb}, 0.3)`
-                    : "1px solid rgba(255,255,255,0.07)",
-                  color: isSpeaking ? config.accent : config.textMuted,
-                }}
-                title={isSpeaking ? "Stop speaking" : "Speak"}
-              >
-                {isSpeaking ? <VolumeX size={10} /> : <Volume2 size={10} />}
-              </motion.button>
+              <>
+                <motion.button
+                  whileHover={{ scale: 1.1 }}
+                  whileTap={{ scale: 0.9 }}
+                  onClick={() => (isSpeaking ? onStopSpeak() : onSpeak(message.content))}
+                  className="w-7 h-7 rounded-lg flex items-center justify-center transition-all duration-150"
+                  style={{
+                    background: isSpeaking
+                      ? `rgba(${config.accentRgb}, 0.12)`
+                      : "rgba(255,255,255,0.04)",
+                    border: isSpeaking
+                      ? `1px solid rgba(${config.accentRgb}, 0.3)`
+                      : "1px solid rgba(255,255,255,0.07)",
+                    color: isSpeaking ? config.accent : config.textMuted,
+                  }}
+                  title={isSpeaking ? "Stop speaking" : "Speak"}
+                >
+                  {isSpeaking ? <VolumeX size={12} /> : <Volume2 size={12} />}
+                </motion.button>
+
+                <motion.button
+                  whileHover={{ scale: 1.1 }}
+                  whileTap={{ scale: 0.9 }}
+                  onClick={handleDownload}
+                  className="w-7 h-7 rounded-lg flex items-center justify-center transition-all duration-150"
+                  style={{
+                    background: "rgba(255,255,255,0.04)",
+                    border: "1px solid rgba(255,255,255,0.07)",
+                    color: config.textMuted,
+                  }}
+                  title="Download as Markdown"
+                >
+                  <Download size={12} />
+                </motion.button>
+              </>
             )}
 
             <span
-              className="text-xs"
+              className="text-xs ml-1"
               style={{ color: config.textMuted, fontSize: "10px", opacity: 0.6 }}
             >
               {new Date(message.timestamp).toLocaleTimeString([], {

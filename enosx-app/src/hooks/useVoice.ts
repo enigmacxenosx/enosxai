@@ -107,22 +107,17 @@ export function useVoice() {
       };
 
       recognition.onresult = (event: ISpeechRecognitionEvent) => {
-        let finalTranscript = "";
-        let interimTranscript = "";
-
-        for (let i = event.resultIndex; i < event.results.length; i++) {
-          const result = event.results[i];
-          if (result.isFinal) {
-            finalTranscript += result[0].transcript;
-          } else {
-            interimTranscript += result[0].transcript;
-          }
+        let fullTranscript = "";
+        for (let i = 0; i < event.results.length; i++) {
+          fullTranscript += event.results[i][0].transcript;
         }
 
-        setTranscript(finalTranscript || interimTranscript);
+        setTranscript(fullTranscript);
 
-        if (finalTranscript) {
-          onResult(finalTranscript.trim());
+        // Only trigger final result when the recognition thinks it is done
+        const lastResult = event.results[event.results.length - 1];
+        if (lastResult.isFinal) {
+          onResult(fullTranscript.trim());
           setVoiceState("processing");
         }
       };
@@ -210,11 +205,11 @@ export function useVoice() {
             },
             body: JSON.stringify({
               text: text,
-              model_id: "eleven_v3", // Most natural, emotionally rich — GPT/Gemini quality tier
+              model_id: "eleven_flash_v2_5", // Ultra-low latency (~75ms) while maintaining high quality
               voice_settings: {
-                stability: 0.4,
-                similarity_boost: 0.8,
-                style: 0.3,
+                stability: 0.5,
+                similarity_boost: 0.75,
+                style: 0.0,
                 use_speaker_boost: true,
               },
             }),

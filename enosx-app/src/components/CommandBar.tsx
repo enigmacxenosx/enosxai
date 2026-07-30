@@ -196,7 +196,7 @@ export default function CommandBar({
     <>
       {/* ── Pulse Orb full-screen overlay (voice active) ── */}
       <AnimatePresence>
-        {voiceActive && (
+        {isListening && (
           <motion.div
             key="pulse-orb-overlay"
             initial={{ opacity: 0 }}

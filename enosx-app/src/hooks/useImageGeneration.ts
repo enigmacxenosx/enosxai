@@ -8,18 +8,18 @@ import { useState, useCallback } from "react";
 
 const OPENROUTER_API_KEY = import.meta.env.VITE_OPENROUTER_API_KEY || "";
 
-// Image generation models available via OpenRouter or direct API
+// Image generation models available via OpenRouter
 const IMAGE_MODELS = {
-  // OpenAI DALL-E (via OpenRouter)
-  dallE3: "openai/dall-e-3",
-  // Stability AI (via OpenRouter — free tier available)
-  stabilityLcm: "stability-ai/sdxl:free",
-  // FLUX models (via OpenRouter)
-  flux: "black-forest-labs/flux-1.1-pro",
+  // Google Gemini Image (fast and reliable)
+  gemini: "google/gemini-2.5-flash-image",
+  // OpenAI GPT Image (high quality)
+  gpt: "openai/gpt-5-image",
+  // Auto-selection
+  auto: "openrouter/auto",
 };
 
-// Primary model — DALL-E 3 via OpenRouter
-const DEFAULT_IMAGE_MODEL = IMAGE_MODELS.dallE3;
+// Primary model — Gemini Image via OpenRouter
+const DEFAULT_IMAGE_MODEL = IMAGE_MODELS.gemini;
 
 interface ImageGenerationResult {
   url: string;
@@ -44,7 +44,7 @@ export function useImageGeneration() {
       try {
         // Try DALL-E 3 via OpenRouter (returns a JSON response with the image)
         const response = await fetch(
-          "https://openrouter.ai/api/v1/images/generations",
+          "https://openrouter.ai/api/v1/images",
           {
             method: "POST",
             headers: {
@@ -57,9 +57,6 @@ export function useImageGeneration() {
             body: JSON.stringify({
               model: DEFAULT_IMAGE_MODEL,
               prompt: prompt,
-              n: 1,
-              size: "1024x1024",
-              quality: "standard",
             }),
           }
         );
@@ -75,7 +72,7 @@ export function useImageGeneration() {
           const errorMsg =
             errData?.error?.message || errData?.error || `API error: ${response.status}`;
 
-          // If DALL-E fails, try the free Stability AI model as fallback
+          // If primary model fails, try auto-selection as fallback
           if (response.status === 400 || response.status === 403) {
             return await generateImageFallback(prompt);
           }
@@ -118,11 +115,11 @@ export function useImageGeneration() {
     []
   );
 
-  // Fallback: try Stability AI (free tier) via OpenRouter
+  // Fallback: try auto-selection via OpenRouter
   const generateImageFallback = useCallback(
     async (prompt: string): Promise<ImageGenerationResult | null> => {
       const response = await fetch(
-        "https://openrouter.ai/api/v1/images/generations",
+        "https://openrouter.ai/api/v1/images",
         {
           method: "POST",
           headers: {
@@ -133,10 +130,8 @@ export function useImageGeneration() {
             "X-Title": "ENOSX AI",
           },
           body: JSON.stringify({
-            model: IMAGE_MODELS.stabilityLcm,
+            model: IMAGE_MODELS.auto,
             prompt: prompt,
-            n: 1,
-            size: "1024x1024",
           }),
         }
       );

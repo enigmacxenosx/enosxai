@@ -194,57 +194,7 @@ export default function CommandBar({
 
   return (
     <>
-      {/* ── Compact Voice Indicator (floating above bar) ── */}
-      <AnimatePresence>
-        {voiceActive && (
-          <motion.div
-            key="compact-voice-indicator"
-            initial={{ opacity: 0, y: 10, scale: 0.95 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: 10, scale: 0.95 }}
-            className="absolute bottom-[calc(100%+12px)] left-1/2 -translate-x-1/2 z-30"
-          >
-            <motion.div
-              className="flex items-center gap-4 px-5 py-3 rounded-2xl border shadow-2xl"
-              style={{
-                background: "rgba(15, 15, 20, 0.85)",
-                backdropFilter: "blur(16px)",
-                WebkitBackdropFilter: "blur(16px)",
-                borderColor: isListening ? "rgba(0, 242, 255, 0.3)" : "rgba(168, 85, 247, 0.3)",
-                boxShadow: isListening ? "0 8px 32px rgba(0, 242, 255, 0.15)" : "0 8px 32px rgba(168, 85, 247, 0.15)",
-              }}
-            >
-              <PulseOrb
-                voiceState={voiceState}
-                isLoading={isLoading}
-                size={44}
-                onClick={handleVoiceClick}
-              />
-              <div className="flex flex-col min-w-[120px]">
-                <span className="text-[10px] font-bold uppercase tracking-widest opacity-50 mb-0.5" style={{ color: isListening ? "#00f2ff" : "#a855f7" }}>
-                  {isListening ? "Listening" : isProcessing ? "Thinking" : "Speaking"}
-                </span>
-                <div className="w-32 h-6">
-                  <VoiceVisualizer
-                    isActive={voiceActive}
-                    isListening={isListening}
-                    color={isListening ? "#00f2ff" : isProcessing ? "#a855f7" : "#c084fc"}
-                    accentRgb={isListening ? "0,242,255" : isProcessing ? "168,85,247" : "192,132,252"}
-                  />
-                </div>
-              </div>
-              <motion.button
-                whileHover={{ scale: 1.1 }}
-                whileTap={{ scale: 0.9 }}
-                onClick={handleVoiceClick}
-                className="p-2 rounded-full bg-white/5 hover:bg-white/10 transition-colors"
-              >
-                <Square size={14} className="fill-white" />
-              </motion.button>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+      {/* Voice overlay removed for seamless input experience */}
 
       {/* ── Main command bar (enlarged) ── */}
       <div className="px-4 pb-6 pt-2 flex-shrink-0">
@@ -272,14 +222,15 @@ export default function CommandBar({
                 ? { duration: 1.5, repeat: Infinity, ease: "easeInOut" }
                 : { duration: 0.3 }
             }
-            className="flex flex-col gap-2 rounded-2xl px-5 py-3 transition-all duration-300 rainbow-glow rainbow-glow-border"
+            className={`flex flex-col gap-2 rounded-2xl px-5 py-3 transition-all duration-300 ${isListening ? 'shadow-[0_0_20px_rgba(0,242,255,0.2)]' : ''} rainbow-glow rainbow-glow-border`}
             style={{
               background: `rgba(12,12,16,${wallpaperSettings.panelOpacity})`,
               backdropFilter: `blur(${wallpaperSettings.blurAmount}px)`,
               WebkitBackdropFilter: `blur(${wallpaperSettings.blurAmount}px)`,
               borderWidth: "1px",
               borderStyle: "solid",
-              transition: "border-color 0.3s ease",
+              borderColor: isListening ? "rgba(0, 242, 255, 0.5)" : "transparent",
+              transition: "all 0.3s ease",
             }}
           >
             {/* AI Mode selector — single compact tab with dropdown */}
@@ -385,13 +336,13 @@ export default function CommandBar({
                 value={value}
                 onChange={(e) => setValue(e.target.value)}
                 onKeyDown={handleKeyDown}
-                placeholder={
-                  isListening
-                    ? "Listening..."
-                    : isSpeaking
-                    ? "Speaking..."
-                    : "Ask ENOSX AI anything."
-                }
+	                placeholder={
+	                  isListening
+	                    ? "Listening... Speak now."
+	                    : isSpeaking
+	                    ? "AI is speaking..."
+	                    : "Ask ENOSX AI anything."
+	                }
                 rows={1}
                 disabled={disabled && !isListening}
                 className="flex-1 bg-transparent outline-none resize-none text-base leading-relaxed"

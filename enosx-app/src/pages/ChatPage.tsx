@@ -396,9 +396,8 @@ Capabilities:
 
   const handleStartVoice = () => {
     playSound("click");
-    startListening((text) => {
-      handleSend(text);
-    });
+    // Just start listening. The transcript will sync to the CommandBar value via useEffect.
+    startListening();
   };
 
   const handleStopSpeak = () => {

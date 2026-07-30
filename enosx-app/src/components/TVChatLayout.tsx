@@ -149,11 +149,7 @@ export default function TVChatLayout({
               <p className="mt-8 text-2xl font-semibold text-white/70">
                 {voiceState === 'listening' ? 'Listening...' : 'Press to Speak'}
               </p>
-              {transcript && (
-                <div className="mt-8 p-6 bg-black/40 rounded-2xl border border-white/10 w-full text-center italic text-2xl text-cyan-300">
-                  "{transcript}"
-                </div>
-              )}
+	              {/* Transcript box removed for seamless input experience */}
             </div>
           </div>
         </div>

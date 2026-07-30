@@ -1,94 +1,45 @@
-import { useState, useCallback, useRef, useEffect } from "react";
+import { useState, useCallback, useRef } from "react";
 import { VoiceState } from "@/lib/types";
 
-// ── ElevenLabs Configuration ──────────────────────────────────────────────────────
-// API key from environment variable (fallback to hardcoded for dev)
-const ELEVEN_LABS_API_KEY =
-  import.meta.env.VITE_ELEVENLABS_API_KEY ||
-  "sk_afff988b841020a61ac6f97e2e7cd7d5454bb8501d81a810";
+const ELEVEN_LABS_API_KEY = import.meta.env.VITE_ELEVEN_LABS_API_KEY || "";
 
-// Best voices that sound like GPT-4o / Gemini — natural, clear, professional
-// "Jessica" (female) — warm, natural, GPT-like quality
-// "Charlie" (male) — clear, professional, Gemini-like quality
-const VOICES = {
-  female: "EXAVITQu4vr4xnSDxMaL",  // Laura (updated, natural, warm)
-  male: "VR6AewLTigWG4xSOukaG",     // Charlie (clear, professional)
-} as const;
+interface ISpeechRecognitionEvent extends Event {
+  results: SpeechRecognitionResultList;
+  resultIndex: number;
+}
 
-// Primary voice — sounds like GPT-4o / Gemini quality
-const DEFAULT_VOICE_ID = VOICES.female;
-
-// Available voice presets for user selection
-export const VOICE_PRESETS = {
-  female: { id: VOICES.female, name: "Laura (Female — Natural & Warm)" },
-  male:   { id: VOICES.male,   name: "Charlie (Male — Clear & Professional)" },
-};
-
-// ── Web Speech API type declarations ────────────────────────────────────────────
 interface ISpeechRecognition extends EventTarget {
   continuous: boolean;
   interimResults: boolean;
   lang: string;
   maxAlternatives: number;
-  start(): void;
-  stop(): void;
-  onstart: ((this: ISpeechRecognition, ev: Event) => unknown) | null;
-  onresult: ((this: ISpeechRecognition, ev: ISpeechRecognitionEvent) => unknown) | null;
-  onerror: ((this: ISpeechRecognition, ev: Event) => unknown) | null;
-  onend: ((this: ISpeechRecognition, ev: Event) => unknown) | null;
-}
-
-interface ISpeechRecognitionEvent extends Event {
-  resultIndex: number;
-  results: SpeechRecognitionResultList;
-}
-
-// ── Markdown → Plain Text for TTS ────────────────────────────────────────────────
-function stripMarkdown(text: string): string {
-  return text
-    .replace(/```[\s\S]*?```/g, "code block")
-    .replace(/`([^`]+)`/g, "$1")
-    .replace(/\*\*([^*]+)\*\*/g, "$1")
-    .replace(/\*([^*]+)\*/g, "$1")
-    .replace(/#{1,6}\s/g, "")
-    .replace(/\[([^\]]+)\]\([^)]+\)/g, "$1")
-    .replace(/>\s/g, "")
-    .replace(/!\[.*?\]\(.*?\)/g, "")
-    .replace(/\n{2,}/g, ". ")
-    .replace(/\n/g, " ")
-    .trim();
+  onstart: () => void;
+  onresult: (event: ISpeechRecognitionEvent) => void;
+  onerror: (event: any) => void;
+  onend: () => void;
+  start: () => void;
+  stop: () => void;
 }
 
 export function useVoice() {
   const [voiceState, setVoiceState] = useState<VoiceState>("idle");
   const [transcript, setTranscript] = useState("");
-  const [selectedVoiceId, setSelectedVoiceId] = useState<string>(DEFAULT_VOICE_ID);
   const recognitionRef = useRef<ISpeechRecognition | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
-
-  useEffect(() => {
-    // Initialize audio element for ElevenLabs playback
-    audioRef.current = new Audio();
-    audioRef.current.onended = () => {
-      setVoiceState("idle");
-    };
-    audioRef.current.onerror = () => {
-      console.error("[useVoice] Audio playback error, falling back to Web Speech API");
-      setVoiceState("idle");
-    };
-
-    return () => {
-      stopListening();
-      stopSpeaking();
-    };
-  }, []);
 
   const isSupported =
     typeof window !== "undefined" &&
     ("SpeechRecognition" in window || "webkitSpeechRecognition" in window);
 
+  const stopListening = useCallback(() => {
+    if (recognitionRef.current) {
+      recognitionRef.current.stop();
+      // Don't set to idle here, let onend handle it
+    }
+  }, []);
+
   const startListening = useCallback(
-    (onResult: (text: string) => void, language: string = "en-US") => {
+    (onFinalResult?: (text: string) => void, language: string = "en-US") => {
       if (!isSupported) return;
 
       const SpeechRecognitionAPI =
@@ -96,7 +47,7 @@ export function useVoice() {
         (window as any).webkitSpeechRecognition;
 
       const recognition: ISpeechRecognition = new SpeechRecognitionAPI();
-      recognition.continuous = false;
+      recognition.continuous = true; 
       recognition.interimResults = true;
       recognition.lang = language;
       recognition.maxAlternatives = 1;
@@ -107,40 +58,28 @@ export function useVoice() {
       };
 
       recognition.onresult = (event: ISpeechRecognitionEvent) => {
-        let finalTranscript = "";
-        let interimTranscript = "";
-
-        for (let i = event.resultIndex; i < event.results.length; i++) {
-          const result = event.results[i];
-          if (result.isFinal) {
-            finalTranscript += result[0].transcript;
-          } else {
-            interimTranscript += result[0].transcript;
-          }
+        let currentFullTranscript = "";
+        for (let i = 0; i < event.results.length; i++) {
+          currentFullTranscript += event.results[i][0].transcript;
         }
+        
+        // Immediate update for the transcript state
+        setTranscript(currentFullTranscript);
 
-        // Use interim results for real-time visual feedback
-        const currentText = finalTranscript || interimTranscript;
-        if (currentText) {
-          setTranscript(currentText);
-        }
-
-        // Send the result as soon as a final chunk is detected for maximum speed
-        if (finalTranscript) {
-          onResult(finalTranscript.trim());
-          setVoiceState("processing");
-          // Stop immediately after first final result to reduce wait time
-          recognition.stop();
+        // If the last result is final, we can optionally trigger the callback
+        const lastResult = event.results[event.results.length - 1];
+        if (lastResult.isFinal && onFinalResult) {
+          onFinalResult(currentFullTranscript);
         }
       };
 
-      recognition.onerror = () => {
+      recognition.onerror = (event: any) => {
+        console.error("Speech recognition error", event.error);
         setVoiceState("idle");
-        setTranscript("");
       };
 
       recognition.onend = () => {
-        setVoiceState((prev) => (prev === "listening" ? "idle" : prev));
+        setVoiceState("idle");
       };
 
       recognitionRef.current = recognition;
@@ -149,65 +88,33 @@ export function useVoice() {
     [isSupported]
   );
 
-  const setLanguage = useCallback((lang: string) => {
-    if (recognitionRef.current) {
-      recognitionRef.current.lang = lang;
+  const stopSpeaking = useCallback(() => {
+    if (audioRef.current) {
+      audioRef.current.pause();
+      audioRef.current = null;
+      setVoiceState("idle");
     }
   }, []);
 
-  const stopListening = useCallback(() => {
-    if (recognitionRef.current) {
-      recognitionRef.current.stop();
-      recognitionRef.current = null;
-    }
-    setVoiceState("idle");
-  }, []);
-
-  // ── Speak with ElevenLabs (upgraded to v3 / Flash v2.5) ────────────────────────
-  const speak = useCallback(async (text: string, onEnd?: () => void) => {
-    const cleanText = stripMarkdown(text);
-
-    if (!cleanText) {
-      onEnd?.();
-      return;
-    }
-
-    // ElevenLabs has a ~5000 char limit for v3; chunk if needed
-    const MAX_CHARS = 4500;
-
-    if (cleanText.length <= MAX_CHARS) {
-      await speakChunk(cleanText, onEnd);
-    } else {
-      // Split into sentences and speak sequentially
-      const sentences = cleanText.match(/[^.!?]+[.!?]+/g) || [cleanText];
-      let chunks: string[] = [];
-      let currentChunk = "";
-
-      for (const sentence of sentences) {
-        if ((currentChunk + sentence).length > MAX_CHARS) {
-          chunks.push(currentChunk.trim());
-          currentChunk = sentence;
-        } else {
-          currentChunk += sentence;
-        }
-      }
-      if (currentChunk.trim()) chunks.push(currentChunk.trim());
-
-      for (let i = 0; i < chunks.length; i++) {
-        await speakChunk(chunks[i], i === chunks.length - 1 ? onEnd : undefined);
-      }
-    }
-  }, []);
-
-  const speakChunk = useCallback(
-    async (text: string, onEnd?: () => void) => {
-      setVoiceState("speaking");
+  const speak = useCallback(
+    async (text: string) => {
+      if (!ELEVEN_LABS_API_KEY || !text) return;
 
       try {
-        // Use Eleven v3 model — the most natural, emotionally rich model
-        // This is the same quality tier that powers GPT-4o voice and Gemini voices
+        setVoiceState("speaking");
+        const cleanText = text
+          .replace(/!\[.*\]\(.*\)/g, "")
+          .replace(/\[.*\]\(.*\)/g, "")
+          .replace(/[*_#`]/g, "")
+          .trim();
+
+        if (!cleanText) {
+          setVoiceState("idle");
+          return;
+        }
+
         const response = await fetch(
-          `https://api.elevenlabs.io/v1/text-to-speech/${selectedVoiceId}`,
+          `https://api.elevenlabs.io/v1/text-to-speech/EXAVITQu4vr4xnNLMSvx`,
           {
             method: "POST",
             headers: {
@@ -216,8 +123,8 @@ export function useVoice() {
               Accept: "audio/mpeg",
             },
             body: JSON.stringify({
-              text: text,
-              model_id: "eleven_flash_v2_5", // Ultra-low latency (~75ms) while maintaining high quality
+              text: cleanText,
+              model_id: "eleven_flash_v2_5",
               voice_settings: {
                 stability: 0.5,
                 similarity_boost: 0.75,
@@ -228,75 +135,30 @@ export function useVoice() {
           }
         );
 
-        if (!response.ok) {
-          throw new Error(`ElevenLabs API error: ${response.status}`);
-        }
+        if (!response.ok) throw new Error("TTS failed");
 
         const blob = await response.blob();
         const url = URL.createObjectURL(blob);
+        const audio = new Audio(url);
+        audioRef.current = audio;
 
-        if (audioRef.current) {
-          audioRef.current.src = url;
-          audioRef.current.onended = () => {
-            setVoiceState("idle");
-            onEnd?.();
-            URL.revokeObjectURL(url);
-          };
-          await audioRef.current.play();
-        }
+        audio.onended = () => {
+          setVoiceState("idle");
+          audioRef.current = null;
+        };
+
+        await audio.play();
       } catch (error) {
-        console.error("[useVoice] ElevenLabs Error:", error);
+        console.error("Speech error", error);
         setVoiceState("idle");
-        onEnd?.();
-
-        // ── Fallback: Web Speech API (use the most natural system voice) ──────────
-        try {
-          const synth = window.speechSynthesis;
-          const utterance = new SpeechSynthesisUtterance(text);
-
-          // Pick the best available system voice
-          const voices = synth.getVoices();
-          const preferredVoice =
-            voices.find((v) => v.name.includes("Google") && v.lang.startsWith("en")) ||
-            voices.find((v) => v.lang.startsWith("en")) ||
-            voices[0];
-          if (preferredVoice) utterance.voice = preferredVoice;
-
-          utterance.rate = 1.0;
-          utterance.pitch = 1.0;
-          utterance.volume = 1.0;
-          utterance.onend = () => {
-            setVoiceState("idle");
-            onEnd?.();
-          };
-          utterance.onerror = () => {
-            setVoiceState("idle");
-            onEnd?.();
-          };
-
-          synth.cancel();
-          synth.speak(utterance);
-        } catch {
-          onEnd?.();
-        }
       }
     },
-    [selectedVoiceId]
+    []
   );
 
-  const stopSpeaking = useCallback(() => {
-    if (audioRef.current) {
-      audioRef.current.pause();
-      audioRef.current.src = "";
-    }
-    if (typeof window !== "undefined") {
-      window.speechSynthesis.cancel();
-    }
-    setVoiceState("idle");
-  }, []);
-
-  const selectVoice = useCallback((voiceId: string) => {
-    setSelectedVoiceId(voiceId);
+  const setLanguage = useCallback((lang: string) => {
+    // This is just a placeholder if needed by other components
+    console.log("Setting voice language to:", lang);
   }, []);
 
   return {
@@ -308,7 +170,5 @@ export function useVoice() {
     speak,
     stopSpeaking,
     setLanguage,
-    selectVoice,
-    selectedVoiceId,
   };
 }

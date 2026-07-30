@@ -27,6 +27,8 @@ interface PhoneChatLayoutProps {
   isMobileSidebarOpen: boolean;
   setIsMobileSidebarOpen: (open: boolean) => void;
   messagesEndRef: React.RefObject<HTMLDivElement>;
+  isImageMode?: boolean;
+  onToggleImageMode?: () => void;
 }
 
 export default function PhoneChatLayout({
@@ -48,6 +50,8 @@ export default function PhoneChatLayout({
   isMobileSidebarOpen,
   setIsMobileSidebarOpen,
   messagesEndRef,
+  isImageMode = false,
+  onToggleImageMode,
 }: PhoneChatLayoutProps) {
   const { config } = useTheme();
 
@@ -104,6 +108,8 @@ export default function PhoneChatLayout({
           onStartVoice={startListening}
           onStopVoice={stopListening}
           onStopSpeaking={stopSpeaking}
+          isImageMode={isImageMode}
+          onToggleImageMode={onToggleImageMode}
         />
       </div>
 

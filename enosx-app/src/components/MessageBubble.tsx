@@ -1,15 +1,18 @@
 /*
  * ENOSX AI — MessageBubble
- * Animated message bubbles with streaming text, markdown, voice playback
- * Features: fade-in spring, streaming cursor, copy, speak, glassmorphism, document download
+ * Animated message bubbles with streaming text, markdown, voice playback,
+ * and inline image display for both user attachments and AI-generated images.
+ * Features: fade-in spring, streaming cursor, copy, speak, glassmorphism,
+ * document download, image lightbox.
  */
 
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { motion } from "framer-motion";
 import { Copy, Volume2, VolumeX, Check, Download, FileText } from "lucide-react";
 import { Message } from "@/lib/types";
 import { useTheme } from "@/contexts/ThemeContext";
 import { useWallpaper } from "@/contexts/WallpaperContext";
+import ImageDisplay from "./ImageDisplay";
 
 interface MessageBubbleProps {
   message: Message;
@@ -17,6 +20,102 @@ interface MessageBubbleProps {
   onSpeak: (text: string) => void;
   onStopSpeak: () => void;
   isSpeaking: boolean;
+}
+
+// ── Image URL detection regex ───────────────────────────────────────────────────
+// Matches markdown image syntax: ![alt](url)
+// Also matches raw URLs that look like image URLs
+const IMAGE_URL_REGEX = /\!\[([^\]]*)\]\((https?:\/\/[^\s)]+\.(?:png|jpg|jpeg|gif|webp|svg)(?:\?[^\)]*)?)\)/gi;
+const RAW_IMAGE_URL_REGEX = /https?:\/\/[^\s)]+\.(?:png|jpg|jpeg|gif|webp|svg)(?:\?[^\)]*)?/gi;
+
+interface ParsedImage {
+  url: string;
+  alt: string;
+  position: number;
+  length: number;
+}
+
+function extractImagesFromText(text: string): ParsedImage[] {
+  const images: ParsedImage[] = [];
+  let match: RegExpExecArray | null;
+
+  // Reset regex lastIndex
+  IMAGE_URL_REGEX.lastIndex = 0;
+
+  while ((match = IMAGE_URL_REGEX.exec(text)) !== null) {
+    images.push({
+      url: match[2],
+      alt: match[1] || "Generated image",
+      position: match.index,
+      length: match[0].length,
+    });
+  }
+
+  return images;
+}
+
+// Split text by image placeholders, rendering images between text segments
+function renderContentWithImages(text: string, accentColor: string) {
+  const images = extractImagesFromText(text);
+
+  if (images.length === 0) {
+    // No images — render as normal markdown
+    return (
+      <div
+        className="prose-crimson text-sm"
+        style={{ color: accentColor }}
+        dangerouslySetInnerHTML={{ __html: renderMarkdown(text) }}
+      />
+    );
+  }
+
+  // Split text into segments around images
+  const segments: Array<{ type: "text"; content: string } | { type: "image"; url: string; alt: string }> = [];
+  let lastEnd = 0;
+
+  for (const img of images) {
+    if (img.position > lastEnd) {
+      const textBefore = text.slice(lastEnd, img.position);
+      if (textBefore.trim()) {
+        segments.push({ type: "text", content: textBefore });
+      }
+    }
+    segments.push({ type: "image", url: img.url, alt: img.alt });
+    lastEnd = img.position + img.length;
+  }
+
+  // Remaining text after last image
+  if (lastEnd < text.length) {
+    const remaining = text.slice(lastEnd);
+    if (remaining.trim()) {
+      segments.push({ type: "text", content: remaining });
+    }
+  }
+
+  // Render segments
+  return (
+    <div className="flex flex-col gap-2">
+      {segments.map((segment, i) => {
+        if (segment.type === "text") {
+          return (
+            <div
+              key={i}
+              className="prose-crimson text-sm"
+              dangerouslySetInnerHTML={{ __html: renderMarkdown(segment.content) }}
+            />
+          );
+        } else {
+          return (
+            <ImageDisplay
+              key={i}
+              src={segment.url}
+              alt={segment.alt}
+            />
+          );
+        }
+      })}
+    </div>
+  );
 }
 
 // Simple markdown renderer — handles bold, italic, code, headers, lists, links
@@ -78,6 +177,28 @@ function ThinkingDots({ color }: { color: string }) {
   );
 }
 
+// Image generation loading state for assistant
+function ImageGeneratingIndicator({ accent }: { accent: string }) {
+  return (
+    <div className="flex items-center gap-2 py-2 px-3 rounded-xl" style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.06)" }}>
+      <div className="flex items-center gap-1.5">
+        {[0, 1, 2].map((i) => (
+          <motion.div
+            key={i}
+            animate={{ scale: [0.7, 1.1, 0.7], opacity: [0.3, 0.8, 0.3] }}
+            transition={{ duration: 1.2, repeat: Infinity, delay: i * 0.2 }}
+            className="w-1.5 h-1.5 rounded-full"
+            style={{ background: accent }}
+          />
+        ))}
+      </div>
+      <span className="text-xs" style={{ color: accent, opacity: 0.6 }}>
+        Generating image...
+      </span>
+    </div>
+  );
+}
+
 export default function MessageBubble({
   message,
   index,
@@ -91,6 +212,9 @@ export default function MessageBubble({
   const isUser = message.role === "user";
   const isStreaming = message.isStreaming;
   const isEmpty = !message.content?.trim() && isStreaming;
+
+  // Check if assistant message is generating an image (text starts with image generation indicator)
+  const isGeneratingImage = !isUser && message.content.includes("🖼️") && isStreaming;
 
   const handleCopy = async () => {
     await navigator.clipboard.writeText(message.content);
@@ -143,6 +267,7 @@ export default function MessageBubble({
             <div className="relative">
               {isUser ? (
                 <div className="flex flex-col gap-3">
+                  {/* User image attachments */}
                   {message.attachments && message.attachments.length > 0 && (
                     <div className="flex flex-wrap gap-2 mb-1">
                       {message.attachments.map((att) => {
@@ -163,6 +288,7 @@ export default function MessageBubble({
                     </div>
                   )}
 
+                  {/* User non-image attachments */}
                   {message.attachments && message.attachments.some(att => !["jpg", "jpeg", "png", "gif", "webp"].includes(att.type.toLowerCase())) && (
                     <div className="flex flex-col gap-2 mb-1">
                       {message.attachments.map((att) => {
@@ -205,14 +331,16 @@ export default function MessageBubble({
                   </p>
                 </div>
               ) : (
-                <div
-                  className="prose-crimson text-sm"
-                  style={{ color: config.text }}
-                  dangerouslySetInnerHTML={{ __html: renderMarkdown(message.content) }}
-                />
-              )}
-              {isStreaming && message.content && (
-                <StreamingCursor color={config.accent} />
+                <div className="flex flex-col gap-2">
+                  {/* Assistant content with inline image support */}
+                  {renderContentWithImages(message.content, config.accent)}
+                  {isGeneratingImage && (
+                    <ImageGeneratingIndicator accent={config.accent} />
+                  )}
+                  {isStreaming && message.content && (
+                    <StreamingCursor color={config.accent} />
+                  )}
+                </div>
               )}
             </div>
           )}

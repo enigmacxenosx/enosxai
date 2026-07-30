@@ -36,6 +36,7 @@ import { useTheme } from "@/contexts/ThemeContext";
 import { useCompactMode } from "@/hooks/useCompactMode";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useDeviceType } from "@/hooks/useDeviceType";
+import { useImageGeneration } from "@/hooks/useImageGeneration";
 import PhoneChatLayout from "@/components/PhoneChatLayout";
 import TVChatLayout from "@/components/TVChatLayout";
 import { getAIIdentity } from "@/const";
@@ -195,9 +196,24 @@ export default function ChatPage() {
   const [screenGuiderActive, setScreenGuiderActive] = useState(false);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(true);
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
+  const [isImageMode, setIsImageMode] = useState(false);
   const { isCompactMode } = useCompactMode();
   const isMobile = useIsMobile();
   const deviceType = useDeviceType();
+
+  // ── Image generation ──────────────────────────────────────────────────────
+  const { generateImage, isGenerating: isImgGenerating } = useImageGeneration();
+
+  const handleToggleImageMode = useCallback(() => {
+    setIsImageMode((prev) => {
+      if (prev) {
+        toast.info("Image mode disabled");
+      } else {
+        toast.success("Image mode enabled — your next message will generate an image");
+      }
+      return !prev;
+    });
+  }, []);
 
   const handleSend = useCallback(
     async (text: string, aiMode?: AIMode) => {
@@ -228,6 +244,57 @@ export default function ChatPage() {
 
       // Clear files after sending
       clearFiles();
+
+      // ── Image generation mode ────────────────────────────────────────────────
+      if (isImageMode) {
+        setIsImageMode(false);
+        // Show generating state
+        setConversations((prev) =>
+          prev.map((c) =>
+            c.id === targetConvId
+              ? {
+                  ...c,
+                  messages: [...c.messages, userMessage, assistantMessage],
+                  updatedAt: new Date(),
+                }
+              : c
+          )
+        );
+
+        const imgResult = await generateImage(text);
+        if (imgResult && imgResult.url) {
+          const imageMarkdown = imgResult.revisedPrompt
+            ? `Here's the image I generated for you:\n\n![Generated Image](${imgResult.url})\n\n*Prompt: ${imgResult.revisedPrompt}*`
+            : `Here's the image I generated for you:\n\n![Generated Image](${imgResult.url})`;
+
+          setConversations((prev) =>
+            prev.map((c) =>
+              c.id === targetConvId
+                ? {
+                    ...c,
+                    messages: c.messages.map((m) =>
+                      m.id === assistantId ? { ...m, content: imageMarkdown } : m
+                    ),
+                  }
+                : c
+            )
+          );
+        } else {
+          setConversations((prev) =>
+            prev.map((c) =>
+              c.id === targetConvId
+                ? {
+                    ...c,
+                    messages: c.messages.map((m) =>
+                      m.id === assistantId ? { ...m, content: "Sorry, I couldn't generate an image. Please try again." } : m
+                    ),
+                  }
+                : c
+            )
+          );
+        }
+        return; // Don't continue with normal chat
+      }
 
       const assistantId = nanoid();
       const assistantMessage: Message = {
@@ -588,6 +655,8 @@ ${memoryContext}`,
               voiceState={voiceState}
               transcript={transcript}
               onFileSelect={handleFileUpload}
+              isImageMode={isImageMode}
+              onToggleImageMode={handleToggleImageMode}
             />
           </div>
         </div>

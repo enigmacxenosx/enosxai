@@ -10,7 +10,7 @@
 
 import { useState, useRef, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { ArrowUp, Mic, MicOff, Square, Loader2, ChevronDown, Plus } from "lucide-react";
+import { ArrowUp, Mic, MicOff, Square, Loader2, ChevronDown, Plus, Image } from "lucide-react";
 import { VoiceState } from "@/lib/types";
 import { useTheme } from "@/contexts/ThemeContext";
 import { useWallpaper } from "@/contexts/WallpaperContext";
@@ -90,6 +90,8 @@ interface CommandBarProps {
   onStopVoice: () => void;
   onStopSpeaking: () => void;
   disabled?: boolean;
+  isImageMode?: boolean;
+  onToggleImageMode?: () => void;
 }
 
 export default function CommandBar({
@@ -103,6 +105,8 @@ export default function CommandBar({
   onStopVoice,
   onStopSpeaking,
   disabled = false,
+  isImageMode = false,
+  onToggleImageMode,
 }: CommandBarProps) {
   const { config } = useTheme();
   const { settings: wallpaperSettings } = useWallpaper();
@@ -442,6 +446,33 @@ export default function CommandBar({
                     ) : (
                       <Mic size={16} />
                     )}
+                  </motion.button>
+                )}
+
+                {/* Image generation toggle */}
+                {onToggleImageMode && (
+                  <motion.button
+                    whileHover={{ scale: 1.08 }}
+                    whileTap={{ scale: 0.92 }}
+                    onClick={onToggleImageMode}
+                    className="w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-200"
+                    style={
+                      isImageMode
+                        ? {
+                            background: `rgba(${config.accentRgb}, 0.15)`,
+                            border: `1px solid rgba(${config.accentRgb}, 0.4)`,
+                            color: config.accent,
+                            boxShadow: `0 0 8px rgba(${config.accentRgb}, 0.2)`,
+                          }
+                        : {
+                            background: "rgba(255,255,255,0.05)",
+                            border: "1px solid rgba(255,255,255,0.08)",
+                            color: config.textMuted,
+                          }
+                    }
+                    title={isImageMode ? "Image mode ON — next message generates an image" : "Toggle image generation mode"}
+                  >
+                    <Image size={16} />
                   </motion.button>
                 )}
 

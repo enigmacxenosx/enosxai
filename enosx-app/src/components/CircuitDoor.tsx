@@ -9,9 +9,10 @@ import { useEffect, useState, useRef } from "react";
 interface CircuitDoorProps {
   isActive: boolean;
   onAnimationComplete?: () => void;
+  onComplete?: () => void;
 }
 
-export default function CircuitDoor({ isActive, onAnimationComplete }: CircuitDoorProps) {
+export default function CircuitDoor({ isActive, onAnimationComplete, onComplete }: CircuitDoorProps) {
   const [showText, setShowText] = useState(false);
   const [phase, setPhase] = useState<"idle" | "closing" | "display" | "opening">("idle");
   const hasCalledComplete = useRef(false);
@@ -56,15 +57,19 @@ export default function CircuitDoor({ isActive, onAnimationComplete }: CircuitDo
     if (phase === "opening") {
       // Doors are opening, trigger callback after animation
       const completeTimer = setTimeout(() => {
-        if (!hasCalledComplete.current && onAnimationComplete) {
+        if (!hasCalledComplete.current) {
           hasCalledComplete.current = true;
-          onAnimationComplete();
+          if (onComplete) {
+            onComplete();
+          } else if (onAnimationComplete) {
+            onAnimationComplete();
+          }
         }
       }, 1000);
       return () => clearTimeout(completeTimer);
     }
     return undefined;
-  }, [phase, onAnimationComplete]);
+  }, [phase, onAnimationComplete, onComplete]);
 
   // Determine if doors should be visible
   const showDoors = phase === "closing" || phase === "display";

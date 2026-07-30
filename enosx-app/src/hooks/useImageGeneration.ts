@@ -1,9 +1,3 @@
-/*
- * ENOSX AI — useImageGeneration
- * Generates images using OpenAI DALL-E via OpenRouter or direct OpenAI API.
- * Falls back to text-to-image models available on OpenRouter.
- */
-
 import { useState, useCallback } from "react";
 
 const OPENROUTER_API_KEY = import.meta.env.VITE_OPENROUTER_API_KEY || "";
@@ -34,7 +28,7 @@ export function useImageGeneration() {
   const generateImage = useCallback(
     async (prompt: string): Promise<ImageGenerationResult | null> => {
       if (!OPENROUTER_API_KEY) {
-        setError("API key not configured. Please set VITE_OPENROUTER_API_KEY.");
+        setError("OpenRouter API Key is missing. Please check your environment variables.");
         return null;
       }
 
@@ -42,72 +36,58 @@ export function useImageGeneration() {
       setError(null);
 
       try {
-        // Try DALL-E 3 via OpenRouter (returns a JSON response with the image)
-        const response = await fetch(
+        // Try both standard and multimodal endpoints
+        const endpoints = [
           "https://openrouter.ai/api/v1/images",
-          {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              Authorization: `Bearer ${OPENROUTER_API_KEY}`,
-              "HTTP-Referer":
-                import.meta.env.VITE_SITE_URL || "https://enosx.vercel.app",
-              "X-Title": "ENOSX AI",
-            },
-            body: JSON.stringify({
-              model: DEFAULT_IMAGE_MODEL,
-              prompt: prompt,
-            }),
-          }
-        );
+          "https://openrouter.ai/api/v1/images/generations"
+        ];
 
-        if (!response.ok) {
-          let errData: any = {};
+        for (const endpoint of endpoints) {
           try {
-            errData = await response.json();
-          } catch {
-            /* ignore */
+            console.log(`Generating image via ${endpoint} with model ${DEFAULT_IMAGE_MODEL}...`);
+            const response = await fetch(endpoint, {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${OPENROUTER_API_KEY}`,
+                "HTTP-Referer": import.meta.env.VITE_SITE_URL || "https://enosx.vercel.app",
+                "X-Title": "ENOSX AI",
+              },
+              body: JSON.stringify({
+                model: DEFAULT_IMAGE_MODEL,
+                prompt: prompt,
+              }),
+            });
+
+            if (response.ok) {
+              const data = await response.json();
+              const imageData = data?.data?.[0];
+
+              if (imageData) {
+                const result: ImageGenerationResult = {
+                  url: imageData.url || (imageData.b64_json ? `data:image/png;base64,${imageData.b64_json}` : ""),
+                  revisedPrompt: imageData.revised_prompt,
+                };
+                return result;
+              }
+            } else {
+              const errData = await response.json().catch(() => ({}));
+              console.warn(`Endpoint ${endpoint} failed:`, errData);
+            }
+          } catch (e) {
+            console.error(`Error with endpoint ${endpoint}:`, e);
           }
-
-          const errorMsg =
-            errData?.error?.message || errData?.error || `API error: ${response.status}`;
-
-          // If primary model fails, try auto-selection as fallback
-          if (response.status === 400 || response.status === 403) {
-            return await generateImageFallback(prompt);
-          }
-
-          throw new Error(errorMsg);
         }
 
-        const data = await response.json();
-        const imageData = data?.data?.[0];
+        // Final fallback to openrouter/auto
+        console.log("Primary endpoints failed, trying fallback to openrouter/auto...");
+        return await generateImageFallback(prompt);
 
-        if (!imageData) {
-          throw new Error("No image data in response");
-        }
-
-        const result: ImageGenerationResult = {
-          url: imageData.url || "",
-          revisedPrompt: imageData.revised_prompt,
-        };
-
-        // If we got base64 instead of URL
-        if (imageData.b64_json) {
-          result.base64 = `data:image/png;base64,${imageData.b64_json}`;
-          result.url = result.base64;
-        }
-
-        return result;
       } catch (err) {
-        // Try fallback if primary model fails
-        try {
-          return await generateImageFallback(prompt);
-        } catch (fallbackErr) {
-          const msg = err instanceof Error ? err.message : "Unknown error";
-          setError(`Image generation failed: ${msg}`);
-          return null;
-        }
+        const msg = err instanceof Error ? err.message : "Unknown error";
+        console.error("Image generation fatal error:", err);
+        setError(`Image generation failed: ${msg}`);
+        return null;
       } finally {
         setIsGenerating(false);
       }
@@ -118,43 +98,49 @@ export function useImageGeneration() {
   // Fallback: try auto-selection via OpenRouter
   const generateImageFallback = useCallback(
     async (prompt: string): Promise<ImageGenerationResult | null> => {
-      const response = await fetch(
+      const endpoints = [
         "https://openrouter.ai/api/v1/images",
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${OPENROUTER_API_KEY}`,
-            "HTTP-Referer":
-              import.meta.env.VITE_SITE_URL || "https://enosx.vercel.app",
-            "X-Title": "ENOSX AI",
-          },
-          body: JSON.stringify({
-            model: IMAGE_MODELS.auto,
-            prompt: prompt,
-          }),
+        "https://openrouter.ai/api/v1/images/generations"
+      ];
+
+      for (const endpoint of endpoints) {
+        try {
+          const response = await fetch(endpoint, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${OPENROUTER_API_KEY}`,
+              "HTTP-Referer": import.meta.env.VITE_SITE_URL || "https://enosx.vercel.app",
+              "X-Title": "ENOSX AI",
+            },
+            body: JSON.stringify({
+              model: IMAGE_MODELS.auto,
+              prompt: prompt,
+            }),
+          });
+
+          if (response.ok) {
+            const data = await response.json();
+            const imageData = data?.data?.[0];
+            if (imageData) {
+              return {
+                url: imageData.url || (imageData.b64_json ? `data:image/png;base64,${imageData.b64_json}` : ""),
+                revisedPrompt: imageData.revised_prompt,
+              };
+            }
+          }
+        } catch (e) {
+          // silent fail for individual fallback endpoints
         }
-      );
-
-      if (!response.ok) {
-        throw new Error(`Fallback image generation failed: ${response.status}`);
       }
-
-      const data = await response.json();
-      const imageData = data?.data?.[0];
-
-      if (!imageData) {
-        throw new Error("No image data in fallback response");
-      }
-
-      return {
-        url: imageData.url || imageData.b64_json
-          ? imageData.url || `data:image/png;base64,${imageData.b64_json}`
-          : "",
-      };
+      return null;
     },
     []
   );
 
-  return { generateImage, isGenerating, error };
+  return {
+    generateImage,
+    isGenerating,
+    error,
+  };
 }

@@ -60,8 +60,43 @@ const generateTitle = (firstMessage: string): string => {
 
 export default function ChatPage() {
   const { config } = useTheme();
-  const [conversations, setConversations] = useState<Conversation[]>([]);
-  const [activeId, setActiveId] = useState<string | null>(null);
+  const [conversations, setConversations] = useState<Conversation[]>(() => {
+    const saved = localStorage.getItem("enosx_chats");
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        return parsed.map((c: any) => ({
+          ...c,
+          createdAt: new Date(c.createdAt),
+          updatedAt: new Date(c.updatedAt),
+          messages: c.messages.map((m: any) => ({
+            ...m,
+            timestamp: new Date(m.timestamp)
+          }))
+        }));
+      } catch (e) {
+        console.error("Failed to load chats", e);
+      }
+    }
+    return [];
+  });
+  const [activeId, setActiveId] = useState<string | null>(() => {
+    return localStorage.getItem("enosx_active_chat");
+  });
+
+  // Persist conversations to localStorage
+  useEffect(() => {
+    localStorage.setItem("enosx_chats", JSON.stringify(conversations));
+  }, [conversations]);
+
+  // Persist activeId to localStorage
+  useEffect(() => {
+    if (activeId) {
+      localStorage.setItem("enosx_active_chat", activeId);
+    } else {
+      localStorage.removeItem("enosx_active_chat");
+    }
+  }, [activeId]);
 
   const [speakingMessageId, setSpeakingMessageId] = useState<string | null>(null);
   const [autoSpeak, setAutoSpeak] = useState(false);

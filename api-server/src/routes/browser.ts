@@ -1,41 +1,85 @@
 import { Router, Request, Response } from "express";
+import puppeteer from "puppeteer-core";
+import axios from "axios";
+import * as cheerio from "cheerio";
 
 const browserRouter = Router();
 
+// Path to Chromium in the sandbox
+const CHROMIUM_PATH = "/usr/bin/chromium";
+
 /**
- * Browser Operations Router
- * Handles web content extraction, link extraction, and web element interaction
- * Note: These endpoints require a headless browser implementation (Puppeteer/Playwright)
- * For now, they provide the API structure and error handling
+ * Utility to analyze HTML for malicious indicators
  */
+function analyzeMaliciousIndicators(html: string, url: string) {
+  const indicators: string[] = [];
+  const $ = cheerio.load(html);
+  const scriptContent = $("script").text();
+
+  // 1. Check for camera/audio access requests
+  if (scriptContent.includes("getUserMedia") || scriptContent.includes("ImageCapture")) {
+    indicators.push("Requests camera/microphone access automatically.");
+  }
+
+  // 2. Check for IP/Location tracking
+  if (scriptContent.includes("ipinfo.io") || scriptContent.includes("ipapi.co") || scriptContent.includes("freegeoip.app")) {
+    indicators.push("Attempts to track your precise IP address and location.");
+  }
+
+  // 3. Check for suspicious redirects
+  if (scriptContent.includes("window.location.href") && (scriptContent.includes("profitablecpmratenetwork") || scriptContent.includes("tk"))) {
+    indicators.push("Contains suspicious automatic redirects.");
+  }
+
+  // 4. Check for common phishing keywords
+  const pageText = $("body").text().toLowerCase();
+  if (pageText.includes("verify you're not a bot") && (scriptContent.includes("camera") || scriptContent.includes("video"))) {
+    indicators.push("Uses deceptive 'Bot Verification' to gain hardware access.");
+  }
+
+  return {
+    isSuspicious: indicators.length > 0,
+    indicators,
+    riskLevel: indicators.length > 2 ? "High" : indicators.length > 0 ? "Medium" : "Low"
+  };
+}
 
 /**
  * POST /api/browser/read
- * Read webpage content from a given URL
- * Optionally extract specific elements using CSS selector
+ * Read webpage content and analyze security
  */
 browserRouter.post("/read", async (req: Request, res: Response) => {
+  let browser;
   try {
     const { url, selector } = req.body;
 
     if (!url || typeof url !== "string") {
-      res.status(400).json({ error: "URL is required and must be a string" });
+      res.status(400).json({ error: "URL is required" });
       return;
     }
 
-    // TODO: Implement headless browser logic using Puppeteer/Playwright
-    // For now, return a placeholder response
+    browser = await puppeteer.launch({
+      executablePath: CHROMIUM_PATH,
+      args: ["--no-sandbox", "--disable-setuid-sandbox"],
+    });
+
+    const page = await browser.newPage();
+    await page.goto(url, { waitUntil: "networkidle2", timeout: 30000 });
+
+    const title = await page.title();
+    const html = await page.content();
+    const text = await page.evaluate(() => document.body.innerText);
+    
+    // Security Analysis
+    const securityReport = analyzeMaliciousIndicators(html, url);
+
     const content = {
-      title: "Page Title",
+      title,
       url,
-      text: "Extracted page content would appear here",
-      html: "<html>...</html>",
-      links: [
-        { href: "https://example.com", text: "Example Link" },
-      ],
+      text: text.slice(0, 5000), // Limit text size
+      securityReport,
       metadata: {
-        description: "Page description",
-        author: "Page author",
+        timestamp: new Date().toISOString(),
       },
     };
 
@@ -44,151 +88,44 @@ browserRouter.post("/read", async (req: Request, res: Response) => {
     const msg = err instanceof Error ? err.message : "Unknown error";
     console.error("Browser read error:", msg);
     res.status(500).json({ error: msg, status: "BROWSER_ERROR" });
-  }
-});
-
-/**
- * POST /api/browser/extract-links
- * Extract all links from a webpage
- */
-browserRouter.post("/extract-links", async (req: Request, res: Response) => {
-  try {
-    const { url } = req.body;
-
-    if (!url || typeof url !== "string") {
-      res.status(400).json({ error: "URL is required and must be a string" });
-      return;
-    }
-
-    // TODO: Implement headless browser logic using Puppeteer/Playwright
-    // For now, return a placeholder response
-    const links = [
-      { href: "https://example.com/page1", text: "Page 1" },
-      { href: "https://example.com/page2", text: "Page 2" },
-    ];
-
-    res.json({ url, links });
-  } catch (err) {
-    const msg = err instanceof Error ? err.message : "Unknown error";
-    console.error("Extract links error:", msg);
-    res.status(500).json({ error: msg, status: "BROWSER_ERROR" });
-  }
-});
-
-/**
- * POST /api/browser/click
- * Click an element on a webpage
- */
-browserRouter.post("/click", async (req: Request, res: Response) => {
-  try {
-    const { url, selector } = req.body;
-
-    if (!url || !selector) {
-      res.status(400).json({ error: "URL and selector are required" });
-      return;
-    }
-
-    // TODO: Implement headless browser logic using Puppeteer/Playwright
-    // For now, return a success response
-    res.json({ success: true, message: `Clicked element: ${selector}` });
-  } catch (err) {
-    const msg = err instanceof Error ? err.message : "Unknown error";
-    console.error("Click element error:", msg);
-    res.status(500).json({ error: msg, status: "BROWSER_ERROR" });
-  }
-});
-
-/**
- * POST /api/browser/fill-form
- * Fill form fields on a webpage
- */
-browserRouter.post("/fill-form", async (req: Request, res: Response) => {
-  try {
-    const { url, fields } = req.body;
-
-    if (!url || !Array.isArray(fields)) {
-      res.status(400).json({ error: "URL and fields array are required" });
-      return;
-    }
-
-    // TODO: Implement headless browser logic using Puppeteer/Playwright
-    // For now, return a success response
-    res.json({ success: true, message: `Filled ${fields.length} form fields` });
-  } catch (err) {
-    const msg = err instanceof Error ? err.message : "Unknown error";
-    console.error("Fill form error:", msg);
-    res.status(500).json({ error: msg, status: "BROWSER_ERROR" });
+  } finally {
+    if (browser) await browser.close();
   }
 });
 
 /**
  * POST /api/browser/screenshot
- * Take a screenshot of a webpage
  */
 browserRouter.post("/screenshot", async (req: Request, res: Response) => {
+  let browser;
   try {
     const { url } = req.body;
-
-    if (!url || typeof url !== "string") {
-      res.status(400).json({ error: "URL is required and must be a string" });
+    if (!url) {
+      res.status(400).json({ error: "URL is required" });
       return;
     }
 
-    // TODO: Implement headless browser logic using Puppeteer/Playwright
-    // For now, return a placeholder response
+    browser = await puppeteer.launch({
+      executablePath: CHROMIUM_PATH,
+      args: ["--no-sandbox", "--disable-setuid-sandbox"],
+    });
+
+    const page = await browser.newPage();
+    await page.setViewport({ width: 1280, height: 800 });
+    await page.goto(url, { waitUntil: "networkidle2", timeout: 30000 });
+
+    const screenshot = await page.screenshot({ encoding: "base64" });
+
     res.json({
-      screenshotUrl: "https://example.com/screenshot.png",
+      screenshot: `data:image/png;base64,${screenshot}`,
+      url,
       timestamp: new Date().toISOString(),
     });
   } catch (err) {
     const msg = err instanceof Error ? err.message : "Unknown error";
-    console.error("Screenshot error:", msg);
-    res.status(500).json({ error: msg, status: "BROWSER_ERROR" });
-  }
-});
-
-/**
- * POST /api/browser/action
- * Execute a custom browser action
- */
-browserRouter.post("/action", async (req: Request, res: Response) => {
-  try {
-    const { type, url, selector, fields } = req.body;
-
-    if (!type || !url) {
-      res.status(400).json({ error: "Action type and URL are required" });
-      return;
-    }
-
-    // Route to appropriate handler based on action type
-    switch (type) {
-      case "read_webpage":
-        // Handle read_webpage action
-        res.json({ success: true, action: type });
-        break;
-      case "extract_links":
-        // Handle extract_links action
-        res.json({ success: true, action: type });
-        break;
-      case "click_element":
-        // Handle click_element action
-        res.json({ success: true, action: type });
-        break;
-      case "fill_form":
-        // Handle fill_form action
-        res.json({ success: true, action: type });
-        break;
-      case "screenshot":
-        // Handle screenshot action
-        res.json({ success: true, action: type });
-        break;
-      default:
-        res.status(400).json({ error: `Unknown action type: ${type}` });
-    }
-  } catch (err) {
-    const msg = err instanceof Error ? err.message : "Unknown error";
-    console.error("Browser action error:", msg);
-    res.status(500).json({ error: msg, status: "BROWSER_ERROR" });
+    res.status(500).json({ error: msg });
+  } finally {
+    if (browser) await browser.close();
   }
 });
 

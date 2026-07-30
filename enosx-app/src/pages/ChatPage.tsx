@@ -95,6 +95,63 @@ export default function ChatPage() {
   const { fileContext, getFileContextMessage, loadFile, removeFile, clearFiles } = useFileContext();
   const { getMemoryContext } = useMemoryBank();
 
+  const handleFileUpload = useCallback(
+    async (file: File) => {
+      if (fileContext.files.length >= 10) {
+        toast.error("Maximum 10 files allowed");
+        return;
+      }
+
+      const SUPPORTED_TEXT_TYPES = [
+        "text/plain", "text/markdown", "application/json", "text/javascript", 
+        "text/typescript", "text/x-python", "text/x-java", "text/x-c", 
+        "text/x-cpp", "application/xml", "text/html", "text/css"
+      ];
+      const SUPPORTED_IMAGE_TYPES = ["image/jpeg", "image/png", "image/gif", "image/webp"];
+      const SUPPORTED_DOC_TYPES = [
+        "application/pdf", "application/msword", 
+        "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+        "application/vnd.ms-excel", 
+        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        "application/vnd.ms-powerpoint", 
+        "application/vnd.openxmlformats-officedocument.presentationml.presentation"
+      ];
+
+      const isText = SUPPORTED_TEXT_TYPES.includes(file.type) || file.name.match(/\.(txt|md|json|js|ts|py|java|c|cpp|xml|html|css)$/i);
+      const isImage = SUPPORTED_IMAGE_TYPES.includes(file.type) || file.name.match(/\.(jpg|jpeg|png|gif|webp)$/i);
+      const isDoc = SUPPORTED_DOC_TYPES.includes(file.type) || file.name.match(/\.(pdf|doc|docx|xls|xlsx|ppt|pptx)$/i);
+
+      if (!isText && !isImage && !isDoc) {
+        toast.error(`Unsupported file type: ${file.name.split(".").pop()}`);
+        return;
+      }
+
+      const maxSize = isDoc ? 10 * 1024 * 1024 : 5 * 1024 * 1024;
+      if (file.size > maxSize) {
+        toast.error(`File too large (max ${isDoc ? "10MB" : "5MB"})`);
+        return;
+      }
+
+      try {
+        let content = "";
+        if (isText) {
+          content = await file.text();
+        } else {
+          content = await new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = () => resolve(reader.result as string);
+            reader.onerror = reject;
+            reader.readAsDataURL(file);
+          });
+        }
+        loadFile(file, content);
+      } catch (error) {
+        toast.error("Failed to read file");
+      }
+    },
+    [fileContext.files.length, loadFile]
+  );
+
   const [isGodModeActive, setIsGodModeActive] = useState(false);
   const [showGodTerminal, setShowGodTerminal] = useState(false);
   const [screenGuiderActive, setScreenGuiderActive] = useState(false);
@@ -417,6 +474,7 @@ ${memoryContext}`,
           <div className="max-w-4xl mx-auto relative">
             <CommandBar
               onSend={handleSend}
+              onFileSelect={handleFileUpload}
               isLoading={isLoading}
               isVoiceSupported={isVoiceSupported}
               onStartVoice={handleStartVoice}
@@ -470,7 +528,7 @@ ${memoryContext}`,
         </AnimatePresence>
 
           <FileDropZone 
-            onFileSelected={loadFile} 
+            onFileSelected={handleFileUpload} 
             currentFileCount={fileContext.files.length} 
           />
           

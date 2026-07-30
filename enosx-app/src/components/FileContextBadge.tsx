@@ -1,5 +1,5 @@
 import { motion, AnimatePresence } from "framer-motion";
-import { File, X, Image as ImageIcon } from "lucide-react";
+import { File, X, Image as ImageIcon, FileText } from "lucide-react";
 import { useTheme } from "@/contexts/ThemeContext";
 import { FileContext } from "@/hooks/useFileContext";
 
@@ -19,6 +19,7 @@ export default function FileContextBadge({ fileContext, onRemove, onClear }: Fil
       <AnimatePresence>
         {fileContext.files.map((file) => {
           const isImage = ["jpg", "jpeg", "png", "gif", "webp"].includes(file.type.toLowerCase());
+          const isDoc = ["pdf", "doc", "docx", "xls", "xlsx", "ppt", "pptx"].includes(file.type.toLowerCase());
           
           return (
             <motion.div
@@ -36,6 +37,8 @@ export default function FileContextBadge({ fileContext, onRemove, onClear }: Fil
             >
               {isImage ? (
                 <ImageIcon size={14} className="text-cyan-400" />
+              ) : isDoc ? (
+                <FileText size={14} className="text-emerald-400" />
               ) : (
                 <File size={14} style={{ color: config.accent }} />
               )}

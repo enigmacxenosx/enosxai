@@ -6,7 +6,7 @@
 
 import { useState, useRef, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Upload, File, CheckCircle2, AlertCircle, Image as ImageIcon } from "lucide-react";
+import { Upload, File, CheckCircle2, AlertCircle, Image as ImageIcon, FileText } from "lucide-react";
 import { useTheme } from "@/contexts/ThemeContext";
 import { useTactileSounds } from "@/hooks/useTactileSounds";
 import { toast } from "sonner";
@@ -39,6 +39,16 @@ const SUPPORTED_IMAGE_TYPES = [
   "image/webp",
 ];
 
+const SUPPORTED_DOC_TYPES = [
+  "application/pdf",
+  "application/msword",
+  "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+  "application/vnd.ms-excel",
+  "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+  "application/vnd.ms-powerpoint",
+  "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+];
+
 export default function FileDropZone({ onFileSelected, isActive = true, currentFileCount }: FileDropZoneProps) {
   const { config } = useTheme();
   const [isDragActive, setIsDragActive] = useState(false);
@@ -57,8 +67,9 @@ export default function FileDropZone({ onFileSelected, isActive = true, currentF
 
       const isText = SUPPORTED_TEXT_TYPES.includes(file.type) || file.name.match(/\.(txt|md|json|js|ts|py|java|c|cpp|xml|html|css)$/i);
       const isImage = SUPPORTED_IMAGE_TYPES.includes(file.type) || file.name.match(/\.(jpg|jpeg|png|gif|webp)$/i);
+      const isDoc = SUPPORTED_DOC_TYPES.includes(file.type) || file.name.match(/\.(pdf|doc|docx|xls|xlsx|ppt|pptx)$/i);
 
-      if (!isText && !isImage) {
+      if (!isText && !isImage && !isDoc) {
         setUploadStatus("error");
         setUploadMessage(`Unsupported file type: ${file.type || file.name.split(".").pop()}`);
         playError();
@@ -66,10 +77,11 @@ export default function FileDropZone({ onFileSelected, isActive = true, currentF
         return;
       }
 
-      // Check file size (max 5MB)
-      if (file.size > 5 * 1024 * 1024) {
+      // Check file size (max 10MB for documents)
+      const maxSize = isDoc ? 10 * 1024 * 1024 : 5 * 1024 * 1024;
+      if (file.size > maxSize) {
         setUploadStatus("error");
-        setUploadMessage("File too large (max 5MB)");
+        setUploadMessage(`File too large (max ${isDoc ? "10MB" : "5MB"})`);
         playError();
         setTimeout(() => setUploadStatus("idle"), 3000);
         return;
@@ -82,8 +94,8 @@ export default function FileDropZone({ onFileSelected, isActive = true, currentF
         let content = "";
         if (isText) {
           content = await file.text();
-        } else if (isImage) {
-          // Convert image to base64
+        } else {
+          // Convert image or doc to base64
           content = await new Promise((resolve, reject) => {
             const reader = new FileReader();
             reader.onload = () => resolve(reader.result as string);
@@ -195,6 +207,7 @@ export default function FileDropZone({ onFileSelected, isActive = true, currentF
                 >
                   <Upload size={48} style={{ color: config.accent }} />
                   <ImageIcon size={48} style={{ color: config.accent }} />
+                  <FileText size={48} style={{ color: config.accent }} />
                 </motion.div>
 
                 <div className="text-center">
@@ -208,7 +221,7 @@ export default function FileDropZone({ onFileSelected, isActive = true, currentF
                     className="text-sm"
                     style={{ color: config.textMuted }}
                   >
-                    Images, Code, Markdown, or JSON (Max 10 files)
+                    Images, Documents (PDF/Word/Excel), Code, or JSON
                   </p>
                   <p className="text-xs mt-2" style={{ color: config.accent }}>
                     {currentFileCount} / 10 files uploaded

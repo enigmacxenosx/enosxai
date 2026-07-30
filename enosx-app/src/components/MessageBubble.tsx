@@ -6,7 +6,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import { motion } from "framer-motion";
-import { Copy, Volume2, VolumeX, Check } from "lucide-react";
+import { Copy, Volume2, VolumeX, Check, FileText } from "lucide-react";
 import { Message } from "@/lib/types";
 import { useTheme } from "@/contexts/ThemeContext";
 import { useWallpaper } from "@/contexts/WallpaperContext";
@@ -158,6 +158,41 @@ export default function MessageBubble({
                             className="max-w-[200px] max-h-[200px] rounded-lg border border-white/10 shadow-lg object-cover cursor-pointer hover:scale-[1.02] transition-transform"
                             onClick={() => window.open(att.content, '_blank')}
                           />
+                        );
+                      })}
+                    </div>
+                  )}
+
+                  {message.attachments && message.attachments.some(att => !["jpg", "jpeg", "png", "gif", "webp"].includes(att.type.toLowerCase())) && (
+                    <div className="flex flex-col gap-2 mb-1">
+                      {message.attachments.map((att) => {
+                        const isImage = ["jpg", "jpeg", "png", "gif", "webp"].includes(att.type.toLowerCase());
+                        if (isImage) return null;
+                        return (
+                          <motion.div
+                            key={att.id}
+                            initial={{ opacity: 0, x: -10 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            className="flex items-center gap-3 p-3 rounded-xl border border-white/10 bg-white/5 hover:bg-white/10 transition-colors cursor-pointer group"
+                            onClick={() => {
+                              const link = document.createElement('a');
+                              link.href = att.content;
+                              link.download = att.name;
+                              link.click();
+                            }}
+                          >
+                            <div className="w-8 h-8 rounded-lg bg-emerald-500/20 flex items-center justify-center text-emerald-400">
+                              <FileText size={18} />
+                            </div>
+                            <div className="flex flex-col min-w-0">
+                              <span className="text-xs font-medium truncate text-white/90 group-hover:text-white">
+                                {att.name}
+                              </span>
+                              <span className="text-[10px] text-white/40">
+                                {(att.size / 1024).toFixed(1)} KB • {att.type.toUpperCase()}
+                              </span>
+                            </div>
+                          </motion.div>
                         );
                       })}
                     </div>

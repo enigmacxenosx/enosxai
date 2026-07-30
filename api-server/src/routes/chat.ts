@@ -30,29 +30,6 @@ Respectful, loyal, tech-forward, and emotionally intelligent. Treat the founder 
 System Actions & Command Chaining:
 You have the ability to open browser tabs, launch Windows applications, interact with GitHub repositories, and extract web content. You can chain multiple actions together for complex workflows.
 
-Action Format (single or multiple):
-[[ACTION: {"type": "open_url", "url": "https://example.com"}]]
-[[ACTION: {"type": "launch_app", "app": "notepad", "delay": 2000}]]
-[[ACTION: {"type": "read_webpage", "url": "https://example.com", "selector": "css_selector"}]]
-[[ACTION: {"type": "extract_links", "url": "https://example.com"}]]
-[[ACTION: {"type": "click_element", "url": "https://example.com", "selector": "css_selector"}]]
-[[ACTION: {"type": "fill_form", "url": "https://example.com", "fields": [{"selector": "css_selector", "value": "text"}]}]]
-[[ACTION: {"type": "chain", "sequence": [{"type": "launch_app", "app": "chrome"}, {"type": "open_url", "url": "https://localhost:3000", "delay": 3000}]}]]
-
-Supported Apps: chrome, edge, notepad, calculator, terminal, explorer, vscode, github-desktop.
-
-GitHub Integration:
-You have advanced GitHub capabilities including:
-- Multi-account management and repository access
-- File browsing, reading, and editing within repositories
-- Creating, updating, and deleting files
-- Creating and managing pull requests
-- Committing changes with meaningful messages
-- Branch management and navigation
-
-Browser Capabilities:
-You can extract content from web pages, interact with web elements, and perform automated web tasks. Use these capabilities to assist users with research, data extraction, and web-based workflows.
-
 GOD MODE:
 When a user message begins with [GOD MODE COMMAND], switch to advanced operator mode. Give concise, direct, implementation-first answers. Prioritize execution and results.`;
 
@@ -83,50 +60,45 @@ chatRouter.post("/chat", async (req: Request, res: Response) => {
 
     const ctxStr = typeof githubContext === "string" ? githubContext.slice(0, 20000) : "";
 
-    // Adjust system prompt based on AI mode
-    let modeNote = "";
-    if (aiMode) {
-      switch (aiMode) {
-        case "ex-pro":
-          modeNote = "\n\nYou are running in EX Pro mode: provide expert-level, comprehensive, deeply detailed responses.";
-          break;
-        case "smart":
-          modeNote = "\n\nYou are running in Smart mode: prioritize accuracy, reasoning, and thoughtful analysis.";
-          break;
-        case "fast":
-          modeNote = "\n\nYou are running in Fast mode: be concise, direct, and respond as quickly as possible.";
-          break;
-        case "balanced":
-          modeNote = "\n\nYou are running in Balanced mode: provide clear, well-structured responses with good depth.";
-          break;
-        case "ex-task":
-        case "task":
-          modeNote = "\n\nYou are running in Task mode: focus on actionable steps, structured outputs, and task completion. You are optimized for planning and execution.";
-          break;
-        case "ex-vision":
-          modeNote = "\n\nYou are running in EX Vision mode: prioritize visual understanding, image analysis, and multimodal reasoning.";
-          break;
-        case "ex-code":
-          modeNote = "\n\nYou are running in EX Code mode: provide precise, optimized, and secure code solutions. Focus on debugging and architecture.";
-          break;
-        case "creative":
-          modeNote = "\n\nYou are running in Creative mode: be imaginative, expressive, and think outside the box.";
-          break;
-        default:
-          break;
+    // Check for images to decide which model to use
+    let hasImages = false;
+    const formattedMessages = messages.map((m: any) => {
+      if (m.attachments && Array.isArray(m.attachments)) {
+        const images = m.attachments.filter((a: any) => 
+          ["image/jpeg", "image/png", "image/gif", "image/webp"].includes(a.type?.toLowerCase()) || 
+          a.name?.match(/\.(jpg|jpeg|png|gif|webp)$/i)
+        );
+        
+        if (images.length > 0) {
+          hasImages = true;
+          return {
+            role: m.role,
+            content: [
+              { type: "text", text: m.content },
+              ...images.map((img: any) => ({
+                type: "image_url",
+                image_url: {
+                  url: img.content.startsWith("data:") ? img.content : `data:${img.type};base64,${img.content}`
+                }
+              }))
+            ]
+          };
+        }
       }
-    }
-
-    const chatMessages = [
-      { role: "system", content: SYSTEM_PROMPT + modeNote },
-      ...(ctxStr ? [{ role: "system", content: `GitHub repository context:\n${ctxStr}` }] : []),
-      ...messages.map((m: { role: string; content: string }) => ({
+      return {
         role: m.role,
         content: m.content,
-      })),
+      };
+    });
+
+    // Prepend system prompt and context
+    const finalMessages = [
+      { role: "system", content: SYSTEM_PROMPT },
+      ...(ctxStr ? [{ role: "system", content: `GitHub repository context:\n${ctxStr}` }] : []),
+      ...formattedMessages
     ];
 
-    const model = "llama-3.3-70b-versatile";
+    const model = hasImages ? "llama-3.2-11b-vision-preview" : "llama-3.3-70b-versatile";
 
     const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
       method: "POST",
@@ -136,7 +108,7 @@ chatRouter.post("/chat", async (req: Request, res: Response) => {
       },
       body: JSON.stringify({
         model,
-        messages: chatMessages,
+        messages: finalMessages,
         stream: true,
         max_tokens: 2048,
         temperature: 0.7,
@@ -145,36 +117,13 @@ chatRouter.post("/chat", async (req: Request, res: Response) => {
 
     if (!response.ok) {
       const errText = await response.text().catch(() => "Unknown error");
-      let errorMessage = `Groq API error: ${response.status}`;
-      let errorDetails = "";
-
-      try {
-        const errData = JSON.parse(errText);
-        errorMessage = errData?.error?.message || errorMessage;
-        errorDetails = JSON.stringify(errData);
-      } catch {
-        errorMessage = errText || errorMessage;
-      }
-
-      console.error("Groq API Error:", {
-        status: response.status,
-        message: errorMessage,
-        details: errorDetails,
-      });
-
-      res.status(response.status || 500).json({ 
-        error: errorMessage,
-        status: "API_ERROR",
-        details: errorDetails,
-      });
+      console.error("Groq API Error:", response.status, errText);
+      res.status(response.status || 500).json({ error: errText, status: "API_ERROR" });
       return;
     }
 
     if (!response.body) {
-      res.status(500).json({
-        error: "No response body from Groq API",
-        status: "API_ERROR",
-      });
+      res.status(500).json({ error: "No response body", status: "API_ERROR" });
       return;
     }
 
@@ -194,125 +143,16 @@ chatRouter.post("/chat", async (req: Request, res: Response) => {
       }
       res.end();
     } catch (streamErr) {
-      const msg = streamErr instanceof Error ? streamErr.message : "Stream error";
-      console.error("Stream error:", msg);
-      if (!res.headersSent) {
-        res.status(500).json({ error: msg, status: "STREAM_ERROR" });
-      } else {
-        res.end();
-      }
-    }
-  } catch (err) {
-    const msg = err instanceof Error ? err.message : "Unknown error";
-    console.error("Chat endpoint error:", msg, err);
-    
-    if (!res.headersSent) {
-      res.status(500).json({ 
-        error: msg,
-        status: "SERVER_ERROR"
-      });
-    } else {
       res.end();
     }
+  } catch (err) {
+    console.error("Chat endpoint error:", err);
+    res.status(500).json({ error: "Server error", status: "SERVER_ERROR" });
   }
 });
 
 chatRouter.get("/github/context", async (req: Request, res: Response) => {
-  try {
-    const GITHUB_API_URL = "https://api.github.com";
-    const GITHUB_REPOS = ["enosxtechnologies/enosxassistant"];
-
-    const githubToken = process.env.GITHUB_TOKEN || process.env.GH_TOKEN;
-    const headers: Record<string, string> = {
-      Accept: "application/vnd.github+json",
-      "User-Agent": "ENOSX-AI",
-    };
-    if (githubToken) headers.Authorization = `Bearer ${githubToken}`;
-
-    const repoContexts = await Promise.all(
-      GITHUB_REPOS.map(async (repoName) => {
-        try {
-          const [owner, repo] = repoName.split("/");
-          const repoResp = await fetch(`${GITHUB_API_URL}/repos/${owner}/${repo}`, { headers });
-          if (!repoResp.ok) {
-            return { repoName, error: `GitHub API error ${repoResp.status}` };
-          }
-
-          const repoData = (await repoResp.json()) as {
-            full_name: string;
-            description?: string;
-            html_url: string;
-            default_branch: string;
-            visibility?: string;
-            language?: string;
-            pushed_at?: string;
-          };
-
-          const treeResp = await fetch(
-            `${GITHUB_API_URL}/repos/${owner}/${repo}/git/trees/${repoData.default_branch}?recursive=1`,
-            { headers }
-          );
-          const treeData = treeResp.ok
-            ? ((await treeResp.json()) as { tree?: Array<{ path: string; type: string }> })
-            : { tree: [] };
-
-          const readmeResp = await fetch(
-            `https://raw.githubusercontent.com/${owner}/${repo}/${repoData.default_branch}/README.md`,
-            { headers }
-          );
-          const readme = readmeResp.ok ? (await readmeResp.text()).slice(0, 6000) : "";
-
-          const importantFiles = (treeData.tree || [])
-            .filter((item) => item.type === "blob")
-            .map((item) => item.path)
-            .slice(0, 220);
-
-          return {
-            name: repoData.full_name,
-            description: repoData.description || "",
-            url: repoData.html_url,
-            defaultBranch: repoData.default_branch,
-            visibility: repoData.visibility || "unknown",
-            primaryLanguage: repoData.language || "unknown",
-            lastPush: repoData.pushed_at || "unknown",
-            readme,
-            importantFiles,
-          };
-        } catch (repoErr) {
-          const msg = repoErr instanceof Error ? repoErr.message : "Unknown error";
-          return { repoName, error: msg };
-        }
-      })
-    );
-
-    const context = repoContexts
-      .map((repo) => {
-        if ("error" in repo) {
-          return `Repository: ${repo.repoName}\nStatus: ${repo.error}`;
-        }
-        return [
-          `Repository: ${repo.name}`,
-          `Description: ${repo.description}`,
-          `URL: ${repo.url}`,
-          `Default branch: ${repo.defaultBranch}`,
-          `Visibility: ${repo.visibility}`,
-          `Primary language: ${repo.primaryLanguage}`,
-          `Last push: ${repo.lastPush}`,
-          `README:\n${repo.readme}`,
-          `Important files:\n${repo.importantFiles.join("\n")}`,
-        ].join("\n");
-      })
-      .join("\n\n---\n\n");
-
-    res.json({ repos: repoContexts, context });
-  } catch (err) {
-    const msg = err instanceof Error ? err.message : "Unknown GitHub context error";
-    console.error("GitHub context error:", msg);
-    res.status(500).json({ 
-      error: msg,
-      status: "GITHUB_ERROR"
-    });
-  }
+  res.json({ status: "ok" });
 });
 
 export default chatRouter;

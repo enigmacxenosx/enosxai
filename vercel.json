@@ -1,6 +1,7 @@
 {
   "version": 2,
   "outputDirectory": "enosx-app/dist/public",
+  "buildCommand": "pnpm run build",
   "rewrites": [
     {
       "source": "/(.*)",

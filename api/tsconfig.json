@@ -5,7 +5,8 @@
     "types": ["node"],
     "module": "esnext",
     "moduleResolution": "bundler",
-    "noEmit": true
+    "noEmit": true,
+    "noEmitOnError": false
   },
   "include": ["**/*.ts"]
 }

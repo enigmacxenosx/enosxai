@@ -107,18 +107,30 @@ export function useVoice() {
       };
 
       recognition.onresult = (event: ISpeechRecognitionEvent) => {
-        let fullTranscript = "";
-        for (let i = 0; i < event.results.length; i++) {
-          fullTranscript += event.results[i][0].transcript;
+        let finalTranscript = "";
+        let interimTranscript = "";
+
+        for (let i = event.resultIndex; i < event.results.length; i++) {
+          const result = event.results[i];
+          if (result.isFinal) {
+            finalTranscript += result[0].transcript;
+          } else {
+            interimTranscript += result[0].transcript;
+          }
         }
 
-        setTranscript(fullTranscript);
+        // Use interim results for real-time visual feedback
+        const currentText = finalTranscript || interimTranscript;
+        if (currentText) {
+          setTranscript(currentText);
+        }
 
-        // Only trigger final result when the recognition thinks it is done
-        const lastResult = event.results[event.results.length - 1];
-        if (lastResult.isFinal) {
-          onResult(fullTranscript.trim());
+        // Send the result as soon as a final chunk is detected for maximum speed
+        if (finalTranscript) {
+          onResult(finalTranscript.trim());
           setVoiceState("processing");
+          // Stop immediately after first final result to reduce wait time
+          recognition.stop();
         }
       };
 

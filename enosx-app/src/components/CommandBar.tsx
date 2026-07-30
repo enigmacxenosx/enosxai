@@ -194,55 +194,53 @@ export default function CommandBar({
 
   return (
     <>
-      {/* ── Pulse Orb full-screen overlay (voice active) ── */}
+      {/* ── Compact Voice Indicator (floating above bar) ── */}
       <AnimatePresence>
-        {isListening && (
+        {voiceActive && (
           <motion.div
-            key="pulse-orb-overlay"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.3 }}
-            className="fixed inset-0 z-40 flex flex-col items-center justify-center"
-            style={{
-              background: "rgba(0,0,0,0.72)",
-              backdropFilter: "blur(10px)",
-              WebkitBackdropFilter: "blur(10px)",
-            }}
-            onClick={voiceActive ? handleVoiceClick : undefined}
+            key="compact-voice-indicator"
+            initial={{ opacity: 0, y: 10, scale: 0.95 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 10, scale: 0.95 }}
+            className="absolute bottom-[calc(100%+12px)] left-1/2 -translate-x-1/2 z-30"
           >
-            <motion.p
-              initial={{ opacity: 0, y: -10 }}
-              animate={{ opacity: 0.5, y: 0 }}
-              transition={{ delay: 0.4 }}
-              className="absolute top-8 text-xs text-white"
-              style={{ letterSpacing: "0.08em" }}
-            >
-              Tap anywhere to stop
-            </motion.p>
-
-            <PulseOrb
-              voiceState={voiceState}
-              isLoading={isLoading}
-              size={220}
-              onClick={handleVoiceClick}
-            />
-
             <motion.div
-              initial={{ opacity: 0, y: 12 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.2 }}
-              className="mt-8 w-72 h-12"
-              onClick={(e) => e.stopPropagation()}
+              className="flex items-center gap-4 px-5 py-3 rounded-2xl border shadow-2xl"
+              style={{
+                background: "rgba(15, 15, 20, 0.85)",
+                backdropFilter: "blur(16px)",
+                WebkitBackdropFilter: "blur(16px)",
+                borderColor: isListening ? "rgba(0, 242, 255, 0.3)" : "rgba(168, 85, 247, 0.3)",
+                boxShadow: isListening ? "0 8px 32px rgba(0, 242, 255, 0.15)" : "0 8px 32px rgba(168, 85, 247, 0.15)",
+              }}
             >
-              <VoiceVisualizer
-                isActive={voiceActive}
-                isListening={isListening}
-                color={isListening ? "#00f2ff" : isProcessing ? "#a855f7" : "#c084fc"}
-                accentRgb={
-                  isListening ? "0,242,255" : isProcessing ? "168,85,247" : "192,132,252"
-                }
+              <PulseOrb
+                voiceState={voiceState}
+                isLoading={isLoading}
+                size={44}
+                onClick={handleVoiceClick}
               />
+              <div className="flex flex-col min-w-[120px]">
+                <span className="text-[10px] font-bold uppercase tracking-widest opacity-50 mb-0.5" style={{ color: isListening ? "#00f2ff" : "#a855f7" }}>
+                  {isListening ? "Listening" : isProcessing ? "Thinking" : "Speaking"}
+                </span>
+                <div className="w-32 h-6">
+                  <VoiceVisualizer
+                    isActive={voiceActive}
+                    isListening={isListening}
+                    color={isListening ? "#00f2ff" : isProcessing ? "#a855f7" : "#c084fc"}
+                    accentRgb={isListening ? "0,242,255" : isProcessing ? "168,85,247" : "192,132,252"}
+                  />
+                </div>
+              </div>
+              <motion.button
+                whileHover={{ scale: 1.1 }}
+                whileTap={{ scale: 0.9 }}
+                onClick={handleVoiceClick}
+                className="p-2 rounded-full bg-white/5 hover:bg-white/10 transition-colors"
+              >
+                <Square size={14} className="fill-white" />
+              </motion.button>
             </motion.div>
           </motion.div>
         )}

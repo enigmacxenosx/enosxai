@@ -35,6 +35,9 @@ import { Conversation, Message } from "@/lib/types";
 import { useTheme } from "@/contexts/ThemeContext";
 import { useCompactMode } from "@/hooks/useCompactMode";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { useDeviceType } from "@/hooks/useDeviceType";
+import PhoneChatLayout from "@/components/PhoneChatLayout";
+import TVChatLayout from "@/components/TVChatLayout";
 import { getAIIdentity } from "@/const";
 import { ChevronDown, Menu } from "lucide-react";
 
@@ -194,6 +197,7 @@ export default function ChatPage() {
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
   const { isCompactMode } = useCompactMode();
   const isMobile = useIsMobile();
+  const deviceType = useDeviceType();
 
   const handleSend = useCallback(
     async (text: string, aiMode?: AIMode) => {
@@ -359,6 +363,58 @@ ${memoryContext}`,
   }, [conversations, activeId]);
 
   const activeConversation = conversations.find((c) => c.id === activeId);
+  const messages = activeConversation?.messages || [];
+
+  if (deviceType === "tv") {
+    return (
+      <GlobalLayout>
+        <TVChatLayout
+          conversations={conversations}
+          activeId={activeId}
+          setActiveId={setActiveId}
+          createNewChat={createNewChat}
+          messages={messages}
+          isLoading={isLoading}
+          handleSend={handleSend}
+          voiceState={voiceState}
+          transcript={transcript}
+          isVoiceSupported={isVoiceSupported}
+          startListening={handleStartVoice}
+          stopListening={stopListening}
+          speak={speak}
+          stopSpeaking={handleStopSpeak}
+          messagesEndRef={messagesEndRef}
+        />
+      </GlobalLayout>
+    );
+  }
+
+  if (deviceType === "phone") {
+    return (
+      <GlobalLayout>
+        <PhoneChatLayout
+          conversations={conversations}
+          activeId={activeId}
+          setActiveId={setActiveId}
+          createNewChat={createNewChat}
+          deleteConversation={deleteConversation}
+          messages={messages}
+          isLoading={isLoading}
+          handleSend={handleSend}
+          voiceState={voiceState}
+          transcript={transcript}
+          isVoiceSupported={isVoiceSupported}
+          startListening={handleStartVoice}
+          stopListening={stopListening}
+          speak={speak}
+          stopSpeaking={handleStopSpeak}
+          isMobileSidebarOpen={isMobileSidebarOpen}
+          setIsMobileSidebarOpen={setIsMobileSidebarOpen}
+          messagesEndRef={messagesEndRef}
+        />
+      </GlobalLayout>
+    );
+  }
 
   return (
     <GlobalLayout>

@@ -383,7 +383,7 @@ ${memoryContext}`,
           stopListening={stopListening}
           speak={speak}
           stopSpeaking={handleStopSpeak}
-          messagesEndRef={messagesEndRef}
+          messagesEndRef={messagesEndRef as React.RefObject<HTMLDivElement>}
         />
       </GlobalLayout>
     );
@@ -410,7 +410,7 @@ ${memoryContext}`,
           stopSpeaking={handleStopSpeak}
           isMobileSidebarOpen={isMobileSidebarOpen}
           setIsMobileSidebarOpen={setIsMobileSidebarOpen}
-          messagesEndRef={messagesEndRef}
+          messagesEndRef={messagesEndRef as React.RefObject<HTMLDivElement>}
         />
       </GlobalLayout>
     );

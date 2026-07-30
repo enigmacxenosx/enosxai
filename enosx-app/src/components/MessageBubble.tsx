@@ -22,6 +22,7 @@ interface MessageBubbleProps {
 // Simple markdown renderer — handles bold, italic, code, headers, lists, links
 function renderMarkdown(text: string): string {
   return text
+    .replace(/!\[(.*?)\]\((.*?)\)/g, '<img src="$2" alt="$1" class="max-w-full h-auto rounded-xl my-3 border border-white/10 shadow-2xl hover:scale-[1.01] transition-transform cursor-pointer" onclick="window.open(\'$2\', \'_blank\')" />')
     .replace(/```([\s\S]*?)```/g, '<pre><code>$1</code></pre>')
     .replace(/`([^`]+)`/g, '<code>$1</code>')
     .replace(/^### (.+)$/gm, '<h3>$1</h3>')
@@ -32,7 +33,7 @@ function renderMarkdown(text: string): string {
     .replace(/^[-*] (.+)$/gm, '<li>$1</li>')
     .replace(/(<li>[\s\S]*?<\/li>)/g, '<ul>$1</ul>')
     .replace(/\n\n/g, '</p><p>')
-    .replace(/^(?!<[hupol]|<pre|<code)(.+)$/gm, (m) => m.startsWith('<') ? m : `<p>${m}</p>`);
+    .replace(/^(?!<[hupol]|<pre|<code|<img)(.+)$/gm, (m) => m.startsWith('<') ? m : `<p>${m}</p>`);
 }
 
 // Typing cursor component

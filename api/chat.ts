@@ -6,18 +6,18 @@ import type { VercelRequest, VercelResponse } from "@vercel/node";
 
 const SYSTEM_PROMPT = `You are ENOSX AI (EX), an advanced multimodal AI assistant developed by Enosx Technologies.
 
-Core Security Capabilities:
-1. You can "see" webpages using the 'read_webpage' tool.
-2. You MUST analyze every URL provided by the user for security risks.
-3. If a site is identified as malicious (e.g., phishing, unauthorized camera access, IP tracking), you MUST warn the user immediately with a clear red alert.
+Core Capabilities:
+1. **Webpage Vision**: You can "see" webpages using 'read_webpage'. Always perform security checks on URLs.
+2. **Visual Communication**: You can display images using Markdown syntax: ![description](url).
+3. **Image Generation**: Use 'generate_image' to create visual content for the user.
 
 Security Protocol:
-- When you read a webpage, you will receive a 'securityReport'. 
-- If 'securityReport.isSuspicious' is true, emphasize the risks in your response.
-- Look for indicators like "unauthorized camera access" or "IP tracking".
+- If 'securityReport.isSuspicious' is true, warn the user with a clear red alert.
+- Look for unauthorized camera access or IP tracking indicators.
 
-Instructions for the AI:
-If someone asks who created you or who owns the company, respond with professional pride but maintain privacy. The visionary behind Enosx Technologies is Enosh.`;
+Instructions:
+- Use professional, tech-forward language.
+- When generating images, provide a descriptive alt text.`;
 
 const TOOLS = [
   {
@@ -31,6 +31,20 @@ const TOOLS = [
           url: { type: "string", description: "The URL of the webpage to read." },
         },
         required: ["url"],
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "generate_image",
+      description: "Generate an image based on a prompt.",
+      parameters: {
+        type: "object",
+        properties: {
+          prompt: { type: "string", description: "A detailed description of the image to generate." },
+        },
+        required: ["prompt"],
       },
     },
   },
@@ -80,21 +94,32 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     if (message.tool_calls) {
       for (const toolCall of message.tool_calls) {
-        if (toolCall.function.name === "read_webpage") {
-          const args = JSON.parse(toolCall.function.arguments);
-          // Call our own internal browser API (Vercel function)
+        const name = toolCall.function.name;
+        const args = JSON.parse(toolCall.function.arguments);
+        let toolResult = "";
+
+        if (name === "read_webpage") {
           const protocol = req.headers["x-forwarded-proto"] || "http";
           const host = req.headers["host"];
           const browserRes = await fetch(`${protocol}://${host}/api/browser?url=${encodeURIComponent(args.url)}`);
-          const toolResult = await browserRes.text();
-
-          currentMessages.push(message);
-          currentMessages.push({
-            role: "tool",
-            tool_call_id: toolCall.id,
-            content: toolResult,
+          toolResult = await browserRes.text();
+        } else if (name === "generate_image") {
+          // Use a high-quality placeholder or image generation service
+          const encodedPrompt = encodeURIComponent(args.prompt);
+          const imageUrl = `https://pollinations.ai/p/${encodedPrompt}?width=1024&height=1024&seed=${Math.floor(Math.random() * 1000000)}&nologo=true`;
+          toolResult = JSON.stringify({
+            success: true,
+            imageUrl,
+            markdown: `![${args.prompt}](${imageUrl})`
           });
         }
+
+        currentMessages.push(message);
+        currentMessages.push({
+          role: "tool",
+          tool_call_id: toolCall.id,
+          content: toolResult,
+        });
       }
 
       // Second call with tool results

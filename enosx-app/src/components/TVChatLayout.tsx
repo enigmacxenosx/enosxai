@@ -22,6 +22,8 @@ interface TVChatLayoutProps {
   speak: (text: string) => void;
   stopSpeaking: () => void;
   messagesEndRef: React.RefObject<HTMLDivElement>;
+  isImageMode?: boolean;
+  onToggleImageMode?: () => void;
 }
 
 export default function TVChatLayout({
@@ -40,6 +42,8 @@ export default function TVChatLayout({
   speak,
   stopSpeaking,
   messagesEndRef,
+  isImageMode = false,
+  onToggleImageMode,
 }: TVChatLayoutProps) {
   const { config } = useTheme();
   const containerRef = useRef<HTMLDivElement>(null);
@@ -108,17 +112,14 @@ export default function TVChatLayout({
           ) : (
             <div className="flex flex-col gap-12">
               {messages.map((msg, idx) => (
-                <div key={msg.id} className={`flex flex-col ${msg.role === 'user' ? 'items-end' : 'items-start'}`}>
-                  <div className={`max-w-[85%] p-8 rounded-[32px] ${msg.role === 'user' ? 'bg-cyan-600 text-white shadow-xl shadow-cyan-900/20' : 'bg-white/10 border border-white/10'}`}>
-                    <div className="text-3xl leading-relaxed whitespace-pre-wrap">
-                      {msg.content}
-                    </div>
-                  </div>
-                  <div className="mt-4 flex items-center gap-3 text-white/30 text-xl font-medium px-4">
-                    {msg.role === 'assistant' && <Volume2 size={24} />}
-                    {new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                  </div>
-                </div>
+                <MessageBubble
+                  key={msg.id}
+                  message={msg}
+                  index={idx}
+                  onSpeak={speak}
+                  onStopSpeak={stopSpeaking}
+                  isSpeaking={voiceState === "speaking"}
+                />
               ))}
               <div ref={messagesEndRef} />
             </div>
@@ -169,6 +170,8 @@ export default function TVChatLayout({
           onStartVoice={startListening}
           onStopVoice={stopListening}
           onStopSpeaking={stopSpeaking}
+          isImageMode={isImageMode}
+          onToggleImageMode={onToggleImageMode}
         />
       </div>
     </div>

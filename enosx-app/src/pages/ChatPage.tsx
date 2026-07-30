@@ -245,6 +245,14 @@ export default function ChatPage() {
       // Clear files after sending
       clearFiles();
 
+      const assistantId = nanoid();
+      const assistantMessage: Message = {
+        id: assistantId,
+        role: "assistant",
+        content: "",
+        timestamp: new Date(),
+      };
+
       // ── Image generation mode ────────────────────────────────────────────────
       if (isImageMode) {
         setIsImageMode(false);
@@ -295,14 +303,6 @@ export default function ChatPage() {
         }
         return; // Don't continue with normal chat
       }
-
-      const assistantId = nanoid();
-      const assistantMessage: Message = {
-        id: assistantId,
-        role: "assistant",
-        content: "",
-        timestamp: new Date(),
-      };
 
       setConversations((prev) =>
         prev.map((c) =>
@@ -451,6 +451,8 @@ ${memoryContext}`,
           speak={speak}
           stopSpeaking={handleStopSpeak}
           messagesEndRef={messagesEndRef as React.RefObject<HTMLDivElement>}
+          isImageMode={isImageMode}
+          onToggleImageMode={handleToggleImageMode}
         />
       </GlobalLayout>
     );
@@ -478,6 +480,8 @@ ${memoryContext}`,
           isMobileSidebarOpen={isMobileSidebarOpen}
           setIsMobileSidebarOpen={setIsMobileSidebarOpen}
           messagesEndRef={messagesEndRef as React.RefObject<HTMLDivElement>}
+          isImageMode={isImageMode}
+          onToggleImageMode={handleToggleImageMode}
         />
       </GlobalLayout>
     );

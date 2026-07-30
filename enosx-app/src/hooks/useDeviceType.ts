@@ -11,9 +11,8 @@ export function useDeviceType(): DeviceType {
       const width = window.innerWidth;
       const height = window.innerHeight;
 
-      // TV detection
-      const isTV = /SmartTV|Tizen|WebOS|HbbTV|GoogleTV|AppleTV|Android TV|Roku|FireTV/i.test(ua) || 
-                   (width >= 1920 && !('ontouchstart' in window) && height >= 1080 && width / height > 1.7);
+      // TV detection — only rely on User Agent
+      const isTV = /SmartTV|Tizen|WebOS|HbbTV|GoogleTV|AppleTV|Android TV|Roku|FireTV/i.test(ua);
       
       if (isTV) {
         setDeviceType('tv');

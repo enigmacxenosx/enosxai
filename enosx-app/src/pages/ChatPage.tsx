@@ -466,7 +466,7 @@ ${memoryContext}`,
                 key="messages"
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
-                className="max-w-3xl mx-auto py-8 space-y-8"
+                className="max-w-5xl mx-auto py-8 space-y-8"
               >
                 {activeConversation.messages.map((msg, idx) => (
                   <MessageBubble
@@ -514,7 +514,7 @@ ${memoryContext}`,
         </div>
 
         <div className={`p-4 ${isCompactMode ? "pb-6" : "md:p-6"} z-20`}>
-          <div className="max-w-4xl mx-auto relative">
+          <div className="max-w-5xl mx-auto relative">
             {/* File context badges */}
             <FileContextBadge
               fileContext={fileContext}

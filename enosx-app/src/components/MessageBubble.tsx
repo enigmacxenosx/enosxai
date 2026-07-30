@@ -128,24 +128,14 @@ export default function MessageBubble({
         <motion.div
           whileHover={{ scale: 1.005 }}
           transition={{ type: "spring", stiffness: 400, damping: 30 }}
-          className={`relative rounded-2xl px-4 py-3 transition-all duration-300 ${!isUser && (isEmpty || isStreaming) ? 'rainbow-glow' : ''}`}
-          style={
-            isUser
-              ? {
-                  background: `rgba(${config.accentRgb}, 0.12)`,
-                  border: `1px solid rgba(${config.accentRgb}, 0.25)`,
-                  backdropFilter: `blur(${wallpaperSettings.blurAmount}px)`,
-                  WebkitBackdropFilter: `blur(${wallpaperSettings.blurAmount}px)`,
-                  boxShadow: `0 4px 20px rgba(${config.accentRgb}, 0.08)`,
-                }
-              : {
-                  background: `rgba(12,12,24,${wallpaperSettings.panelOpacity * 0.7})`,
-                  border: "1px solid rgba(255,255,255,0.08)",
-                  backdropFilter: `blur(${wallpaperSettings.blurAmount}px)`,
-                  WebkitBackdropFilter: `blur(${wallpaperSettings.blurAmount}px)`,
-                  boxShadow: !isUser && (isEmpty || isStreaming) ? "none" : "0 4px 20px rgba(0,0,0,0.3)",
-                }
-          }
+          className={`relative transition-all duration-300 ${!isUser && (isEmpty || isStreaming) ? 'rainbow-glow' : ''}`}
+          style={{
+            background: "transparent",
+            border: "none",
+            boxShadow: "none",
+            backdropFilter: "none",
+            WebkitBackdropFilter: "none",
+          }}
         >
           {isEmpty ? (
             <ThinkingDots color={config.accent} />

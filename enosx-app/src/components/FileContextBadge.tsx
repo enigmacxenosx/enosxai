@@ -15,7 +15,7 @@ export default function FileContextBadge({ fileContext, onRemove, onClear }: Fil
   if (!fileContext.isLoaded || fileContext.files.length === 0) return null;
 
   return (
-    <div className="flex flex-wrap gap-2 mb-4 px-4 md:px-0 max-w-3xl mx-auto">
+    <div className="flex flex-wrap gap-2 mb-4 px-4 md:px-0 max-w-5xl mx-auto">
       <AnimatePresence>
         {fileContext.files.map((file) => {
           const isImage = ["jpg", "jpeg", "png", "gif", "webp"].includes(file.type.toLowerCase());

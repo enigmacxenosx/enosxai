@@ -86,9 +86,14 @@ export default function LipSyncOrb({
         }}
         className="w-full h-full rounded-full flex items-center justify-center relative overflow-hidden"
         style={{
-          background: `radial-gradient(circle at 35% 35%, ${orbColor} 0%, rgba(${orbRgb},0.4) 60%, rgba(${orbRgb},0.1) 100%)`,
-          border: `1px solid rgba(${orbRgb}, 0.4)`,
-          transition: "background 0.4s ease",
+          background: isListening 
+            ? `radial-gradient(circle at 35% 35%, #00f2ff 0%, rgba(0,242,255,0.4) 60%, rgba(0,242,255,0.1) 100%)`
+            : isSpeaking
+            ? `radial-gradient(circle at 35% 35%, #a855f7 0%, rgba(168,85,247,0.4) 60%, rgba(168,85,247,0.1) 100%)`
+            : `radial-gradient(circle at 35% 35%, ${orbColor} 0%, rgba(${orbRgb},0.4) 60%, rgba(${orbRgb},0.1) 100%)`,
+          border: `1px solid rgba(${orbRgb}, 0.5)`,
+          boxShadow: `0 0 20px rgba(${orbRgb}, 0.2), inset 0 0 15px rgba(255,255,255,0.1)`,
+          transition: "all 0.4s cubic-bezier(0.4, 0, 0.2, 1)",
         }}
       >
         {/* Rotating inner ring for processing */}

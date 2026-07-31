@@ -1,6 +1,6 @@
 /*
  * ENOSX AI — useOpenRouter
- * Calls OpenRouter API with tool support for web search and scraping.
+ * Upgraded Elite Intelligence with tool support and advanced reasoning models.
  */
 
 import { useState, useCallback } from "react";
@@ -10,21 +10,23 @@ const OPENROUTER_API_URL = "https://openrouter.ai/api/v1/chat/completions";
 const OPENROUTER_API_KEY = import.meta.env.VITE_OPENROUTER_API_KEY || "";
 const SERPER_API_KEY = import.meta.env.VITE_SERPER_API_KEY || "";
 
+// ── Elite Model Mapping ──────────────────────────────────────────────────────────
+// Using the highest-tier models for premium performance.
 const MODELS = {
   text: {
-    "ex":        "meta-llama/llama-4-maverick",
-    "ex-pro":    "anthropic/claude-3.5-sonnet",
+    "ex":        "anthropic/claude-3.5-sonnet", // Smart default
+    "ex-pro":    "openai/gpt-4o",              // Gold standard
     "smart":     "anthropic/claude-3.5-sonnet",
-    "fast":      "google/gemini-2.5-flash",
+    "fast":      "google/gemini-2.0-flash-exp:free",
     "balanced":  "openai/gpt-4o-mini",
-    "task":      "deepseek/deepseek-chat",
+    "task":      "deepseek/deepseek-r1",       // Reasoning model
     "creative":  "anthropic/claude-3.5-sonnet",
   },
   vision: {
-    "ex":        "meta-llama/llama-4-maverick",
-    "ex-pro":    "anthropic/claude-3.5-sonnet",
+    "ex":        "anthropic/claude-3.5-sonnet",
+    "ex-pro":    "openai/gpt-4o",
     "smart":     "anthropic/claude-3.5-sonnet",
-    "fast":      "google/gemini-2.5-flash",
+    "fast":      "google/gemini-2.0-flash-exp:free",
     "balanced":  "openai/gpt-4o-mini",
     "task":      "google/gemini-2.0-flash-exp:free",
     "creative":  "anthropic/claude-3.5-sonnet",
@@ -100,7 +102,7 @@ export function useOpenRouter() {
       setError(null);
 
       if (!OPENROUTER_API_KEY) {
-        onChunk("API key missing.");
+        onChunk("API key missing. Please configure VITE_OPENROUTER_API_KEY.");
         onDone();
         setIsLoading(false);
         return;
@@ -111,10 +113,22 @@ export function useOpenRouter() {
         const aiMode = (options?.aiMode as keyof typeof MODELS.text) || "ex";
         const model = hasImages ? MODELS.vision[aiMode] : MODELS.text[aiMode];
 
-        let currentMessages = messages.map(m => ({
-          role: m.role,
-          content: m.content
-        }));
+        let currentMessages = messages.map(m => {
+          const images = m.attachments?.filter(a => a.type.startsWith("image/")) || [];
+          if (images.length > 0 && m.role === "user") {
+            return {
+              role: m.role,
+              content: [
+                { type: "text", text: m.content },
+                ...images.map(img => ({
+                  type: "image_url",
+                  image_url: { url: img.content.startsWith("data:") ? img.content : `data:${img.type};base64,${img.content}` }
+                }))
+              ]
+            };
+          }
+          return { role: m.role, content: m.content };
+        });
 
         let toolCalls: any[] = [];
         let isToolCallPending = false;
@@ -131,7 +145,7 @@ export function useOpenRouter() {
             body: JSON.stringify({
               model,
               messages: currentMessages,
-              tools: TOOLS,
+              tools: model.includes("deepseek-r1") ? undefined : TOOLS, // R1 doesn't support tools yet in some implementations
               stream: true,
             }),
           });
@@ -151,7 +165,7 @@ export function useOpenRouter() {
             const chunks = decoder.decode(value).split("\n");
             for (const chunk of chunks) {
               if (!chunk.startsWith("data: ")) continue;
-              const data = chunk.slice(6);
+              const data = chunk.slice(6).trim();
               if (data === "[DONE]") continue;
 
               try {
@@ -191,7 +205,7 @@ export function useOpenRouter() {
             
             toolCalls = [];
             isToolCallPending = false;
-            await callAI(); // Recursive call for final response
+            await callAI();
           }
         };
 

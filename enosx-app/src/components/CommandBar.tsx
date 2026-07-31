@@ -65,10 +65,17 @@ export const AI_MODES: AIModeOption[] = [
   },
   {
     id: "task",
-    label: "Research",
+    label: "Reasoning",
     color: "#ef4444",
     bgColor: "rgba(239,68,68,0.15)",
     borderColor: "rgba(239,68,68,0.4)",
+  },
+  {
+    id: "fast",
+    label: "Fast",
+    color: "#10b981",
+    bgColor: "rgba(16,185,129,0.15)",
+    borderColor: "rgba(16,185,129,0.4)",
   },
   {
     id: "creative",

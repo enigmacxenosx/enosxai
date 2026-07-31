@@ -96,11 +96,17 @@ export default function AIFace({
         {/* Background glow */}
         <defs>
           <radialGradient id="faceGlow" cx="50%" cy="50%" r="60%">
-            <stop offset="0%" stopColor={accentColor} stopOpacity="0.15" />
-            <stop offset="100%" stopColor={accentColor} stopOpacity="0" />
+            <stop offset="0%" stopColor={accentColor} stopOpacity="0.25" />
+            <stop offset="50%" stopColor="#a855f7" stopOpacity="0.1" />
+            <stop offset="100%" stopColor="#00f2ff" stopOpacity="0" />
           </radialGradient>
+          <linearGradient id="iridescent" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stopColor={accentColor} />
+            <stop offset="50%" stopColor="#a855f7" />
+            <stop offset="100%" stopColor="#00f2ff" />
+          </linearGradient>
           <filter id="glow">
-            <feGaussianBlur stdDeviation="3" result="coloredBlur" />
+            <feGaussianBlur stdDeviation="5" result="coloredBlur" />
             <feMerge>
               <feMergeNode in="coloredBlur" />
               <feMergeNode in="SourceGraphic" />
@@ -127,7 +133,16 @@ export default function AIFace({
         )}
 
         {/* Face background */}
-        <circle cx="100" cy="100" r="90" fill={`rgba(${accentRgb}, 0.05)`} stroke={accentColor} strokeWidth="2" />
+        <motion.circle 
+          cx="100" 
+          cy="100" 
+          r="90" 
+          fill={`rgba(${accentRgb}, 0.03)`} 
+          stroke="url(#iridescent)" 
+          strokeWidth="1.5"
+          animate={{ strokeWidth: [1.5, 2.5, 1.5], opacity: [0.6, 1, 0.6] }}
+          transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
+        />
         <circle cx="100" cy="100" r="85" fill="url(#faceGlow)" />
 
         {/* Left Eye */}

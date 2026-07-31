@@ -25,19 +25,19 @@ export default function AboutPage() {
     {
       icon: Zap,
       title: "Intelligence",
-      description: "Custom-tuned LLM layers for system automation",
+      description: "Custom-tuned LLM layers with real-time web browsing and analysis.",
       color: "#00F2FF",
     },
     {
       icon: Cpu,
       title: "Architecture",
-      description: "Powered by OpenRouter for flexible AI model selection",
+      description: "Powered by OpenRouter and DALL-E 3 for multi-modal orchestration.",
       color: "#7000FF",
     },
     {
       icon: Palette,
       title: "Design",
-      description: 'Next-generation "Aero-Glass" UI with iridescent neon accents',
+      description: 'Next-gen glassmorphic UI with unboxed chats and expanded layouts.',
       color: "#FF0080",
     },
   ];
@@ -177,9 +177,43 @@ export default function AboutPage() {
               Enosx Technologies was born out of a simple necessity: the need for 
               an AI that doesn't just "chat," but operates. Founded by Enosh, 
               the vision was a system that breathes with the OS—a fluid, 
-              iridescent interface powered by high-performance architecture 
-              and proprietary design language.
+              iridescent interface powered by high-performance architecture. 
+              Today, ENOSX AI is a multi-modal powerhouse, capable of generating 
+              art, analyzing the web, and automating complex workflows with 
+              unparalleled speed.
             </p>
+          </div>
+        </motion.div>
+
+        {/* Capabilities Section */}
+        <motion.div
+          initial={{ opacity: 0, y: 40 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.8 }}
+          viewport={{ once: true, margin: "-100px" }}
+          className="mb-32"
+        >
+          <h2
+            className="text-4xl font-bold mb-8"
+            style={{ color: "rgba(255,255,255,0.95)" }}
+          >
+            Capabilities
+          </h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {[
+              { title: "Imagine Mode", desc: "Native DALL-E 3 integration for instant artistic generation." },
+              { title: "Web Intelligence", desc: "Real-time search and deep-scraping for factual precision." },
+              { title: "Document Engine", desc: "Export complex insights to professional PDF or Markdown." },
+              { title: "Glass UI v2", desc: "Spacious, unboxed chat interface designed for focus." }
+            ].map((cap, i) => (
+              <div 
+                key={i}
+                className="p-5 rounded-xl border border-white/10 bg-white/5 backdrop-blur-md"
+              >
+                <h4 className="font-bold text-[#00F2FF] mb-1">{cap.title}</h4>
+                <p className="text-sm text-white/60">{cap.desc}</p>
+              </div>
+            ))}
           </div>
         </motion.div>
 

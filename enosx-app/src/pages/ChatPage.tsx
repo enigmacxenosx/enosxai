@@ -31,6 +31,7 @@ import { useFileContext } from "@/hooks/useFileContext";
 import { useClipboardListener } from "@/hooks/useClipboardListener";
 import { useGodMode } from "@/hooks/useGodMode";
 import { useMemoryBank } from "@/hooks/useMemoryBank";
+import { useImageGen } from "@/hooks/useImageGen";
 import { Conversation, Message } from "@/lib/types";
 import { useTheme } from "@/contexts/ThemeContext";
 import { useCompactMode } from "@/hooks/useCompactMode";
@@ -116,7 +117,10 @@ export default function ChatPage() {
   useEffect(() => { activeIdRef.current = activeId; }, [activeId]);
   useEffect(() => { conversationsRef.current = conversations; }, [conversations]);
 
-  const { sendMessage, isLoading, error } = useAI();
+  const { sendMessage, isLoading: isChatLoading, error: chatError } = useAI();
+  const { generateImage, isGenerating, error: imageError } = useImageGen();
+  const isLoading = isChatLoading || isGenerating;
+  const error = chatError || imageError;
 
   const {
     voiceState,
@@ -315,6 +319,49 @@ export default function ChatPage() {
       const currentConv = conversationsRef.current.find((c) => c.id === targetConvId);
       const history = currentConv ? currentConv.messages : [];
       const githubContext = await (window as any).__getGitHubContext?.();
+
+      // ── IMAGE GENERATION MODE ────────────────────────────────────────────────────
+      if (aiMode === "imagine") {
+        try {
+          const imageUrl = await generateImage(text);
+          const assistantId = nanoid();
+          const assistantMessage: Message = {
+            id: assistantId,
+            role: "assistant",
+            content: `I've generated an image based on your prompt: "${text}"`,
+            timestamp: new Date(),
+            attachments: [
+              {
+                id: nanoid(),
+                name: "generated-image.png",
+                type: "image/png",
+                size: 0,
+                content: imageUrl,
+                url: imageUrl,
+              },
+            ],
+          };
+
+          setConversations((prev) =>
+            prev.map((c) =>
+              c.id === targetConvId
+                ? {
+                    ...c,
+                    messages: c.messages.map((m) =>
+                      m.role === "assistant" && m.content === "" && !m.attachments ? assistantMessage : m
+                    ),
+                    updatedAt: new Date(),
+                  }
+                : c
+            )
+          );
+          return;
+        } catch (err) {
+          console.error("Image generation failed:", err);
+          // Error is already handled by useImageGen and displayed via the error state
+          return;
+        }
+      }
 
       // ── SYSTEM PROMPT CONSTRUCTION ──────────────────────────────────────────────
       const identity = getAIIdentity();

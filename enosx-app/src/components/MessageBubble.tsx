@@ -63,7 +63,6 @@ function renderContentWithImages(text: string, accentColor: string) {
     return (
       <div
         className="prose-crimson text-sm"
-        style={{ color: accentColor }}
         dangerouslySetInnerHTML={{ __html: renderMarkdown(text) }}
       />
     );
@@ -343,16 +342,36 @@ export default function MessageBubble({
                   </p>
                 </div>
               ) : (
-                <div className="flex flex-col gap-2">
+                <div className="flex flex-col gap-3">
+                  {/* Assistant image attachments (for Imagine mode) */}
+                  {message.attachments && message.attachments.length > 0 && (
+                    <div className="flex flex-wrap gap-2 mb-1">
+                      {message.attachments.map((att) => {
+                        const isImage = ["jpg", "jpeg", "png", "gif", "webp"].includes(att.type.toLowerCase());
+                        if (!isImage) return null;
+                        return (
+                          <motion.img
+                            key={att.id}
+                            src={att.content}
+                            alt={att.name}
+                            initial={{ opacity: 0, scale: 0.9 }}
+                            animate={{ opacity: 1, scale: 1 }}
+                            className="max-w-full rounded-lg border border-white/10 shadow-lg object-cover cursor-pointer hover:scale-[1.01] transition-transform"
+                            onClick={() => window.open(att.content, '_blank')}
+                          />
+                        );
+                      })}
+                    </div>
+                  )}
                   {/* Assistant content with inline image support */}
                   {renderContentWithImages(message.content, config.accent)}
                   {isGeneratingImage && (
                     <ImageGeneratingIndicator accent={config.accent} />
                   )}
-                  {isStreaming && message.content && (
-                    <StreamingCursor color={config.accent} />
-                  )}
                 </div>
+              )}
+              {isStreaming && message.content && (
+                <StreamingCursor color={config.accent} />
               )}
             </div>
           )}
@@ -383,44 +402,29 @@ export default function MessageBubble({
 
             {!isUser && (
               <>
-	                <motion.button
-	                  whileHover={{ scale: 1.1 }}
-	                  whileTap={{ scale: 0.9 }}
-	                  onClick={() => (isSpeaking ? onStopSpeak() : onSpeak(message.content))}
-	                  className="w-7 h-7 rounded-lg flex items-center justify-center transition-all duration-150"
-	                  style={{
-	                    background: isSpeaking
-	                      ? `rgba(${config.accentRgb}, 0.12)`
-	                      : "rgba(255,255,255,0.04)",
-	                    border: isSpeaking
-	                      ? `1px solid rgba(${config.accentRgb}, 0.3)`
-	                      : "1px solid rgba(255,255,255,0.07)",
-	                    color: isSpeaking ? config.accent : config.textMuted,
-	                  }}
-	                  title={isSpeaking ? "Stop speaking" : "Speak"}
-	                >
-	                  {isSpeaking ? <VolumeX size={12} /> : <Volume2 size={12} />}
-	                </motion.button>
-
-                  <motion.button
-                    whileHover={{ scale: 1.1 }}
-                    whileTap={{ scale: 0.9 }}
-                    onClick={(e) => { e.stopPropagation(); handleDownload('pdf'); }}
-                    className="w-7 h-7 rounded-lg flex items-center justify-center transition-all duration-150"
-                    style={{
-                      background: "rgba(255,255,255,0.04)",
-                      border: "1px solid rgba(255,255,255,0.07)",
-                      color: config.textMuted,
-                    }}
-                    title="Export as PDF"
-                  >
-                    <FileText size={12} />
-                  </motion.button>
+                <motion.button
+                  whileHover={{ scale: 1.1 }}
+                  whileTap={{ scale: 0.9 }}
+                  onClick={() => (isSpeaking ? onStopSpeak() : onSpeak(message.content))}
+                  className="w-7 h-7 rounded-lg flex items-center justify-center transition-all duration-150"
+                  style={{
+                    background: isSpeaking
+                      ? `rgba(${config.accentRgb}, 0.12)`
+                      : "rgba(255,255,255,0.04)",
+                    border: isSpeaking
+                      ? `1px solid rgba(${config.accentRgb}, 0.3)`
+                      : "1px solid rgba(255,255,255,0.07)",
+                    color: isSpeaking ? config.accent : config.textMuted,
+                  }}
+                  title={isSpeaking ? "Stop speaking" : "Speak"}
+                >
+                  {isSpeaking ? <VolumeX size={12} /> : <Volume2 size={12} />}
+                </motion.button>
 
                 <motion.button
                   whileHover={{ scale: 1.1 }}
                   whileTap={{ scale: 0.9 }}
-                  onClick={(e) => { e.stopPropagation(); handleDownload('md'); }}
+                  onClick={() => handleDownload('md')}
                   className="w-7 h-7 rounded-lg flex items-center justify-center transition-all duration-150"
                   style={{
                     background: "rgba(255,255,255,0.04)",

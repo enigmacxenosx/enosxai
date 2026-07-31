@@ -17,7 +17,7 @@ import { useWallpaper } from "@/contexts/WallpaperContext";
 import VoiceVisualizer from "./VoiceVisualizer";
 import PulseOrb from "./PulseOrb";
 
-export type AIMode = "ex" | "ex-pro" | "smart" | "fast" | "balanced" | "task" | "creative";
+export type AIMode = "ex" | "ex-pro" | "smart" | "fast" | "balanced" | "task" | "creative" | "imagine";
 
 export interface AIModeOption {
   id: AIMode;
@@ -76,6 +76,13 @@ export const AI_MODES: AIModeOption[] = [
     color: "#ec4899",
     bgColor: "rgba(236,72,153,0.15)",
     borderColor: "rgba(236,72,153,0.4)",
+  },
+  {
+    id: "imagine",
+    label: "Imagine",
+    color: "#00f2ff",
+    bgColor: "rgba(0,242,255,0.15)",
+    borderColor: "rgba(0,242,255,0.4)",
   },
 ];
 

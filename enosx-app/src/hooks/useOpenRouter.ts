@@ -1,6 +1,6 @@
 /*
  * ENOSX AI — useOpenRouter
- * Upgraded Elite Intelligence with tool support and advanced reasoning models.
+ * Upgraded 2026 Elite Intelligence with tool support and advanced reasoning models.
  */
 
 import { useState, useCallback } from "react";
@@ -10,26 +10,26 @@ const OPENROUTER_API_URL = "https://openrouter.ai/api/v1/chat/completions";
 const OPENROUTER_API_KEY = import.meta.env.VITE_OPENROUTER_API_KEY || "";
 const SERPER_API_KEY = import.meta.env.VITE_SERPER_API_KEY || "";
 
-// ── Elite Model Mapping ──────────────────────────────────────────────────────────
-// Using the highest-tier models for premium performance.
+// ── 2026 Elite Model Mapping ──────────────────────────────────────────────────────────
+// Using the latest 2026 models for maximum performance.
 const MODELS = {
   text: {
-    "ex":        "anthropic/claude-3.5-sonnet", // Smart default
-    "ex-pro":    "openai/gpt-4o",              // Gold standard
-    "smart":     "anthropic/claude-3.5-sonnet",
-    "fast":      "google/gemini-2.0-flash-exp:free",
-    "balanced":  "openai/gpt-4o-mini",
+    "ex":        "anthropic/claude-sonnet-5",   // 2026 Smart default
+    "ex-pro":    "openai/gpt-5-pro",           // 2026 Flagship
+    "smart":     "anthropic/claude-sonnet-5",
+    "fast":      "google/gemini-3.5-flash",
+    "balanced":  "openai/gpt-5-mini",
     "task":      "deepseek/deepseek-r1",       // Reasoning model
-    "creative":  "anthropic/claude-3.5-sonnet",
+    "creative":  "anthropic/claude-opus-5",
   },
   vision: {
-    "ex":        "anthropic/claude-3.5-sonnet",
-    "ex-pro":    "openai/gpt-4o",
-    "smart":     "anthropic/claude-3.5-sonnet",
-    "fast":      "google/gemini-2.0-flash-exp:free",
-    "balanced":  "openai/gpt-4o-mini",
-    "task":      "google/gemini-2.0-flash-exp:free",
-    "creative":  "anthropic/claude-3.5-sonnet",
+    "ex":        "anthropic/claude-sonnet-5",
+    "ex-pro":    "openai/gpt-5-pro",
+    "smart":     "anthropic/claude-sonnet-5",
+    "fast":      "google/gemini-3.5-flash",
+    "balanced":  "openai/gpt-5-mini",
+    "task":      "google/gemini-3.5-flash",
+    "creative":  "anthropic/claude-opus-5",
   },
 } as const;
 
@@ -145,7 +145,7 @@ export function useOpenRouter() {
             body: JSON.stringify({
               model,
               messages: currentMessages,
-              tools: model.includes("deepseek-r1") ? undefined : TOOLS, // R1 doesn't support tools yet in some implementations
+              tools: model.includes("deepseek-r1") ? undefined : TOOLS,
               stream: true,
             }),
           });

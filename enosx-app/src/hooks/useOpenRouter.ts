@@ -291,8 +291,10 @@ export function useOpenRouter() {
         const errorMessage = err instanceof Error ? err.message : "Unknown error";
         if (errorMessage.includes("402")) {
           onChunk("### ⚠️ Insufficient Credits\n\nYour OpenRouter account has run out of credits. Please top up your balance at [openrouter.ai/keys](https://openrouter.ai/keys) to restore Elite features.\n\n*ENOSX is currently operating in Free Mode.*");
+        } else if (errorMessage.includes("429")) {
+          onChunk("I'm thinking... one moment.");
         } else {
-          onChunk(`Error: ${errorMessage}`);
+          onChunk(`I'm having trouble connecting right now. Please try again in a moment.`);
         }
         onDone();
       } finally {

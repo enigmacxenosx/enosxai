@@ -138,7 +138,6 @@ export function useOpenRouter() {
             ]
           };
         }
-        }
         return { role: m.role, content: m.content };
       });
 

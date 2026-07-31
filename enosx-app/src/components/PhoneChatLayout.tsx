@@ -29,6 +29,7 @@ interface PhoneChatLayoutProps {
   messagesEndRef: React.RefObject<HTMLDivElement>;
   isImageMode?: boolean;
   onToggleImageMode?: () => void;
+  isFreeMode?: boolean;
 }
 
 export default function PhoneChatLayout({
@@ -52,6 +53,7 @@ export default function PhoneChatLayout({
   messagesEndRef,
   isImageMode = false,
   onToggleImageMode,
+  isFreeMode = false,
 }: PhoneChatLayoutProps) {
   const { config } = useTheme();
 
@@ -110,6 +112,7 @@ export default function PhoneChatLayout({
           onStopSpeaking={stopSpeaking}
           isImageMode={isImageMode}
           onToggleImageMode={onToggleImageMode}
+          isFreeMode={isFreeMode}
         />
       </div>
 

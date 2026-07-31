@@ -24,6 +24,7 @@ interface TVChatLayoutProps {
   messagesEndRef: React.RefObject<HTMLDivElement>;
   isImageMode?: boolean;
   onToggleImageMode?: () => void;
+  isFreeMode?: boolean;
 }
 
 export default function TVChatLayout({
@@ -44,6 +45,7 @@ export default function TVChatLayout({
   messagesEndRef,
   isImageMode = false,
   onToggleImageMode,
+  isFreeMode = false,
 }: TVChatLayoutProps) {
   const { config } = useTheme();
   const containerRef = useRef<HTMLDivElement>(null);
@@ -168,6 +170,7 @@ export default function TVChatLayout({
           onStopSpeaking={stopSpeaking}
           isImageMode={isImageMode}
           onToggleImageMode={onToggleImageMode}
+          isFreeMode={isFreeMode}
         />
       </div>
     </div>

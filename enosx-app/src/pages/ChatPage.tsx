@@ -116,7 +116,7 @@ export default function ChatPage() {
   useEffect(() => { activeIdRef.current = activeId; }, [activeId]);
   useEffect(() => { conversationsRef.current = conversations; }, [conversations]);
 
-  const { sendMessage, isLoading: isChatLoading, error: chatError } = useAI();
+  const { sendMessage, isLoading: isChatLoading, error: chatError, isFreeMode } = useAI();
   const { generateImage, isGenerating, error: imageError } = useImageGeneration();
   const isLoading = isChatLoading || isGenerating;
   const error = chatError || imageError;
@@ -499,6 +499,7 @@ Personality: Professional, high-performance, efficient, and deeply integrated wi
           messagesEndRef={messagesEndRef as React.RefObject<HTMLDivElement>}
           isImageMode={isImageMode}
           onToggleImageMode={handleToggleImageMode}
+          isFreeMode={isFreeMode}
         />
       </GlobalLayout>
     );
@@ -528,6 +529,7 @@ Personality: Professional, high-performance, efficient, and deeply integrated wi
           messagesEndRef={messagesEndRef as React.RefObject<HTMLDivElement>}
           isImageMode={isImageMode}
           onToggleImageMode={handleToggleImageMode}
+          isFreeMode={isFreeMode}
         />
       </GlobalLayout>
     );
@@ -707,6 +709,7 @@ Personality: Professional, high-performance, efficient, and deeply integrated wi
               onFileSelect={handleFileUpload}
               isImageMode={isImageMode}
               onToggleImageMode={handleToggleImageMode}
+              isFreeMode={isFreeMode}
             />
           </div>
         </div>

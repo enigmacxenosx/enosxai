@@ -1,25 +1,25 @@
 /*
  * ENOSX AI — useOpenRouter
- * Upgraded 2026 Elite Intelligence with tool support and advanced reasoning models.
+ * Upgraded 2026 Elite Intelligence with automatic 402 (Payment Required) fail-safe.
  */
 
 import { useState, useCallback } from "react";
 import { Message } from "@/lib/types";
+import { toast } from "sonner";
 
 const OPENROUTER_API_URL = "https://openrouter.ai/api/v1/chat/completions";
 const OPENROUTER_API_KEY = import.meta.env.VITE_OPENROUTER_API_KEY || "";
 const SERPER_API_KEY = import.meta.env.VITE_SERPER_API_KEY || "";
 
 // ── 2026 Elite Model Mapping ──────────────────────────────────────────────────────────
-// Using the latest 2026 models for maximum performance.
 const MODELS = {
   text: {
-    "ex":        "anthropic/claude-sonnet-5",   // 2026 Smart default
-    "ex-pro":    "openai/gpt-5-pro",           // 2026 Flagship
+    "ex":        "anthropic/claude-sonnet-5",
+    "ex-pro":    "openai/gpt-5-pro",
     "smart":     "anthropic/claude-sonnet-5",
     "fast":      "google/gemini-3.5-flash",
     "balanced":  "openai/gpt-5-mini",
-    "task":      "deepseek/deepseek-r1",       // Reasoning model
+    "task":      "deepseek/deepseek-r1",
     "creative":  "anthropic/claude-opus-5",
   },
   vision: {
@@ -32,6 +32,13 @@ const MODELS = {
     "creative":  "anthropic/claude-opus-5",
   },
 } as const;
+
+// ── 2026 Free Fallback Models ─────────────────────────────────────────────────────────
+const FREE_MODELS = {
+  text: "google/gemma-4-31b-it:free",
+  vision: "google/gemma-4-26b-a4b-it:free",
+  auto: "openrouter/free"
+};
 
 const TOOLS = [
   {
@@ -67,6 +74,7 @@ const TOOLS = [
 export function useOpenRouter() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [isFreeMode, setIsFreeMode] = useState(false);
 
   const executeTool = async (name: string, args: any) => {
     if (name === "web_search") {
@@ -108,32 +116,36 @@ export function useOpenRouter() {
         return;
       }
 
-      try {
-        const hasImages = messages.some(m => m.attachments?.some(a => a.type.startsWith("image/")));
-        const aiMode = (options?.aiMode as keyof typeof MODELS.text) || "ex";
-        const model = hasImages ? MODELS.vision[aiMode] : MODELS.text[aiMode];
+      const hasImages = messages.some(m => m.attachments?.some(a => a.type.startsWith("image/")));
+      const aiMode = (options?.aiMode as keyof typeof MODELS.text) || "ex";
+      
+      // Select model based on state and content
+      let model = isFreeMode 
+        ? (hasImages ? FREE_MODELS.vision : FREE_MODELS.text)
+        : (hasImages ? MODELS.vision[aiMode] : MODELS.text[aiMode]);
 
-        let currentMessages = messages.map(m => {
-          const images = m.attachments?.filter(a => a.type.startsWith("image/")) || [];
-          if (images.length > 0 && m.role === "user") {
-            return {
-              role: m.role,
-              content: [
-                { type: "text", text: m.content },
-                ...images.map(img => ({
-                  type: "image_url",
-                  image_url: { url: img.content.startsWith("data:") ? img.content : `data:${img.type};base64,${img.content}` }
-                }))
-              ]
-            };
-          }
-          return { role: m.role, content: m.content };
-        });
+      let currentMessages = messages.map(m => {
+        const images = m.attachments?.filter(a => a.type.startsWith("image/")) || [];
+        if (images.length > 0 && m.role === "user") {
+          return {
+            role: m.role,
+            content: [
+              { type: "text", text: m.content },
+              ...images.map(img => ({
+                type: "image_url",
+                image_url: { url: img.content.startsWith("data:") ? img.content : `data:${img.type};base64,${img.content}` }
+              }))
+            ]
+          };
+        }
+        return { role: m.role, content: m.content };
+      });
 
-        let toolCalls: any[] = [];
-        let isToolCallPending = false;
+      let toolCalls: any[] = [];
+      let isToolCallPending = false;
 
-        const callAI = async () => {
+      const callAI = async (retryWithFree = true): Promise<void> => {
+        try {
           const response = await fetch(OPENROUTER_API_URL, {
             method: "POST",
             headers: {
@@ -149,6 +161,20 @@ export function useOpenRouter() {
               stream: true,
             }),
           });
+
+          if (response.status === 402) {
+            if (retryWithFree) {
+              console.warn("402 Error: Insufficient credits. Switching to Free Mode...");
+              setIsFreeMode(true);
+              toast.error("Insufficient credits. Switching to ENOSX Free Mode...", {
+                description: "You can continue chatting for free, but some elite features may be limited."
+              });
+              model = hasImages ? FREE_MODELS.vision : FREE_MODELS.text;
+              return await callAI(false); // Retry once with free model
+            } else {
+              throw new Error("402: Insufficient credits even in Free Mode.");
+            }
+          }
 
           if (!response.ok) throw new Error(`API Error: ${response.status}`);
 
@@ -205,21 +231,30 @@ export function useOpenRouter() {
             
             toolCalls = [];
             isToolCallPending = false;
-            await callAI();
+            await callAI(false);
           }
-        };
+        } catch (err) {
+          throw err;
+        }
+      };
 
+      try {
         await callAI();
         onDone();
       } catch (err) {
-        onChunk(`Error: ${err instanceof Error ? err.message : "Unknown"}`);
+        const errorMessage = err instanceof Error ? err.message : "Unknown error";
+        if (errorMessage.includes("402")) {
+          onChunk("### ⚠️ Insufficient Credits\n\nYour OpenRouter account has run out of credits. Please top up your balance at [openrouter.ai/keys](https://openrouter.ai/keys) to restore Elite features.\n\n*ENOSX is currently operating in Free Mode.*");
+        } else {
+          onChunk(`Error: ${errorMessage}`);
+        }
         onDone();
       } finally {
         setIsLoading(false);
       }
     },
-    []
+    [isFreeMode]
   );
 
-  return { sendMessage, isLoading, error };
+  return { sendMessage, isLoading, error, isFreeMode };
 }

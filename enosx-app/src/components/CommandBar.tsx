@@ -106,6 +106,7 @@ interface CommandBarProps {
   disabled?: boolean;
   isImageMode?: boolean;
   onToggleImageMode?: () => void;
+  isFreeMode?: boolean;
 }
 
 export default function CommandBar({
@@ -121,6 +122,7 @@ export default function CommandBar({
   disabled = false,
   isImageMode = false,
   onToggleImageMode,
+  isFreeMode = false,
 }: CommandBarProps) {
   const { config } = useTheme();
   const { settings: wallpaperSettings } = useWallpaper();
@@ -248,28 +250,43 @@ export default function CommandBar({
             }}
           >
             {/* AI Mode selector — single compact tab with dropdown */}
-            <div className="relative" ref={modeRef}>
-              <motion.button
-                whileHover={{ scale: 1.03 }}
-                whileTap={{ scale: 0.97 }}
-                onClick={() => setModeOpen((o) => !o)}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-semibold text-xs whitespace-nowrap transition-all"
-                style={{
-                  background: currentMode.bgColor,
-                  border: `1.5px solid ${currentMode.color}`,
-                  color: currentMode.color,
-                  boxShadow: `0 0 8px ${currentMode.color}33`,
-                }}
-              >
-                {currentMode.label}
-                <ChevronDown
-                  size={11}
+            <div className="flex items-center gap-2">
+              <div className="relative" ref={modeRef}>
+                <motion.button
+                  whileHover={{ scale: 1.03 }}
+                  whileTap={{ scale: 0.97 }}
+                  onClick={() => setModeOpen((o) => !o)}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-semibold text-xs whitespace-nowrap transition-all"
                   style={{
-                    transform: modeOpen ? "rotate(180deg)" : "rotate(0deg)",
-                    transition: "transform 0.2s ease",
+                    background: currentMode.bgColor,
+                    border: `1.5px solid ${currentMode.color}`,
+                    color: currentMode.color,
+                    boxShadow: `0 0 8px ${currentMode.color}33`,
                   }}
-                />
-              </motion.button>
+                >
+                  {currentMode.label}
+                  <ChevronDown
+                    size={11}
+                    style={{
+                      transform: modeOpen ? "rotate(180deg)" : "rotate(0deg)",
+                      transition: "transform 0.2s ease",
+                    }}
+                  />
+                </motion.button>
+              </div>
+
+              {isFreeMode && (
+                <motion.div
+                  initial={{ opacity: 0, x: -10 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  className="px-2 py-1 rounded-md bg-yellow-500/10 border border-yellow-500/30 text-[10px] font-bold text-yellow-400 flex items-center gap-1.5"
+                  title="Running in Free Mode due to low credits"
+                >
+                  <div className="w-1.5 h-1.5 rounded-full bg-yellow-500 animate-pulse" />
+                  FREE MODE
+                </motion.div>
+              )}
+            </div>
 
               <AnimatePresence>
                 {modeOpen && (
@@ -315,11 +332,10 @@ export default function CommandBar({
                     ))}
                   </motion.div>
                 )}
-              </AnimatePresence>
-            </div>
-
-              {/* Textarea and buttons container */}
-              <div className="flex items-end gap-3">
+	              </AnimatePresence>
+	
+	              {/* Textarea and buttons container */}
+	              <div className="flex items-end gap-3">
                 {/* Plus button */}
                 <input
                   type="file"

@@ -177,48 +177,55 @@ export function useOpenRouter() {
           }
 
           if (response.status === 429) {
-            onChunk("I'm thinking... one moment.");
-            await new Promise(resolve => setTimeout(resolve, 5000));
-            try {
-              const retryRes = await fetch(OPENROUTER_API_URL, {
-                method: "POST",
-                headers: {
-                  "Content-Type": "application/json",
-                  Authorization: `Bearer ${OPENROUTER_API_KEY}`,
-                  "HTTP-Referer": "https://enosx.vercel.app",
-                  "X-Title": "ENOSX AI",
-                },
-                body: JSON.stringify({
-                  model,
-                  messages: currentMessages,
-                  tools: model.includes("deepseek-r1") ? undefined : TOOLS,
-                  stream: true,
-                }),
-              });
-              if (!retryRes.ok) throw new Error(`API Error: ${retryRes.status}`);
-              const retryReader = retryRes.body?.getReader();
-              if (!retryReader) throw new Error("No reader available");
-              const retryDecoder = new TextDecoder();
-              let retryContent = "";
-              while (true) {
-                const { done, value } = await retryReader.read();
-                if (done) break;
-                const retryChunks = retryDecoder.decode(value).split("\n");
-                for (const chunk of retryChunks) {
-                  if (!chunk.startsWith("data: ")) continue;
-                  const data = chunk.slice(6).trim();
-                  if (data === "[DONE]") continue;
-                  try {
-                    const parsed = JSON.parse(data);
-                    const delta = parsed.choices[0].delta;
-                    if (delta.content) { retryContent += delta.content; onChunk(delta.content); }
-                  } catch {}
+            if (retryWithFree) {
+              console.warn("429 Error: Rate limited. Switching to Free Mode...");
+              setIsFreeMode(true);
+              onChunk("Rate limited. Switching to ENOSX Free Mode...");
+              model = hasImages ? FREE_MODELS.vision : FREE_MODELS.text;
+              return await callAI(false);
+            } else {
+              onChunk("I'm thinking... give me a moment.");
+              // Wait 10 seconds then retry once more with free model
+              await new Promise(resolve => setTimeout(resolve, 10000));
+              try {
+                const retryRes = await fetch(OPENROUTER_API_URL, {
+                  method: "POST",
+                  headers: {
+                    "Content-Type": "application/json",
+                    Authorization: `Bearer ${OPENROUTER_API_KEY}`,
+                    "HTTP-Referer": "https://enosx.vercel.app",
+                    "X-Title": "ENOSX AI",
+                  },
+                  body: JSON.stringify({
+                    model,
+                    messages: currentMessages,
+                    stream: true,
+                  }),
+                });
+                if (!retryRes.ok) throw new Error(`API Error: ${retryRes.status}`);
+                const retryReader = retryRes.body?.getReader();
+                if (!retryReader) throw new Error("No reader available");
+                const retryDecoder = new TextDecoder();
+                while (true) {
+                  const { done, value } = await retryReader.read();
+                  if (done) break;
+                  const retryChunks = retryDecoder.decode(value).split("\n");
+                  for (const chunk of retryChunks) {
+                    if (!chunk.startsWith("data: ")) continue;
+                    const data = chunk.slice(6).trim();
+                    if (data === "[DONE]") continue;
+                    try {
+                      const parsed = JSON.parse(data);
+                      const delta = parsed.choices[0].delta;
+                      if (delta.content) onChunk(delta.content);
+                    } catch {}
+                  }
                 }
+                return;
+              } catch {
+                onChunk("The AI is temporarily busy. Please try again in a moment.");
+                return;
               }
-              return;
-            } catch {
-              onChunk("I'm still processing — it's busy right now. Please try again in a moment.");
-              return;
             }
           }
 

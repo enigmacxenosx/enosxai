@@ -31,7 +31,6 @@ import { useFileContext } from "@/hooks/useFileContext";
 import { useClipboardListener } from "@/hooks/useClipboardListener";
 import { useGodMode } from "@/hooks/useGodMode";
 import { useMemoryBank } from "@/hooks/useMemoryBank";
-import { useImageGen } from "@/hooks/useImageGen";
 import { Conversation, Message } from "@/lib/types";
 import { useTheme } from "@/contexts/ThemeContext";
 import { useCompactMode } from "@/hooks/useCompactMode";
@@ -118,7 +117,7 @@ export default function ChatPage() {
   useEffect(() => { conversationsRef.current = conversations; }, [conversations]);
 
   const { sendMessage, isLoading: isChatLoading, error: chatError } = useAI();
-  const { generateImage, isGenerating, error: imageError } = useImageGen();
+  const { generateImage, isGenerating, error: imageError } = useImageGeneration();
   const isLoading = isChatLoading || isGenerating;
   const error = chatError || imageError;
 
@@ -204,9 +203,6 @@ export default function ChatPage() {
   const { isCompactMode } = useCompactMode();
   const isMobile = useIsMobile();
   const deviceType = useDeviceType();
-
-  // ── Image generation ──────────────────────────────────────────────────────
-  const { generateImage, isGenerating: isImgGenerating } = useImageGeneration();
 
   const handleToggleImageMode = useCallback(() => {
     setIsImageMode((prev) => {
@@ -323,12 +319,14 @@ export default function ChatPage() {
       // ── IMAGE GENERATION MODE ────────────────────────────────────────────────────
       if (aiMode === "imagine") {
         try {
-          const imageUrl = await generateImage(text);
+          const result = await generateImage(text);
+          if (!result) throw new Error("No image generated");
+          
           const assistantId = nanoid();
           const assistantMessage: Message = {
             id: assistantId,
             role: "assistant",
-            content: `I've generated an image based on your prompt: "${text}"`,
+            content: `I've generated an image based on your prompt: "${text}"${result.revisedPrompt ? `\n\n*Revised prompt: ${result.revisedPrompt}*` : ""}`,
             timestamp: new Date(),
             attachments: [
               {
@@ -336,8 +334,8 @@ export default function ChatPage() {
                 name: "generated-image.png",
                 type: "image/png",
                 size: 0,
-                content: imageUrl,
-                url: imageUrl,
+                content: result.url,
+                url: result.url,
               },
             ],
           };

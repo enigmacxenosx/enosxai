@@ -67,14 +67,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   try {
-    const apiKey = process.env.OPENROUTER_API_KEY;
+    const apiKey = process.env.ENOSX_AI_KEY || process.env.GROQ_API_KEY || process.env.OPENROUTER_API_KEY;
 
     // If no API key, send a helpful mock response
     if (!apiKey || apiKey.trim() === "") {
-      console.warn("[API] OPENROUTER_API_KEY is missing. Sending fallback response.");
+      console.warn("[API] AI API key is missing. Sending fallback response.");
       return sendMockResponse(
         res,
-        "ENOSX AI is currently in offline mode. The OPENROUTER_API_KEY environment variable is not configured. Please set it in your Vercel project settings to enable full functionality."
+        "ENOSX AI is currently in offline mode. The ENOSX_AI_KEY environment variable is not configured. Please set it in your project settings to enable full functionality."
       );
     }
 
@@ -131,16 +131,16 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       })),
     ];
 
-    console.log("[API] Sending request to OpenRouter with", chatMessages.length, "messages");
+    console.log("[API] Sending request to Groq with", chatMessages.length, "messages");
 
-    const openrouterResponse = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+    const groqResponse = await fetch("https://api.groq.com/openai/v1/chat/completions", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
         Authorization: `Bearer ${apiKey}`,
       },
       body: JSON.stringify({
-        model: process.env.OPENROUTER_MODEL || "meta-llama/llama-3.3-70b-instruct",
+        model: process.env.GROQ_MODEL || "llama-3.3-70b-versatile",
         messages: chatMessages,
         stream: true,
         max_tokens: 2048,
@@ -148,13 +148,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       }),
     });
 
-    console.log("[API] OpenRouter response status:", openrouterResponse.status);
+    console.log("[API] Groq response status:", groqResponse.status);
 
-    if (!openrouterResponse.ok) {
-      const errorText = await openrouterResponse.text().catch(() => "Unknown error");
-      console.error("[API] OpenRouter error:", openrouterResponse.status, errorText);
+    if (!groqResponse.ok) {
+      const errorText = await groqResponse.text().catch(() => "Unknown error");
+      console.error("[API] Groq error:", groqResponse.status, errorText);
 
-      let errorMessage = `OpenRouter API error: ${openrouterResponse.status}`;
+      let errorMessage = `Groq API error: ${groqResponse.status}`;
       try {
         const errorData = JSON.parse(errorText);
         errorMessage = errorData?.error?.message || errorData?.error || errorMessage;
@@ -165,12 +165,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       // Send a helpful message instead of an error
       return sendMockResponse(
         res,
-        `I'm having trouble reaching the AI service (${openrouterResponse.status}). This might be a temporary issue. Error details: ${errorMessage}. Please try again in a moment.`
+        `I'm having trouble reaching the AI service (${groqResponse.status}). This might be a temporary issue. Error details: ${errorMessage}. Please try again in a moment.`
       );
     }
 
-    if (!openrouterResponse.body) {
-      console.error("[API] No response body from OpenRouter");
+    if (!groqResponse.body) {
+      console.error("[API] No response body from Groq");
       return sendMockResponse(res, "No response received from the AI service. Please try again.");
     }
 
@@ -180,7 +180,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     res.setHeader("Connection", "keep-alive");
 
     // Stream the response
-    const reader = openrouterResponse.body.getReader();
+    const reader = groqResponse.body.getReader();
     const decoder = new TextDecoder();
 
     try {

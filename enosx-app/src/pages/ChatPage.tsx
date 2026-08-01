@@ -20,7 +20,7 @@ import CircuitDoor from "@/components/CircuitDoor";
 import GitHubPanel from "@/components/GitHubPanel";
 import ProfilePanel from "@/components/ProfilePanel";
 import { GlobalLayout } from "@/components/GlobalLayout";
-import { useOpenRouter as useAI } from "@/hooks/useOpenRouter";
+import { useEnosxAI as useAI } from "@/hooks/useEnosxAI";
 import { useVoice } from "@/hooks/useVoice";
 import { useSoundEffects } from "@/hooks/useSoundEffects";
 import { useSystemActions } from "@/hooks/useSystemActions";

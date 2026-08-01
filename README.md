@@ -1,4 +1,4 @@
-# ENOSX AI Project (jjjjj)
+# ENOSX AI Project 
 
 This repository contains the core components of the ENOSX AI ecosystem, including the API server, the main application, and various utility scripts and documentation.
 

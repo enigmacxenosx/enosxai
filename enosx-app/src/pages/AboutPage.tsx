@@ -362,7 +362,7 @@ export default function AboutPage() {
             Interested in the future of AI-OS integration?
           </p>
           <motion.a
-            href="mailto:proenosx@gmail.com"
+            href="mailto:enosxservices@gmail.com"
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
             className="inline-flex items-center gap-3 px-8 py-4 rounded-full font-semibold transition-all"

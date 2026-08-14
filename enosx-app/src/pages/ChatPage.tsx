@@ -248,6 +248,8 @@ export default function ChatPage() {
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(true);
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
   const [isImageMode, setIsImageMode] = useState(false);
+  const isImageModeRef = useRef(false);
+  useEffect(() => { isImageModeRef.current = isImageMode; }, [isImageMode]);
   const { isCompactMode } = useCompactMode();
   const isMobile = useIsMobile();
   const deviceType = useDeviceType();
@@ -313,7 +315,7 @@ export default function ChatPage() {
       };
 
       // ── Image generation mode ────────────────────────────────────────────────
-      if (isImageMode) {
+      if (isImageModeRef.current) {
         setIsImageMode(false);
         // Show generating state
         setConversations((prev) =>
@@ -353,7 +355,7 @@ export default function ChatPage() {
                 ? {
                     ...c,
                     messages: c.messages.map((m) =>
-                      m.id === assistantId ? { ...m, content: "Sorry, I couldn't generate an image. Please try again." } : m
+                      m.id === assistantId ? { ...m, content: "Sorry, I couldn't generate that image. If you're on Free Mode, image generation requires top-up credits on OpenRouter. Please try again later." } : m
                     ),
                   }
                 : c

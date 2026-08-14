@@ -70,10 +70,14 @@ export function useImageGeneration() {
               const data = await response.json();
               const imageData = data?.data?.[0] || data?.choices?.[0]?.message?.attachments?.[0];
               if (imageData) {
-                return {
-                  url: imageData.url || (imageData.b64_json ? `data:image/png;base64,${imageData.b64_json}` : ""),
-                  revisedPrompt: imageData.revised_prompt,
-                };
+                const url = imageData.url || (imageData.b64_json ? `data:image/png;base64,${imageData.b64_json}` : "");
+                // Reject non-image payloads (e.g. text-model JSON like {"action":"dalle.text2im",...})
+                if (url && (url.startsWith("http://") || url.startsWith("https://") || url.startsWith("data:image/"))) {
+                  return {
+                    url,
+                    revisedPrompt: imageData.revised_prompt,
+                  };
+                }
               }
             }
           } catch (e) {}
@@ -119,10 +123,13 @@ export function useImageGeneration() {
           const data = await response.json();
           const imageData = data?.data?.[0];
           if (imageData) {
-            return {
-              url: imageData.url || (imageData.b64_json ? `data:image/png;base64,${imageData.b64_json}` : ""),
-              revisedPrompt: imageData.revised_prompt,
-            };
+            const url = imageData.url || (imageData.b64_json ? `data:image/png;base64,${imageData.b64_json}` : "");
+            if (url && (url.startsWith("http://") || url.startsWith("https://") || url.startsWith("data:image/"))) {
+              return {
+                url,
+                revisedPrompt: imageData.revised_prompt,
+              };
+            }
           }
         }
       } catch (e) {}

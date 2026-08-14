@@ -16,6 +16,8 @@ import PulseOrb from "@/components/PulseOrb";
 import FileDropZone from "@/components/FileDropZone";
 import FileContextBadge from "@/components/FileContextBadge";
 import GodModeTerminal from "@/components/GodModeTerminal";
+import GodModeSecurityBanner from "@/components/GodModeSecurityBanner";
+import EthicalHackingQuiz from "@/components/EthicalHackingQuiz";
 import CircuitDoor from "@/components/CircuitDoor";
 import GitHubPanel from "@/components/GitHubPanel";
 import ProfilePanel from "@/components/ProfilePanel";
@@ -243,7 +245,9 @@ export default function ChatPage() {
   );
 
   const [isGodModeActive, setIsGodModeActive] = useState(false);
+  const [showGodModeWarning, setShowGodModeWarning] = useState(false);
   const [showGodTerminal, setShowGodTerminal] = useState(false);
+  const [showEthicalHackingQuiz, setShowEthicalHackingQuiz] = useState(false);
   const [screenGuiderActive, setScreenGuiderActive] = useState(false);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(true);
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
@@ -255,12 +259,23 @@ export default function ChatPage() {
   const deviceType = useDeviceType();
 
   const handleGodModeTrigger = useCallback(() => {
-    if (isGodModeActive || showGodTerminal) return;
+    if (isGodModeActive || showGodModeWarning || showGodTerminal) return;
 
-    setIsGodModeActive(true);
     playSound("click");
-    toast.success("GOD MODE initializing");
-  }, [isGodModeActive, playSound, showGodTerminal]);
+    setShowGodModeWarning(true);
+    toast.info("GOD MODE authorization notice required");
+  }, [isGodModeActive, playSound, showGodModeWarning, showGodTerminal]);
+
+  const acknowledgeGodModeWarning = useCallback(() => {
+    setShowGodModeWarning(false);
+    setIsGodModeActive(true);
+    toast.success("Authorized lab mode confirmed — GOD MODE initializing");
+  }, []);
+
+  const cancelGodModeWarning = useCallback(() => {
+    setShowGodModeWarning(false);
+    toast.info("GOD MODE entry cancelled");
+  }, []);
 
   useGodMode(handleGodModeTrigger);
 
@@ -836,6 +851,12 @@ ${companyFaqs}
           </div>
         </div>
 
+        <GodModeSecurityBanner
+          isOpen={showGodModeWarning}
+          onAcknowledge={acknowledgeGodModeWarning}
+          onCancel={cancelGodModeWarning}
+        />
+
         <AnimatePresence>
           {isGodModeActive && (
             <CircuitDoor 
@@ -852,11 +873,18 @@ ${companyFaqs}
               onClose={() => {
                 setShowGodTerminal(false);
                 setIsGodModeActive(false);
+                setShowEthicalHackingQuiz(false);
               }}
+              onOpenQuiz={() => setShowEthicalHackingQuiz(true)}
               onExecute={executeGodCommand}
             />
           )}
         </AnimatePresence>
+
+        <EthicalHackingQuiz
+          isOpen={showEthicalHackingQuiz}
+          onClose={() => setShowEthicalHackingQuiz(false)}
+        />
 
         {/* Floating overlays */}
         <AnimatePresence>

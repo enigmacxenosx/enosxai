@@ -46,7 +46,7 @@ export function useImageGeneration() {
               headers: {
                 "Content-Type": "application/json",
                 Authorization: `Bearer ${OPENROUTER_API_KEY}`,
-                "HTTP-Referer": "https://enosx.vercel.app",
+                "HTTP-Referer": "https://enosxtechnologies450.vercel.app",
                 "X-Title": "ENOSX AI",
               },
               body: JSON.stringify({
@@ -106,7 +106,7 @@ export function useImageGeneration() {
           headers: {
             "Content-Type": "application/json",
             Authorization: `Bearer ${OPENROUTER_API_KEY}`,
-            "HTTP-Referer": "https://enosx.vercel.app",
+            "HTTP-Referer": "https://enosxtechnologies450.vercel.app",
             "X-Title": "ENOSX AI",
           },
           body: JSON.stringify({

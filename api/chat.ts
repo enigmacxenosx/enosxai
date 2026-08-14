@@ -145,7 +145,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       headers: {
         "Content-Type": "application/json",
         Authorization: `Bearer ${apiKey}`,
-        "HTTP-Referer": process.env.OPENROUTER_SITE_URL || "https://enosx.vercel.app",
+        "HTTP-Referer": process.env.OPENROUTER_SITE_URL || "https://enosxtechnologies450.vercel.app",
         "X-Title": "ENOSX AI",
       },
       body: JSON.stringify({
@@ -170,7 +170,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
         const fallbackModel = hasImages
           ? "google/gemma-4-26b-a4b-it:free"
-          : "google/gemma-3-27b-it:free";
+          : "google/gemma-4-26b-a4b-it:free";
 
         try {
           const retryResponse = await fetch("https://openrouter.ai/api/v1/chat/completions", {
@@ -178,7 +178,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             headers: {
               "Content-Type": "application/json",
               Authorization: `Bearer ${apiKey}`,
-              "HTTP-Referer": process.env.OPENROUTER_SITE_URL || "https://enosx.vercel.app",
+              "HTTP-Referer": process.env.OPENROUTER_SITE_URL || "https://enosxtechnologies450.vercel.app",
               "X-Title": "ENOSX AI",
             },
             body: JSON.stringify({

@@ -122,7 +122,7 @@ chatRouter.post("/chat", async (req: Request, res: Response) => {
       headers: {
         "Content-Type": "application/json",
         Authorization: `Bearer ${apiKey}`,
-        "HTTP-Referer": process.env.OPENROUTER_SITE_URL || "https://enosx.vercel.app",
+        "HTTP-Referer": process.env.OPENROUTER_SITE_URL || "https://enosxtechnologies450.vercel.app",
         "X-Title": "ENOSX AI",
       },
       body: JSON.stringify({

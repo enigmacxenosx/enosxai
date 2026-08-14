@@ -152,7 +152,7 @@ export function useOpenRouter() {
             headers: {
               "Content-Type": "application/json",
               Authorization: `Bearer ${OPENROUTER_API_KEY}`,
-              "HTTP-Referer": "https://enosxai.vercel.app",
+              "HTTP-Referer": "https://enosxtechnologies450.vercel.app",
               "X-Title": "ENOSX AI",
             },
             body: JSON.stringify({

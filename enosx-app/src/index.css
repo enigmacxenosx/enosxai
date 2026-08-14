@@ -625,3 +625,13 @@
     animation: rainbow-thinking-dot 4s ease-in-out infinite !important;
   }
 }
+
+/* Hide Vercel Toolbar */
+#vercel-toolbar-container, 
+[data-vercel-toolbar],
+.vercel-toolbar-container {
+  display: none !important;
+  visibility: hidden !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+}

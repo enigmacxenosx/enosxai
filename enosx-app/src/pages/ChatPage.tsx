@@ -183,7 +183,7 @@ export default function ChatPage() {
   const { activeWindow } = useActiveWindow();
   const { enrichMessageWithContext } = useContextAwareMessages();
   const { fileContext, getFileContextMessage, clearFiles } = useFileContext();
-  const { user, isAuthenticated } = useAuth();arFiles } = useFileContext();
+  const { user, isAuthenticated } = useAuth();
   const { getMemoryContext } = useMemoryBank();
   const { parseActions } = useSystemActions();
 

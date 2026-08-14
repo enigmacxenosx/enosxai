@@ -4,14 +4,6 @@
   "buildCommand": "pnpm run build",
   "rewrites": [
     {
-      "source": "/api/healthz",
-      "destination": "/api/health"
-    },
-    {
-      "source": "/api/speed-test",
-      "destination": "/api/health"
-    },
-    {
       "source": "/api/(.*)",
       "destination": "/api/$1"
     },

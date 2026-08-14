@@ -12,7 +12,8 @@ import Sidebar from "@/components/Sidebar";
 import MessageBubble from "@/components/MessageBubble";
 import CommandBar, { type AIMode } from "@/components/CommandBar";
 import WelcomeScreen from "@/components/WelcomeScreen";
-import PulseOrb from "@/components/PulseOrb";
+import ConversationSearchDialog from "@/components/ConversationSearchDialog";
+import FaqChips from "@/components/FaqChips";
 import FileDropZone from "@/components/FileDropZone";
 import FileContextBadge from "@/components/FileContextBadge";
 import GodModeTerminal from "@/components/GodModeTerminal";
@@ -24,16 +25,17 @@ import ProfilePanel from "@/components/ProfilePanel";
 import { GlobalLayout } from "@/components/GlobalLayout";
 import { useEnosxAI as useAI } from "@/hooks/useEnosxAI";
 import { useVoice } from "@/hooks/useVoice";
+import { useAnalytics } from "@/hooks/useAnalytics";
+import { useConversationSearch } from "@/hooks/useConversationSearch";
+import { useAdminConsole } from "@/hooks/useAdminConsole";
 import { useAuth } from "@/contexts/AuthContext";
 import { useSoundEffects } from "@/hooks/useSoundEffects";
 import { useSystemActions } from "@/hooks/useSystemActions";
 import { useContextAwareMessages } from "@/hooks/useContextAwareMessages";
 import { useActiveWindow } from "@/contexts/WindowContext";
 import { useFileContext } from "@/hooks/useFileContext";
-import { getSystemPrompt } from "@/lib/prompts";
 import { useClipboardListener } from "@/hooks/useClipboardListener";
 import { useGodMode } from "@/hooks/useGodMode";
-import { useSystemHealth } from "@/hooks/useSystemHealth";
 import { useMemoryBank } from "@/hooks/useMemoryBank";
 import { AssistantAction, Conversation, Message } from "@/lib/types";
 import { useTheme } from "@/contexts/ThemeContext";
@@ -44,6 +46,9 @@ import { useImageGeneration } from "@/hooks/useImageGeneration";
 import PhoneChatLayout from "@/components/PhoneChatLayout";
 import TVChatLayout from "@/components/TVChatLayout";
 import { getAIIdentity } from "@/const";
+import { getSystemPrompt } from "@/lib/prompts";
+import LeadCaptureDialog from "@/components/LeadCaptureDialog";
+import AdminConsoleDialog from "@/components/AdminConsoleDialog";
 import { ChevronDown, Menu } from "lucide-react";
 
 // Declare global window interface for settings handler
@@ -74,7 +79,6 @@ function removeActionBlocks(content: string) {
 
 export default function ChatPage() {
   const { config } = useTheme();
-  const { user, isAuthenticated } = useAuth();
   const [conversations, setConversations] = useState<Conversation[]>(() => {
     const saved = localStorage.getItem("enosx_chats");
     if (saved) {
@@ -99,6 +103,7 @@ export default function ChatPage() {
     return localStorage.getItem("enosx_active_chat");
   });
   const [activeMode, setActiveMode] = useState<AIMode>("ex");
+  const { user, isAuthenticated } = useAuth();
 
   // Persist conversations to localStorage and Neon
   useEffect(() => {
@@ -157,6 +162,8 @@ export default function ChatPage() {
   const [autoSpeak, setAutoSpeak] = useState(false);
   const [showGitHubPanel, setShowGitHubPanel] = useState(false);
   const [showProfilePanel, setShowProfilePanel] = useState(false);
+  const [showAdminConsole, setShowAdminConsole] = useState(false);
+  const [showLeadCapture, setShowLeadCapture] = useState(false);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
@@ -180,15 +187,27 @@ export default function ChatPage() {
     stopListening,
     speak,
     stopSpeaking,
+    settings: speechSettings,
+    updateSettings: updateSpeechSettings,
+    scheduleListenAgain,
+    onFinalResultRef,
   } = useVoice();
+
+  const { recordOutgoingMessage, recordVoiceUsage, refreshFromConversations } = useAnalytics();
+  const conversationSearch = useConversationSearch();
+  const { getAdminContext } = useAdminConsole();
+
+  // Track total messages/conversations for the usage dashboard
+  useEffect(() => {
+    refreshFromConversations(conversations);
+  }, [conversations, refreshFromConversations]);
 
   const { play: playSound } = useSoundEffects();
   const { activeWindow } = useActiveWindow();
   const { enrichMessageWithContext } = useContextAwareMessages();
-  const { fileContext, getFileContextMessage, loadFile, removeFile, clearFiles } = useFileContext();
+  const { fileContext, getFileContextMessage, clearFiles, loadFile, removeFile } = useFileContext();
   const { getMemoryContext } = useMemoryBank();
   const { parseActions } = useSystemActions();
-  const systemHealth = useSystemHealth();
 
   const handleFileUpload = useCallback(
     async (file: File) => {
@@ -393,34 +412,120 @@ export default function ChatPage() {
 
       const currentConv = conversationsRef.current.find((c) => c.id === targetConvId);
       const history = currentConv ? currentConv.messages : [];
-      const githubContext = await (window as any).getGitHubContext?.() || "";
-      const memoryContext = getMemoryContext();
+      const githubContext = await (window as any).__getGitHubContext?.();
 
-      const systemPrompt: Message = {
-        id: "system",
+      // ── Image generation mode ────────────────────────────────────────────────
+      if (isImageModeRef.current) {
+        setIsImageMode(false);
+        // Show generating state
+        setConversations((prev) =>
+          prev.map((c) =>
+            c.id === targetConvId
+              ? {
+                  ...c,
+                  messages: [...c.messages, userMessage, assistantMessage],
+                  updatedAt: new Date(),
+                }
+              : c
+          )
+        );
+
+        const imgResult = await generateImage(text);
+        if (imgResult && imgResult.url) {
+          const imageMarkdown = imgResult.revisedPrompt
+            ? `Here's the image I generated for you:\n\n![Generated Image](${imgResult.url})\n\n*Prompt: ${imgResult.revisedPrompt}*`
+            : `Here's the image I generated for you:\n\n![Generated Image](${imgResult.url})`;
+
+          setConversations((prev) =>
+            prev.map((c) =>
+              c.id === targetConvId
+                ? {
+                    ...c,
+                    messages: c.messages.map((m) =>
+                      m.id === assistantId ? { ...m, content: imageMarkdown } : m
+                    ),
+                  }
+                : c
+            )
+          );
+        } else {
+          setConversations((prev) =>
+            prev.map((c) =>
+              c.id === targetConvId
+                ? {
+                    ...c,
+                    messages: c.messages.map((m) =>
+                      m.id === assistantId ? { ...m, content: "Sorry, I couldn't generate that image. If you're on Free Mode, image generation requires top-up credits on OpenRouter. Please try again later." } : m
+                    ),
+                  }
+                : c
+            )
+          );
+        }
+        return imgResult?.url ? "Image generated successfully." : "Image generation did not return an image."; // Don't continue with normal chat
+      }
+
+      setConversations((prev) =>
+        prev.map((c) =>
+          c.id === targetConvId
+            ? { ...c, messages: [...c.messages, userMessage, assistantMessage], updatedAt: new Date() }
+            : c
+        )
+      );
+
+
+// ── SYSTEM PROMPT CONSTRUCTION ──────────────────────────────────────────────
+      const identity = getAIIdentity();
+      const memoryContext = getMemoryContext();
+      const leadershipInfo = identity.leadership.map(l => `- ${l.name}: ${l.role} (${l.specialty})`).join('\n');
+      const companyFacts = identity.companyFacts.map(fact => `- ${fact}`).join('\n');
+      const companyFaqs = identity.companyFaqs.map(faq => `- Q: ${faq.question}\n  A: ${faq.answer}`).join('\n');
+      
+            const systemPrompt: Message = {
+        id: "system-identity",
         role: "system",
         content: `${getSystemPrompt(activeMode)}
-		
-	### Development Context
-	${githubContext}
 
-	### Operational Directives
-	- Optimize for readability first, then performance
-	- Add inline comments only where the code is non-obvious
-	- Always consider edge cases, security implications, and performance
-	- Provide working, complete code — not pseudocode or partial snippets
-	- When debugging: analyze the error, identify root cause, explain the fix, and prevent recurrence
+### Enosx Technologies - Verified Information
+Founder & CEO: ${identity.founder}
+Mission: ${identity.mission}
+Our Story: ${identity.story}
+Founder's Vision: ${identity.founderVision}
+Website: ${identity.website}
 
-	### Code Review Standards
-	- Review for: correctness, performance, security, maintainability, testability
-	- Suggest improvements with specific examples
-	- Identify potential bugs before they occur
-	- Recommend appropriate abstractions and refactoring opportunities
+Leadership Team:
+${leadershipInfo}
 
-		Current System Status: ONLINE
-		${memoryContext}`,
+Verified Company Facts:
+${companyFacts}
+
+Verified Company FAQ:
+${companyFaqs}
+
+### Development Context
+${githubContext}
+
+### Operational Directives
+- Optimize for readability first, then performance
+- Add inline comments only where the code is non-obvious
+- Always consider edge cases, security implications, and performance
+- Provide working, complete code — not pseudocode or partial snippets
+- When debugging: analyze the error, identify root cause, explain the fix, and prevent recurrence
+
+### Code Review Standards
+- Review for: correctness, performance, security, maintainability, testability
+- Suggest improvements with specific examples
+- Identify potential bugs before they occur
+- Recommend appropriate abstractions and refactoring opportunities
+
+Current System Status: ONLINE
+${memoryContext}
+${getAdminContext().trim() ? `
+### Additional Context (administrator configured)
+${getAdminContext()}` : ""}`,
         timestamp: new Date(),
       };
+
 
       // Enrich history with app context and system identity
       let enrichedMessages = [systemPrompt, ...history, userMessage];
@@ -463,6 +568,12 @@ export default function ChatPage() {
           );
           if (autoSpeak) {
             speak(cleanContent);
+            if (speechSettings.continuousConversation) {
+              scheduleListenAgain((text) => {
+                // Continuous conversation: send the captured speech as the next message.
+                void handleSend(text);
+              });
+            }
           }
         },
         { githubContext, aiMode }
@@ -470,7 +581,7 @@ export default function ChatPage() {
 
       return removeActionBlocks(streamedContent) || "ENOSX Core returned an empty response.";
     },
-    [sendMessage, speak, autoSpeak, fileContext.isLoaded, getFileContextMessage, getMemoryContext, enrichMessageWithContext, activeWindow, clearFiles, parseActions]
+    [sendMessage, speak, autoSpeak, fileContext.isLoaded, getFileContextMessage, getMemoryContext, enrichMessageWithContext, activeWindow, clearFiles, parseActions, speechSettings.continuousConversation, scheduleListenAgain]
   );
 
   const createNewChat = useCallback(() => {
@@ -480,15 +591,25 @@ export default function ChatPage() {
     if (isMobile) setIsMobileSidebarOpen(false);
   }, [isMobile]);
 
+  // Record outgoing messages for the usage dashboard
+  const handleSendTracked = useCallback(
+    async (text: string, aiMode?: AIMode): Promise<string> => {
+      recordOutgoingMessage(text);
+      return handleSend(text, aiMode);
+    },
+    [handleSend, recordOutgoingMessage]
+  );
+
   const deleteConversation = useCallback((id: string) => {
     setConversations((prev) => prev.filter((c) => c.id !== id));
     if (activeId === id) setActiveId(null);
   }, [activeId]);
 
-  const handleStartVoice = () => {
+  const handleStartVoice = (event?: React.MouseEvent) => {
     playSound("click");
+    recordVoiceUsage();
     // Just start listening. The transcript will sync to the CommandBar value via useEffect.
-    startListening();
+    startListening(undefined, undefined);
   };
 
   const handleStopSpeak = () => {
@@ -534,7 +655,7 @@ export default function ChatPage() {
           createNewChat={createNewChat}
           messages={messages}
           isLoading={isLoading}
-          handleSend={handleSend}
+          handleSend={handleSendTracked}
           voiceState={voiceState}
           transcript={transcript}
           isVoiceSupported={isVoiceSupported}
@@ -562,7 +683,7 @@ export default function ChatPage() {
           deleteConversation={deleteConversation}
           messages={messages}
           isLoading={isLoading}
-          handleSend={handleSend}
+          handleSend={handleSendTracked}
           voiceState={voiceState}
           transcript={transcript}
           isVoiceSupported={isVoiceSupported}
@@ -605,7 +726,7 @@ export default function ChatPage() {
           onSettingsClick={() => setShowProfilePanel(true)}
           onGitHubClick={() => setShowGitHubPanel(true)}
           onProfileClick={() => setShowProfilePanel(true)}
-          onLibraryClick={() => { /* Chat history view */ }}
+          onLibraryClick={() => conversationSearch.open()}
           onScreenGuiderClick={toggleScreenGuider}
         />
       )}
@@ -633,7 +754,7 @@ export default function ChatPage() {
             setShowProfilePanel(true);
             setIsMobileSidebarOpen(false);
           }}
-          onLibraryClick={() => { setIsMobileSidebarOpen(false); /* Chat history view */ }}
+          onLibraryClick={() => { setIsMobileSidebarOpen(false); conversationSearch.open(); }}
           onScreenGuiderClick={() => { setIsMobileSidebarOpen(false); toggleScreenGuider(); }}
         />
       )}
@@ -680,9 +801,7 @@ export default function ChatPage() {
             {!activeConversation || activeConversation.messages.length === 0 ? (
               <WelcomeScreen 
                 key="welcome" 
-                onSuggestion={(text) => handleSend(text)}
-                conversations={conversations}
-                activeConversation={activeConversation || null}
+                onSuggestion={(text) => void handleSendTracked(text)}
               />
             ) : (
               <motion.div 
@@ -722,7 +841,7 @@ export default function ChatPage() {
                         whileTap={{ scale: 0.98 }}
                         onClick={() => {
                           const lastUserMsg = activeConversation.messages.filter(m => m.role === 'user').pop();
-                          if (lastUserMsg) handleSend(lastUserMsg.content);
+                          if (lastUserMsg) void handleSendTracked(lastUserMsg.content);
                         }}
                         className="mt-2 self-start px-4 py-1.5 rounded-lg bg-red-500/20 hover:bg-red-500/30 border border-red-500/30 transition-all text-xs font-bold"
                       >
@@ -745,8 +864,13 @@ export default function ChatPage() {
               onClear={clearFiles}
             />
 
+            {/* Guided FAQ starters — help users get value fast */}
+            <div className="mb-2">
+              <FaqChips onSend={(text) => void handleSendTracked(text)} limit={5} />
+            </div>
+
             <CommandBar
-              onSend={handleSend}
+              onSend={handleSendTracked}
               isLoading={isLoading}
               isVoiceSupported={isVoiceSupported}
               onStartVoice={handleStartVoice}
@@ -766,6 +890,31 @@ export default function ChatPage() {
           isOpen={showGodModeWarning}
           onAcknowledge={acknowledgeGodModeWarning}
           onCancel={cancelGodModeWarning}
+        />
+
+        <ConversationSearchDialog
+          isOpen={conversationSearch.isOpen}
+          query={conversationSearch.query}
+          setQuery={conversationSearch.setQuery}
+          results={conversationSearch.results}
+          onClose={conversationSearch.close}
+          onSelect={(id) => {
+            setActiveId(id);
+            conversationSearch.close();
+          }}
+          onOpenLeadCapture={() => { conversationSearch.close(); setShowLeadCapture(true); }}
+        />
+
+        <LeadCaptureDialog
+          isOpen={showLeadCapture}
+          onClose={() => setShowLeadCapture(false)}
+          transcript={activeConversation?.messages.map((m) => `${m.role === "user" ? "User" : "Enosx AI"}: ${m.content}`).join("\n\n") || ""}
+          conversationTitle={activeConversation?.title || ""}
+        />
+
+        <AdminConsoleDialog
+          isOpen={showAdminConsole}
+          onClose={() => setShowAdminConsole(false)}
         />
 
         <AnimatePresence>
@@ -788,7 +937,6 @@ export default function ChatPage() {
               }}
               onOpenQuiz={() => setShowEthicalHackingQuiz(true)}
               onExecute={executeGodCommand}
-              systemHealth={systemHealth}
             />
           )}
         </AnimatePresence>
@@ -802,8 +950,8 @@ export default function ChatPage() {
         <AnimatePresence>
           {showGitHubPanel && (
             <GitHubPanel 
-              isOpen={showGitHubPanel}
-              onClose={() => setShowGitHubPanel(false)}
+              isOpen={showGitHubPanel} 
+              onClose={() => setShowGitHubPanel(false)} 
             />
           )}
         </AnimatePresence>
@@ -811,20 +959,13 @@ export default function ChatPage() {
         <AnimatePresence>
           {showProfilePanel && (
             <ProfilePanel 
-              isOpen={showProfilePanel}
+              isOpen={showProfilePanel} 
               onClose={() => setShowProfilePanel(false)}
+              onOpenAdminConsole={() => setShowAdminConsole(true)}
+              onOpenLeadCapture={() => setShowLeadCapture(true)}
             />
           )}
         </AnimatePresence>
-
-        {/* Floating Orb visualizer */}
-        <div className="fixed bottom-32 right-8 z-40 pointer-events-none">
-          <PulseOrb 
-            voiceState={voiceState} 
-            isLoading={isLoading}
-            size={isMobile ? 120 : 180}
-          />
-        </div>
 
         <FileDropZone onFileSelected={handleFileUpload} currentFileCount={fileContext.files.length} />
       </main>

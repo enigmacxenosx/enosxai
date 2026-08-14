@@ -8,7 +8,6 @@ import { motion } from "framer-motion";
 import { BarChart3, Zap, MessageSquare, Clock, TrendingUp } from "lucide-react";
 import { useTheme } from "@/contexts/ThemeContext";
 import { Conversation } from "@/lib/types";
-import SystemHealthWidget from "./SystemHealthWidget";
 
 interface BentoDashboardProps {
   conversations: Conversation[];
@@ -158,22 +157,6 @@ export default function BentoDashboard({
             </div>
           </motion.div>
         ))}
-
-        {/* System Health Widget */}
-        <motion.div
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.3, duration: 0.3 }}
-          className="col-span-2 rounded-2xl p-4 relative overflow-hidden group"
-          style={{
-            background: `rgba(${config.accentRgb}, 0.05)`,
-            backdropFilter: "blur(12px)",
-            WebkitBackdropFilter: "blur(12px)",
-            border: `1px solid rgba(${config.accentRgb}, 0.1)`,
-          }}
-        >
-          <SystemHealthWidget />
-        </motion.div>
       </div>
 
       {/* Recent Conversations */}

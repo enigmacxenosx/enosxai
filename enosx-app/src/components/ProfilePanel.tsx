@@ -16,18 +16,23 @@ import {
   X, User, Mail, Lock, Eye, EyeOff, LogOut, Settings,
   Bell, Globe, Palette, Sparkles, Check, ChevronRight, ChevronLeft,
   Camera, Edit3, Loader2, AlertCircle, CheckCircle2,
-  Monitor, Shield, Image, Sun, Moon, Zap, Layers, Crown,
+  Monitor, Shield, Image, Sun, Moon, Zap, Layers, Crown, Mic, ShieldAlert,
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useTheme, THEMES, type Theme } from '../contexts/ThemeContext';
 import { useWallpaper, WALLPAPER_PRESETS } from '../contexts/WallpaperContext';
+import VoiceSettingsPanel from './VoiceSettingsPanel';
+import { useVoice } from '../hooks/useVoice';
+
+type View = 'auth' | 'profile' | 'preferences' | 'appearance' | 'privacy' | 'voice';
 
 interface ProfilePanelProps {
   isOpen: boolean;
   onClose: () => void;
+  onOpenAdminConsole?: () => void;
+  onOpenLeadCapture?: () => void;
 }
 
-type View = 'auth' | 'profile' | 'preferences' | 'appearance' | 'privacy';
 type AuthMode = 'signin' | 'signup';
 
 const PERSONALITIES = [
@@ -71,7 +76,8 @@ const FEATURED_WALLPAPERS = [
   },
 ];
 
-export default function ProfilePanel({ isOpen, onClose }: ProfilePanelProps) {
+export default function ProfilePanel({ isOpen, onClose, onOpenAdminConsole, onOpenLeadCapture }: ProfilePanelProps) {
+  const { settings: speechSettings, updateSettings: updateSpeechSettings } = useVoice();
   const { config, theme, setTheme } = useTheme();
   const { settings, setPreset: setActivePreset, setCustomUrl, setBlurAmount } = useWallpaper();
   const { user, isLoading, error, isAuthenticated, signInWithGoogle, signInWithEmail, signUpWithEmail, signOut, updateProfile, clearError } = useAuth();
@@ -259,7 +265,7 @@ export default function ProfilePanel({ isOpen, onClose }: ProfilePanelProps) {
             {/* Header */}
             <div className="flex items-center justify-between px-5 py-4 flex-shrink-0" style={{ borderBottom: `1px solid rgba(255,255,255,0.06)` }}>
               <div className="flex items-center gap-3">
-                {(view === 'appearance' || view === 'privacy') && (
+                {(view === 'appearance' || view === 'privacy' || view === 'voice') && (
                   <button onClick={() => setView('preferences')} className="w-7 h-7 rounded-lg flex items-center justify-center hover:bg-white/10 transition-all" style={{ color: 'rgba(255,255,255,0.5)' }}>
                     <ChevronLeft size={14} />
                   </button>
@@ -267,18 +273,21 @@ export default function ProfilePanel({ isOpen, onClose }: ProfilePanelProps) {
                 <div className="w-8 h-8 rounded-xl flex items-center justify-center" style={{ background: `rgba(${accentRgb},0.15)` }}>
                   {view === 'appearance' ? <Palette size={15} style={{ color: accentColor }} />
                     : view === 'privacy' ? <Shield size={15} style={{ color: accentColor }} />
+                    : view === 'voice' ? <Mic size={15} style={{ color: accentColor }} />
                     : <User size={15} style={{ color: accentColor }} />}
                 </div>
                 <div>
                   <div className="text-sm font-bold" style={{ color: 'rgba(255,255,255,0.9)' }}>
                     {view === 'appearance' ? 'Appearance & Theme'
                       : view === 'privacy' ? 'Privacy & Security'
+                      : view === 'voice' ? 'Voice Assistant'
                       : isAuthenticated ? user?.displayName ?? 'Profile'
                       : view === 'auth' && authMode === 'signup' ? 'Create Account' : 'Sign In'}
                   </div>
                   <div className="text-xs" style={{ color: 'rgba(255,255,255,0.3)' }}>
                     {view === 'appearance' ? 'Colors, fonts, and wallpaper'
                       : view === 'privacy' ? 'Data and account security'
+                      : view === 'voice' ? 'Speech, speed, and hands-free mode'
                       : isAuthenticated ? user?.email : 'ENOSX Assistant'}
                   </div>
                 </div>
@@ -571,7 +580,63 @@ export default function ProfilePanel({ isOpen, onClose }: ProfilePanelProps) {
                       </div>
                       <ChevronRight size={14} style={{ color: 'rgba(255,255,255,0.3)' }} />
                     </button>
+
+                    <button onClick={() => setView('voice')}
+                      className="w-full flex items-center gap-3 px-3 py-3 rounded-xl cursor-pointer transition-all hover:bg-white/10"
+                      style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.07)' }}>
+                      <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: `rgba(${accentRgb},0.1)` }}>
+                        <Mic size={14} style={{ color: accentColor }} />
+                      </div>
+                      <div className="flex-1 text-left">
+                        <div className="text-sm font-medium" style={{ color: 'rgba(255,255,255,0.85)' }}>Voice Assistant</div>
+                        <div className="text-xs" style={{ color: 'rgba(255,255,255,0.35)' }}>Speech, speed, and hands-free mode</div>
+                      </div>
+                      <ChevronRight size={14} style={{ color: 'rgba(255,255,255,0.3)' }} />
+                    </button>
+
+                    {onOpenLeadCapture && (
+                      <button onClick={onOpenLeadCapture}
+                        className="w-full flex items-center gap-3 px-3 py-3 rounded-xl cursor-pointer transition-all hover:bg-white/10"
+                        style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.07)' }}>
+                        <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: `rgba(${accentRgb},0.1)` }}>
+                          <Mail size={14} style={{ color: accentColor }} />
+                        </div>
+                        <div className="flex-1 text-left">
+                          <div className="text-sm font-medium" style={{ color: 'rgba(255,255,255,0.85)' }}>Contact the Team</div>
+                          <div className="text-xs" style={{ color: 'rgba(255,255,255,0.35)' }}>Share this conversation with Enosx Technologies</div>
+                        </div>
+                        <ChevronRight size={14} style={{ color: 'rgba(255,255,255,0.3)' }} />
+                      </button>
+                    )}
+
+                    {onOpenAdminConsole && (
+                      <button onClick={onOpenAdminConsole}
+                        className="w-full flex items-center gap-3 px-3 py-3 rounded-xl cursor-pointer transition-all hover:bg-white/10"
+                        style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.07)' }}>
+                        <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: `rgba(${accentRgb},0.1)` }}>
+                          <ShieldAlert size={14} style={{ color: accentColor }} />
+                        </div>
+                        <div className="flex-1 text-left">
+                          <div className="text-sm font-medium" style={{ color: 'rgba(255,255,255,0.85)' }}>Admin Console</div>
+                          <div className="text-xs" style={{ color: 'rgba(255,255,255,0.35)' }}>Tune assistant behavior (this browser)</div>
+                        </div>
+                        <ChevronRight size={14} style={{ color: 'rgba(255,255,255,0.3)' }} />
+                      </button>
+                    )}
                   </div>
+                </div>
+              )}
+
+              {/* ── VOICE VIEW ── */}
+              {view === 'voice' && (
+                <div className="px-5 py-5 space-y-4">
+                  <div className="text-xs font-bold tracking-wider" style={{ color: 'rgba(255,255,255,0.35)' }}>VOICE ASSISTANT</div>
+                  <div className="rounded-xl" style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)' }}>
+                    <VoiceSettingsPanel settings={speechSettings} onUpdate={updateSpeechSettings} />
+                  </div>
+                  <p className="text-[11px] text-center" style={{ color: 'rgba(255,255,255,0.3)' }}>
+                    Speech settings are stored locally and applied immediately to this device.
+                  </p>
                 </div>
               )}
 

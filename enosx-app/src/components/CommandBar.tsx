@@ -15,7 +15,6 @@ import { VoiceState } from "@/lib/types";
 import { useTheme } from "@/contexts/ThemeContext";
 import { useWallpaper } from "@/contexts/WallpaperContext";
 import VoiceVisualizer from "./VoiceVisualizer";
-import PulseOrb from "./PulseOrb";
 
 export type AIMode = "ex" | "ex-pro" | "smart" | "fast" | "balanced" | "task" | "creative" | "imagine";
 

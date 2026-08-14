@@ -12,7 +12,6 @@ import Sidebar from "@/components/Sidebar";
 import MessageBubble from "@/components/MessageBubble";
 import CommandBar, { type AIMode } from "@/components/CommandBar";
 import WelcomeScreen from "@/components/WelcomeScreen";
-import PulseOrb from "@/components/PulseOrb";
 import ConversationSearchDialog from "@/components/ConversationSearchDialog";
 import FaqChips from "@/components/FaqChips";
 import FileDropZone from "@/components/FileDropZone";

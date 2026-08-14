@@ -6,7 +6,7 @@
  */
 import { useState, useEffect, useRef, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, ShieldOff, Cpu } from "lucide-react";
+import { X, ShieldOff, Cpu, BrainCircuit } from "lucide-react";
 import { useTheme } from "@/contexts/ThemeContext";
 
 function buildSimulatedWifiAuditReport(command: string): string {
@@ -31,6 +31,50 @@ function buildSimulatedWifiAuditReport(command: string): string {
   ].join("\n");
 }
 
+function buildSimulatedVulnerabilityScanReport(command: string): string {
+  const targetMatch = command.match(/--target(?:=|\s+)([^\s]+)/i);
+  const target = (targetMatch?.[1] || "authorized-lab-web").slice(0, 48);
+
+  return [
+    "[SIMULATION ONLY] Vulnerability review preview",
+    "No ports scanned. No requests sent. No target system contacted.",
+    `Authorized lab target: ${target}`,
+    "",
+    "[1/5] Scope validation ........ PASS",
+    "[2/5] Asset inventory ......... One training web service (simulated)",
+    "[3/5] Patch review ............ Update backlog detected (simulated)",
+    "[4/5] Configuration review .... Security headers need review (simulated)",
+    "[5/5] Exposure summary ........ MODERATE — remediate in lab before release",
+    "",
+    "Defensive next steps:",
+    "- Maintain an asset inventory and apply vendor-supported updates.",
+    "- Validate transport security and security-header configuration.",
+    "- Record findings, remediation owners, and verification evidence.",
+  ].join("\n");
+}
+
+function buildSimulatedPentestReport(command: string): string {
+  const targetMatch = command.match(/--target(?:=|\s+)([^\s]+)/i);
+  const target = (targetMatch?.[1] || "authorized-lab-app").slice(0, 48);
+
+  return [
+    "[SIMULATION ONLY] Penetration-test learning exercise",
+    "No exploitation performed. No payloads executed. No data accessed.",
+    `Authorized lab target: ${target}`,
+    "",
+    "[1/5] Rules of engagement .... Approved lab scenario",
+    "[2/5] Threat modeling ........ User-input and access-control paths reviewed",
+    "[3/5] Control validation ..... Input handling needs test coverage (simulated)",
+    "[4/5] Impact modeling ........ Low-to-moderate training risk (simulated)",
+    "[5/5] Report readiness ....... Evidence and remediation template prepared",
+    "",
+    "Responsible workflow:",
+    "- Confirm scope and success criteria before any assessment activity.",
+    "- Test only with owner approval and preserve the system's availability.",
+    "- Report findings with reproducible, defensive remediation guidance.",
+  ].join("\n");
+}
+
 interface TerminalLine {
   id: string;
   type: "input" | "output" | "system" | "error";
@@ -41,10 +85,11 @@ interface TerminalLine {
 interface GodModeTerminalProps {
   isOpen: boolean;
   onClose: () => void;
+  onOpenQuiz: () => void;
   onExecute: (command: string) => Promise<string>;
 }
 
-export default function GodModeTerminal({ isOpen, onClose, onExecute }: GodModeTerminalProps) {
+export default function GodModeTerminal({ isOpen, onClose, onOpenQuiz, onExecute }: GodModeTerminalProps) {
   const { config } = useTheme();
   const [history, setHistory] = useState<TerminalLine[]>([
     {
@@ -105,15 +150,35 @@ export default function GodModeTerminal({ isOpen, onClose, onExecute }: GodModeT
     }
 
     if (cmd.toLowerCase() === "help" || cmd.toLowerCase() === "commands") {
-      addLine("system", "Available safe commands:");
+      addLine("system", "Available local-only learning commands:");
       addLine("system", "simulate wifi-audit --target authorized-lab-ap");
-      addLine("system", "clear | exit");
-      addLine("system", "The WiFi audit is a local simulation and never touches a network.");
+      addLine("system", "simulate vuln-scan --target authorized-lab-web");
+      addLine("system", "simulate pentest --target authorized-lab-app");
+      addLine("system", "quiz | quiz start | clear | exit");
+      addLine("system", "All simulations are deterministic previews: no scans, probes, packets, payloads, or credentials.");
       return;
     }
 
-    if (cmd.toLowerCase().startsWith("simulate wifi-audit") || cmd.toLowerCase().startsWith("wifi-audit --simulate")) {
+    const normalizedCommand = cmd.toLowerCase();
+
+    if (normalizedCommand === "quiz" || normalizedCommand === "quiz start") {
+      addLine("system", "Opening the Ethical Hacking Concepts Quiz...");
+      onOpenQuiz();
+      return;
+    }
+
+    if (normalizedCommand === "wifi-audit" || normalizedCommand.startsWith("simulate wifi-audit") || normalizedCommand.startsWith("wifi-audit --simulate")) {
       addLine("output", buildSimulatedWifiAuditReport(cmd));
+      return;
+    }
+
+    if (normalizedCommand === "vuln-scan" || normalizedCommand.startsWith("simulate vuln-scan") || normalizedCommand.startsWith("vuln-scan --simulate")) {
+      addLine("output", buildSimulatedVulnerabilityScanReport(cmd));
+      return;
+    }
+
+    if (normalizedCommand === "pentest" || normalizedCommand.startsWith("simulate pentest") || normalizedCommand.startsWith("pentest --simulate")) {
+      addLine("output", buildSimulatedPentestReport(cmd));
       return;
     }
 
@@ -164,13 +229,26 @@ export default function GodModeTerminal({ isOpen, onClose, onExecute }: GodModeT
                   </span>
                 </div>
               </div>
-              <button 
-                onClick={onClose}
-                className="p-1 hover:bg-white/10 rounded-md transition-colors"
-                style={{ color: "rgba(0, 242, 255, 0.6)" }}
-              >
-                <X size={18} />
-              </button>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={onOpenQuiz}
+                  className="inline-flex items-center gap-1.5 rounded-md border border-cyan-300/25 bg-cyan-300/10 px-2 py-1 text-[10px] font-bold tracking-wide text-cyan-100 transition hover:bg-cyan-300/20"
+                  title="Open Ethical Hacking Concepts Quiz"
+                >
+                  <BrainCircuit size={14} />
+                  <span className="hidden sm:inline">QUIZ</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={onClose}
+                  className="p-1 hover:bg-white/10 rounded-md transition-colors"
+                  style={{ color: "rgba(0, 242, 255, 0.6)" }}
+                  aria-label="Close GOD MODE terminal"
+                >
+                  <X size={18} />
+                </button>
+              </div>
             </div>
 
             {/* Terminal Output */}
@@ -184,7 +262,7 @@ export default function GodModeTerminal({ isOpen, onClose, onExecute }: GodModeT
                   <span className="opacity-30 select-none">
                     [{line.timestamp.toLocaleTimeString([], { hour12: false })}]
                   </span>
-                  <div className="flex-1 break-words">
+                  <div className="flex-1 break-words whitespace-pre-wrap">
                     {line.type === "input" && (
                       <span className="text-cyan-400 font-bold mr-2">enosh@enosx:~$</span>
                     )}

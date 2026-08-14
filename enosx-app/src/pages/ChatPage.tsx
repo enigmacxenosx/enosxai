@@ -30,6 +30,7 @@ import { useSystemActions } from "@/hooks/useSystemActions";
 import { useContextAwareMessages } from "@/hooks/useContextAwareMessages";
 import { useActiveWindow } from "@/contexts/WindowContext";
 import { useFileContext } from "@/hooks/useFileContext";
+import { getSystemPrompt } from "@/lib/prompts";
 import { useClipboardListener } from "@/hooks/useClipboardListener";
 import { useGodMode } from "@/hooks/useGodMode";
 import { useMemoryBank } from "@/hooks/useMemoryBank";
@@ -71,7 +72,8 @@ function removeActionBlocks(content: string) {
 }
 
 export default function ChatPage() {
-  const { config } = useTheme();
+    const { user, isAuthenticated } = useAuth();
+const { config } = useTheme();
   const [conversations, setConversations] = useState<Conversation[]>(() => {
     const saved = localStorage.getItem("enosx_chats");
     if (saved) {
@@ -182,8 +184,7 @@ export default function ChatPage() {
   const { play: playSound } = useSoundEffects();
   const { activeWindow } = useActiveWindow();
   const { enrichMessageWithContext } = useContextAwareMessages();
-  const { fileContext, getFileContextMessage, clearFiles } = useFileContext();
-  const { user, isAuthenticated } = useAuth();
+  const { fileContext, loadFile, removeFile, getFileContextMessage, clearFiles } = useFileContext();
   const { getMemoryContext } = useMemoryBank();
   const { parseActions } = useSystemActions();
 

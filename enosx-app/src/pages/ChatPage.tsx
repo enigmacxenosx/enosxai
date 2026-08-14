@@ -32,6 +32,7 @@ import { useActiveWindow } from "@/contexts/WindowContext";
 import { useFileContext } from "@/hooks/useFileContext";
 import { useClipboardListener } from "@/hooks/useClipboardListener";
 import { useGodMode } from "@/hooks/useGodMode";
+import { useSystemHealth } from "@/hooks/useSystemHealth";
 import { useMemoryBank } from "@/hooks/useMemoryBank";
 import { AssistantAction, Conversation, Message } from "@/lib/types";
 import { useTheme } from "@/contexts/ThemeContext";
@@ -72,6 +73,7 @@ function removeActionBlocks(content: string) {
 
 export default function ChatPage() {
   const { config } = useTheme();
+  const { user, isAuthenticated } = useAuth();
   const [conversations, setConversations] = useState<Conversation[]>(() => {
     const saved = localStorage.getItem("enosx_chats");
     if (saved) {
@@ -182,10 +184,10 @@ export default function ChatPage() {
   const { play: playSound } = useSoundEffects();
   const { activeWindow } = useActiveWindow();
   const { enrichMessageWithContext } = useContextAwareMessages();
-  const { fileContext, getFileContextMessage, clearFiles } = useFileContext();
-  const { user, isAuthenticated } = useAuth();arFiles } = useFileContext();
+  const { fileContext, getFileContextMessage, loadFile, removeFile, clearFiles } = useFileContext();
   const { getMemoryContext } = useMemoryBank();
   const { parseActions } = useSystemActions();
+  const systemHealth = useSystemHealth();
 
   const handleFileUpload = useCallback(
     async (file: File) => {
@@ -390,126 +392,32 @@ export default function ChatPage() {
 
       const currentConv = conversationsRef.current.find((c) => c.id === targetConvId);
       const history = currentConv ? currentConv.messages : [];
-      const githubContext = await (window as any).__getGitHubContext?.();
-
-      // ── IMAGE GENERATION MODE ────────────────────────────────────────────────────
-      if (aiMode === "imagine") {
-        try {
-          const result = await generateImage(text);
-          if (!result) throw new Error("No image generated");
-          
-          const assistantId = nanoid();
-          const assistantMessage: Message = {
-            id: assistantId,
-            role: "assistant",
-            content: `I've generated an image based on your prompt: "${text}"${result.revisedPrompt ? `\n\n*Revised prompt: ${result.revisedPrompt}*` : ""}`,
-            timestamp: new Date(),
-            attachments: [
-              {
-                id: nanoid(),
-                name: "generated-image.png",
-                type: "image/png",
-                size: 0,
-                content: result.url,
-                url: result.url,
-              },
-            ],
-          };
-
-          setConversations((prev) =>
-            prev.map((c) =>
-              c.id === targetConvId
-                ? {
-                    ...c,
-                    messages: c.messages.map((m) =>
-                      m.role === "assistant" && m.content === "" && !m.attachments ? assistantMessage : m
-                    ),
-                    updatedAt: new Date(),
-                  }
-                : c
-            )
-          );
-          return "Image generated successfully.";
-        } catch (err) {
-          console.error("Image generation failed:", err);
-          // Error is already handled by useImageGen and displayed via the error state
-          return "Image generation failed.";
-        }
-      }
-
-      // ── SYSTEM PROMPT CONSTRUCTION ──────────────────────────────────────────────
-      const identity = getAIIdentity();
+      const githubContext = await (window as any).getGitHubContext?.() || "";
       const memoryContext = getMemoryContext();
-      const leadershipInfo = identity.leadership.map(l => `- ${l.name}: ${l.role} (${l.specialty})`).join('\n');
-      const companyFacts = identity.companyFacts.map(fact => `- ${fact}`).join('\n');
-      const companyFaqs = identity.companyFaqs.map(faq => `- Q: ${faq.question}\n  A: ${faq.answer}`).join('\n');
-      
+
       const systemPrompt: Message = {
-        id: "system-identity",
+        id: "system",
         role: "system",
-        content: `${getSystemPrompt(activeMode)}
+        content: `${getAIIdentity(activeMode)}
+		
+	### Development Context
+	${githubContext}
 
-### Enosx Technologies - Verified Information
-Founder & CEO: ${identity.founder}
-Mission: ${identity.mission}
-Our Story: ${identity.story}
-Founder's Vision: ${identity.founderVision}
-Website: ${identity.website}
+	### Operational Directives
+	- Optimize for readability first, then performance
+	- Add inline comments only where the code is non-obvious
+	- Always consider edge cases, security implications, and performance
+	- Provide working, complete code — not pseudocode or partial snippets
+	- When debugging: analyze the error, identify root cause, explain the fix, and prevent recurrence
 
-Leadership Team:
-${leadershipInfo}
+	### Code Review Standards
+	- Review for: correctness, performance, security, maintainability, testability
+	- Suggest improvements with specific examples
+	- Identify potential bugs before they occur
+	- Recommend appropriate abstractions and refactoring opportunities
 
-Verified Company Facts:
-${companyFacts}
-
-Verified Company FAQ:
-${companyFaqs}
-
-### Operational Protocols
-1. **Accuracy**: Use only verified info. If missing, refer to ${identity.website}.
-2. **Support**: Direct users to WhatsApp +254 798 303 978 or Enosxtech@gmail.com.
-3. **Freshness**: Always direct to website for current pricing/policies.
-4. **Coding**: Expert mastery in TS, Python, Rust, Go, C++, React, and Tailwind. Explain "why", think step-by-step.
-5. **Downloads**: You can generate professional documents. Users can download them via the button in the message bubble.
-
-### Backend Mastery
-- **Node.js**: Express, Fastify, NestJS, WebSocket, clustering, streaming
-- **Databases**: PostgreSQL (CTEs, window functions, indexing strategies), MongoDB (aggregation pipeline), Redis (data structures, pub/sub), GraphQL (Apollo, schema stitching)
-- **API Design**: REST best practices, gRPC, tRPC, rate limiting, caching strategies, authentication (OAuth2, JWT, session-based)
-- **Microservices**: Event-driven architecture, message queues (Kafka, RabbitMQ), service mesh, circuit breakers
-
-### DevOps & Infrastructure
-- **Docker/Kubernetes**: Multi-stage builds, helm charts, operators, service mesh (Istio)
-- **CI/CD**: GitHub Actions, GitLab CI, ArgoCD, infrastructure as code (Terraform, Pulumi)
-- **Cloud**: AWS (Lambda, ECS, S3, DynamoDB), GCP (Cloud Run, BigQuery), Azure (Functions, AKS)
-- **Observability**: Prometheus, Grafana, OpenTelemetry, structured logging
-
-### AI/ML Engineering
-- **LLM Integration**: Prompt engineering, RAG, function calling, embeddings, vector databases (Pinecone, Weaviate)
-- **MLOps**: Model serving, A/B testing, monitoring drift, fine-tuning pipelines
-- **Frameworks**: PyTorch, TensorFlow, LangChain, HuggingFace, vLLM
-
-### Coding Best Practices You Always Follow
-- Write clean, maintainable, well-tested code
-- Use meaningful variable names and follow consistent naming conventions
-- Handle errors gracefully with proper error propagation
-- Write comprehensive tests (unit, integration, e2e)
-- Follow SOLID principles, DRY, and separation of concerns
-- Use design patterns appropriately (Observer, Strategy, Factory, Repository, etc.)
-- Optimize for readability first, then performance
-- Add inline comments only where the code is non-obvious
-- Always consider edge cases, security implications, and performance
-- Provide working, complete code — not pseudocode or partial snippets
-- When debugging: analyze the error, identify root cause, explain the fix, and prevent recurrence
-
-### Code Review Standards
-- Review for: correctness, performance, security, maintainability, testability
-- Suggest improvements with specific examples
-- Identify potential bugs before they occur
-- Recommend appropriate abstractions and refactoring opportunities
-
-	Current System Status: ONLINE
-	${memoryContext}`,
+		Current System Status: ONLINE
+		${memoryContext}`,
         timestamp: new Date(),
       };
 
@@ -772,6 +680,8 @@ ${companyFaqs}
               <WelcomeScreen 
                 key="welcome" 
                 onSuggestion={(text) => handleSend(text)}
+                conversations={conversations}
+                activeConversation={activeConversation || null}
               />
             ) : (
               <motion.div 
@@ -877,6 +787,7 @@ ${companyFaqs}
               }}
               onOpenQuiz={() => setShowEthicalHackingQuiz(true)}
               onExecute={executeGodCommand}
+              systemHealth={systemHealth}
             />
           )}
         </AnimatePresence>
@@ -890,8 +801,8 @@ ${companyFaqs}
         <AnimatePresence>
           {showGitHubPanel && (
             <GitHubPanel 
-              isOpen={showGitHubPanel} 
-              onClose={() => setShowGitHubPanel(false)} 
+              isOpen={showGitHubPanel}
+              onClose={() => setShowGitHubPanel(false)}
             />
           )}
         </AnimatePresence>
@@ -899,13 +810,22 @@ ${companyFaqs}
         <AnimatePresence>
           {showProfilePanel && (
             <ProfilePanel 
-              isOpen={showProfilePanel} 
-              onClose={() => setShowProfilePanel(false)} 
+              isOpen={showProfilePanel}
+              onClose={() => setShowProfilePanel(false)}
             />
           )}
         </AnimatePresence>
 
-        <FileDropZone onFileSelected={handleFileUpload} currentFileCount={fileContext.files.length} />
+        {/* Floating Orb visualizer */}
+        <div className="fixed bottom-32 right-8 z-40 pointer-events-none">
+          <PulseOrb 
+            voiceState={voiceState} 
+            isLoading={isLoading}
+            size={isMobile ? 120 : 180}
+          />
+        </div>
+
+        <FileDropZone onFileDrop={handleFileUpload} />
       </main>
     </div>
     </GlobalLayout>

@@ -6,8 +6,9 @@
  */
 import { useState, useEffect, useRef, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, ShieldOff, Cpu, BrainCircuit } from "lucide-react";
+import { X, ShieldOff, Cpu, BrainCircuit, Activity, Globe, Database } from "lucide-react";
 import { useTheme } from "@/contexts/ThemeContext";
+import { SystemHealth } from "@/hooks/useSystemHealth";
 
 function buildSimulatedWifiAuditReport(command: string): string {
   const targetMatch = command.match(/--target(?:=|\s+)([^\s]+)/i);
@@ -87,9 +88,10 @@ interface GodModeTerminalProps {
   onClose: () => void;
   onOpenQuiz: () => void;
   onExecute: (command: string) => Promise<string>;
+  systemHealth?: SystemHealth;
 }
 
-export default function GodModeTerminal({ isOpen, onClose, onOpenQuiz, onExecute }: GodModeTerminalProps) {
+export default function GodModeTerminal({ isOpen, onClose, onOpenQuiz, onExecute, systemHealth }: GodModeTerminalProps) {
   const { config } = useTheme();
   const [history, setHistory] = useState<TerminalLine[]>([
     {
@@ -150,12 +152,37 @@ export default function GodModeTerminal({ isOpen, onClose, onOpenQuiz, onExecute
     }
 
     if (cmd.toLowerCase() === "help" || cmd.toLowerCase() === "commands") {
-      addLine("system", "Available local-only learning commands:");
-      addLine("system", "simulate wifi-audit --target authorized-lab-ap");
-      addLine("system", "simulate vuln-scan --target authorized-lab-web");
-      addLine("system", "simulate pentest --target authorized-lab-app");
+      addLine("system", "Available GOD MODE commands:");
+      addLine("system", "sysinfo        - Display real-time system health and network status");
+      addLine("system", "netstat        - Show bandwidth history and throughput analysis");
+      addLine("system", "simulate wifi-audit --target <ap_name>");
+      addLine("system", "simulate vuln-scan --target <target_url>");
+      addLine("system", "simulate pentest   --target <app_name>");
       addLine("system", "quiz | quiz start | clear | exit");
-      addLine("system", "All simulations are deterministic previews: no scans, probes, packets, payloads, or credentials.");
+      addLine("system", "All commands are executed within the ENOSX Core sandbox.");
+      return;
+    }
+
+    if (cmd.toLowerCase() === "sysinfo") {
+      addLine("system", "ENOSX SYSTEM HEALTH REPORT");
+      addLine("output", `Status: ${systemHealth?.status.toUpperCase() || "UNKNOWN"}`);
+      addLine("output", `Network: ${systemHealth?.speedMbps ? systemHealth.speedMbps.toFixed(2) + " Mbps" : "CALCULATING..."}`);
+      addLine("output", `Last Sync: ${systemHealth?.lastUpdated ? new Date(systemHealth.lastUpdated).toLocaleTimeString() : "NEVER"}`);
+      addLine("output", `OS: ENOSX-CORE-v2.0.0-PRO`);
+      return;
+    }
+
+    if (cmd.toLowerCase() === "netstat") {
+      addLine("system", "BANDWIDTH HISTORY ANALYSIS");
+      if (systemHealth?.history && systemHealth.history.length > 0) {
+        systemHealth.history.slice(-10).forEach(sample => {
+          const time = new Date(sample.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+          const bars = "█".repeat(Math.min(20, Math.floor(sample.speedMbps / 5)));
+          addLine("output", `${time} | ${sample.speedMbps.toFixed(2).padStart(6)} Mbps | ${bars}`);
+        });
+      } else {
+        addLine("error", "No bandwidth history available yet.");
+      }
       return;
     }
 
@@ -167,17 +194,17 @@ export default function GodModeTerminal({ isOpen, onClose, onOpenQuiz, onExecute
       return;
     }
 
-    if (normalizedCommand === "wifi-audit" || normalizedCommand.startsWith("simulate wifi-audit") || normalizedCommand.startsWith("wifi-audit --simulate")) {
+    if (normalizedCommand.startsWith("simulate wifi-audit") || normalizedCommand.startsWith("wifi-audit --simulate")) {
       addLine("output", buildSimulatedWifiAuditReport(cmd));
       return;
     }
 
-    if (normalizedCommand === "vuln-scan" || normalizedCommand.startsWith("simulate vuln-scan") || normalizedCommand.startsWith("vuln-scan --simulate")) {
+    if (normalizedCommand.startsWith("simulate vuln-scan") || normalizedCommand.startsWith("vuln-scan --simulate")) {
       addLine("output", buildSimulatedVulnerabilityScanReport(cmd));
       return;
     }
 
-    if (normalizedCommand === "pentest" || normalizedCommand.startsWith("simulate pentest") || normalizedCommand.startsWith("pentest --simulate")) {
+    if (normalizedCommand.startsWith("simulate pentest") || normalizedCommand.startsWith("pentest --simulate")) {
       addLine("output", buildSimulatedPentestReport(cmd));
       return;
     }

@@ -151,7 +151,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       body: JSON.stringify({
         model,
         messages: chatMessages,
-        stream: false,
+        stream: true,
         max_tokens: 2048,
         temperature: 0.7,
       }),
@@ -162,84 +162,32 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     if (!openRouterResponse.ok) {
       const errorText = await openRouterResponse.text().catch(() => "Unknown error");
       console.error("[API] OpenRouter error:", openRouterResponse.status, errorText);
-
-      // Handle 429 rate limit: retry with a free model
-      if (openRouterResponse.status === 429) {
-        console.log("[API] 429 rate limited. Retrying with free model after 10s...");
-        await new Promise(r => setTimeout(r, 10000));
-
-        const fallbackModel = hasImages
-          ? "google/gemma-4-26b-a4b-it:free"
-          : "google/gemma-4-26b-a4b-it:free";
-
-        try {
-          const retryResponse = await fetch("https://openrouter.ai/api/v1/chat/completions", {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              Authorization: `Bearer ${apiKey}`,
-              "HTTP-Referer": process.env.OPENROUTER_SITE_URL || "https://enosxtechnologies450.vercel.app",
-              "X-Title": "ENOSX AI",
-            },
-            body: JSON.stringify({
-              model: fallbackModel,
-              messages: chatMessages,
-              stream: false,
-              max_tokens: 2048,
-              temperature: 0.7,
-            }),
-          });
-
-          if (retryResponse.ok) {
-            const retryData = await retryResponse.json();
-            const retryContent = retryData?.choices?.[0]?.message?.content;
-            if (typeof retryContent === "string" && retryContent.length > 0) {
-              console.log("[API] 429 retry succeeded with free model:", fallbackModel);
-              return sendMockResponse(res, retryContent);
-            }
-          } else {
-            console.error("[API] 429 retry also failed:", retryResponse.status);
-          }
-        } catch (retryErr) {
-          console.error("[API] 429 retry exception:", retryErr);
-        }
-
-        return sendMockResponse(
-          res,
-          "Sorry, the AI is experiencing high traffic right now. Please try again in a minute."
-        );
-      }
-
-      let errorMessage = `OpenRouter API error: ${openRouterResponse.status}`;
-      try {
-        const errorData = JSON.parse(errorText);
-        errorMessage = errorData?.error?.message || errorData?.error || errorMessage;
-      } catch {
-        errorMessage = errorText || errorMessage;
-      }
-
-      // Send a helpful message instead of an error
-      return sendMockResponse(
-        res,
-        `I'm having trouble reaching the AI service (${openRouterResponse.status}). Please try again in a moment.`
-      );
+      return sendMockResponse(res, `I'm having trouble reaching the AI service (${openRouterResponse.status}). Please try again in a moment.`);
     }
 
-    let responseData: any;
+    if (!openRouterResponse.body) {
+      return sendMockResponse(res, "No response stream available from the AI service.");
+    }
+
+    res.setHeader("Content-Type", "text/event-stream; charset=utf-8");
+    res.setHeader("Cache-Control", "no-cache, no-transform");
+    res.setHeader("Connection", "keep-alive");
+
+    const reader = openRouterResponse.body.getReader();
+    const decoder = new TextDecoder();
+
     try {
-      responseData = await openRouterResponse.json();
-    } catch (parseError) {
-      console.error("[API] Invalid JSON response from OpenRouter:", parseError);
-      return sendMockResponse(res, "The AI service returned an invalid response. Please try again.");
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        res.write(decoder.decode(value, { stream: true }));
+      }
+      res.end();
+    } catch (streamErr) {
+      console.error("[API] Stream error:", streamErr);
+      res.end();
     }
-
-    const content = responseData?.choices?.[0]?.message?.content;
-    if (typeof content !== "string" || content.length === 0) {
-      console.error("[API] OpenRouter response did not contain assistant content:", responseData);
-      return sendMockResponse(res, "No response received from the AI service. Please try again.");
-    }
-
-    return sendMockResponse(res, content);
+    return;
   } catch (err) {
     console.error("[API] Unexpected error:", err);
     const msg = err instanceof Error ? err.message : "Unknown error";

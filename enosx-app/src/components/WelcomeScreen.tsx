@@ -9,11 +9,14 @@ import { useState, useEffect } from "react";
 import { useTheme } from "@/contexts/ThemeContext";
 import { useWallpaper } from "@/contexts/WallpaperContext";
 import { useAuth } from "@/contexts/AuthContext";
-import { LogIn } from "lucide-react";
+import { Conversation } from "@/lib/types";
+import BentoDashboard from "./BentoDashboard";
 
 interface WelcomeScreenProps {
   onSuggestion: (text: string) => void;
   isCompact?: boolean;
+  conversations: Conversation[];
+  activeConversation: Conversation | null;
 }
 
 const GREETINGS = [
@@ -26,7 +29,12 @@ const GREETINGS = [
   "Ready to transform your workflow."
 ];
 
-export default function WelcomeScreen({ onSuggestion, isCompact }: WelcomeScreenProps) {
+export default function WelcomeScreen({ 
+  onSuggestion, 
+  isCompact,
+  conversations,
+  activeConversation
+}: WelcomeScreenProps) {
   const { config } = useTheme();
   const { settings: wallpaperSettings } = useWallpaper();
   const { isAuthenticated, signInWithGoogle } = useAuth();
@@ -132,7 +140,20 @@ export default function WelcomeScreen({ onSuggestion, isCompact }: WelcomeScreen
           </motion.p>
         </motion.div>
 
-
+        {/* Bento Dashboard Integration */}
+        {!isCompact && (
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.5, duration: 0.8 }}
+            className="w-full max-w-4xl mt-4"
+          >
+            <BentoDashboard 
+              conversations={conversations} 
+              activeConversation={activeConversation} 
+            />
+          </motion.div>
+        )}
       </div>
     </div>
   );

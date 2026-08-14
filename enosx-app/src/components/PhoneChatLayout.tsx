@@ -81,7 +81,11 @@ export default function PhoneChatLayout({
       {/* Main Content Area */}
       <main className="flex-1 overflow-y-auto relative z-10 px-4 py-4 scrollbar-hide">
         {messages.length === 0 ? (
-          <WelcomeScreen onSuggestion={(p: string) => handleSend(p)} />
+          <WelcomeScreen 
+            onSuggestion={(p: string) => handleSend(p)} 
+            conversations={conversations}
+            activeConversation={conversations.find(c => c.id === activeId) || null}
+          />
         ) : (
           <div className="flex flex-col gap-6 pb-32">
             {messages.map((msg, idx) => (

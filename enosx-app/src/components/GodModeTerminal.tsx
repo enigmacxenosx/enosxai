@@ -9,6 +9,28 @@ import { motion, AnimatePresence } from "framer-motion";
 import { X, ShieldOff, Cpu } from "lucide-react";
 import { useTheme } from "@/contexts/ThemeContext";
 
+function buildSimulatedWifiAuditReport(command: string): string {
+  const targetMatch = command.match(/--target(?:=|\s+)([^\s]+)/i);
+  const target = (targetMatch?.[1] || "authorized-lab-ap").slice(0, 48);
+
+  return [
+    "[SIMULATION ONLY] WiFi security audit preview",
+    "No packets sent. No network interfaces accessed. No credentials collected.",
+    `Authorized lab target: ${target}`,
+    "",
+    "[1/5] Scope validation ........ PASS",
+    "[2/5] Encryption profile ...... WPA3-Personal / SAE (simulated)",
+    "[3/5] Management-frame policy .. Protected Management Frames enabled",
+    "[4/5] Configuration review .... Strong passphrase policy recommended",
+    "[5/5] Risk summary ............. LOW in this simulated scenario",
+    "",
+    "Defensive next steps:",
+    "- Keep router firmware current and disable legacy WPA/WEP modes.",
+    "- Use a unique passphrase and review connected devices regularly.",
+    "- Practice only in an isolated lab that you own or are authorized to test.",
+  ].join("\n");
+}
+
 interface TerminalLine {
   id: string;
   type: "input" | "output" | "system" | "error";
@@ -79,6 +101,19 @@ export default function GodModeTerminal({ isOpen, onClose, onExecute }: GodModeT
 
     if (cmd.toLowerCase() === "exit") {
       onClose();
+      return;
+    }
+
+    if (cmd.toLowerCase() === "help" || cmd.toLowerCase() === "commands") {
+      addLine("system", "Available safe commands:");
+      addLine("system", "simulate wifi-audit --target authorized-lab-ap");
+      addLine("system", "clear | exit");
+      addLine("system", "The WiFi audit is a local simulation and never touches a network.");
+      return;
+    }
+
+    if (cmd.toLowerCase().startsWith("simulate wifi-audit") || cmd.toLowerCase().startsWith("wifi-audit --simulate")) {
+      addLine("output", buildSimulatedWifiAuditReport(cmd));
       return;
     }
 

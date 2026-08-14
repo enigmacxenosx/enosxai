@@ -232,7 +232,7 @@ export default function ChatPage() {
   }, []);
 
   const handleSend = useCallback(
-    async (text: string, aiMode?: AIMode) => {
+    async (text: string, aiMode?: AIMode): Promise<string> => {
       let convId = activeIdRef.current;
 
       if (!convId) {
@@ -317,7 +317,7 @@ export default function ChatPage() {
             )
           );
         }
-        return; // Don't continue with normal chat
+        return imgResult?.url ? "Image generated successfully." : "Image generation did not return an image."; // Don't continue with normal chat
       }
 
       setConversations((prev) =>
@@ -369,11 +369,11 @@ export default function ChatPage() {
                 : c
             )
           );
-          return;
+          return "Image generated successfully.";
         } catch (err) {
           console.error("Image generation failed:", err);
           // Error is already handled by useImageGen and displayed via the error state
-          return;
+          return "Image generation failed.";
         }
       }
 
@@ -535,6 +535,8 @@ You are an expert-level software engineer with mastery across ALL domains:
         },
         { githubContext, aiMode }
       );
+
+      return removeActionBlocks(streamedContent) || "ENOSX Core returned an empty response.";
     },
     [sendMessage, speak, autoSpeak, fileContext.isLoaded, getFileContextMessage, getMemoryContext, enrichMessageWithContext, activeWindow, clearFiles, parseActions]
   );
@@ -563,8 +565,9 @@ You are an expert-level software engineer with mastery across ALL domains:
   };
 
   const executeGodCommand = async (cmd: string): Promise<string> => {
-    await handleSend(`[GOD MODE COMMAND] ${cmd}`);
-    return `Command executed: ${cmd}`;
+    return await handleSend(
+      `[GOD MODE COMMAND]\nRespond as the Ethical Hacking Mentor. Keep the explanation within an authorized lab context, do not access real systems, and do not provide instructions for credential theft, disruption, or unauthorized access.\n\nCommand: ${cmd}`
+    );
   };
 
   const handleGodModeAnimationComplete = () => {

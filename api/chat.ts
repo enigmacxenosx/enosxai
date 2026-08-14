@@ -1,6 +1,6 @@
 /**
  * ENOSX AI — /api/chat  (Vercel Serverless Function)
- * Uses OpenRouter as the AI provider.
+ * Uses OpenRouter as the AI provider with automatic fallback rotation.
  * Environment variables:
  *   - OPENROUTER_API_KEY (required; server-side only)
  *   - OPENROUTER_MODEL (optional)
@@ -51,6 +51,35 @@ const sendMockResponse = (res: VercelResponse, message: string) => {
   // Keep the frontend's SSE contract while returning one buffered response.
   return res.status(200).send(`data: ${data}\n\ndata: [DONE]\n\n`);
 };
+
+// Model selection with fallback rotation.
+// If the primary model is rate-limited, overloaded, or unavailable, the server
+// automatically retries with the next candidate in the list before giving up.
+// The retired free models (gemma-3-27b-it:free, gemini-4-26b-a4b-it:free) were
+// removed — these are the currently verified working free alternatives.
+const FREE_TEXT_ALTERNATIVES = [
+  "google/gemma-4-26b-a4b-it:free",
+  "google/gemma-4-31b-it:free",
+  "nvidia/nemotron-3-super-120b-a12b:free",
+  "nvidia/nemotron-3-nano-30b-a3b:free",
+  "openai/gpt-oss-20b:free",
+];
+
+const FREE_VISION_ALTERNATIVES = ["openai/gpt-oss-20b:free", ...FREE_TEXT_ALTERNATIVES];
+
+function pickTextCandidates(primary: string): string[] {
+  const candidates = [primary, ...FREE_TEXT_ALTERNATIVES];
+  return [...new Set(candidates)];
+}
+
+function pickVisionCandidates(primary: string): string[] {
+  const candidates = [primary, ...FREE_VISION_ALTERNATIVES];
+  return [...new Set(candidates)];
+}
+
+function isRetryableStatus(status: number): boolean {
+  return status === 429 || status >= 500 || status === 408;
+}
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   // Set CORS headers
@@ -134,35 +163,69 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const hasImages = chatMessages.some((message: any) =>
       Array.isArray(message.content) && message.content.some((part: any) => part.type === "image_url")
     );
-    const model = hasImages
-      ? (process.env.OPENROUTER_VISION_MODEL || "google/gemini-2.0-flash-001")
-      : (process.env.OPENROUTER_MODEL || "meta-llama/llama-3.3-70b-instruct");
+    const primaryTextModel = process.env.OPENROUTER_MODEL || "meta-llama/llama-3.3-70b-instruct";
+    const primaryVisionModel = process.env.OPENROUTER_VISION_MODEL || "google/gemini-2.0-flash-001";
 
-    console.log("[API] Sending request to OpenRouter with", chatMessages.length, "messages");
+    const candidateModels = hasImages
+      ? pickVisionCandidates(primaryVisionModel)
+      : pickTextCandidates(primaryTextModel);
 
-    const openRouterResponse = await fetch("https://openrouter.ai/api/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${apiKey}`,
-        "HTTP-Referer": process.env.OPENROUTER_SITE_URL || "https://enosxtechnologies450.vercel.app",
-        "X-Title": "ENOSX AI",
-      },
-      body: JSON.stringify({
-        model,
-        messages: chatMessages,
-        stream: true,
-        max_tokens: 2048,
-        temperature: 0.7,
-      }),
-    });
+    let openRouterResponse: Response | null = null;
+    let usedModel = candidateModels[0];
+    let isFallbackMode = false;
 
-    console.log("[API] OpenRouter response status:", openRouterResponse.status);
+    for (const model of candidateModels) {
+      console.log("[API] Trying model:", model);
+      try {
+        openRouterResponse = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${apiKey}`,
+            "HTTP-Referer": process.env.OPENROUTER_SITE_URL || "https://enosxtechnologies450.vercel.app",
+            "X-Title": "ENOSX AI",
+          },
+          body: JSON.stringify({
+            model,
+            messages: chatMessages,
+            stream: true,
+            max_tokens: 2048,
+            temperature: 0.7,
+          }),
+        });
+      } catch (fetchErr) {
+        console.error("[API] Fetch failed for model", model, fetchErr);
+        openRouterResponse = null;
+      }
 
-    if (!openRouterResponse.ok) {
-      const errorText = await openRouterResponse.text().catch(() => "Unknown error");
-      console.error("[API] OpenRouter error:", openRouterResponse.status, errorText);
-      return sendMockResponse(res, `I'm having trouble reaching the AI service (${openRouterResponse.status}). Please try again in a moment.`);
+      if (openRouterResponse?.ok) {
+        usedModel = model;
+        break;
+      }
+
+      if (openRouterResponse && isRetryableStatus(openRouterResponse.status)) {
+        console.error(
+          `[API] Model ${model} unavailable (${openRouterResponse.status}) — rotating to next candidate.`
+        );
+        openRouterResponse = null;
+        isFallbackMode = true;
+        continue;
+      }
+
+      // Non-retryable error (e.g. 400/401) — stop rotating.
+      if (openRouterResponse) {
+        const errorText = await openRouterResponse.text().catch(() => "Unknown error");
+        console.error("[API] OpenRouter error:", openRouterResponse.status, errorText);
+        openRouterResponse = null;
+        break;
+      }
+    }
+
+    if (!openRouterResponse) {
+      const notice = isFallbackMode
+        ? "I've tried all available models and they're busy right now — the AI is taking a short break. Please try again in a moment."
+        : "I'm having trouble reaching the AI service. Please try again in a moment.";
+      return sendMockResponse(res, notice);
     }
 
     if (!openRouterResponse.body) {
@@ -172,6 +235,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     res.setHeader("Content-Type", "text/event-stream; charset=utf-8");
     res.setHeader("Cache-Control", "no-cache, no-transform");
     res.setHeader("Connection", "keep-alive");
+    // Tell the frontend which model fulfilled the request (useful for status display).
+    res.setHeader("X-ENOSX-Model", usedModel);
+    if (isFallbackMode) res.setHeader("X-ENOSX-Fallback", "true");
 
     const reader = openRouterResponse.body.getReader();
     const decoder = new TextDecoder();
@@ -191,7 +257,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   } catch (err) {
     console.error("[API] Unexpected error:", err);
     const msg = err instanceof Error ? err.message : "Unknown error";
-    
+
     // Send a helpful message instead of crashing
     return sendMockResponse(
       res,

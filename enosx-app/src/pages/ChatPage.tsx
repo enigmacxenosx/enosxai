@@ -22,6 +22,7 @@ import ProfilePanel from "@/components/ProfilePanel";
 import { GlobalLayout } from "@/components/GlobalLayout";
 import { useEnosxAI as useAI } from "@/hooks/useEnosxAI";
 import { useVoice } from "@/hooks/useVoice";
+import { useAuth } from "@/contexts/AuthContext";
 import { useSoundEffects } from "@/hooks/useSoundEffects";
 import { useSystemActions } from "@/hooks/useSystemActions";
 import { useContextAwareMessages } from "@/hooks/useContextAwareMessages";
@@ -92,11 +93,51 @@ export default function ChatPage() {
   const [activeId, setActiveId] = useState<string | null>(() => {
     return localStorage.getItem("enosx_active_chat");
   });
+  const [activeMode, setActiveMode] = useState<AIMode>("ex");
 
-  // Persist conversations to localStorage
+  // Persist conversations to localStorage and Neon
   useEffect(() => {
     localStorage.setItem("enosx_chats", JSON.stringify(conversations));
-  }, [conversations]);
+    
+    // Sync to backend if authenticated
+    if (isAuthenticated && user?.id) {
+      const syncHistory = async () => {
+        try {
+          // Sync all conversations (debounced or on change)
+          for (const conv of conversations) {
+            await fetch('/api/history', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ userId: user.id, chat: conv }),
+            });
+          }
+        } catch (err) {
+          console.error("Failed to sync history to Neon:", err);
+        }
+      };
+      syncHistory();
+    }
+  }, [conversations, isAuthenticated, user?.id]);
+
+  // Load history from Neon on mount if authenticated
+  useEffect(() => {
+    if (isAuthenticated && user?.id) {
+      const loadHistory = async () => {
+        try {
+          const res = await fetch(`/api/history?userId=${user.id}`);
+          if (res.ok) {
+            const data = await res.json();
+            if (data.history && data.history.length > 0) {
+              setConversations(data.history);
+            }
+          }
+        } catch (err) {
+          console.error("Failed to load history from Neon:", err);
+        }
+      };
+      loadHistory();
+    }
+  }, [isAuthenticated, user?.id]);
 
   // Persist activeId to localStorage
   useEffect(() => {
@@ -139,7 +180,8 @@ export default function ChatPage() {
   const { play: playSound } = useSoundEffects();
   const { activeWindow } = useActiveWindow();
   const { enrichMessageWithContext } = useContextAwareMessages();
-  const { fileContext, getFileContextMessage, loadFile, removeFile, clearFiles } = useFileContext();
+  const { fileContext, getFileContextMessage, clearFiles } = useFileContext();
+  const { user, isAuthenticated } = useAuth();arFiles } = useFileContext();
   const { getMemoryContext } = useMemoryBank();
   const { parseActions } = useSystemActions();
 
@@ -233,6 +275,7 @@ export default function ChatPage() {
 
   const handleSend = useCallback(
     async (text: string, aiMode?: AIMode): Promise<string> => {
+      if (aiMode) setActiveMode(aiMode);
       let convId = activeIdRef.current;
 
       if (!convId) {
@@ -387,7 +430,9 @@ export default function ChatPage() {
       const systemPrompt: Message = {
         id: "system-identity",
         role: "system",
-        content: `You are ${identity.name} (${identity.shortName}), an autonomous AI agent created by ${identity.organization}.
+        content: `${getSystemPrompt(activeMode)}
+
+### Enosx Technologies - Verified Information
 Founder & CEO: ${identity.founder}
 Mission: ${identity.mission}
 Our Story: ${identity.story}
@@ -403,51 +448,12 @@ ${companyFacts}
 Verified Company FAQ:
 ${companyFaqs}
 
-When asked about Enosx Technologies, use only the verified information above. Do not invent employees, executive roles, products, locations, dates, services, company performance details, or product availability. If the requested detail is not listed, say that you do not have verified information and refer the user to ${identity.website}.
-
-Official support: Direct users to WhatsApp +254 798 303 978 for official support. Enosxtech@gmail.com is the public alternative contact channel.
-
-Fresh information: For current pricing, plan entitlements, availability, careers, announcements, and policies, direct users to ${identity.website}. Do not state a plan price, allowance, entitlement, job opening, or policy as current unless it was retrieved from the official website during the current response.
-
-Accuracy: Do not promise response times, present customer testimonials as verified outcomes, or claim unverified staff roles, product counts, or business metrics.
-
-Design Language: Glassmorphic, Cyberpunk, Iridescent.
-Personality: Professional, high-performance, efficient, and deeply integrated with the OS environment.
-
-## RESPONSE QUALITY GUIDELINES
-- Always think step-by-step before answering complex questions
-- Provide structured, well-organized responses with clear headings when appropriate
-- Be precise and factual; admit when you don't know something
-- For coding tasks: explain the \"why\", not just the \"what\"
-- Anticipate follow-up questions and proactively address them
-- Use analogies and examples to make complex concepts accessible
-- Prioritize actionable solutions over theoretical explanations
-
-	Capabilities:
-	1. **Elite Intelligence**: You are powered by the world's most advanced models (Claude Sonnet, GPT-5 Pro, Gemini, DeepSeek R1, and more via OpenRouter).
-	2. **Deep Reasoning**: You have a dedicated **Reasoning** mode (powered by DeepSeek R1). If the user selects this mode, you will perform deep, multi-step logical thinking before providing a final answer.
-	3. **Web Browsing & Analysis**: You have tools to search the web and read webpages. Use \`web_search\` for real-time info and \`web_scrape\` to analyze specific links.
-	4. **Document & PDF Generation**: You can create professional-grade documents. Users can download your responses as **Markdown (.md)** or **PDF (.pdf)** files.
-	5. **Image Generation**: You ARE natively capable of generating images. Users must click the **paintbrush icon** to enable Image Mode.
-	6. You are powered by OpenRouter's flexible AI architecture, ensuring you always use the best model for the task.
-
-## \ud83d\udc68\u200d\ud83d\udcbb CODING MASTER SKILL — ACTIVATED
-You are an expert-level software engineer with mastery across ALL domains:
-
-### Core Programming Languages
-- **JavaScript/TypeScript**: ES2024+, async/await patterns, TypeScript generics, decorators, type inference
-- **Python**: Type hints, dataclasses, async/asyncio, generators, decorators, OOP, functional paradigms
-- **Rust**: Ownership, lifetimes, traits, macros, async with tokio, error handling with Result/Option
-- **Go**: Goroutines, channels, interfaces, error wrapping, generics
-- **C/C++**: Memory management, smart pointers, move semantics, templates, RAII
-- **Java/Kotlin**: Streams, lambdas, coroutines, sealed classes, pattern matching
-- **Swift**: Protocol-oriented programming, optionals, Combine, async/await, SwiftUI
-
-### Frontend Mastery
-- **React**: Hooks, Suspense, Concurrent Mode, Server Components, custom hooks, performance optimization (memo, useMemo, useCallback)
-- **Vue/Next.js/Svelte**: SSR, ISR, SSG, middleware, routing, state management (Zustand, Redux, Pinia)
-- **CSS/Tailwind**: Responsive design, animations, glassmorphism, dark mode, design systems
-- **TypeScript**: Advanced types, conditional types, mapped types, template literal types, module augmentation
+### Operational Protocols
+1. **Accuracy**: Use only verified info. If missing, refer to ${identity.website}.
+2. **Support**: Direct users to WhatsApp +254 798 303 978 or Enosxtech@gmail.com.
+3. **Freshness**: Always direct to website for current pricing/policies.
+4. **Coding**: Expert mastery in TS, Python, Rust, Go, C++, React, and Tailwind. Explain "why", think step-by-step.
+5. **Downloads**: You can generate professional documents. Users can download them via the button in the message bubble.
 
 ### Backend Mastery
 - **Node.js**: Express, Fastify, NestJS, WebSocket, clustering, streaming

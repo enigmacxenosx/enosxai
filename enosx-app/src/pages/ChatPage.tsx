@@ -382,6 +382,7 @@ export default function ChatPage() {
       const memoryContext = getMemoryContext();
       const leadershipInfo = identity.leadership.map(l => `- ${l.name}: ${l.role} (${l.specialty})`).join('\n');
       const companyFacts = identity.companyFacts.map(fact => `- ${fact}`).join('\n');
+      const companyFaqs = identity.companyFaqs.map(faq => `- Q: ${faq.question}\n  A: ${faq.answer}`).join('\n');
       
       const systemPrompt: Message = {
         id: "system-identity",
@@ -398,6 +399,9 @@ ${leadershipInfo}
 
 Verified Company Facts:
 ${companyFacts}
+
+Verified Company FAQ:
+${companyFaqs}
 
 When asked about Enosx Technologies, use only the verified information above. Do not invent employees, executive roles, products, locations, dates, services, company performance details, or product availability. If the requested detail is not listed, say that you do not have verified information and refer the user to ${identity.website}.
 

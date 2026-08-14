@@ -12,31 +12,32 @@ const OPENROUTER_API_KEY = import.meta.env.VITE_OPENROUTER_API_KEY || "";
 const SERPER_API_KEY = import.meta.env.VITE_SERPER_API_KEY || "";
 
 // ── 2026 Elite Model Mapping ──────────────────────────────────────────────────────────
+// OpenRouter validates model slugs. Use its documented free router so the service selects an
+// available model that supports the requested capabilities instead of calling retired or invalid IDs.
 const MODELS = {
   text: {
-    "ex":        "anthropic/claude-sonnet-5",
-    "ex-pro":    "openai/gpt-5-pro",
-    "smart":     "anthropic/claude-sonnet-5",
-    "fast":      "google/gemini-3.5-flash",
-    "balanced":  "openai/gpt-5-mini",
-    "task":      "deepseek/deepseek-r1",
-    "creative":  "anthropic/claude-opus-5",
+    "ex": "openrouter/free",
+    "ex-pro": "openrouter/free",
+    "smart": "openrouter/free",
+    "fast": "openrouter/free",
+    "balanced": "openrouter/free",
+    "task": "openrouter/free",
+    "creative": "openrouter/free",
   },
   vision: {
-    "ex":        "anthropic/claude-sonnet-5",
-    "ex-pro":    "openai/gpt-5-pro",
-    "smart":     "anthropic/claude-sonnet-5",
-    "fast":      "google/gemini-3.5-flash",
-    "balanced":  "openai/gpt-5-mini",
-    "task":      "google/gemini-3.5-flash",
-    "creative":  "anthropic/claude-opus-5",
+    "ex": "openrouter/free",
+    "ex-pro": "openrouter/free",
+    "smart": "openrouter/free",
+    "fast": "openrouter/free",
+    "balanced": "openrouter/free",
+    "task": "openrouter/free",
+    "creative": "openrouter/free",
   },
 } as const;
 
-// ── 2026 Free Fallback Models ─────────────────────────────────────────────────────────
 const FREE_MODELS = {
-  text: "google/gemma-4-31b-it:free",
-  vision: "google/gemma-4-26b-a4b-it:free",
+  text: "openrouter/free",
+  vision: "openrouter/free",
   auto: "openrouter/free"
 };
 
@@ -151,7 +152,7 @@ export function useOpenRouter() {
             headers: {
               "Content-Type": "application/json",
               Authorization: `Bearer ${OPENROUTER_API_KEY}`,
-              "HTTP-Referer": "https://enosx.vercel.app",
+              "HTTP-Referer": "https://enosxai.vercel.app",
               "X-Title": "ENOSX AI",
             },
             body: JSON.stringify({
@@ -179,8 +180,8 @@ export function useOpenRouter() {
           if (response.status === 429) {
             // Rate limited — try a different model silently
             const fallbackModel = hasImages
-              ? "google/gemma-4-26b-a4b-it:free"
-              : "google/gemma-3-27b-it:free";
+              ? "openrouter/free"
+              : "openrouter/free";
             if (model !== fallbackModel) {
               model = fallbackModel;
               return await callAI(false);

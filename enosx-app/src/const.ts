@@ -17,6 +17,24 @@ export const COMPANY_FACTS = [
   "ENOSX AI is an intelligent workspace with context-aware messaging, GitHub and code-review support, voice features, memory, web intelligence, image generation, and document export.",
   "The Enosx Tech Store is Enosx Technologies' storefront for technology products and digital services.",
   "ExLover Coach is an AI-guided relationship-coaching product focused on thoughtful prompts, reflection, and practical advice.",
+  "Enosx Technologies uses an in-house Aero-Glass design language that combines semi-transparent surfaces, backdrop blur, and iridescent neon accents.",
+] as const;
+
+// Public FAQ answers, verified against enosxtechnologies.vercel.app on 2026-08-14.
+// Time-sensitive pricing, staffing, availability, and policy claims are intentionally excluded.
+export const COMPANY_FAQS = [
+  {
+    question: "How do I contact Enosx Technologies?",
+    answer: "WhatsApp at +254 798 303 978 is the fastest official contact route. Enosxtech@gmail.com is the public alternative email channel.",
+  },
+  {
+    question: "Where can I find current prices, availability, or company updates?",
+    answer: "Use the official Enosx Technologies website. It is the source of truth for current pricing, product availability, careers, announcements, and policies.",
+  },
+  {
+    question: "What product approach connects the Enosx portfolio?",
+    answer: "The company builds its products in-house around speed-first engineering and the Aero-Glass visual design language.",
+  },
 ] as const;
 
 // Leadership information must only contain public, verified team details.
@@ -55,4 +73,5 @@ export const getAIIdentity = () => ({
   story: STORY,
   founderVision: FOUNDER_VISION,
   companyFacts: COMPANY_FACTS,
+  companyFaqs: COMPANY_FAQS,
 });

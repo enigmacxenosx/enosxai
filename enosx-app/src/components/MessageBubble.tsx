@@ -8,7 +8,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import { motion } from "framer-motion";
-import { Copy, Volume2, VolumeX, Check, Download, FileText } from "lucide-react";
+import { Copy, Volume2, VolumeX, Check, Download, FileText, ExternalLink, FileSearch, ListTree, ShieldCheck } from "lucide-react";
 import { Message } from "@/lib/types";
 import { useTheme } from "@/contexts/ThemeContext";
 import { useWallpaper } from "@/contexts/WallpaperContext";
@@ -208,6 +208,7 @@ export default function MessageBubble({
   const { config } = useTheme();
   const { settings: wallpaperSettings } = useWallpaper();
   const [copied, setCopied] = useState(false);
+  const [actionStatus, setActionStatus] = useState<string | null>(null);
   const isUser = message.role === "user";
   const isStreaming = message.isStreaming;
   const isEmpty = !message.content?.trim() && isStreaming;
@@ -243,6 +244,42 @@ export default function MessageBubble({
       doc.text(splitText, 15, 20);
       doc.save(`enosx-doc-${new Date().getTime()}.pdf`);
     }
+  };
+
+  const handleProposedAction = async (action: NonNullable<Message["proposedActions"]>[number]) => {
+    if (action.type === "open_url" && action.url) {
+      try {
+        const url = new URL(action.url);
+        if (url.protocol !== "https:" && url.protocol !== "http:") throw new Error("Unsupported link");
+        window.open(url.toString(), "_blank", "noopener,noreferrer");
+        setActionStatus("Opened in a new tab.");
+      } catch {
+        setActionStatus("This proposed link is not a valid public URL.");
+      }
+      return;
+    }
+    if ((action.type === "read_webpage" || action.type === "extract_links") && action.url) {
+      setActionStatus("Reading website…");
+      try {
+        const response = await fetch("/api/browser/action", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(action),
+        });
+        const payload = await response.json().catch(() => ({}));
+        if (!response.ok) throw new Error(payload.error || "Web reading request failed");
+        setActionStatus(action.type === "read_webpage" ? `Read: ${payload.title || action.url}` : `Found ${payload.links?.length ?? 0} links.`);
+      } catch (error) {
+        setActionStatus(error instanceof Error ? error.message : "Unable to complete web reading request.");
+      }
+      return;
+    }
+    if (action.url) {
+      window.open(action.url, "_blank", "noopener,noreferrer");
+      setActionStatus("Opened for your review. No website changes were made.");
+      return;
+    }
+    setActionStatus("This proposal needs a configured desktop or browser provider.");
   };
 
   return (
@@ -365,6 +402,39 @@ export default function MessageBubble({
                   )}
                   {/* Assistant content with inline image support */}
                   {renderContentWithImages(message.content, config.accent)}
+                  {message.proposedActions && message.proposedActions.length > 0 && (
+                    <div className="flex flex-col gap-2 rounded-xl border border-cyan-300/20 bg-cyan-400/[0.06] p-3">
+                      <div className="flex items-center gap-2 text-xs font-semibold tracking-wide text-cyan-100">
+                        <ShieldCheck size={15} className="text-cyan-300" />
+                        Proposed actions — review before running
+                      </div>
+                      {message.proposedActions.map((action, actionIndex) => {
+                        const readOnly = action.type === "read_webpage" || action.type === "extract_links";
+                        const isLink = action.type === "open_url";
+                        const label = action.type === "open_url"
+                          ? "Open link"
+                          : action.type === "read_webpage"
+                            ? "Read webpage"
+                            : action.type === "extract_links"
+                              ? "Extract links"
+                              : action.type === "launch_app"
+                                ? `Launch ${action.app || "app"}`
+                                : "Review interaction";
+                        const Icon = isLink ? ExternalLink : readOnly ? (action.type === "extract_links" ? ListTree : FileSearch) : ShieldCheck;
+                        return (
+                          <button
+                            key={`${action.type}-${actionIndex}`}
+                            onClick={() => void handleProposedAction(action)}
+                            className="flex min-h-11 items-center justify-between gap-3 rounded-lg border border-white/10 bg-black/20 px-3 py-2 text-left text-xs text-white/90 transition-colors hover:bg-white/10"
+                          >
+                            <span className="min-w-0 truncate">{label}{action.url ? ` · ${action.url}` : ""}</span>
+                            <Icon size={15} className="shrink-0 text-cyan-300" />
+                          </button>
+                        );
+                      })}
+                      {actionStatus && <p className="text-[11px] leading-relaxed text-cyan-100/70">{actionStatus}</p>}
+                    </div>
+                  )}
                   {isGeneratingImage && (
                     <ImageGeneratingIndicator accent={config.accent} />
                   )}

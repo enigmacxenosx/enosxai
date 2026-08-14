@@ -15,7 +15,9 @@ export function useSystemActions() {
     while ((match = actionRegex.exec(text)) !== null) {
       try {
         const action = JSON.parse(match[1]) as SystemAction;
-        actions.push(action);
+        if (["open_url", "launch_app", "read_webpage", "extract_links", "click_element", "fill_form", "chain", "delay"].includes(action.type)) {
+          actions.push(action);
+        }
       } catch (e) {
         console.error("Failed to parse system action:", e);
       }
@@ -42,6 +44,10 @@ export function useSystemActions() {
             if (!action.app) throw new Error("Missing app name");
             console.log(`LAUNCH_APP_INTENT: ${action.app}`);
             toast.info(`Launching: ${action.app}`);
+          } else if (action.type === "read_webpage" || action.type === "extract_links") {
+            await executeChain([action]);
+          } else if (action.type === "click_element" || action.type === "fill_form") {
+            toast.info("Action proposed. Review the website and fields before approving an interaction.");
           }
         } catch (e) {
           toast.error(`Action failed: ${e instanceof Error ? e.message : String(e)}`);
@@ -55,5 +61,5 @@ export function useSystemActions() {
     [parseActions, executeChain]
   );
 
-  return { executeAction };
+  return { executeAction, parseActions };
 }

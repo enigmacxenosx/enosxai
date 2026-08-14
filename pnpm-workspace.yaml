@@ -1,5 +1,6 @@
 packages:
   - enosx-app
+  - api-server
   - lib/*
   - lib/integrations/*
   - scripts

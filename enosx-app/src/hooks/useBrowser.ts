@@ -26,6 +26,8 @@ export interface BrowserAction {
   url: string;
   selector?: string;
   fields?: Array<{ selector: string; value: string }>;
+  /** Must only be true after the user has reviewed and approved a modifying web action. */
+  approved?: boolean;
 }
 
 interface UseBrowserState {
@@ -112,14 +114,14 @@ export function useBrowser() {
   /**
    * Click an element on a webpage
    */
-  const clickElement = useCallback(async (url: string, selector: string): Promise<boolean> => {
+  const clickElement = useCallback(async (url: string, selector: string, approved = false): Promise<boolean> => {
     setLoading(true);
     setError(null);
     try {
       const response = await fetch('/api/browser/click', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ url, selector }),
+        body: JSON.stringify({ url, selector, approved }),
       });
 
       if (!response.ok) {
@@ -139,14 +141,14 @@ export function useBrowser() {
   /**
    * Fill form fields on a webpage
    */
-  const fillForm = useCallback(async (url: string, fields: Array<{ selector: string; value: string }>): Promise<boolean> => {
+  const fillForm = useCallback(async (url: string, fields: Array<{ selector: string; value: string }>, approved = false): Promise<boolean> => {
     setLoading(true);
     setError(null);
     try {
       const response = await fetch('/api/browser/fill-form', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ url, fields }),
+        body: JSON.stringify({ url, fields, approved }),
       });
 
       if (!response.ok) {

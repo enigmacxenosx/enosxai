@@ -24,14 +24,13 @@ import { useEnosxAI as useAI } from "@/hooks/useEnosxAI";
 import { useVoice } from "@/hooks/useVoice";
 import { useSoundEffects } from "@/hooks/useSoundEffects";
 import { useSystemActions } from "@/hooks/useSystemActions";
-import { useCommandChain } from "@/hooks/useCommandChain";
 import { useContextAwareMessages } from "@/hooks/useContextAwareMessages";
 import { useActiveWindow } from "@/contexts/WindowContext";
 import { useFileContext } from "@/hooks/useFileContext";
 import { useClipboardListener } from "@/hooks/useClipboardListener";
 import { useGodMode } from "@/hooks/useGodMode";
 import { useMemoryBank } from "@/hooks/useMemoryBank";
-import { Conversation, Message } from "@/lib/types";
+import { AssistantAction, Conversation, Message } from "@/lib/types";
 import { useTheme } from "@/contexts/ThemeContext";
 import { useCompactMode } from "@/hooks/useCompactMode";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -61,6 +60,12 @@ const generateTitle = (firstMessage: string): string => {
   const words = firstMessage.trim().split(/\s+/).slice(0, 6);
   return words.join(" ") + (firstMessage.split(/\s+/).length > 6 ? "..." : "");
 };
+
+const ACTION_BLOCK = /\[\[ACTION:\s*({[\s\S]*?})\s*\]\]/g;
+
+function removeActionBlocks(content: string) {
+  return content.replace(ACTION_BLOCK, "").replace(/\n{3,}/g, "\n\n").trim();
+}
 
 export default function ChatPage() {
   const { config } = useTheme();
@@ -136,6 +141,7 @@ export default function ChatPage() {
   const { enrichMessageWithContext } = useContextAwareMessages();
   const { fileContext, getFileContextMessage, loadFile, removeFile, clearFiles } = useFileContext();
   const { getMemoryContext } = useMemoryBank();
+  const { parseActions } = useSystemActions();
 
   const handleFileUpload = useCallback(
     async (file: File) => {
@@ -462,9 +468,11 @@ You are an expert-level software engineer with mastery across ALL domains:
       let enrichedMessages = [systemPrompt, ...history, userMessage];
       enrichedMessages = enrichMessageWithContext(enrichedMessages, activeWindow);
 
+      let streamedContent = "";
       await sendMessage(
         enrichedMessages,
         (chunk) => {
+          streamedContent += chunk;
           setConversations((prev) =>
             prev.map((c) =>
               c.id === targetConvId
@@ -479,16 +487,30 @@ You are an expert-level software engineer with mastery across ALL domains:
           );
         },
         () => {
+          const proposedActions = parseActions(streamedContent) as AssistantAction[];
+          const cleanContent = removeActionBlocks(streamedContent);
+          setConversations((prev) =>
+            prev.map((conversation) =>
+              conversation.id === targetConvId
+                ? {
+                    ...conversation,
+                    messages: conversation.messages.map((message) =>
+                      message.id === assistantId
+                        ? { ...message, content: cleanContent, proposedActions: proposedActions.length ? proposedActions : undefined }
+                        : message,
+                    ),
+                  }
+                : conversation,
+            ),
+          );
           if (autoSpeak) {
-            const finalConv = conversationsRef.current.find((c) => c.id === targetConvId);
-            const finalMsg = finalConv?.messages.find((m) => m.id === assistantId);
-            if (finalMsg) speak(finalMsg.content);
+            speak(cleanContent);
           }
         },
         { githubContext, aiMode }
       );
     },
-    [sendMessage, speak, autoSpeak, fileContext.isLoaded, getFileContextMessage, getMemoryContext, enrichMessageWithContext, activeWindow, clearFiles]
+    [sendMessage, speak, autoSpeak, fileContext.isLoaded, getFileContextMessage, getMemoryContext, enrichMessageWithContext, activeWindow, clearFiles, parseActions]
   );
 
   const createNewChat = useCallback(() => {

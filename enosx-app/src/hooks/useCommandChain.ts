@@ -2,9 +2,11 @@ import { useCallback, useState } from "react";
 import { toast } from "sonner";
 
 export interface SystemAction {
-  type: "open_url" | "launch_app" | "chain" | "delay";
+  type: "open_url" | "launch_app" | "read_webpage" | "extract_links" | "click_element" | "fill_form" | "chain" | "delay";
   url?: string;
   app?: string;
+  selector?: string;
+  fields?: Array<{ selector: string; value: string }>;
   delay?: number;
   sequence?: SystemAction[];
 }
@@ -40,6 +42,22 @@ export function useCommandChain() {
         console.log(`LAUNCH_APP_INTENT: ${action.app}`);
         toast.info(`Launching: ${action.app}`);
         return true;
+      } else if (action.type === "read_webpage" || action.type === "extract_links") {
+        if (!action.url) throw new Error("Missing URL");
+        const response = await fetch("/api/browser/action", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(action),
+        });
+        if (!response.ok) {
+          const payload = await response.json().catch(() => ({}));
+          throw new Error(payload.error || "Web reading request failed");
+        }
+        toast.success(action.type === "read_webpage" ? "Webpage read" : "Links extracted");
+        return true;
+      } else if (action.type === "click_element" || action.type === "fill_form") {
+        toast.info("This website action needs a review and explicit approval before it can run.");
+        return false;
       } else if (action.type === "delay") {
         const delayMs = action.delay || 1000;
         await new Promise((resolve) => setTimeout(resolve, delayMs));

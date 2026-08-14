@@ -1,0 +1,30 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "ENOSX AI",
+  "version": "0.1.0",
+  "identifier": "com.enosx.ai",
+  "build": {
+    "beforeDevCommand": "pnpm --dir ../enosx-app dev",
+    "devUrl": "http://localhost:5173",
+    "beforeBuildCommand": "pnpm --dir ../enosx-app build",
+    "frontendDist": "../enosx-app/dist"
+  },
+  "app": {
+    "windows": [
+      {
+        "title": "ENOSX AI",
+        "width": 1280,
+        "height": 800,
+        "minWidth": 960,
+        "minHeight": 640
+      }
+    ],
+    "security": {
+      "csp": null
+    }
+  },
+  "bundle": {
+    "active": true,
+    "targets": "all"
+  }
+}

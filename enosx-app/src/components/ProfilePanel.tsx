@@ -16,7 +16,7 @@ import {
   X, User, Mail, Lock, Eye, EyeOff, LogOut, Settings,
   Bell, Globe, Palette, Sparkles, Check, ChevronRight, ChevronLeft,
   Camera, Edit3, Loader2, AlertCircle, CheckCircle2,
-  Monitor, Shield, Image, Sun, Moon, Zap, Layers,
+  Monitor, Shield, Image, Sun, Moon, Zap, Layers, Crown,
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useTheme, THEMES, type Theme } from '../contexts/ThemeContext';
@@ -99,6 +99,7 @@ export default function ProfilePanel({ isOpen, onClose }: ProfilePanelProps) {
   const [privacyCrashReports, setPrivacyCrashReports] = useState(true);
   const [privacyPersonalization, setPrivacyPersonalization] = useState(true);
   const [privacySaved, setPrivacySaved] = useState(false);
+  const [checkoutStatus, setCheckoutStatus] = useState<'idle' | 'loading' | 'unavailable'>('idle');
 
   // Avatar upload ref
   const avatarInputRef = useRef<HTMLInputElement>(null);
@@ -179,6 +180,19 @@ export default function ProfilePanel({ isOpen, onClose }: ProfilePanelProps) {
         personalization: privacyPersonalization,
       }));
     } catch {}
+  };
+
+  const beginUpgrade = async () => {
+    setCheckoutStatus('loading');
+    try {
+      const response = await fetch('/api/billing/checkout?plan=pro', { credentials: 'include' });
+      const payload = await response.json().catch(() => ({}));
+      if (!response.ok || !payload.checkoutUrl) throw new Error(payload.error || 'Checkout is not available yet.');
+      window.location.assign(payload.checkoutUrl);
+    } catch {
+      setCheckoutStatus('unavailable');
+      setTimeout(() => setCheckoutStatus('idle'), 3500);
+    }
   };
 
   // Load privacy settings from localStorage on mount
@@ -451,8 +465,8 @@ export default function ProfilePanel({ isOpen, onClose }: ProfilePanelProps) {
                     </div>
                   </div>
 
-                  {/* Toggles */}
-                  <div className="space-y-2">
+	                  {/* Toggles */}
+	                  <div className="space-y-2">
                     {[
                       { label: 'Notifications', icon: Bell, value: editNotifications, onChange: setEditNotifications },
                       { label: 'Compact Mode', icon: Monitor, value: editCompact, onChange: setEditCompact },
@@ -466,10 +480,23 @@ export default function ProfilePanel({ isOpen, onClose }: ProfilePanelProps) {
                           <div className="w-4 h-4 rounded-full bg-white absolute top-0.5 transition-all" style={{ left: value ? 22 : 2 }} />
                         </button>
                       </div>
-                    ))}
-                  </div>
+	                    ))}
+	                  </div>
 
-                  {/* Save */}
+	                  <div className="rounded-2xl p-3.5" style={{ background: `linear-gradient(135deg, rgba(${accentRgb},0.16), rgba(112,0,255,0.16))`, border: `1px solid rgba(${accentRgb},0.28)` }}>
+	                    <div className="flex items-center justify-between gap-3">
+	                      <div>
+	                        <div className="flex items-center gap-1.5 text-sm font-bold" style={{ color: 'rgba(255,255,255,0.9)' }}><Crown size={14} style={{ color: accentColor }} /> ENOSX Free</div>
+	                        <p className="mt-1 text-xs leading-relaxed" style={{ color: 'rgba(255,255,255,0.48)' }}>Core chat, personal context, and controlled web reading. Upgrade unlocks Pro model access and expanded usage once billing is configured.</p>
+	                      </div>
+	                      <button onClick={beginUpgrade} disabled={checkoutStatus === 'loading'} className="shrink-0 rounded-xl px-3 py-2 text-xs font-bold transition-opacity disabled:opacity-60" style={{ background: `rgba(${accentRgb},0.86)`, color: '#071014' }}>
+	                        {checkoutStatus === 'loading' ? 'Opening…' : 'Upgrade'}
+	                      </button>
+	                    </div>
+	                    {checkoutStatus === 'unavailable' && <p className="mt-2 text-[11px]" style={{ color: '#fbbf24' }}>Checkout will activate when the production billing link is configured.</p>}
+	                  </div>
+
+	                  {/* Save */}
                   <button onClick={handleSaveProfile} disabled={saveStatus === 'saving'}
                     className="w-full py-3 rounded-2xl text-sm font-bold transition-all flex items-center justify-center gap-2"
                     style={{ background: saveStatus === 'saved' ? 'rgba(34,197,94,0.2)' : saveStatus === 'error' ? 'rgba(220,20,60,0.2)' : `rgba(${accentRgb},0.18)`, border: saveStatus === 'saved' ? '1px solid rgba(34,197,94,0.4)' : saveStatus === 'error' ? '1px solid rgba(220,20,60,0.4)' : `1px solid rgba(${accentRgb},0.35)`, color: saveStatus === 'saved' ? '#4ade80' : saveStatus === 'error' ? '#ff6b8a' : accentColor }}>

@@ -54,6 +54,7 @@ function getFriendlyErrorMessage(message: string) {
 
 export function useEnosxAI() {
   const [isLoading, setIsLoading] = useState(false);
+  const [isThinking, setIsThinking] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const sendMessage = useCallback(
@@ -65,6 +66,8 @@ export function useEnosxAI() {
     ) => {
       setIsLoading(true);
       setError(null);
+      // Surface a friendly in-message indicator while the AI is processing.
+      setIsThinking(true);
 
       try {
         const response = await fetch("/api/chat", {
@@ -150,10 +153,11 @@ export function useEnosxAI() {
         onDone();
       } finally {
         setIsLoading(false);
+        setIsThinking(false);
       }
     },
     [],
   );
 
-  return { sendMessage, isLoading, error, isFreeMode: false };
+  return { sendMessage, isLoading, isThinking, error, isFreeMode: false };
 }

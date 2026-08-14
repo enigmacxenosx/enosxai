@@ -174,7 +174,7 @@ export default function ChatPage() {
   useEffect(() => { activeIdRef.current = activeId; }, [activeId]);
   useEffect(() => { conversationsRef.current = conversations; }, [conversations]);
 
-  const { sendMessage, isLoading: isChatLoading, error: chatError, isFreeMode } = useAI();
+  const { sendMessage, isLoading: isChatLoading, isThinking, error: chatError, isFreeMode } = useAI();
   const { generateImage, isGenerating, error: imageError } = useImageGeneration();
   const isLoading = isChatLoading || isGenerating;
   const error = chatError || imageError;
@@ -820,6 +820,27 @@ ${getAdminContext()}` : ""}`,
                     onStopSpeak={handleStopSpeak}
                   />
                 ))}
+                {/* In-message 'ENOSX is thinking...' indicator while the AI processes */}
+                {isLoading && (
+                  <motion.div
+                    key="thinking-indicator"
+                    initial={{ opacity: 0, y: 12 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -8 }}
+                    className="flex flex-row gap-3"
+                  >
+                    <div
+                      className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 text-xs font-bold"
+                      style={{ background: config.accent + "22", color: config.accent }}
+                    >
+                      EX
+                    </div>
+                    <div className="flex items-center gap-1 text-sm italic px-1">
+                      <span style={{ color: config.accent }}>ENOSX is thinking</span>
+                      <span style={{ color: config.accent }} className="thinking-pulse">...</span>
+                    </div>
+                  </motion.div>
+                )}
                 <div ref={messagesEndRef} className="h-4" />
                 
                 {/* Floating error indicator */}

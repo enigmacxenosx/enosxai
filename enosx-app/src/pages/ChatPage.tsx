@@ -210,6 +210,16 @@ export default function ChatPage() {
   const isMobile = useIsMobile();
   const deviceType = useDeviceType();
 
+  const handleGodModeTrigger = useCallback(() => {
+    if (isGodModeActive || showGodTerminal) return;
+
+    setIsGodModeActive(true);
+    playSound("click");
+    toast.success("GOD MODE initializing");
+  }, [isGodModeActive, playSound, showGodTerminal]);
+
+  useGodMode(handleGodModeTrigger);
+
   const handleToggleImageMode = useCallback(() => {
     setIsImageMode((prev) => {
       if (prev) {

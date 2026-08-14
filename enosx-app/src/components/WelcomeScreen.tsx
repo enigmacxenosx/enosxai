@@ -52,9 +52,7 @@ export default function WelcomeScreen({ onSuggestion, isCompact }: WelcomeScreen
           }}
           title="ENOSX AI (EX) - Enosx Technologies"
         >
-          <span className="text-4xl font-black tracking-tighter text-white drop-shadow-[0_0_15px_rgba(255,255,255,0.5)]">
-            EX
-          </span>
+          <img src="/favicon.png" alt="EX Logo" className="w-16 h-16 object-contain drop-shadow-[0_0_15px_rgba(255,255,255,0.3)]" />
           <motion.div
             className="absolute -bottom-8 left-1/2 -translate-x-1/2 text-xs font-semibold text-white/60 whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity"
             initial={{ opacity: 0, y: -5 }}

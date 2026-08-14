@@ -134,15 +134,15 @@ export default function Sidebar({
             whileHover={{ scale: 1.08, boxShadow: `0 0 22px rgba(${config.accentRgb}, 0.7)` }}
             whileTap={{ scale: 0.94 }}
             onClick={onToggle}
-            className="w-8 h-8 rounded-lg flex-shrink-0 flex items-center justify-center font-black text-white text-sm cursor-pointer select-none"
+            className="w-8 h-8 rounded-lg flex-shrink-0 flex items-center justify-center overflow-hidden cursor-pointer select-none"
             style={{
-              background: 'linear-gradient(135deg, #7c6ff7, #a78bfa)',
-              boxShadow: '0 0 15px rgba(124,111,247,0.5)',
-              border: 'none',
+              background: 'rgba(255,255,255,0.05)',
+              boxShadow: '0 0 15px rgba(124,111,247,0.2)',
+              border: '1px solid rgba(255,255,255,0.1)',
             }}
             title={collapsed ? "Expand sidebar" : "Collapse sidebar"}
           >
-            EX
+            <img src="/favicon.png" alt="EX" className="w-full h-full object-cover" />
           </motion.button>
           {!collapsed && (
             <motion.span

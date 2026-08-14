@@ -1,96 +1,78 @@
 /*
  * ENOSX AI — useGodMode
- * Global keyboard shortcut handler for GOD MODE.
+ * Detects authorized GOD MODE keyboard sequences.
  *
- * Supported shortcuts:
- * - Alt + X, then E (keys may be released between steps)
- * - Alt + E, then X
- * - Alt + X + E held together
- * - Control + E + X + C held together
+ * Supported sequences:
+ * - Control/Meta + E + X + C
+ * - Alt + E + X
+ *
+ * The detector accepts both held-key chords and normal sequential key presses
+ * so it works consistently across browsers and keyboard layouts.
  */
-import { useCallback, useEffect, useRef } from "react";
+import { useEffect, useRef, useCallback } from "react";
 
-const SEQUENCE_WINDOW_MS = 1200;
-const TRIGGER_COOLDOWN_MS = 1000;
+const GOD_MODE_AUTH_TOKEN = "ENOSX_AUTHORIZED_2024";
 
-type SequenceState = {
-  key: "KeyX" | "KeyE" | null;
-  expiresAt: number;
+const isGodModeAuthorized = (): boolean => {
+  const authToken = localStorage.getItem("godmode_auth_token");
+  const isAuthorized = authToken === GOD_MODE_AUTH_TOKEN;
+
+  if (!isAuthorized) {
+    console.warn("[GODMODE] Unauthorized access attempt blocked");
+  }
+
+  return isAuthorized;
 };
 
+const normalizeKey = (key: string) => (key.length === 1 ? key.toLowerCase() : key);
+
 export function useGodMode(onTrigger: () => void) {
-  const pressedCodes = useRef<Set<string>>(new Set());
-  const sequence = useRef<SequenceState>({ key: null, expiresAt: 0 });
-  const lastTriggeredAt = useRef(0);
+  const pressedKeys = useRef<Set<string>>(new Set());
+  const recentKeys = useRef<string[]>([]);
 
-  const resetKeys = useCallback(() => {
-    pressedCodes.current.clear();
-    sequence.current = { key: null, expiresAt: 0 };
-  }, []);
+  const checkSequence = useCallback(
+    (key?: string) => {
+      const hasKeys = (keys: string[]) =>
+        keys.every((candidate) =>
+          pressedKeys.current.has(candidate) ||
+          pressedKeys.current.has(candidate.toLowerCase()) ||
+          pressedKeys.current.has(candidate.toUpperCase()),
+        );
 
-  const trigger = useCallback(() => {
-    const now = Date.now();
-    if (now - lastTriggeredAt.current < TRIGGER_COOLDOWN_MS) return;
+      if (key) {
+        recentKeys.current = [...recentKeys.current, normalizeKey(key)].slice(-4);
+      }
 
-    lastTriggeredAt.current = now;
-    resetKeys();
-    onTrigger();
-  }, [onTrigger, resetKeys]);
+      const recent = recentKeys.current.join("+");
+      const sequentialPrimary = recent.endsWith("Control+e+x+c") || recent.endsWith("Meta+e+x+c");
+      const sequentialAlternative = recent.endsWith("Alt+e+x") || recent.endsWith("Alt+x+e");
+      const heldPrimary = (pressedKeys.current.has("Control") || pressedKeys.current.has("Meta")) && hasKeys(["e", "x", "c"]);
+      const heldAlternative = pressedKeys.current.has("Alt") && hasKeys(["e", "x"]);
+
+      if ((sequentialPrimary || sequentialAlternative || heldPrimary || heldAlternative) && isGodModeAuthorized()) {
+        onTrigger();
+        pressedKeys.current.clear();
+        recentKeys.current = [];
+      }
+    },
+    [onTrigger],
+  );
 
   useEffect(() => {
-    const hasAlt = () =>
-      pressedCodes.current.has("AltLeft") || pressedCodes.current.has("AltRight");
-
-    const hasControl = () =>
-      pressedCodes.current.has("ControlLeft") || pressedCodes.current.has("ControlRight");
-
-    const hasAll = (codes: string[]) => codes.every((code) => pressedCodes.current.has(code));
-
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.repeat) return;
-
-      pressedCodes.current.add(event.code);
-      const now = Date.now();
-      const altHeld = hasAlt() || event.altKey;
-
-      // Preserve the original held-key shortcut: Control + E + X + C.
-      const controlShortcut = hasControl() && hasAll(["KeyE", "KeyX", "KeyC"]);
-
-      if (altHeld && (event.code === "KeyX" || event.code === "KeyE")) {
-        // Support both ordered forms: Alt+X then E and Alt+E then X.
-        const previous = sequence.current;
-        const orderedSequence =
-          previous.expiresAt >= now &&
-          ((previous.key === "KeyX" && event.code === "KeyE") ||
-            (previous.key === "KeyE" && event.code === "KeyX"));
-
-        if (orderedSequence || hasAll(["KeyX", "KeyE"])) {
-          event.preventDefault();
-          trigger();
-          return;
-        }
-
-        sequence.current = {
-          key: event.code,
-          expiresAt: now + SEQUENCE_WINDOW_MS,
-        };
-      }
-
-      if (controlShortcut) {
-        event.preventDefault();
-        trigger();
-      }
+      pressedKeys.current.add(event.key);
+      checkSequence(event.key);
     };
 
     const handleKeyUp = (event: KeyboardEvent) => {
-      pressedCodes.current.delete(event.code);
-
-      if (sequence.current.expiresAt < Date.now()) {
-        sequence.current = { key: null, expiresAt: 0 };
-      }
+      pressedKeys.current.delete(event.key);
     };
 
-    const handleBlur = () => resetKeys();
+    const handleBlur = () => {
+      pressedKeys.current.clear();
+      recentKeys.current = [];
+    };
 
     window.addEventListener("keydown", handleKeyDown);
     window.addEventListener("keyup", handleKeyUp);
@@ -101,22 +83,21 @@ export function useGodMode(onTrigger: () => void) {
       window.removeEventListener("keyup", handleKeyUp);
       window.removeEventListener("blur", handleBlur);
     };
-  }, [resetKeys, trigger]);
+  }, [checkSequence]);
 }
 
-// Kept for compatibility with existing callers. GOD MODE is activated by the shortcut.
 export function authorizeGodMode(token: string): boolean {
-  if (token === "ENOSX_AUTHORIZED_2024") {
+  if (token === GOD_MODE_AUTH_TOKEN) {
     localStorage.setItem("godmode_auth_token", token);
+    console.log("[GODMODE] Authorization successful");
     return true;
   }
+
+  console.error("[GODMODE] Invalid authorization token");
   return false;
 }
 
 export function revokeGodModeAccess(): void {
   localStorage.removeItem("godmode_auth_token");
-}
-
-export function isGodModeAuthorized(): boolean {
-  return localStorage.getItem("godmode_auth_token") === "ENOSX_AUTHORIZED_2024";
+  console.log("[GODMODE] Access revoked");
 }

@@ -8,6 +8,8 @@
  */
 import type { VercelRequest, VercelResponse } from "@vercel/node";
 
+export const maxDuration = 60;
+
 const SYSTEM_PROMPT = `You are ENOSX AI, an advanced multimodal AI assistant developed by Enosx Technologies. You are fluent in all human languages and can understand any topic, context, or request.
 
 Instructions for the AI:
@@ -38,18 +40,16 @@ GOD MODE:
 When a user message begins with [GOD MODE COMMAND], switch to advanced operator mode. Give concise, direct, implementation-first answers.`;
 
 const sendMockResponse = (res: VercelResponse, message: string) => {
-  res.setHeader("Content-Type", "text/event-stream");
-  res.setHeader("Cache-Control", "no-cache");
-  res.setHeader("Connection", "keep-alive");
+  res.setHeader("Content-Type", "text/event-stream; charset=utf-8");
+  res.setHeader("Cache-Control", "no-cache, no-transform");
   res.setHeader("Access-Control-Allow-Origin", "*");
 
-  const mockData = JSON.stringify({
+  const data = JSON.stringify({
     choices: [{ delta: { content: message } }],
   });
 
-  res.write(`data: ${mockData}\n\n`);
-  res.write("data: [DONE]\n\n");
-  res.end();
+  // Keep the frontend's SSE contract while returning one buffered response.
+  return res.status(200).send(`data: ${data}\n\ndata: [DONE]\n\n`);
 };
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
@@ -151,7 +151,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       body: JSON.stringify({
         model,
         messages: chatMessages,
-        stream: true,
+        stream: false,
         max_tokens: 2048,
         temperature: 0.7,
       }),
@@ -178,32 +178,21 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       );
     }
 
-    if (!openRouterResponse.body) {
-      console.error("[API] No response body from OpenRouter");
+    let responseData: any;
+    try {
+      responseData = await openRouterResponse.json();
+    } catch (parseError) {
+      console.error("[API] Invalid JSON response from OpenRouter:", parseError);
+      return sendMockResponse(res, "The AI service returned an invalid response. Please try again.");
+    }
+
+    const content = responseData?.choices?.[0]?.message?.content;
+    if (typeof content !== "string" || content.length === 0) {
+      console.error("[API] OpenRouter response did not contain assistant content:", responseData);
       return sendMockResponse(res, "No response received from the AI service. Please try again.");
     }
 
-    // Set streaming headers
-    res.setHeader("Content-Type", "text/event-stream");
-    res.setHeader("Cache-Control", "no-cache");
-    res.setHeader("Connection", "keep-alive");
-
-    // Stream the response
-    const reader = openRouterResponse.body.getReader();
-    const decoder = new TextDecoder();
-
-    try {
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-        const chunk = decoder.decode(value, { stream: true });
-        res.write(chunk);
-      }
-      res.end();
-    } catch (streamError) {
-      console.error("[API] Streaming error:", streamError);
-      res.end();
-    }
+    return sendMockResponse(res, content);
   } catch (err) {
     console.error("[API] Unexpected error:", err);
     const msg = err instanceof Error ? err.message : "Unknown error";

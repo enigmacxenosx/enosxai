@@ -371,6 +371,7 @@ export default function ChatPage() {
       const identity = getAIIdentity();
       const memoryContext = getMemoryContext();
       const leadershipInfo = identity.leadership.map(l => `- ${l.name}: ${l.role} (${l.specialty})`).join('\n');
+      const companyFacts = identity.companyFacts.map(fact => `- ${fact}`).join('\n');
       
       const systemPrompt: Message = {
         id: "system-identity",
@@ -384,6 +385,11 @@ Website: ${identity.website}
 
 Leadership Team:
 ${leadershipInfo}
+
+Verified Company Facts:
+${companyFacts}
+
+When asked about Enosx Technologies, use only the verified information above. Do not invent employees, executive roles, products, locations, dates, services, or company performance details. If the requested detail is not listed, say that you do not have verified information and refer the user to ${identity.website}.
 
 Design Language: Glassmorphic, Cyberpunk, Iridescent.
 Personality: Professional, high-performance, efficient, and deeply integrated with the OS environment.

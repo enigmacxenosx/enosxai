@@ -1,22 +1,32 @@
-export const COOKIE_NAME = "enosx_session";
 export const ONE_YEAR_MS = 365 * 24 * 60 * 60 * 1000;
 
 // AI Identity and Branding
 export const AI_NAME = "ENOSX AI";
 export const AI_SHORT_NAME = "EX";
 export const ORGANIZATION_NAME = "Enosx Technologies";
-export const WEBSITE_URL = "https://enosxtechnologies450.vercel.app";
-export const MISSION = "Empower businesses of all sizes with enterprise-grade AI technology and robust e-commerce solutions that drive growth, efficiency, and customer satisfaction.";
-export const STORY = "Enosx Technologies was born out of a simple necessity: the need for an AI that doesn't just 'chat,' but operates. The vision was a system that breathes with the OS—a fluid, iridescent interface powered by high-performance architecture and proprietary design language.";
-export const FOUNDER_VISION = "The philosophy is simple: Speed is UX. By leveraging high-performance inference engines and a glassmorphic design language, ENOSX has turned the standard desktop into an intelligent workspace.";
+export const WEBSITE_URL = "https://enosxtechnologies.vercel.app";
+export const MISSION = "Make software feel instant by building multimodal AI assistants, commerce experiences, and coaching products that work with the operating environment, not beside it.";
+export const STORY = "Founded in Nairobi, Kenya in 2024, Enosx Technologies builds products around the conviction that latency is a design flaw. Its work spans the ENOSX AI intelligent workspace, the Enosx Tech Store, and ExLover Coach.";
+export const FOUNDER_VISION = "Speed is UX. Every interaction should be quicker than the thought that started it; this principle drives Enosx Technologies' product decisions.";
 
-// Leadership Team
+// Public company facts, verified against enosxtechnologies.vercel.app on 2026-08-14.
+export const COMPANY_FACTS = [
+  "Enosx Technologies was founded in Nairobi, Kenya in 2024.",
+  "Enosh Yeswa is the Founder and Chief Executive Officer of Enosx Technologies.",
+  "Enosh Yeswa sets product direction across ENOSX AI, the Enosx Tech Store, and ExLover Coach.",
+  "ENOSX AI is an intelligent workspace with context-aware messaging, GitHub and code-review support, voice features, memory, web intelligence, image generation, and document export.",
+  "The Enosx Tech Store is Enosx Technologies' storefront for technology products and digital services.",
+  "ExLover Coach is an AI-guided relationship-coaching product focused on thoughtful prompts, reflection, and practical advice.",
+] as const;
+
+// Leadership information must only contain public, verified team details.
 export const LEADERSHIP = [
-  { name: "Ahmed Al-Mazrouei", role: "Founder & CEO", specialty: "AI Strategy & Business Innovation" },
-  { name: "Dr. Layla Hassan", role: "Chief Technology Officer", specialty: "AI/ML & Cloud Architecture" },
-  { name: "Karim Al-Mansoori", role: "Head of Product", specialty: "Product Design & UX" },
-  { name: "Aisha Al-Khaleej", role: "Operations Director", specialty: "Business Development & Client Success" }
-];
+  {
+    name: "Enosh Yeswa",
+    role: "Founder & Chief Executive Officer",
+    specialty: "Product direction across ENOSX AI, Enosx Tech Store, and ExLover Coach",
+  },
+] as const;
 
 export const FOUNDER_NAME = LEADERSHIP[0].name;
 
@@ -30,7 +40,6 @@ export const getLoginUrl = () => {
   url.searchParams.set("appId", appId);
   url.searchParams.set("redirectUri", redirectUri);
   url.searchParams.set("state", state);
-  url.searchParams.set("type", "signIn");
 
   return url.toString();
 };
@@ -45,4 +54,5 @@ export const getAIIdentity = () => ({
   leadership: LEADERSHIP,
   story: STORY,
   founderVision: FOUNDER_VISION,
+  companyFacts: COMPANY_FACTS,
 });

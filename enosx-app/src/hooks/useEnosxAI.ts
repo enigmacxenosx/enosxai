@@ -1,36 +1,14 @@
 /*
  * ENOSX AI — useEnosxAI
- * Powered by Groq LPU Technology for Lightning Fast Inference.
+ * Chat requests are proxied through the server-side /api/chat endpoint.
+ * The OpenRouter API key must remain server-side as OPENROUTER_API_KEY.
  */
 
 import { useState, useCallback } from "react";
 import { Message } from "@/lib/types";
 import { toast } from "sonner";
 
-const ENOSX_AI_API_URL = "https://api.groq.com/openai/v1/chat/completions";
-const ENOSX_AI_KEY = import.meta.env.VITE_ENOSX_AI_KEY || import.meta.env.VITE_GROQ_API_KEY || "";
-
-// ── Enosx AI Model Mapping (Groq) ──────────────────────────────────────────────────────────
-const MODELS = {
-  text: {
-    "ex":        "llama-3.3-70b-versatile",
-    "ex-pro":    "llama-3.3-70b-versatile",
-    "smart":     "llama-3.3-70b-versatile",
-    "fast":      "llama-3.1-8b-instant",
-    "balanced":  "llama-3.3-70b-versatile",
-    "task":      "deepseek-r1-distill-llama-70b",
-    "creative":  "llama-3.3-70b-versatile",
-  },
-  vision: {
-    "ex":        "llama-3.2-11b-vision-preview",
-    "ex-pro":    "llama-3.2-90b-vision-preview",
-    "smart":     "llama-3.2-90b-vision-preview",
-    "fast":      "llama-3.2-11b-vision-preview",
-    "balanced":  "llama-3.2-11b-vision-preview",
-    "task":      "llama-3.2-11b-vision-preview",
-    "creative":  "llama-3.2-90b-vision-preview",
-  },
-} as const;
+const ENOSX_AI_API_URL = "/api/chat";
 
 export function useEnosxAI() {
   const [isLoading, setIsLoading] = useState(false);
@@ -46,84 +24,94 @@ export function useEnosxAI() {
       setIsLoading(true);
       setError(null);
 
-      if (!ENOSX_AI_KEY) {
-        onChunk("API key missing. Please configure VITE_ENOSX_AI_KEY.");
-        onDone();
-        setIsLoading(false);
-        return;
-      }
+      const currentMessages = messages.map((message) => {
+        const images = message.attachments?.filter((attachment) =>
+          attachment.type.startsWith("image/")
+        ) || [];
 
-      const hasImages = messages.some(m => m.attachments?.some(a => a.type.startsWith("image/")));
-      const aiMode = (options?.aiMode as keyof typeof MODELS.text) || "ex";
-      
-      let model = hasImages ? MODELS.vision[aiMode] : MODELS.text[aiMode];
-
-      let currentMessages = messages.map(m => {
-        const images = m.attachments?.filter(a => a.type.startsWith("image/")) || [];
-        if (images.length > 0 && m.role === "user") {
+        if (images.length > 0 && message.role === "user") {
           return {
-            role: m.role,
+            role: message.role,
             content: [
-              { type: "text", text: m.content },
-              ...images.map(img => ({
+              { type: "text", text: message.content },
+              ...images.map((image) => ({
                 type: "image_url",
-                image_url: { url: img.content.startsWith("data:") ? img.content : `data:${img.type};base64,${img.content}` }
-              }))
-            ]
+                image_url: {
+                  url: image.content.startsWith("data:")
+                    ? image.content
+                    : `data:${image.type};base64,${image.content}`,
+                },
+              })),
+            ],
           };
         }
-        return { role: m.role, content: m.content };
+
+        return { role: message.role, content: message.content };
       });
 
       try {
         const response = await fetch(ENOSX_AI_API_URL, {
           method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${ENOSX_AI_KEY}`,
-          },
+          headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            model,
             messages: currentMessages,
-            stream: true,
+            githubContext: options?.githubContext,
+            aiMode: options?.aiMode,
           }),
         });
 
         if (!response.ok) {
-          const errorData = await response.json().catch(() => ({}));
-          throw new Error(errorData.error?.message || `API Error: ${response.status}`);
+          const errorText = await response.text().catch(() => "");
+          let errorMessage = `API Error: ${response.status}`;
+          try {
+            const errorData = JSON.parse(errorText);
+            errorMessage = errorData?.error || errorData?.message || errorMessage;
+          } catch {
+            if (errorText.trim()) errorMessage = errorText;
+          }
+          throw new Error(errorMessage);
         }
 
         const reader = response.body?.getReader();
-        if (!reader) throw new Error("No reader available");
-        
+        if (!reader) throw new Error("No response stream available");
+
         const decoder = new TextDecoder();
+        let buffer = "";
 
         while (true) {
           const { done, value } = await reader.read();
-          if (done) break;
+          buffer += decoder.decode(value || new Uint8Array(), { stream: !done });
 
-          const chunks = decoder.decode(value).split("\n");
-          for (const chunk of chunks) {
-            if (!chunk.startsWith("data: ")) continue;
-            const data = chunk.slice(6).trim();
-            if (data === "[DONE]") continue;
+          const events = buffer.split("\n\n");
+          buffer = events.pop() || "";
+
+          for (const event of events) {
+            const dataLine = event
+              .split("\n")
+              .find((line) => line.startsWith("data: "));
+            if (!dataLine) continue;
+
+            const data = dataLine.slice(6).trim();
+            if (!data || data === "[DONE]") continue;
 
             try {
               const parsed = JSON.parse(data);
-              const delta = parsed.choices[0].delta;
-
-              if (delta.content) {
-                onChunk(delta.content);
-              }
-            } catch (e) {}
+              const content = parsed?.choices?.[0]?.delta?.content;
+              if (content) onChunk(content);
+            } catch {
+              // Ignore incomplete or provider-specific SSE frames.
+            }
           }
+
+          if (done) break;
         }
+
         onDone();
       } catch (err) {
         const errorMessage = err instanceof Error ? err.message : "Unknown error";
+        setError(errorMessage);
         toast.error("Enosx AI Error", { description: errorMessage });
-        onChunk(`\n\n### ⚠️ Enosx AI Error\n\n${errorMessage}`);
+        onChunk(`\n\n### Enosx AI Error\n\n${errorMessage}`);
         onDone();
       } finally {
         setIsLoading(false);

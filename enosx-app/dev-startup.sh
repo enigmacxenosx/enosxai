@@ -22,11 +22,11 @@ if ! command -v pnpm &> /dev/null; then
     exit 1
 fi
 
-# Check if GROQ_API_KEY is set
-if [ -z "$GROQ_API_KEY" ]; then
-    echo -e "${YELLOW}⚠️  GROQ_API_KEY environment variable is not set${NC}"
+# Check if OPENROUTER_API_KEY is set
+if [ -z "$OPENROUTER_API_KEY" ]; then
+    echo -e "${YELLOW}⚠️  OPENROUTER_API_KEY environment variable is not set${NC}"
     echo "   Please set it before starting the services:"
-    echo "   export GROQ_API_KEY=your_groq_api_key_here"
+    echo "   export OPENROUTER_API_KEY=your_openrouter_api_key_here"
     echo ""
     read -p "Do you want to continue anyway? (y/n) " -n 1 -r
     echo

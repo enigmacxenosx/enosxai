@@ -35,10 +35,15 @@ When a user message begins with [GOD MODE COMMAND], switch to advanced operator 
 
 chatRouter.post("/chat", async (req: Request, res: Response) => {
   try {
-    // Split the API key to avoid GitHub secret scanning detection
-    const p1 = "gsk_sLXTv8l4qf5DEYJuSrnwWGdyb3FYTttj8WhS";
-    const p2 = "qUUTYZ41rGK3hqGN";
-    const apiKey = p1 + p2;
+    const apiKey = process.env.OPENROUTER_API_KEY?.trim();
+
+    if (!apiKey) {
+      res.status(503).json({
+        error: "OPENROUTER_API_KEY is not configured on the API server",
+        status: "CONFIGURATION_ERROR",
+      });
+      return;
+    }
 
     const { messages, githubContext, aiMode } = req.body;
 
@@ -60,9 +65,19 @@ chatRouter.post("/chat", async (req: Request, res: Response) => {
 
     const ctxStr = typeof githubContext === "string" ? githubContext.slice(0, 20000) : "";
 
-    // Check for images to decide which model to use
+    // Check for images to decide which model to use.
     let hasImages = false;
     const formattedMessages = messages.map((m: any) => {
+      if (Array.isArray(m.content)) {
+        if (m.content.some((part: any) => part?.type === "image_url")) {
+          hasImages = true;
+        }
+        return {
+          role: m.role,
+          content: m.content,
+        };
+      }
+
       if (m.attachments && Array.isArray(m.attachments)) {
         const images = m.attachments.filter((a: any) => 
           ["image/jpeg", "image/png", "image/gif", "image/webp"].includes(a.type?.toLowerCase()) || 
@@ -98,13 +113,17 @@ chatRouter.post("/chat", async (req: Request, res: Response) => {
       ...formattedMessages
     ];
 
-    const model = hasImages ? "llama-3.2-11b-vision-preview" : "llama-3.3-70b-versatile";
+    const model = hasImages
+      ? (process.env.OPENROUTER_VISION_MODEL || "google/gemini-2.0-flash-001")
+      : (process.env.OPENROUTER_MODEL || "meta-llama/llama-3.3-70b-instruct");
 
-    const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+    const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
         Authorization: `Bearer ${apiKey}`,
+        "HTTP-Referer": process.env.OPENROUTER_SITE_URL || "https://enosx.vercel.app",
+        "X-Title": "ENOSX AI",
       },
       body: JSON.stringify({
         model,
@@ -117,7 +136,7 @@ chatRouter.post("/chat", async (req: Request, res: Response) => {
 
     if (!response.ok) {
       const errText = await response.text().catch(() => "Unknown error");
-      console.error("Groq API Error:", response.status, errText);
+      console.error("OpenRouter API Error:", response.status, errText);
       res.status(response.status || 500).json({ error: errText, status: "API_ERROR" });
       return;
     }

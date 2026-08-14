@@ -50,7 +50,7 @@ PORT=3000
 API_PORT=8080
 
 # Required for API
-GROQ_API_KEY=your_groq_api_key_here
+OPENROUTER_API_KEY=your_openrouter_api_key_here
 
 # Optional for GitHub features
 GITHUB_TOKEN=your_github_token_here
@@ -63,7 +63,7 @@ GITHUB_TOKEN=your_github_token_here
    ```bash
    # Terminal 1: Start API server
    export PORT=8080
-   export GROQ_API_KEY=your_key
+   export OPENROUTER_API_KEY=your_key
    cd artifacts/api-server
    pnpm run dev
 

@@ -13,7 +13,7 @@ Both services must be running simultaneously for the application to function pro
 
 - Node.js 24+
 - pnpm package manager
-- Groq API key (from https://console.groq.com)
+- OpenRouter API key (from https://openrouter.ai/keys)
 - GitHub token (optional, for repository context features)
 
 ## Environment Variables
@@ -22,7 +22,7 @@ Both services must be running simultaneously for the application to function pro
 
 | Variable | Service | Value | Example |
 |----------|---------|-------|---------|
-| `GROQ_API_KEY` | API Server | Your Groq API key | `gsk_...` |
+| `OPENROUTER_API_KEY` | API Server | Your OpenRouter API key | `sk-or-v1-...` |
 | `PORT` | Frontend | Frontend port | `18426` (Replit) or `3000` (local) |
 | `BASE_PATH` | Frontend | URL base path | `/` |
 | `API_PORT` | Frontend | API server port | `8080` |
@@ -55,7 +55,7 @@ export BASE_PATH=/
 export API_PORT=8080
 
 # API Server
-export GROQ_API_KEY=your_groq_api_key_here
+export OPENROUTER_API_KEY=your_openrouter_api_key_here
 export GITHUB_TOKEN=your_github_token_here  # optional
 ```
 
@@ -65,7 +65,7 @@ Open a terminal and run:
 
 ```bash
 export PORT=8080
-export GROQ_API_KEY=your_groq_api_key_here
+export OPENROUTER_API_KEY=your_openrouter_api_key_here
 cd artifacts/api-server
 pnpm run dev
 ```
@@ -109,7 +109,7 @@ When deploying to Replit, the `.replit-artifact` configurations handle most setu
 
 Add these to your Replit Secrets:
 
-1. `GROQ_API_KEY`: Your Groq API key
+1. `OPENROUTER_API_KEY`: Your OpenRouter API key
 2. `GITHUB_TOKEN`: (Optional) Your GitHub API token
 
 ## Troubleshooting
@@ -122,8 +122,8 @@ Add these to your Replit Secrets:
    - Check that the API server is running on port 8080
    - Verify with: `curl http://localhost:8080/api/healthz`
 
-2. **GROQ_API_KEY not set**
-   - Verify the environment variable is set: `echo $GROQ_API_KEY`
+2. **OPENROUTER_API_KEY not set**
+   - Verify the environment variable is set on the API server: `test -n "$OPENROUTER_API_KEY" && echo configured`
    - Check Replit Secrets tab if deploying to Replit
 
 3. **API_PORT mismatch**
@@ -135,17 +135,17 @@ Add these to your Replit Secrets:
    - Check browser console for network errors
    - Verify CORS is enabled (it is by default)
 
-### "GROQ_API_KEY environment variable is not set"
+### "OPENROUTER_API_KEY environment variable is not set"
 
-- This error appears when the API server receives a chat request but `GROQ_API_KEY` is not configured
+- This error appears when the API server receives a chat request but `OPENROUTER_API_KEY` is not configured
 - Set the environment variable and restart the API server
 
-### "No response body from Groq"
+### "No response body from OpenRouter"
 
-- The Groq API returned an error
-- Check your API key is valid
-- Verify you have API credits available
-- Check Groq API status at https://status.groq.com
+- The OpenRouter API returned an error
+- Check that the OpenRouter key is valid
+- Verify that the selected model is available and your account has the required credits
+- Check OpenRouter status at https://status.openrouter.ai
 
 ## Architecture Diagram
 
@@ -172,7 +172,7 @@ Add these to your Replit Secrets:
 │              Port: 8080                                     │
 │                                                             │
 │  Routes:                                                    │
-│  - POST /api/chat          → Groq API                      │
+│  - POST /api/chat          → OpenRouter API                      │
 │  - GET /api/github/context → GitHub API                    │
 │  - GET /api/healthz        → Health check                  │
 └────────────────────────┬────────────────────────────────────┘
@@ -180,7 +180,7 @@ Add these to your Replit Secrets:
         ┌────────────────┼────────────────┐
         │                │                │
         ▼                ▼                ▼
-    Groq API        GitHub API       (Other APIs)
+    OpenRouter API  GitHub API       (Other APIs)
 ```
 
 ## API Endpoints
@@ -199,7 +199,7 @@ Request:
 }
 ```
 
-Response: Server-Sent Events (SSE) stream with Groq API response
+Response: Server-Sent Events (SSE) stream with OpenRouter API response
 
 ### GitHub Context Endpoint
 
@@ -270,14 +270,14 @@ curl -X POST http://localhost:8080/api/chat \
 
 ### API Server
 
-- Streams responses from Groq for real-time updates
+- Streams responses from OpenRouter for real-time updates
 - Caches repository context to reduce GitHub API calls
 - Efficient message serialization
 
 ## Security Considerations
 
 1. **API Key Protection**
-   - Never commit `GROQ_API_KEY` to version control
+   - Never commit `OPENROUTER_API_KEY` to version control
    - Use environment variables or Replit Secrets
    - Rotate keys periodically
 
@@ -286,7 +286,7 @@ curl -X POST http://localhost:8080/api/chat \
    - Frontend proxies requests through Vite in development
 
 3. **Rate Limiting**
-   - Groq API has rate limits (check your plan)
+   - OpenRouter and individual models have rate limits and credit requirements
    - Implement client-side debouncing for rapid requests
 
 ## Deployment
@@ -297,7 +297,7 @@ The application is configured for Replit deployment:
 
 1. Push code to GitHub
 2. Import repository to Replit
-3. Add `GROQ_API_KEY` to Secrets
+3. Add `OPENROUTER_API_KEY` to Secrets
 4. Click "Run" to start both services
 
 ### Docker
@@ -314,7 +314,7 @@ COPY . .
 RUN pnpm install
 
 ENV PORT=8080
-ENV GROQ_API_KEY=your_key_here
+ENV OPENROUTER_API_KEY=your_key_here
 
 CMD ["pnpm", "run", "dev"]
 ```
@@ -334,7 +334,7 @@ For issues or questions:
 
 1. Check this guide's Troubleshooting section
 2. Review error messages in browser console and server logs
-3. Check Groq API status and documentation
+3. Check OpenRouter status and documentation
 4. Open an issue on GitHub
 
 ## Version History

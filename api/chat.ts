@@ -68,7 +68,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   try {
-    const apiKey = process.env.OPENROUTER_API_KEY?.trim();
+    // Prefer the server-only key. The legacy VITE_ variable is retained as a
+    // temporary compatibility fallback for existing deployments and should be
+    // replaced with OPENROUTER_API_KEY in the hosting environment.
+    const apiKey = (process.env.OPENROUTER_API_KEY || process.env.VITE_OPENROUTER_API_KEY)?.trim();
 
     if (!apiKey) {
       console.error("[API] OPENROUTER_API_KEY is not configured.");
@@ -134,11 +137,16 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const hasImages = chatMessages.some((message: any) =>
       Array.isArray(message.content) && message.content.some((part: any) => part.type === "image_url")
     );
-    const model = hasImages
+    const primaryModel = hasImages
       ? (process.env.OPENROUTER_VISION_MODEL || "google/gemini-2.0-flash-001")
       : (process.env.OPENROUTER_MODEL || "meta-llama/llama-3.3-70b-instruct");
 
-    console.log("[API] Sending request to OpenRouter with", chatMessages.length, "messages");
+    // OpenRouter attempts these models in order before returning a provider
+    // failure. This protects the chat experience against model-specific 5xxs
+    // and stale configured model identifiers.
+    const modelCandidates = [...new Set([primaryModel, "openrouter/auto"])];
+
+    console.log("[API] Sending request to OpenRouter with", chatMessages.length, "messages and", modelCandidates.length, "model candidate(s)");
 
     const openRouterResponse = await fetch("https://openrouter.ai/api/v1/chat/completions", {
       method: "POST",
@@ -149,7 +157,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         "X-Title": "ENOSX AI",
       },
       body: JSON.stringify({
-        model,
+        models: modelCandidates,
         messages: chatMessages,
         stream: false,
         max_tokens: 2048,
@@ -168,10 +176,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         console.log("[API] 429 rate limited. Retrying with free model after 10s...");
         await new Promise(r => setTimeout(r, 10000));
 
-        const fallbackModel = hasImages
-          ? "google/gemma-4-26b-a4b-it:free"
-          : "google/gemma-4-26b-a4b-it:free";
-
         try {
           const retryResponse = await fetch("https://openrouter.ai/api/v1/chat/completions", {
             method: "POST",
@@ -182,7 +186,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
               "X-Title": "ENOSX AI",
             },
             body: JSON.stringify({
-              model: fallbackModel,
+              models: ["openrouter/auto"],
               messages: chatMessages,
               stream: false,
               max_tokens: 2048,
@@ -194,7 +198,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             const retryData = await retryResponse.json();
             const retryContent = retryData?.choices?.[0]?.message?.content;
             if (typeof retryContent === "string" && retryContent.length > 0) {
-              console.log("[API] 429 retry succeeded with free model:", fallbackModel);
+              console.log("[API] 429 retry succeeded with the automatic model router.");
               return sendMockResponse(res, retryContent);
             }
           } else {

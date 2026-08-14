@@ -1,9 +1,54 @@
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { VoiceState } from "@/lib/types";
 
 const ELEVEN_LABS_API_KEY = import.meta.env.VITE_ELEVEN_LABS_API_KEY || "";
 const ELEVEN_LABS_VOICE_ID = "EXAVITQu4vr4xnNLMSvx";
+
+/** Voice settings stored in localStorage (enosx_voice_settings). */
+export interface SpeechSettings {
+  rate: number;
+  pitch: number;
+  /** Auto re-listen after the assistant finishes speaking. */
+  continuousConversation: boolean;
+  /** Start listening when the wake phrase is heard while the app is open. */
+  wakePhrase: boolean;
+}
+
+const DEFAULT_SPEECH_SETTINGS: SpeechSettings = {
+  rate: 1,
+  pitch: 1,
+  continuousConversation: false,
+  wakePhrase: false,
+};
+
+const WAKE_TRIGGER_WORDS = ["enosx", "ennox"];
+
+export function loadSpeechSettings(): SpeechSettings {
+  try {
+    const raw = localStorage.getItem("enosx_voice_settings");
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      return {
+        rate: Math.min(2, Math.max(0.5, Number(parsed.rate) || 1)),
+        pitch: Math.min(2, Math.max(0, Number(parsed.pitch) || 1)),
+        continuousConversation: Boolean(parsed.continuousConversation),
+        wakePhrase: Boolean(parsed.wakePhrase),
+      };
+    }
+  } catch (error) {
+    console.error("Failed to load speech settings", error);
+  }
+  return { ...DEFAULT_SPEECH_SETTINGS };
+}
+
+export function saveSpeechSettings(settings: SpeechSettings) {
+  try {
+    localStorage.setItem("enosx_voice_settings", JSON.stringify(settings));
+  } catch (error) {
+    console.error("Failed to save speech settings", error);
+  }
+}
 
 interface ISpeechRecognitionEvent extends Event {
   results: SpeechRecognitionResultList;
@@ -95,10 +140,27 @@ function getRecognitionErrorMessage(error: string) {
 export function useVoice() {
   const [voiceState, setVoiceState] = useState<VoiceState>("idle");
   const [transcript, setTranscript] = useState("");
+  const [settings, setSettings] = useState<SpeechSettings>(() => loadSpeechSettings());
   const recognitionRef = useRef<ISpeechRecognition | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const browserUtteranceRef = useRef<SpeechSynthesisUtterance | null>(null);
   const languageRef = useRef("en-US");
+  const settingsRef = useRef<SpeechSettings>(settings);
+  const onFinalResultRef = useRef<((text: string) => void) | undefined>(undefined);
+  const listenAgainTimerRef = useRef<number | null>(null);
+
+  useEffect(() => {
+    settingsRef.current = settings;
+  }, [settings]);
+
+  // Persist settings whenever they change
+  useEffect(() => {
+    saveSpeechSettings(settings);
+  }, [settings]);
+
+  const updateSettings = useCallback((patch: Partial<SpeechSettings>) => {
+    setSettings((current) => ({ ...current, ...patch }));
+  }, []);
 
   const isSupported =
     typeof window !== "undefined" &&
@@ -223,6 +285,23 @@ export function useVoice() {
         const fullTranscript = `${finalTranscript}${interimTranscript}`.trim();
         setTranscript(fullTranscript);
 
+        // Wake-phrase detection: start capturing once the wake word is heard.
+        const currentSettings = settingsRef.current;
+        if (currentSettings.wakePhrase && onFinalResult) {
+          const lower = fullTranscript.toLowerCase();
+          if (WAKE_TRIGGER_WORDS.some((word) => lower.includes(word))) {
+            const afterWake = fullTranscript.slice(
+              lower.length - fullTranscript.length
+            );
+            if (finalTranscript.trim()) {
+              onFinalResult(finalTranscript.trim());
+            } else if (afterWake.trim()) {
+              onFinalResult(afterWake.trim());
+            }
+            return;
+          }
+        }
+
         if (event.results[event.results.length - 1]?.isFinal && onFinalResult && finalTranscript.trim()) {
           onFinalResult(finalTranscript.trim());
         }
@@ -254,6 +333,30 @@ export function useVoice() {
     [isSupported, stopListening]
   );
 
+  /**
+   * Continuous-conversation mode: after the assistant finishes speaking,
+   * automatically start listening again. Uses a small delay so the browser
+   * has released the audio device before re-requesting microphone access.
+   */
+  const scheduleListenAgain = useCallback(
+    (onFinalResult: (text: string) => void) => {
+      const active = settingsRef.current.continuousConversation;
+      if (listenAgainTimerRef.current !== null) {
+        window.clearTimeout(listenAgainTimerRef.current);
+        listenAgainTimerRef.current = null;
+      }
+      if (!active) return;
+      listenAgainTimerRef.current = window.setTimeout(() => {
+        listenAgainTimerRef.current = null;
+        // Only continue while the settings still request it.
+        if (settingsRef.current.continuousConversation) {
+          startListening(onFinalResult);
+        }
+      }, 900);
+    },
+    [startListening]
+  );
+
   const speakWithBrowser = useCallback(
     (text: string) =>
       new Promise<void>((resolve, reject) => {
@@ -268,6 +371,7 @@ export function useVoice() {
           return;
         }
 
+        const speakSettings = settingsRef.current;
         let chunkIndex = 0;
         const speakNextChunk = () => {
           if (chunkIndex >= chunks.length) {
@@ -280,8 +384,8 @@ export function useVoice() {
           const utterance = new SpeechSynthesisUtterance(chunks[chunkIndex]);
           chunkIndex += 1;
           utterance.lang = languageRef.current;
-          utterance.rate = 1;
-          utterance.pitch = 1;
+          utterance.rate = Math.min(2, Math.max(0.5, speakSettings.rate));
+          utterance.pitch = Math.min(2, Math.max(0, speakSettings.pitch));
           browserUtteranceRef.current = utterance;
 
           utterance.onend = () => {
@@ -347,6 +451,9 @@ export function useVoice() {
             if (audioRef.current !== audio) return;
             releaseAudio();
             setVoiceState("idle");
+            // Rate/pitch controls only apply to browser speech; keep settings
+            // in sync with what was actually played.
+            scheduleListenAgain(onFinalResultRef.current ?? (() => {}));
           };
           audio.onerror = () => {
             if (audioRef.current !== audio) return;
@@ -389,5 +496,9 @@ export function useVoice() {
     speak,
     stopSpeaking,
     setLanguage,
+    settings,
+    updateSettings,
+    scheduleListenAgain,
+    onFinalResultRef,
   };
 }

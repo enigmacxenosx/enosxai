@@ -1,184 +1,123 @@
+/**
+ * ENOSX AI — /api/browser (Vercel Serverless Function)
+ * Performs webpage scraping and security analysis.
+ * Uses only Node.js built-in modules — no external dependencies.
+ */
 import type { VercelRequest, VercelResponse } from "@vercel/node";
-import { lookup } from "node:dns/promises";
+import * as https from "node:https";
+import * as http from "node:http";
+import { URL } from "node:url";
 
-const MAX_RESPONSE_BYTES = 1_500_000;
-const MAX_TEXT_LENGTH = 20_000;
+function fetchPage(url: string): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const parsed = new URL(url);
+    const lib = parsed.protocol === "https:" ? https : http;
 
-type ExtractedLink = { href: string; text: string };
-
-function isPrivateAddress(address: string) {
-  if (address === "::1" || address.startsWith("fc") || address.startsWith("fd")) return true;
-  if (!/^\d{1,3}(?:\.\d{1,3}){3}$/.test(address)) return false;
-  const [a, b] = address.split(".").map(Number);
-  return (
-    a === 10 ||
-    a === 127 ||
-    a === 0 ||
-    (a === 169 && b === 254) ||
-    (a === 172 && b >= 16 && b <= 31) ||
-    (a === 192 && b === 168)
-  );
-}
-
-async function validatePublicUrl(value: unknown): Promise<URL> {
-  if (typeof value !== "string" || value.length > 2048) {
-    throw new Error("A valid public URL is required");
-  }
-
-  const url = new URL(value);
-  if (url.protocol !== "https:" && url.protocol !== "http:") {
-    throw new Error("Only HTTP and HTTPS URLs are supported");
-  }
-  if (url.username || url.password || url.hostname === "localhost") {
-    throw new Error("Local or credential-bearing URLs are not permitted");
-  }
-
-  const resolved = await lookup(url.hostname, { all: true });
-  if (!resolved.length || resolved.some(({ address }) => isPrivateAddress(address))) {
-    throw new Error("Private-network URLs are not permitted");
-  }
-  return url;
-}
-
-function decodeEntities(value: string) {
-  return value
-    .replace(/&nbsp;/gi, " ")
-    .replace(/&amp;/gi, "&")
-    .replace(/&lt;/gi, "<")
-    .replace(/&gt;/gi, ">")
-    .replace(/&quot;/gi, '"')
-    .replace(/&#39;/gi, "'");
-}
-
-function htmlToText(html: string) {
-  return decodeEntities(
-    html
-      .replace(/<script\b[^>]*>[\s\S]*?<\/script>/gi, " ")
-      .replace(/<style\b[^>]*>[\s\S]*?<\/style>/gi, " ")
-      .replace(/<noscript\b[^>]*>[\s\S]*?<\/noscript>/gi, " ")
-      .replace(/<[^>]+>/g, " ")
-      .replace(/\s+/g, " ")
-      .trim(),
-  ).slice(0, MAX_TEXT_LENGTH);
-}
-
-function getMeta(html: string, name: string) {
-  const expression = new RegExp(`<meta[^>]+(?:name|property)=["']${name}["'][^>]+content=["']([^"']*)["']`, "i");
-  return decodeEntities(html.match(expression)?.[1] ?? "").trim();
-}
-
-function getTitle(html: string) {
-  return decodeEntities(html.match(/<title[^>]*>([\s\S]*?)<\/title>/i)?.[1] ?? "")
-    .replace(/\s+/g, " ")
-    .trim()
-    .slice(0, 300);
-}
-
-function getLinks(html: string, base: URL): ExtractedLink[] {
-  const seen = new Set<string>();
-  const links: ExtractedLink[] = [];
-  const matcher = /<a\b[^>]*href\s*=\s*["']([^"']+)["'][^>]*>([\s\S]*?)<\/a>/gi;
-
-  for (const match of html.matchAll(matcher)) {
-    try {
-      const href = new URL(decodeEntities(match[1]), base).toString();
-      if (!/^https?:\/\//i.test(href) || seen.has(href)) continue;
-      seen.add(href);
-      links.push({
-        href,
-        text: htmlToText(match[2]).slice(0, 240) || href,
-      });
-      if (links.length >= 250) break;
-    } catch {
-      // Ignore malformed page links
-    }
-  }
-  return links;
-}
-
-async function fetchDocument(value: unknown) {
-  let url = await validatePublicUrl(value);
-  const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), 12_000);
-  try {
-    let response: Response | undefined;
-    for (let redirects = 0; redirects <= 4; redirects += 1) {
-      response = await fetch(url, {
-        signal: controller.signal,
-        redirect: "manual",
-        headers: {
-          Accept: "text/html,application/xhtml+xml",
-          "User-Agent": "ENOSX-AI-WebReader/1.0",
+    lib
+      .get(
+        url,
+        {
+          timeout: 10000,
+          headers: {
+            "User-Agent":
+              "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+          },
         },
-      });
-      const location = response.headers.get("location");
-      if (response.status < 300 || response.status >= 400 || !location) break;
-      url = await validatePublicUrl(new URL(location, url).toString());
-    }
-    if (!response) throw new Error("No response received from website");
-    if (response.status >= 300 && response.status < 400) throw new Error("Too many webpage redirects");
-    const contentLength = Number(response.headers.get("content-length") ?? 0);
-    if (!response.ok) throw new Error(`The website returned ${response.status}`);
-    if (contentLength > MAX_RESPONSE_BYTES) throw new Error("The webpage is too large to process safely");
-    const contentType = response.headers.get("content-type") ?? "";
-    if (!contentType.includes("text/html") && !contentType.includes("application/xhtml+xml")) {
-      throw new Error("The URL did not return an HTML webpage");
-    }
-    const html = (await response.text()).slice(0, MAX_RESPONSE_BYTES);
-    return { requestedUrl: String(value), finalUrl: url.toString(), html };
-  } finally {
-    clearTimeout(timeout);
+        (res) => {
+          const chunks: Buffer[] = [];
+          res.on("data", (chunk: Buffer) => chunks.push(chunk));
+          res.on("end", () => resolve(Buffer.concat(chunks).toString("utf-8")));
+          res.on("error", reject);
+        },
+      )
+      .on("error", reject);
+  });
+}
+
+function extractText(html: string): string {
+  // Strip script/style tags and their content
+  let text = html.replace(/<script[^>]*>[\s\S]*?<\/script>/gi, "");
+  text = text.replace(/<style[^>]*>[\s\S]*?<\/style>/gi, "");
+  // Strip all remaining HTML tags
+  text = text.replace(/<[^>]+>/g, " ");
+  // Normalize whitespace and trim
+  text = text.replace(/\s+/g, " ").trim();
+  return text.slice(0, 3000);
+}
+
+function extractTitle(html: string): string {
+  const match = html.match(/<title[^>]*>([\s\S]*?)<\/title>/i);
+  return match ? match[1].replace(/\s+/g, " ").trim() : "";
+}
+
+function extractScripts(html: string): string {
+  const matches = html.matchAll(/<script[^>]*>([\s\S]*?)<\/script>/gi);
+  let allScripts = "";
+  for (const m of matches) {
+    allScripts += m[1] + "\n";
   }
+  return allScripts;
 }
 
-async function readPage(value: unknown) {
-  const { requestedUrl, finalUrl, html } = await fetchDocument(value);
-  const finalPageUrl = new URL(finalUrl);
-  return {
-    title: getTitle(html),
-    url: finalUrl,
-    requestedUrl,
-    text: htmlToText(html),
-    links: getLinks(html, finalPageUrl),
-    metadata: {
-      description: getMeta(html, "description"),
-      author: getMeta(html, "author"),
-    },
-  };
-}
+export default async function handler(
+  req: VercelRequest,
+  res: VercelResponse,
+) {
+  const { url } = req.query;
 
-export default async function handler(req: VercelRequest, res: VercelResponse) {
-  // Support both GET (for simple read) and POST (for actions)
-  const method = req.method;
-  const url = method === "GET" ? req.query.url : req.body?.url;
-
-  if (!url) {
+  if (!url || typeof url !== "string") {
     return res.status(400).json({ error: "URL is required" });
   }
 
   try {
-    if (method === "POST") {
-      const { type } = req.body;
-      if (type === "read_webpage" || type === "action") {
-        return res.json(await readPage(url));
-      }
-      if (type === "extract_links") {
-        const page = await readPage(url);
-        return res.json({ url: page.url, links: page.links });
-      }
-      if (type === "click_element" || type === "fill_form") {
-        return res.status(501).json({ 
-          error: "Interactive browser control requires an authenticated browser provider and is not configured in serverless mode.",
-          status: "AUTOMATION_NOT_CONFIGURED" 
-        });
-      }
+    const html = await fetchPage(url);
+    const title = extractTitle(html);
+    const text = extractText(html);
+    const scriptContent = extractScripts(html);
+
+    // Security Analysis Logic
+    const indicators: string[] = [];
+
+    if (
+      scriptContent.includes("getUserMedia") ||
+      scriptContent.includes("ImageCapture")
+    ) {
+      indicators.push("Requests camera/microphone access automatically.");
+    }
+    if (
+      scriptContent.includes("ipinfo.io") ||
+      scriptContent.includes("ipapi.co")
+    ) {
+      indicators.push("Attempts to track your precise IP address and location.");
+    }
+    if (
+      html.toLowerCase().includes("verify you're not a bot") &&
+      (html.toLowerCase().includes("camera") ||
+        html.toLowerCase().includes("video"))
+    ) {
+      indicators.push(
+        "Uses deceptive 'Bot Verification' to gain hardware access.",
+      );
     }
 
-    // Default to readPage for GET or other POST types
-    return res.json(await readPage(url));
+    return res.json({
+      title,
+      url,
+      text,
+      securityReport: {
+        isSuspicious: indicators.length > 0,
+        indicators,
+        riskLevel:
+          indicators.length > 1
+            ? "High"
+            : indicators.length > 0
+              ? "Medium"
+              : "Low",
+      },
+    });
   } catch (err) {
     return res.status(500).json({
-      error: "Failed to process browser action",
+      error: "Failed to read webpage",
       details: err instanceof Error ? err.message : "Unknown error",
     });
   }

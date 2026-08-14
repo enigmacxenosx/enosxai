@@ -34,9 +34,18 @@ const MODELS = {
 
 // Free fallback models
 const FREE_MODELS = {
-  text: "google/gemma-3-27b-it:free",
-  vision: "google/gemma-4-26b-a4b-it:free",
+  text: "google/gemma-4-26b-a4b-it:free",
+  vision: "openai/gpt-oss-20b:free",
 };
+
+// Verified working free models (gemma-3-27b-it:free and gemini-4-26b-a4b-it:free were retired by OpenRouter).
+const FREE_MODEL_ALTERNATIVES: string[] = [
+  "google/gemma-4-26b-a4b-it:free",
+  "google/gemma-4-31b-it:free",
+  "nvidia/nemotron-3-super-120b-a12b:free",
+  "nvidia/nemotron-3-nano-30b-a3b:free",
+  "openai/gpt-oss-20b:free",
+];
 
 export function useEnosxAI() {
   const [isLoading, setIsLoading] = useState(false);
@@ -120,16 +129,31 @@ export function useEnosxAI() {
           }
         }
 
-        // 429: Rate limited → silently switch to free model
+        // 429: Rate limited → silently switch to another free model
         if (response.status === 429) {
-          const fallbackModel = hasImages ? FREE_MODELS.vision : FREE_MODELS.text;
-          if (model !== fallbackModel) {
-            model = fallbackModel;
+          const fallbackCandidates = hasImages
+            ? [FREE_MODELS.vision, ...FREE_MODEL_ALTERNATIVES.filter(m => m !== FREE_MODELS.text)]
+            : [FREE_MODELS.text, ...FREE_MODEL_ALTERNATIVES];
+          const nextModel = fallbackCandidates.find(m => m !== model);
+          if (nextModel) {
+            model = nextModel;
             return await callAI(false);
           }
           // Already on free model — wait 15s and throw
           await new Promise(r => setTimeout(r, 15000));
           throw new Error("429: Rate limited");
+        }
+
+        // 404: Unknown model (retired free models) → try the next free alternative
+        if (response.status === 404) {
+          const fallbackCandidates = hasImages
+            ? [FREE_MODELS.vision, ...FREE_MODEL_ALTERNATIVES.filter(m => m !== FREE_MODELS.text)]
+            : [FREE_MODELS.text, ...FREE_MODEL_ALTERNATIVES];
+          const nextModel = fallbackCandidates.find(m => m !== model);
+          if (nextModel) {
+            model = nextModel;
+            return await callAI(false);
+          }
         }
 
         if (!response.ok) {
@@ -141,6 +165,7 @@ export function useEnosxAI() {
 
         const decoder = new TextDecoder();
         let fullContent = "";
+        let sawAnyContent = false;
 
         while (true) {
           const { done, value } = await reader.read();
@@ -157,6 +182,7 @@ export function useEnosxAI() {
               const delta = parsed.choices[0].delta;
               if (delta.content) {
                 fullContent += delta.content;
+                if (delta.content.trim()) sawAnyContent = true;
                 onChunk(delta.content);
               }
               if (delta.tool_calls) {
@@ -169,6 +195,14 @@ export function useEnosxAI() {
               }
             } catch {}
           }
+        }
+
+        // Empty-stream safety net: if the stream completed with no real content,
+        // show a friendly fallback instead of a blank AI bubble.
+        if (!sawAnyContent) {
+          onChunk("Sorry, I received an empty response this time. Please try again — I'll pick right back up where we left off.");
+          onDone();
+          return;
         }
 
         // Handle tool calls (web search, scrape)

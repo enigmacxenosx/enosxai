@@ -145,10 +145,10 @@ function StreamingCursor({ color }: { color: string }) {
   );
 }
 
-// Thinking dots animation
+// ENOSX is thinking... indicator
 function ThinkingDots({ color }: { color: string }) {
   return (
-    <div className="flex items-center gap-1.5 py-1">
+    <div className="flex items-center gap-2 py-1">
       {[0, 1, 2].map((i) => (
         <motion.div
           key={i}
@@ -169,9 +169,14 @@ function ThinkingDots({ color }: { color: string }) {
           }}
         />
       ))}
-      <span className="text-xs ml-1" style={{ color, opacity: 0.6, letterSpacing: "0.06em" }}>
-        THINKING
-      </span>
+      <motion.span
+        className="text-xs italic tracking-wide"
+        style={{ color }}
+        animate={{ opacity: [0.4, 0.9, 0.4] }}
+        transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+      >
+        ENOSX is thinking<span className="thinking-pulse">...</span>
+      </motion.span>
     </div>
   );
 }

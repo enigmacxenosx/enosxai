@@ -61,6 +61,18 @@ export function useEnosxAI() {
         });
 
         if (!response.ok) {
+          if (response.status === 429) {
+            onChunk("Sorry, the AI is experiencing high traffic right now. Please try again in a minute.");
+            onDone();
+            setIsLoading(false);
+            return;
+          }
+          if (response.status === 503) {
+            onChunk("API key is not configured. Please check your Vercel environment variables.");
+            onDone();
+            setIsLoading(false);
+            return;
+          }
           const errorText = await response.text().catch(() => "");
           let errorMessage = `API Error: ${response.status}`;
           try {
@@ -110,8 +122,15 @@ export function useEnosxAI() {
       } catch (err) {
         const errorMessage = err instanceof Error ? err.message : "Unknown error";
         setError(errorMessage);
+        console.error("[useEnosxAI] Error:", errorMessage);
         toast.error("Enosx AI Error", { description: errorMessage });
-        onChunk(`\n\n### Enosx AI Error\n\n${errorMessage}`);
+        if (errorMessage.includes("429")) {
+          onChunk("Sorry, the AI is experiencing high traffic right now. Please try again in a minute.");
+        } else if (errorMessage.includes("401") || errorMessage.includes("403")) {
+          onChunk("API authentication failed. Please check your Vercel environment variables.");
+        } else {
+          onChunk("Sorry, I'm having trouble connecting right now. Please try again in a moment.");
+        }
         onDone();
       } finally {
         setIsLoading(false);

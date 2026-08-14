@@ -163,6 +163,53 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       const errorText = await openRouterResponse.text().catch(() => "Unknown error");
       console.error("[API] OpenRouter error:", openRouterResponse.status, errorText);
 
+      // Handle 429 rate limit: retry with a free model
+      if (openRouterResponse.status === 429) {
+        console.log("[API] 429 rate limited. Retrying with free model after 10s...");
+        await new Promise(r => setTimeout(r, 10000));
+
+        const fallbackModel = hasImages
+          ? "google/gemma-4-26b-a4b-it:free"
+          : "google/gemma-3-27b-it:free";
+
+        try {
+          const retryResponse = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${apiKey}`,
+              "HTTP-Referer": process.env.OPENROUTER_SITE_URL || "https://enosx.vercel.app",
+              "X-Title": "ENOSX AI",
+            },
+            body: JSON.stringify({
+              model: fallbackModel,
+              messages: chatMessages,
+              stream: false,
+              max_tokens: 2048,
+              temperature: 0.7,
+            }),
+          });
+
+          if (retryResponse.ok) {
+            const retryData = await retryResponse.json();
+            const retryContent = retryData?.choices?.[0]?.message?.content;
+            if (typeof retryContent === "string" && retryContent.length > 0) {
+              console.log("[API] 429 retry succeeded with free model:", fallbackModel);
+              return sendMockResponse(res, retryContent);
+            }
+          } else {
+            console.error("[API] 429 retry also failed:", retryResponse.status);
+          }
+        } catch (retryErr) {
+          console.error("[API] 429 retry exception:", retryErr);
+        }
+
+        return sendMockResponse(
+          res,
+          "Sorry, the AI is experiencing high traffic right now. Please try again in a minute."
+        );
+      }
+
       let errorMessage = `OpenRouter API error: ${openRouterResponse.status}`;
       try {
         const errorData = JSON.parse(errorText);
@@ -174,7 +221,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       // Send a helpful message instead of an error
       return sendMockResponse(
         res,
-        `I'm having trouble reaching the AI service (${openRouterResponse.status}). Error details: ${errorMessage}. Please try again in a moment.`
+        `I'm having trouble reaching the AI service (${openRouterResponse.status}). Please try again in a moment.`
       );
     }
 

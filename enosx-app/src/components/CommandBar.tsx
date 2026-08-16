@@ -341,6 +341,7 @@ export default function CommandBar({
                   ref={fileInputRef}
                   onChange={handleFileChange}
                   className="hidden"
+                  aria-label="Upload files"
                   accept="image/*,.txt,.md,.json,.js,.ts,.py,.java,.c,.cpp,.xml,.html,.css,.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx"
                 />
                 <motion.button

@@ -78,6 +78,18 @@ const generateTitle = (firstMessage: string): string => {
 
 const ACTION_BLOCK = /\[\[ACTION:\s*({[\s\S]*?})\s*\]\]/g;
 
+// Chat-page mapping of AI app names to workspace app ids (mirrors the workspace
+// page so proposed actions like "Launch terminal" open the right window).
+function mapWorkspaceAppId(appName: string): "browser" | "github" | "files" | "terminal" | "settings" | null {
+  const normalized = String(appName || "").toLowerCase().trim();
+  if (["browser", "chrome", "edge", "globe", "web"].includes(normalized)) return "browser";
+  if (["github", "git", "code"].includes(normalized)) return "github";
+  if (["terminal", "console", "cmd", "powershell", "shell", "bash"].includes(normalized)) return "terminal";
+  if (["files", "file", "folder", "explorer", "notepad", "calculator", "vscode"].includes(normalized)) return "files";
+  if (["settings", "config"].includes(normalized)) return "settings";
+  return null;
+}
+
 function removeActionBlocks(content: string) {
   return content.replace(ACTION_BLOCK, "").replace(/\n{3,}/g, "\n\n").trim();
 }
@@ -557,7 +569,29 @@ ${getAdminContext()}` : ""}`,
           const proposedActions = parseActions(streamedContent) as AssistantAction[];
           const cleanContent = removeActionBlocks(streamedContent);
           // Workspace mode: execute the AI's actions automatically in the computer pane.
-          (window as any).__chatExecuteWorkspaceActions?.(parseWorkspaceActions(streamedContent));
+          const actions = parseWorkspaceActions(streamedContent);
+          // Also auto-run any review-free proposed actions (e.g. "Launch terminal") so
+          // the AI's coding shows up live even when the model skips [[ACTION: ...]] blocks.
+          for (const pa of proposedActions) {
+            // Convert chat proposed actions into workspace SystemActions so they
+            // run automatically in the computer pane when split is on.
+            if (pa.type === "launch_app" && pa.app) {
+              const mapped = mapWorkspaceAppId(pa.app);
+              if (mapped) {
+                (window as any).__chatOpenWorkspaceWindow?.(mapped);
+                toast.success(`Opened ${pa.app} in the workspace`);
+              } else {
+                toast.info(`"${pa.app}" isn't a workspace app — opening it in a new tab instead.`);
+              }
+            } else if (pa.type === "open_url" && pa.url) {
+              actions.push({ type: "open_url", url: pa.url } as SystemAction);
+            } else if ((pa.type === "read_webpage" || pa.type === "extract_links") && pa.url) {
+              actions.push({ type: pa.type, url: pa.url } as SystemAction);
+            } else if (pa.type === "delay") {
+              actions.push({ type: "delay", ms: pa.delay ?? 500 } as SystemAction);
+            }
+          }
+          (window as any).__chatExecuteWorkspaceActions?.(actions);
           setConversations((prev) =>
             prev.map((conversation) =>
               conversation.id === targetConvId
@@ -788,6 +822,7 @@ ${getAdminContext()}` : ""}`,
     // singleton used elsewhere (last-write-wins is fine — the ref is always fresh).
     (window as any).__chatExecuteWorkspaceActions = (actions: SystemAction[]) =>
       handleWorkspaceActionsRef.current(actions);
+    (window as any).__chatOpenWorkspaceWindow = (appId: string) => openWindow(appId as any);
     return null;
   }
 
@@ -998,18 +1033,17 @@ ${getAdminContext()}` : ""}`,
     </div>
   );
 
-  // Workspace-aware view: split content is served inside a ComputerWorkspaceProvider
-  // so the AI's live coding actions (open/focus windows, run scripts) drive the pane.
-  const chatBodyWithProvider = chatSplitEnabled ? (
+  // Workspace-aware view: when split is on, the whole layout (chat + computer
+  // pane) lives inside a ComputerWorkspaceProvider so window actions from the
+  // AI's coding drive the pane, and a hidden controller runs those actions.
+  const workspaceBody = chatSplitEnabled ? (
     <ComputerWorkspaceProvider>
       <WorkspaceActionsController />
-      {chatBody}
+      {wrapWithSplit(chatBody)}
     </ComputerWorkspaceProvider>
   ) : (
-    chatBody
+    wrapWithSplit(chatBody)
   );
-
-  const workspaceBody = wrapWithSplit(chatBodyWithProvider);
 
   return (
     <GlobalLayout>

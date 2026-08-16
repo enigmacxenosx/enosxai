@@ -226,6 +226,7 @@ Current System Status: ONLINE`,
                 onSpeak={() => speak(msg.content)}
                 isSpeaking={false}
                 onStopSpeak={() => stopSpeaking()}
+                onExecuteProposedAction={(action) => void onExecuteAction?.([action])}
               />
             ))}
             {isLoading && (

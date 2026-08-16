@@ -20,6 +20,8 @@ interface MessageBubbleProps {
   onSpeak: (text: string) => void;
   onStopSpeak: () => void;
   isSpeaking: boolean;
+  /** Optional handler for proposed actions (e.g. workspace mode runs open_url in-pane). */
+  onExecuteProposedAction?: (action: NonNullable<Message["proposedActions"]>[number]) => void;
 }
 
 // ── Image URL detection regex ───────────────────────────────────────────────────
@@ -209,6 +211,7 @@ export default function MessageBubble({
   onSpeak,
   onStopSpeak,
   isSpeaking,
+  onExecuteProposedAction,
 }: MessageBubbleProps) {
   const { config } = useTheme();
   const { settings: wallpaperSettings } = useWallpaper();
@@ -252,6 +255,11 @@ export default function MessageBubble({
   };
 
   const handleProposedAction = async (action: NonNullable<Message["proposedActions"]>[number]) => {
+    // Workspace / split-screen mode runs actions in-pane instead of opening new tabs.
+    if (onExecuteProposedAction) {
+      onExecuteProposedAction(action);
+      return;
+    }
     if (action.type === "open_url" && action.url) {
       try {
         const url = new URL(action.url);

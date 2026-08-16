@@ -3,7 +3,7 @@
  * Supports web content extraction, link extraction, and web element interaction
  * Integrates with backend API for headless browser operations
  */
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 
 export interface WebPageContent {
   title?: string;
@@ -37,13 +37,93 @@ interface UseBrowserState {
   lastLinks: Array<{ href: string; text: string }> | null;
 }
 
+// ── Shared browser state across all windows/panes ──────────────────────────
+// Multiple consumers (workspace pane, computer Browser window) each call
+// useBrowser(), which creates per-component React state. This module-level
+// store keeps fetched results in one place so an action executed from the
+// workspace pane visibly updates the computer's browser window, and vice
+// versa. Subscribers re-render whenever shared state changes.
+interface SharedBrowserState {
+  isLoading: boolean;
+  error: string | null;
+  lastContent: WebPageContent | null;
+  lastLinks: Array<{ href: string; text: string }> | null;
+}
+const sharedState: SharedBrowserState = {
+  isLoading: false,
+  error: null,
+  lastContent: null,
+  lastLinks: null,
+};
+const sharedSubscribers = new Set<() => void>();
+
+function notifyShared() {
+  sharedSubscribers.forEach((cb) => cb());
+}
+
+export function onBrowserStateChange(callback: () => void): () => void {
+  sharedSubscribers.add(callback);
+  return () => {
+    sharedSubscribers.delete(callback);
+  };
+}
+
+export function getSharedBrowserState(): SharedBrowserState {
+  return sharedState;
+}
+
+function setSharedState(partial: Partial<SharedBrowserState>) {
+  Object.assign(sharedState, partial);
+  notifyShared();
+}
+
+interface SharedBrowserState {
+  isLoading: boolean;
+  error: string | null;
+  lastContent: WebPageContent | null;
+  lastLinks: Array<{ href: string; text: string }> | null;
+}
+const sharedState: SharedBrowserState = {
+  isLoading: false,
+  error: null,
+  lastContent: null,
+  lastLinks: null,
+};
+const sharedSubscribers = new Set<() => void>();
+
+function notifyShared() {
+  sharedSubscribers.forEach((cb) => cb());
+}
+
+export function onBrowserStateChange(callback: () => void): () => void {
+  sharedSubscribers.add(callback);
+  return () => {
+    sharedSubscribers.delete(callback);
+  };
+}
+
+export function getSharedBrowserState(): SharedBrowserState {
+  return sharedState;
+}
+
+function setSharedState(partial: Partial<SharedBrowserState>) {
+  Object.assign(sharedState, partial);
+  notifyShared();
+}
+
 export function useBrowser() {
-  const [state, setState] = useState<UseBrowserState>({
-    isLoading: false,
-    error: null,
-    lastContent: null,
-    lastLinks: null,
-  });
+  const [localState, setLocalState] = useState<UseBrowserState>(() => ({ ...sharedState }));
+
+  // Mirror the shared store into this component's state so every consumer
+  // sees results produced by any other consumer.
+  useEffect(() => {
+    const unsubscribe = onBrowserStateChange(() => {
+      setLocalState({ ...sharedState });
+    });
+    return unsubscribe;
+  }, []);
+
+  const setState = setLocalState;
 
   const setLoading = useCallback((loading: boolean) => {
     setState(prev => ({ ...prev, isLoading: loading }));
@@ -72,6 +152,7 @@ export function useBrowser() {
       }
 
       const data: WebPageContent = await response.json();
+      setSharedState({ lastContent: data, isLoading: false, error: null });
       setState(prev => ({ ...prev, lastContent: data, isLoading: false }));
       return data;
     } catch (err) {
@@ -101,6 +182,7 @@ export function useBrowser() {
 
       const data = await response.json();
       const links = data.links || [];
+      setSharedState({ lastLinks: links, isLoading: false, error: null });
       setState(prev => ({ ...prev, lastLinks: links, isLoading: false }));
       return links;
     } catch (err) {

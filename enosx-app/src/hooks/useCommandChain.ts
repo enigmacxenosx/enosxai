@@ -51,7 +51,9 @@ export function useCommandChain() {
       } else if (action.type === "create_script") {
         if (!action.name || typeof action.content !== "string") throw new Error("Script creation needs a name and content");
         const language = action.language ?? (action.name.endsWith(".bat") || action.name.endsWith(".cmd") ? "batch" : action.name.endsWith(".sh") ? "shell" : "python");
-        const created = createScript(action.name, language, action.content);
+        // Models sometimes double-escape newlines in the JSON (\n literal) — normalize.
+        let content = action.content.replace(/\\n/g, "\n").replace(/\\t/g, "\t").replace(/\\r/g, "\r").replace(/\\\"/g, '"');
+        const created = createScript(action.name, language, content);
         toast.success(`Script created: ${created.name} (${language})`);
         return true;
       } else if (action.type === "run_script") {

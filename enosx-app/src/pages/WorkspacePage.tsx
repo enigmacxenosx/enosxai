@@ -24,6 +24,17 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import type { SystemAction } from "@/hooks/useCommandChain";
 
 const SPLIT_STORAGE_KEY = "enosx-workspace-split-v1";
+const SPLIT_PREF_KEY = "enosx-workspace-split-enabled-v1";
+
+function getInitialSplitEnabled(): boolean {
+  try {
+    const saved = localStorage.getItem(SPLIT_PREF_KEY);
+    if (saved !== null) return saved === "true";
+  } catch {
+    /* use default (enabled) */
+  }
+  return true;
+}
 
 function mapAppId(appName: string): "browser" | "github" | "files" | "settings" | null {
   const normalized = String(appName || "").toLowerCase().trim();
@@ -51,7 +62,20 @@ function WorkspacePageInner() {
   const { openWindow, focusWindow } = useComputerWorkspace();
   const { progress, executeChain } = useCommandChain();
   const { readWebpage, extractLinks, lastContent, lastLinks } = useBrowser();
-  const [activeTab, setActiveTab] = useState<"split" | "chat" | "computer">("split");
+  const [activeTab, setActiveTab] = useState<"split" | "chat" | "computer">(() => (getInitialSplitEnabled() ? "split" : "chat"));
+  const [splitEnabled, setSplitEnabled] = useState<boolean>(() => getInitialSplitEnabled());
+
+  // Persist the split preference so returning visitors keep their choice.
+  const toggleSplit = useCallback((next: boolean) => {
+    setSplitEnabled(next);
+    try {
+      localStorage.setItem(SPLIT_PREF_KEY, String(next));
+    } catch {
+      /* storage unavailable */
+    }
+    setActiveTab(next ? "split" : "chat");
+    toast.info(next ? "Split-screen workspace enabled" : "Split-screen disabled — full chat view");
+  }, []);
   const [defaultSizes, setDefaultSizes] = useState<number[]>(() => {
     try {
       const saved = localStorage.getItem(SPLIT_STORAGE_KEY);
@@ -128,6 +152,9 @@ function WorkspacePageInner() {
     []
   );
 
+  const toggleLabel = splitEnabled ? "Split: On" : "Split: Off";
+  const ToggleIcon = splitEnabled ? Columns2 : MonitorSmartphone;
+
   const chatPane = <WorkspaceChatPane onExecuteAction={executeWorkspaceActions} />;
   const computerPane = <WorkspaceComputerPane />;
 
@@ -171,12 +198,28 @@ function WorkspacePageInner() {
                 <tab.icon size={12} /> {tab.label}
               </button>
             ))}
+            {/* Toggle split-screen mode off (full chat) or on again. Preference is remembered. */}
+            <span className="mx-0.5 h-4 w-px bg-white/15" />
+            <button
+              type="button"
+              onClick={() => toggleSplit(!splitEnabled)}
+              title={splitEnabled ? "Turn split-screen off — switch to full chat" : "Turn split-screen back on"}
+              className="flex items-center gap-1.5 rounded-full px-3 py-1 text-[11px] font-semibold transition"
+              style={
+                splitEnabled
+                  ? { background: "rgba(255,255,255,0.12)", color: "rgba(255,255,255,0.9)" }
+                  : { background: config.accent, color: "#040811" }
+              }
+            >
+              <ToggleIcon size={12} /> {toggleLabel}
+            </button>
           </div>
         </div>
 
         <div className="h-full w-full">
-          {activeTab === "split" && !isMobile && splitScreen}
-          {activeTab === "split" && isMobile && (
+          {!splitEnabled && <WorkspaceChatPane onExecuteAction={executeWorkspaceActions} />}
+          {splitEnabled && activeTab === "split" && !isMobile && splitScreen}
+          {splitEnabled && activeTab === "split" && isMobile && (
             <div className="h-full w-full">
               <WorkspaceChatPane onExecuteAction={executeWorkspaceActions} />
               <button
@@ -189,8 +232,8 @@ function WorkspacePageInner() {
               </button>
             </div>
           )}
-          {activeTab === "chat" && <WorkspaceChatPane onExecuteAction={executeWorkspaceActions} />}
-          {activeTab === "computer" && computerPane}
+          {splitEnabled && activeTab === "chat" && <WorkspaceChatPane onExecuteAction={executeWorkspaceActions} />}
+          {splitEnabled && activeTab === "computer" && computerPane}
         </div>
 
         <CommandChainProgress progress={progress} />

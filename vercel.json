@@ -1,12 +1,8 @@
 {
+  "$schema": "https://openapi.vercel.sh/vercel.json",
   "version": 2,
   "outputDirectory": "enosx-app/dist/public",
   "buildCommand": "pnpm run build",
-  "functions": {
-    "api/**/*.ts": {
-      "runtime": "nodejs22.x"
-    }
-  },
   "rewrites": [
     {
       "source": "/api/(.*)",

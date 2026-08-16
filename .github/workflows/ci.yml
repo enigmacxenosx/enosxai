@@ -26,7 +26,7 @@ jobs:
         run: pnpm install
 
       - name: Typecheck enosx-app
-        run: pnpm --filter @enosx/enosx-app typecheck || pnpm --filter @enosx/app typecheck || pnpm -r typecheck
+        run: pnpm --filter @workspace/enosx-app typecheck || pnpm --filter @enosx/app typecheck || pnpm -r typecheck
 
       - name: Typecheck exlover
         run: pnpm --filter @enosx/exlover typecheck || true

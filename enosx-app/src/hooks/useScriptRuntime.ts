@@ -72,12 +72,15 @@ function notifyStore() {
 }
 
 function setScripts(updater: (scripts: ScriptFile[]) => ScriptFile[]) {
-  store.scripts = updater(store.scripts);
+  store.scripts = [...updater(store.scripts)];
   notifyStore();
 }
 
 function setRun(run: ScriptRun) {
-  store.runs.set(run.scriptId, run);
+  // Store a fresh object each time so consumers observing `runs` (including
+  // `scripts` via the same notification) re-render on every output line.
+  store.runs = new Map(store.runs);
+  store.runs.set(run.scriptId, { ...run });
   notifyStore();
 }
 

@@ -1,4 +1,31 @@
-import { useMemo, useState } from "react";
+import type { SimpleIcon } from "simple-icons";
+import {
+  siAirtable,
+  siAlltrails,
+  siAnthropic,
+  siApollographql,
+  siAsana,
+  siAtlassian,
+  siBitly,
+  siBox,
+  siBrex,
+  siBuffer,
+  siCaldotcom,
+  siCalendly,
+  siCanvas,
+  siClickup,
+  siCloudflare,
+  siCloudinary,
+  siCoda,
+  siCoinmarketcap,
+  siDatabricks,
+  siDify,
+  siDropbox,
+  siElevenlabs,
+  siEtsy,
+  siExcalidraw,
+  siGooglechrome,
+} from "simple-icons/icons";
 
 interface ConnectorLogoProps {
   name: string;
@@ -23,6 +50,36 @@ const LOGO_SLUG_OVERRIDES: Record<string, string> = {
   Excalidraw: "excalidraw",
 };
 
+const LOCAL_LOGOS: Record<string, SimpleIcon> = {
+  airtable: siAirtable,
+  alltrails: siAlltrails,
+  anthropic: siAnthropic,
+  apollo: siApollographql,
+  apollographql: siApollographql,
+  asana: siAsana,
+  atlassian: siAtlassian,
+  bitly: siBitly,
+  box: siBox,
+  brex: siBrex,
+  buffer: siBuffer,
+  caldotcom: siCaldotcom,
+  calendly: siCalendly,
+  canva: siCanvas,
+  clickup: siClickup,
+  cloudflare: siCloudflare,
+  cloudflareworkers: siCloudflare,
+  cloudinary: siCloudinary,
+  coda: siCoda,
+  coinmarketcap: siCoinmarketcap,
+  databricks: siDatabricks,
+  dify: siDify,
+  dropbox: siDropbox,
+  elevenlabs: siElevenlabs,
+  etsy: siEtsy,
+  excalidraw: siExcalidraw,
+  googlechrome: siGooglechrome,
+};
+
 function toLogoSlug(name: string) {
   if (LOGO_SLUG_OVERRIDES[name]) return LOGO_SLUG_OVERRIDES[name];
 
@@ -32,7 +89,6 @@ function toLogoSlug(name: string) {
     .toLowerCase()
     .replace(/\.com$/i, "")
     .replace(/\.io$/i, "")
-    .replace(/\.com$/i, "")
     .replace(/[^a-z0-9]+/g, "");
 }
 
@@ -51,10 +107,8 @@ function getInitials(name: string) {
 }
 
 export default function ConnectorLogo({ name, accent }: ConnectorLogoProps) {
-  const [failed, setFailed] = useState(false);
-  const slug = useMemo(() => toLogoSlug(name), [name]);
-  const accentHex = accent.replace("#", "") || "ffffff";
-  const logoUrl = `https://cdn.simpleicons.org/${slug}/${accentHex}`;
+  const slug = toLogoSlug(name);
+  const icon = LOCAL_LOGOS[slug];
 
   return (
     <span
@@ -65,18 +119,20 @@ export default function ConnectorLogo({ name, accent }: ConnectorLogoProps) {
         color: accent,
       }}
       aria-hidden="true"
+      title={name}
     >
-      {!failed ? (
-        <img
-          src={logoUrl}
-          alt=""
-          loading="lazy"
-          decoding="async"
-          className="w-4 h-4 object-contain"
-          onError={() => setFailed(true)}
-        />
+      {icon ? (
+        <svg
+          viewBox="0 0 24 24"
+          className="w-4 h-4"
+          fill="currentColor"
+          role="img"
+          aria-label={`${name} logo`}
+        >
+          <path d={icon.path} />
+        </svg>
       ) : (
-        getInitials(name)
+        <span className="leading-none">{getInitials(name)}</span>
       )}
     </span>
   );

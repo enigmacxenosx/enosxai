@@ -28,3 +28,6 @@ Workflow "CI — pnpm Workspace Checks" FAILED for all recent commits (459dca0, 
 
 ## CI failure root cause: stale filter names in workflow
 Actual package name in enosx-app/package.json is `@workspace/enosx-app` (not `@enosx/enosx-app` or `@enosx/app`). So `pnpm --filter @enosx/enosx-app typecheck` prints "No projects matched" and exits NON-ZERO → CI fails on EVERY push. This was pre-existing (toggle commit 459dca0 also failed CI, yet Vercel deployed at that time, meaning Vercel deploys independently of this CI check). Fix: edit .github/workflows yaml to use the correct filter `@workspace/enosx-app`, commit + push, CI should pass. Then confirm Vercel deployed the script-console code.
+
+## Real CI failure: lockfile config mismatch
+pnpm install fails with ERR_PNPM_LOCKFILE_CONFIG_MISMATCH — "overrides" in package.json doesn't match the lockfile. CI runs `pnpm install` (frozen by default on CI). Fix: run `pnpm install --no-frozen-lockfile` locally in ~/enosxai to regenerate pnpm-lock.yaml, commit+push. The earlier filter-name fix is fine but install failure happens before typecheck anyway.

@@ -5,8 +5,8 @@
   "buildCommand": "pnpm run build",
   "rewrites": [
     {
-      "source": "/api/(.*)",
-      "destination": "/api/$1"
+      "source": "/api/auth/:action",
+      "destination": "/api/auth?action=:action"
     },
     {
       "source": "/(.*)",

@@ -20,21 +20,17 @@ import {
 } from "@/contexts/ComputerWorkspaceContext";
 import { useCommandChain } from "@/hooks/useCommandChain";
 import { useBrowser } from "@/hooks/useBrowser";
+import {
+  SPLIT_PREF_KEY,
+  getSplitEnabled as getInitialSplitEnabled,
+  setSplitEnabled as persistSplitEnabled,
+  onSplitPrefChange,
+  notifySplitPrefChanged,
+} from "@/lib/splitPref";
 import { useIsMobile } from "@/hooks/use-mobile";
 import type { SystemAction } from "@/hooks/useCommandChain";
 
 const SPLIT_STORAGE_KEY = "enosx-workspace-split-v1";
-const SPLIT_PREF_KEY = "enosx-workspace-split-enabled-v1";
-
-function getInitialSplitEnabled(): boolean {
-  try {
-    const saved = localStorage.getItem(SPLIT_PREF_KEY);
-    if (saved !== null) return saved === "true";
-  } catch {
-    /* use default (enabled) */
-  }
-  return true;
-}
 
 function mapAppId(appName: string): "browser" | "github" | "files" | "terminal" | "settings" | null {
   const normalized = String(appName || "").toLowerCase().trim();
@@ -67,13 +63,19 @@ function WorkspacePageInner() {
   const [splitEnabled, setSplitEnabled] = useState<boolean>(() => getInitialSplitEnabled());
 
   // Persist the split preference so returning visitors keep their choice.
+  useEffect(() => {
+    // Keep in sync when the toggle is flipped from another route (e.g. the Chat page).
+    const unsub = onSplitPrefChange(() => {
+      const enabled = getInitialSplitEnabled();
+      setSplitEnabled(enabled);
+      setActiveTab(enabled ? "split" : "chat");
+    });
+    return unsub;
+  }, []);
   const toggleSplit = useCallback((next: boolean) => {
     setSplitEnabled(next);
-    try {
-      localStorage.setItem(SPLIT_PREF_KEY, String(next));
-    } catch {
-      /* storage unavailable */
-    }
+    persistSplitEnabled(next);
+    notifySplitPrefChanged();
     setActiveTab(next ? "split" : "chat");
     toast.info(next ? "Split-screen workspace enabled" : "Split-screen disabled — full chat view");
   }, []);

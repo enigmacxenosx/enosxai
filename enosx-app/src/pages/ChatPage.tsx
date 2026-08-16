@@ -49,7 +49,9 @@ import { getSystemPrompt } from "@/lib/prompts";
 import { CONNECTOR_CATALOG } from "@/lib/connectorCatalog";
 import LeadCaptureDialog from "@/components/LeadCaptureDialog";
 import AdminConsoleDialog from "@/components/AdminConsoleDialog";
-import { ChevronDown, Menu } from "lucide-react";
+import ChatSplitLayout from "@/components/ChatSplitLayout";
+import { getSplitEnabled, setSplitEnabled, onSplitPrefChange, notifySplitPrefChanged } from "@/lib/splitPref";
+import { ChevronDown, Columns2, Menu, MonitorSmartphone } from "lucide-react";
 
 // Declare global window interface for settings handler
 declare global {
@@ -270,6 +272,18 @@ export default function ChatPage() {
   );
 
   const [isGodModeActive, setIsGodModeActive] = useState(false);
+  // Standalone split-screen toggle (shared with /workspace via localStorage).
+  const [chatSplitEnabled, setChatSplitEnabled] = useState<boolean>(() => getSplitEnabled());
+  useEffect(() => {
+    const unsub = onSplitPrefChange(() => setChatSplitEnabled(getSplitEnabled()));
+    return unsub;
+  }, []);
+  const handleToggleChatSplit = useCallback((next: boolean) => {
+    setSplitEnabled(next);
+    notifySplitPrefChanged();
+    setChatSplitEnabled(next);
+    toast.success(next ? "Split-screen enabled — workspace now visible beside the chat" : "Split-screen off — full chat view");
+  }, []);
   const [showGodModeWarning, setShowGodModeWarning] = useState(false);
   const [showGodTerminal, setShowGodTerminal] = useState(false);
   const [showEthicalHackingQuiz, setShowEthicalHackingQuiz] = useState(false);
@@ -671,8 +685,36 @@ ${getAdminContext()}` : ""}`,
     );
   }
 
-  return (
-    <GlobalLayout>
+  const splitToggle = (
+    <div className="flex items-center gap-1 rounded-full border p-1" style={{ borderColor: "rgba(255,255,255,0.12)", background: "rgba(6,8,14,0.55)" }}>
+      {chatSplitEnabled ? (
+        <button
+          type="button"
+          onClick={() => handleToggleChatSplit(false)}
+          title="Turn split-screen off — switch to full chat"
+          className="flex items-center gap-1.5 rounded-full px-3 py-1 text-[11px] font-semibold transition"
+          style={{ background: "rgba(255,255,255,0.12)", color: "rgba(255,255,255,0.9)" }}
+        >
+          <Columns2 size={12} /> Split: On
+        </button>
+      ) : (
+        <button
+          type="button"
+          onClick={() => handleToggleChatSplit(true)}
+          title="Turn split-screen back on"
+          className="flex items-center gap-1.5 rounded-full px-3 py-1 text-[11px] font-semibold transition"
+          style={{ background: config.accent, color: "#040811" }}
+        >
+          <MonitorSmartphone size={12} /> Split: Off
+        </button>
+      )}
+    </div>
+  );
+
+  const wrapWithSplit = (content: React.ReactNode) =>
+    chatSplitEnabled ? <ChatSplitLayout>{content}</ChatSplitLayout> : content;
+
+  const chatBody = (
     <div className="flex h-full w-full overflow-hidden text-white font-sans selection:bg-cyan-500/30">
       {/* Background with iridescence */}
       <div 
@@ -750,6 +792,7 @@ ${getAdminContext()}` : ""}`,
           </div>
 
           <div className="flex items-center gap-3">
+            {splitToggle}
             {screenGuiderActive && (
               <motion.div 
                 initial={{ opacity: 0, scale: 0.8 }}
@@ -873,90 +916,86 @@ ${getAdminContext()}` : ""}`,
           </div>
         </div>
 
-        <GodModeSecurityBanner
-          isOpen={showGodModeWarning}
-          onAcknowledge={acknowledgeGodModeWarning}
-          onCancel={cancelGodModeWarning}
-        />
-
-        <ConversationSearchDialog
-          isOpen={conversationSearch.isOpen}
-          query={conversationSearch.query}
-          setQuery={conversationSearch.setQuery}
-          results={conversationSearch.results}
-          onClose={conversationSearch.close}
-          onSelect={(id) => {
-            setActiveId(id);
-            conversationSearch.close();
-          }}
-          onOpenLeadCapture={() => { conversationSearch.close(); setShowLeadCapture(true); }}
-        />
-
-        <LeadCaptureDialog
-          isOpen={showLeadCapture}
-          onClose={() => setShowLeadCapture(false)}
-          transcript={activeConversation?.messages.map((m) => `${m.role === "user" ? "User" : "Enosx AI"}: ${m.content}`).join("\n\n") || ""}
-          conversationTitle={activeConversation?.title || ""}
-        />
-
-        <AdminConsoleDialog
-          isOpen={showAdminConsole}
-          onClose={() => setShowAdminConsole(false)}
-        />
-
-        <AnimatePresence>
-          {isGodModeActive && (
-            <CircuitDoor 
-              isActive={isGodModeActive} 
-              onComplete={handleGodModeAnimationComplete} 
-            />
-          )}
-        </AnimatePresence>
-
-        <AnimatePresence>
-          {showGodTerminal && (
-            <GodModeTerminal 
-              isOpen={showGodTerminal}
-              onClose={() => {
-                setShowGodTerminal(false);
-                setIsGodModeActive(false);
-                setShowEthicalHackingQuiz(false);
-              }}
-              onOpenQuiz={() => setShowEthicalHackingQuiz(true)}
-              onExecute={executeGodCommand}
-            />
-          )}
-        </AnimatePresence>
-
-        <EthicalHackingQuiz
-          isOpen={showEthicalHackingQuiz}
-          onClose={() => setShowEthicalHackingQuiz(false)}
-        />
-
-        {/* Floating overlays */}
-        <AnimatePresence>
-          {showGitHubPanel && (
-            <GitHubPanel 
-              isOpen={showGitHubPanel} 
-              onClose={() => setShowGitHubPanel(false)} 
-            />
-          )}
-        </AnimatePresence>
-
-        <AnimatePresence>
-          {showProfilePanel && (
-            <ProfilePanel 
-              isOpen={showProfilePanel} 
-              onClose={() => setShowProfilePanel(false)}
-              onOpenAdminConsole={() => setShowAdminConsole(true)}
-              onOpenLeadCapture={() => setShowLeadCapture(true)}
-            />
-          )}
-        </AnimatePresence>
-
         <FileDropZone onFileSelected={handleFileUpload} currentFileCount={fileContext.files.length} />
       </main>
     </div>
+  );
+
+  return (
+    <GlobalLayout>
+      {wrapWithSplit(chatBody)}
+      {/* Floating dialogs and overlays live outside the split so they always render above it */}
+      <GodModeSecurityBanner
+        isOpen={showGodModeWarning}
+        onAcknowledge={acknowledgeGodModeWarning}
+        onCancel={cancelGodModeWarning}
+      />
+      <ConversationSearchDialog
+        isOpen={conversationSearch.isOpen}
+        query={conversationSearch.query}
+        setQuery={conversationSearch.setQuery}
+        results={conversationSearch.results}
+        onClose={conversationSearch.close}
+        onSelect={(id) => {
+          setActiveId(id);
+          conversationSearch.close();
+        }}
+        onOpenLeadCapture={() => { conversationSearch.close(); setShowLeadCapture(true); }}
+      />
+      <LeadCaptureDialog
+        isOpen={showLeadCapture}
+        onClose={() => setShowLeadCapture(false)}
+        transcript={activeConversation?.messages.map((m) => `${m.role === "user" ? "User" : "Enosx AI"}: ${m.content}`).join("\n\n") || ""}
+        conversationTitle={activeConversation?.title || ""}
+      />
+      <AdminConsoleDialog
+        isOpen={showAdminConsole}
+        onClose={() => setShowAdminConsole(false)}
+      />
+      <AnimatePresence>
+        {isGodModeActive && (
+          <CircuitDoor 
+            isActive={isGodModeActive} 
+            onComplete={handleGodModeAnimationComplete} 
+          />
+        )}
+      </AnimatePresence>
+      <AnimatePresence>
+        {showGodTerminal && (
+          <GodModeTerminal 
+            isOpen={showGodTerminal}
+            onClose={() => {
+              setShowGodTerminal(false);
+              setIsGodModeActive(false);
+              setShowEthicalHackingQuiz(false);
+            }}
+            onOpenQuiz={() => setShowEthicalHackingQuiz(true)}
+            onExecute={executeGodCommand}
+          />
+        )}
+      </AnimatePresence>
+      <EthicalHackingQuiz
+        isOpen={showEthicalHackingQuiz}
+        onClose={() => setShowEthicalHackingQuiz(false)}
+      />
+      <AnimatePresence>
+        {showGitHubPanel && (
+          <GitHubPanel 
+            isOpen={showGitHubPanel} 
+            onClose={() => setShowGitHubPanel(false)} 
+          />
+        )}
+      </AnimatePresence>
+      <AnimatePresence>
+        {showProfilePanel && (
+          <ProfilePanel 
+            isOpen={showProfilePanel} 
+            onClose={() => setShowProfilePanel(false)}
+            onOpenAdminConsole={() => setShowAdminConsole(true)}
+            onOpenLeadCapture={() => setShowLeadCapture(true)}
+          />
+        )}
+      </AnimatePresence>
     </GlobalLayout>
   );
 }

@@ -84,11 +84,15 @@ function WorkspacePageInner() {
         return action;
       });
 
-      const webActions = mapped.filter((a) => a.type === "read_webpage" || a.type === "extract_links");
-      for (const action of webActions) {
+      const urlActions = mapped.filter((a) => a.type === "open_url" || a.type === "read_webpage" || a.type === "extract_links");
+      for (const action of urlActions) {
         if (!action.url) continue;
         try {
-          if (action.type === "read_webpage") {
+          if (action.type === "open_url") {
+            // Visibly navigate the workspace browser to the URL.
+            await readWebpage(action.url);
+            toast.success(`Opened ${action.url} in the workspace browser`);
+          } else if (action.type === "read_webpage") {
             await readWebpage(action.url);
             toast.success(`Read ${action.url}`);
           } else {
@@ -101,7 +105,7 @@ function WorkspacePageInner() {
         }
       }
 
-      const remaining = mapped.filter((a) => a.type !== "read_webpage" && a.type !== "extract_links");
+      const remaining = mapped.filter((a) => a.type !== "open_url" && a.type !== "read_webpage" && a.type !== "extract_links");
       if (remaining.length > 0) {
         await executeChain(remaining);
       }

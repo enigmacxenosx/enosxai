@@ -5,6 +5,7 @@ import {
   Github,
   Globe2,
   Settings2,
+  Terminal as TerminalIcon,
 } from "lucide-react";
 
 export type ComputerAppId =
@@ -12,6 +13,7 @@ export type ComputerAppId =
   | "browser"
   | "github"
   | "files"
+  | "terminal"
   | "settings";
 
 export interface ComputerAppDefinition {
@@ -72,6 +74,16 @@ export const COMPUTER_APPS: ComputerAppDefinition[] = [
     accent: "#f5c76b",
     capabilities: ["Select local files", "Review file names", "Keep filesystem access explicit"],
     defaultGeometry: { x: 620, y: 240, width: 390, height: 330, minWidth: 310, minHeight: 250 },
+  },
+  {
+    id: "terminal",
+    title: "Script Console",
+    shortTitle: "Terminal",
+    description: "Create and run Python, shell and batch scripts from ENOSX AI.",
+    icon: TerminalIcon,
+    accent: "#34d399",
+    capabilities: ["Run Python for real (WebAssembly)", "Simulated shell scripts", "Simulated Windows batch scripts"],
+    defaultGeometry: { x: 500, y: 100, width: 520, height: 460, minWidth: 360, minHeight: 320 },
   },
   {
     id: "settings",

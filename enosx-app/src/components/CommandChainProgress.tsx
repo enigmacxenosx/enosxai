@@ -22,6 +22,10 @@ function getActionLabel(action: SystemAction): string {
     return `Wait: ${action.delay || 1000}ms`;
   } else if (action.type === "chain") {
     return `Chain: ${action.sequence?.length || 0} steps`;
+  } else if (action.type === "create_script") {
+    return `Create script: ${action.name}`;
+  } else if (action.type === "run_script") {
+    return `Run script: ${action.name}`;
   }
   return "Unknown action";
 }

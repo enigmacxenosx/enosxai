@@ -36,11 +36,12 @@ function getInitialSplitEnabled(): boolean {
   return true;
 }
 
-function mapAppId(appName: string): "browser" | "github" | "files" | "settings" | null {
+function mapAppId(appName: string): "browser" | "github" | "files" | "terminal" | "settings" | null {
   const normalized = String(appName || "").toLowerCase().trim();
   if (["browser", "chrome", "edge", "globe", "web"].includes(normalized)) return "browser";
   if (["github", "git", "code"].includes(normalized)) return "github";
-  if (["files", "file", "folder", "explorer", "notepad", "calculator", "terminal", "vscode"].includes(normalized)) return "files";
+  if (["terminal", "console", "cmd", "powershell", "shell", "bash"].includes(normalized)) return "terminal";
+  if (["files", "file", "folder", "explorer", "notepad", "calculator", "vscode"].includes(normalized)) return "files";
   if (["settings", "config"].includes(normalized)) return "settings";
   return null;
 }
@@ -131,6 +132,11 @@ function WorkspacePageInner() {
 
       const remaining = mapped.filter((a) => a.type !== "open_url" && a.type !== "read_webpage" && a.type !== "extract_links");
       if (remaining.length > 0) {
+        // Open the Script Console as soon as a script is created or run, so
+        // the user watches it execute live in the computer pane.
+        if (remaining.some((a) => a.type === "create_script" || a.type === "run_script")) {
+          openWindow("terminal");
+        }
         await executeChain(remaining);
       }
     },

@@ -12,6 +12,7 @@ import { BrowserWindow } from "./apps/BrowserWindow";
 import { FilesWindow } from "./apps/FilesWindow";
 import { GitHubWindow } from "./apps/GitHubWindow";
 import { SettingsWindow } from "./apps/SettingsWindow";
+import { TerminalWindow } from "./apps/TerminalWindow";
 
 function WindowBody({ appId }: { appId: ComputerWindowState["appId"] }) {
   switch (appId) {
@@ -19,6 +20,7 @@ function WindowBody({ appId }: { appId: ComputerWindowState["appId"] }) {
     case "browser": return <BrowserWindow />;
     case "github": return <GitHubWindow />;
     case "files": return <FilesWindow />;
+    case "terminal": return <TerminalWindow />;
     case "settings": return <SettingsWindow />;
     default: return null;
   }

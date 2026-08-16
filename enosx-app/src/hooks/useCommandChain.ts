@@ -1,14 +1,19 @@
 import { useCallback, useState } from "react";
 import { toast } from "sonner";
+import { useScriptRuntime } from "@/hooks/useScriptRuntime";
 
 export interface SystemAction {
-  type: "open_url" | "launch_app" | "read_webpage" | "extract_links" | "click_element" | "fill_form" | "chain" | "delay";
+  type: "open_url" | "launch_app" | "read_webpage" | "extract_links" | "click_element" | "fill_form" | "chain" | "delay" | "create_script" | "run_script";
   url?: string;
   app?: string;
   selector?: string;
   fields?: Array<{ selector: string; value: string }>;
   delay?: number;
   sequence?: SystemAction[];
+  // Script actions
+  name?: string; // script filename, e.g. "hello.py"
+  language?: "python" | "shell" | "batch";
+  content?: string; // script source code
 }
 
 export interface ChainProgress {
@@ -21,6 +26,7 @@ export interface ChainProgress {
 }
 
 export function useCommandChain() {
+  const { scripts, createScript, runScript } = useScriptRuntime();
   const [progress, setProgress] = useState<ChainProgress>({
     totalSteps: 0,
     currentStep: 0,
@@ -41,6 +47,19 @@ export function useCommandChain() {
         if (!action.app) throw new Error("Missing app name");
         console.log(`LAUNCH_APP_INTENT: ${action.app}`);
         toast.info(`Launching: ${action.app}`);
+        return true;
+      } else if (action.type === "create_script") {
+        if (!action.name || typeof action.content !== "string") throw new Error("Script creation needs a name and content");
+        const language = action.language ?? (action.name.endsWith(".bat") || action.name.endsWith(".cmd") ? "batch" : action.name.endsWith(".sh") ? "shell" : "python");
+        const created = createScript(action.name, language, action.content);
+        toast.success(`Script created: ${created.name} (${language})`);
+        return true;
+      } else if (action.type === "run_script") {
+        if (!action.name) throw new Error("Run action needs a script name");
+        const target = scripts.find((script) => script.name.toLowerCase() === action.name!.toLowerCase());
+        if (!target) throw new Error(`No script named "${action.name}" exists — create it first with create_script`);
+        runScript(target.id);
+        toast.info(`Running script: ${target.name}`);
         return true;
       } else if (action.type === "read_webpage" || action.type === "extract_links") {
         if (!action.url) throw new Error("Missing URL");

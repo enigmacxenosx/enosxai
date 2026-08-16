@@ -33,6 +33,10 @@ export function AssistantWindow() {
           <Keyboard size={14} className="text-amber-300" />
           <span><span className="block text-xs text-white/75">Add file context</span><span className="block text-[10px] text-white/35">Only files you explicitly select are shown.</span></span>
         </button>
+        <button type="button" onClick={() => openWindow("terminal")} className="flex items-center gap-3 rounded-lg border border-white/8 bg-white/[0.03] px-3 py-2.5 text-left transition hover:bg-white/8">
+          <Command size={14} className="text-emerald-300" />
+          <span><span className="block text-xs text-white/75">Run a script</span><span className="block text-[10px] text-white/35">Ask ENOSX AI to write and run .py, .sh, or .bat scripts.</span></span>
+        </button>
       </div>
 
       <div className="mt-auto flex gap-2 rounded-lg border border-emerald-400/15 bg-emerald-400/5 p-3 text-[10px] leading-relaxed text-emerald-100/65">

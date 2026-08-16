@@ -32,7 +32,7 @@ function parseSystemActions(text: string): SystemAction[] {
     try {
       const action = JSON.parse(match[1]) as SystemAction;
       if (
-        ["open_url", "launch_app", "read_webpage", "extract_links", "click_element", "fill_form", "chain", "delay"].includes(action.type)
+        ["open_url", "launch_app", "read_webpage", "extract_links", "click_element", "fill_form", "chain", "delay", "create_script", "run_script"].includes(action.type)
       ) {
         actions.push(action);
       }
@@ -105,6 +105,14 @@ When you want to open a webpage, read content, open an app in the workspace, or 
 [[ACTION: {"type": "launch_app", "app": "browser"}]]
 [[ACTION: {"type": "extract_links", "url": "https://example.com"}]]
 [[ACTION: {"type": "chain", "sequence": [{"type": "read_webpage", "url": "https://example.com"}, {"type": "open_url", "url": "https://example.com/next"}]}]]
+
+### Script Creation & Execution
+You can write and run scripts that appear live in the Script Console (terminal window) of the computer pane. Python (.py) runs for REAL in the browser using WebAssembly. Shell (.sh) and batch (.bat) scripts run in a labeled simulation that produces realistic output. To do this:
+1. Create the script: [[ACTION: {"type": "create_script", "name": "hello.py", "language": "python", "content": "print('Hello from Enosx AI!')\nprint(2 + 2)"}]]
+   language can be "python", "shell", or "batch". Keep scripts short and self-contained. Python supports standard library basics: print, math, lists, dicts, loops, functions, string formatting.
+2. Run it: [[ACTION: {"type": "run_script", "name": "hello.py"}]]
+3. Open the console so the user can watch: [[ACTION: {"type": "launch_app", "app": "terminal"}]]
+Always explain what the script does and describe the expected output before running it.
 Explain what you are doing as you go, so the user can watch the actions execute live in the computer pane.
 Current System Status: ONLINE`,
           timestamp: new Date(),

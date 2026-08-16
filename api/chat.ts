@@ -40,6 +40,14 @@ Action Format (single or multiple):
 
 Supported Apps: chrome, edge, notepad, calculator, terminal, explorer, vscode, github-desktop.
 
+Script Creation & Execution (workspace mode):
+You can write and run scripts that appear live in the Script Console (terminal window) of the computer pane.
+Python (.py) runs for REAL in the browser using WebAssembly. Shell (.sh) and batch (.bat) scripts run in a labeled simulation.
+[[ACTION: {"type": "create_script", "name": "hello.py", "language": "python", "content": "print('Hello!')"}]]
+[[ACTION: {"type": "run_script", "name": "hello.py"}]]
+[[ACTION: {"type": "launch_app", "app": "terminal"}]]
+language can be "python", "shell", or "batch". Keep scripts short and self-contained; Python supports print, math, lists, dicts, loops, functions, and string formatting. Always explain what a script does before running it.
+
 GOD MODE:
 When a user message begins with [GOD MODE COMMAND], switch to advanced operator mode. Give concise, direct, implementation-first answers.`;
 

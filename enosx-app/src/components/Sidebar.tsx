@@ -95,6 +95,14 @@ export default function Sidebar({
       danger: false,
     },
     {
+      label: "Workspace (Split)",
+      description: "Chat + computer side by side, Manus-style",
+      icon: Laptop,
+      onClick: () => { window.location.href = "/workspace"; },
+      accent: true,
+      danger: false,
+    },
+    {
       label: "Enosx Computer",
       description: "Open your workspace surface",
       icon: Laptop,

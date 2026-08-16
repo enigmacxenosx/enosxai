@@ -3,6 +3,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import { Cable, Check, Search, SlidersHorizontal, X } from "lucide-react";
 import { useTheme } from "@/contexts/ThemeContext";
 import { CONNECTOR_CATALOG, ConnectorKind } from "@/lib/connectorCatalog";
+import ConnectorLogo from "./ConnectorLogo";
 
 interface ConnectorPickerProps {
   selectedConnectorIds: string[];
@@ -239,16 +240,7 @@ export default function ConnectorPicker({
                           : "transparent",
                       }}
                     >
-                      <span
-                        className="w-7 h-7 rounded-lg flex items-center justify-center text-[10px] font-bold shrink-0"
-                        style={{
-                          background: `${accent}18`,
-                          border: `1px solid ${accent}38`,
-                          color: accent,
-                        }}
-                      >
-                        {connector.name.slice(0, 2).toUpperCase()}
-                      </span>
+                      <ConnectorLogo name={connector.name} accent={accent} />
                       <span className="min-w-0 flex-1">
                         <span className="block truncate text-xs font-medium text-white/85">
                           {connector.name}

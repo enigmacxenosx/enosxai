@@ -222,7 +222,7 @@ export default function CommandBar({
       {/* Voice overlay removed for seamless input experience */}
 
       {/* ── Main command bar (enlarged) ── */}
-      <div className="px-4 pb-6 pt-2 flex-shrink-0">
+      <div className="px-4 pb-3 pt-1.5 flex-shrink-0">
         <motion.div
           initial={{ y: 20, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
@@ -247,7 +247,7 @@ export default function CommandBar({
                 ? { duration: 1.5, repeat: Infinity, ease: "easeInOut" }
                 : { duration: 0.3 }
             }
-            className={`flex flex-col gap-2 rounded-2xl px-5 py-3 transition-all duration-300 ${isListening ? 'shadow-[0_0_20px_rgba(0,242,255,0.2)]' : ''} rainbow-glow rainbow-glow-border`}
+            className={`flex flex-col gap-1.5 rounded-2xl px-4 py-2 transition-all duration-300 ${isListening ? 'shadow-[0_0_20px_rgba(0,242,255,0.2)]' : ''} rainbow-glow rainbow-glow-border`}
             style={{
               background: `rgba(12,12,16,${wallpaperSettings.panelOpacity})`,
               backdropFilter: `blur(${wallpaperSettings.blurAmount}px)`,
@@ -265,7 +265,7 @@ export default function CommandBar({
                   whileHover={{ scale: 1.03 }}
                   whileTap={{ scale: 0.97 }}
                   onClick={() => setModeOpen((o) => !o)}
-                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-semibold text-xs whitespace-nowrap transition-all"
+                  className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg font-semibold text-[11px] whitespace-nowrap transition-all"
                   style={{
                     background: currentMode.bgColor,
                     border: `1.5px solid ${currentMode.color}`,
@@ -293,7 +293,7 @@ export default function CommandBar({
                 <motion.div
                   initial={{ opacity: 0, x: -10 }}
                   animate={{ opacity: 1, x: 0 }}
-                  className="px-2 py-1 rounded-md bg-yellow-500/10 border border-yellow-500/30 text-[10px] font-bold text-yellow-400 flex items-center gap-1.5"
+                  className="px-2 py-0.5 rounded-md bg-yellow-500/10 border border-yellow-500/30 text-[10px] font-bold text-yellow-400 flex items-center gap-1.5"
                   title="Running in Free Mode due to low credits"
                 >
                   <div className="w-1.5 h-1.5 rounded-full bg-yellow-500 animate-pulse" />
@@ -349,7 +349,7 @@ export default function CommandBar({
 	              </AnimatePresence>
 	
 	              {/* Textarea and buttons container */}
-	              <div className="flex items-end gap-3">
+	              <div className="flex items-end gap-2">
                 {/* Plus button */}
                 <input
                   type="file"
@@ -364,7 +364,7 @@ export default function CommandBar({
                   whileTap={{ scale: 0.92 }}
                   onClick={handlePlusClick}
                   disabled={disabled || isLoading}
-                  className="w-10 h-10 mb-2.5 rounded-xl flex items-center justify-center transition-all duration-200"
+                  className="w-9 h-9 mb-1.5 rounded-xl flex items-center justify-center transition-all duration-200"
                   style={{
                     background: "rgba(255,255,255,0.05)",
                     border: "1px solid rgba(255,255,255,0.08)",
@@ -390,26 +390,26 @@ export default function CommandBar({
 	                }
                 rows={1}
                 disabled={disabled && !isListening}
-                className="flex-1 bg-transparent outline-none resize-none text-base leading-relaxed"
+                className="flex-1 bg-transparent outline-none resize-none text-sm leading-snug"
                 style={{
                   color: config.text,
                   caretColor: config.accent,
-                  maxHeight: 200,
-                  minHeight: 60,
-                  paddingTop: "18px",
+                  maxHeight: 144,
+                  minHeight: 44,
+                  paddingTop: "10px",
                   fontFamily: "'Eurostile', sans-serif",
                 }}
               />
 
               {/* Action buttons */}
-              <div className="flex items-center gap-2 flex-shrink-0">
+              <div className="flex items-center gap-1.5 flex-shrink-0">
                 {/* Voice button */}
                 {isVoiceSupported && (
                   <motion.button
                     whileHover={{ scale: 1.08 }}
                     whileTap={{ scale: 0.92 }}
                     onClick={handleVoiceClick}
-                    className="relative w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-200"
+                    className="relative w-9 h-9 rounded-xl flex items-center justify-center transition-all duration-200"
                     style={
                       isListening || isSpeaking
                         ? {
@@ -449,7 +449,7 @@ export default function CommandBar({
                     whileHover={{ scale: 1.08 }}
                     whileTap={{ scale: 0.92 }}
                     onClick={onToggleImageMode}
-                    className="w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-200"
+                    className="w-9 h-9 rounded-xl flex items-center justify-center transition-all duration-200"
                     style={
                       isImageMode
                         ? {

@@ -1,0 +1,19 @@
+<svg width="512" height="512" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="enosxGradient" x1="68" y1="38" x2="438" y2="466" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#71E6F5"/>
+      <stop offset="0.46" stop-color="#8E7CFF"/>
+      <stop offset="1" stop-color="#F19AB3"/>
+    </linearGradient>
+    <linearGradient id="coreGradient" x1="167" y1="120" x2="352" y2="395" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#FFF4F1"/>
+      <stop offset="1" stop-color="#EECBD9"/>
+    </linearGradient>
+  </defs>
+  <rect width="512" height="512" rx="128" fill="#171525"/>
+  <rect x="18" y="18" width="476" height="476" rx="112" stroke="url(#enosxGradient)" stroke-opacity="0.34" stroke-width="4"/>
+  <path d="M132 122C132 101.013 149.013 84 170 84H342C362.987 84 380 101.013 380 122V150C380 160.493 371.493 169 361 169H201V209H327C337.493 209 346 217.507 346 228V255C346 265.493 337.493 274 327 274H201V315H361C371.493 315 380 323.507 380 334V362C380 382.987 362.987 400 342 400H170C149.013 400 132 382.987 132 362V122Z" fill="url(#enosxGradient)"/>
+  <path d="M231 123H337C348.046 123 357 131.954 357 143V146H231V123ZM231 221H314C325.046 221 334 229.954 334 241V245H231V221ZM231 325H357V329C357 340.046 348.046 349 337 349H231V325Z" fill="url(#coreGradient)" fill-opacity="0.95"/>
+  <circle cx="398" cy="113" r="12" fill="#71E6F5"/>
+  <circle cx="425" cy="140" r="7" fill="#F19AB3"/>
+</svg>

@@ -184,7 +184,7 @@ export default function App() {
     <div className="app-shell">
       <header className="topbar">
         <a className="brand" href="/" aria-label="ExLover home">
-          <span className="brand-mark" aria-hidden="true"><span /></span>
+          <span className="brand-logo" aria-hidden="true"><img src="/enosx-mark.svg" alt="" /></span>
           <span><strong>ExLover</strong><small>BY ENOSX TECHNOLOGIES</small></span>
         </a>
         <div className="topbar-actions">

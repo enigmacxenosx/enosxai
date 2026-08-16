@@ -1,0 +1,17 @@
+{
+  "name": "ExLover Coach by Enosx Technologies",
+  "short_name": "ExLover",
+  "description": "Thoughtful AI relationship coaching from Enosx Technologies.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#171525",
+  "theme_color": "#171525",
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

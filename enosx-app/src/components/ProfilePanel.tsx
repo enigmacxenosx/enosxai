@@ -81,7 +81,7 @@ export default function ProfilePanel({ isOpen, onClose, onOpenAdminConsole, onOp
   const { settings: speechSettings, updateSettings: updateSpeechSettings } = useVoice();
   const { config, theme, setTheme } = useTheme();
   const { settings, setPreset: setActivePreset, setCustomUrl, setBlurAmount } = useWallpaper();
-  const { user, isLoading, error, isAuthenticated, signInWithEmail, signUpWithEmail, signOut, updateProfile, clearError } = useAuth();
+  const { user, isLoading, error, isAuthenticated, signInWithEmail, signUpWithEmail, continueAsGuest, signOut, updateProfile, clearError } = useAuth();
 
   const [view, setView] = useState<View>(isAuthenticated ? 'profile' : 'auth');
   const [authMode, setAuthMode] = useState<AuthMode>('signin');
@@ -384,6 +384,20 @@ export default function ProfilePanel({ isOpen, onClose, onOpenAdminConsole, onOp
                       {authMode === 'signin' ? 'Sign up' : 'Sign in'}
                     </button>
                   </div>
+
+                  <div className="relative flex items-center gap-3 pt-2">
+                    <div className="flex-1 h-px" style={{ background: 'rgba(255,255,255,0.08)' }} />
+                    <span className="text-xs uppercase tracking-widest" style={{ color: 'rgba(255,255,255,0.3)' }}>or</span>
+                    <div className="flex-1 h-px" style={{ background: 'rgba(255,255,255,0.08)' }} />
+                  </div>
+
+                  <button
+                    onClick={continueAsGuest}
+                    className="w-full py-3 rounded-2xl text-sm font-bold transition-all hover:scale-[1.02] active:scale-[0.98] flex items-center justify-center gap-2"
+                    style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.12)', color: 'rgba(255,255,255,0.85)' }}
+                  >
+                    Continue as Guest
+                  </button>
                 </div>
               )}
 

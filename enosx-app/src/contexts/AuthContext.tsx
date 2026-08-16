@@ -33,6 +33,7 @@ interface AuthContextType extends AuthState {
   signInWithGoogle: () => void;
   signInWithEmail: (email: string, password: string) => Promise<boolean>;
   signUpWithEmail: (email: string, password: string, displayName: string) => Promise<boolean>;
+  continueAsGuest: () => void;
   signOut: () => void;
   updateProfile: (updates: Partial<UserProfile>) => Promise<boolean>;
   clearError: () => void;
@@ -85,7 +86,14 @@ async function apiCall(path: string, method: string, body?: object) {
 }
 
 function canUseLocalAuthFallback(error: unknown) {
-  return error instanceof AuthApiError && (error.status === 404 || error.status === 405);
+  // Use the local-storage fallback whenever the server route is unreachable:
+  // 404/405 (route missing), 500 (server failure), 503 (DATABASE_URL not
+  // configured — the production deployment case), or network errors.
+  if (error instanceof AuthApiError) {
+    return error.status === 404 || error.status === 405 || error.status >= 500;
+  }
+  // TypeError covers offline/network failures; treat them as fallback-eligible.
+  return error instanceof TypeError;
 }
 
 // ── Provider ─────────────────────────────────────────────────────────────────
@@ -184,9 +192,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         user = data.user;
       } catch (error) {
         if (!canUseLocalAuthFallback(error)) throw error;
-        // Fallback is limited to a missing local API route for development/demo mode.
-        const stored = localStorage.getItem(`enosx-user-${email}`);
-        if (!stored) throw new Error('Invalid email or password');
+        // Server unavailable (missing route, crash, or DATABASE_URL not
+        // configured): fall back to locally stored accounts created by a
+        // previous sign-up on this device.
+        const stored = localStorage.getItem(`enosx-user-${email.toLowerCase()}`);
+        if (!stored) {
+          throw new Error('No account found with this email. Try signing up first, or continue as a guest.');
+        }
         const storedUser = JSON.parse(stored);
         if (storedUser.password !== btoa(password)) throw new Error('Invalid email or password');
         user = storedUser.profile;
@@ -215,8 +227,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         await apiCall('/auth/signup', 'POST', { ...newUser, password });
       } catch (error) {
         if (!canUseLocalAuthFallback(error)) throw error;
-        // Fallback is limited to a missing local API route for development/demo mode.
-        localStorage.setItem(`enosx-user-${email}`, JSON.stringify({ profile: newUser, password: btoa(password) }));
+        // Server unavailable: store the account locally so it can be
+        // signed in again on this device without a database.
+        localStorage.setItem(`enosx-user-${email.toLowerCase()}`, JSON.stringify({ profile: newUser, password: btoa(password) }));
       }
       setUser(newUser);
       return true;
@@ -224,6 +237,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setState(prev => ({ ...prev, isLoading: false, error: err instanceof Error ? err.message : 'Sign up failed' }));
       return false;
     }
+  };
+
+  const continueAsGuest = () => {
+    const guest: UserProfile = {
+      id: `guest_${Date.now()}`,
+      email: '',
+      displayName: 'Guest',
+      avatarUrl: `https://ui-avatars.com/api/?name=Guest&background=4b5563&color=fff`,
+      provider: 'github',
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    };
+    setUser(guest);
   };
 
   const signOut = () => {
@@ -255,7 +281,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const clearError = () => setState(prev => ({ ...prev, error: null }));
 
   return (
-    <AuthContext.Provider value={{ ...state, signInWithGoogle, signInWithEmail, signUpWithEmail, signOut, updateProfile, clearError }}>
+    <AuthContext.Provider value={{ ...state, signInWithGoogle, signInWithEmail, signUpWithEmail, continueAsGuest, signOut, updateProfile, clearError }}>
       {children}
     </AuthContext.Provider>
   );

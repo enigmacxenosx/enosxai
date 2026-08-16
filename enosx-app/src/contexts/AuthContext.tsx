@@ -60,6 +60,13 @@ function saveUser(user: UserProfile | null) {
   } catch {}
 }
 
+class AuthApiError extends Error {
+  constructor(message: string, readonly status: number) {
+    super(message);
+    this.name = 'AuthApiError';
+  }
+}
+
 async function apiCall(path: string, method: string, body?: object) {
   const res = await fetch(`${NEON_API_BASE}${path}`, {
     method,
@@ -68,9 +75,13 @@ async function apiCall(path: string, method: string, body?: object) {
   });
   if (!res.ok) {
     const err = await res.json().catch(() => ({ message: 'Request failed' }));
-    throw new Error(err.message || 'Request failed');
+    throw new AuthApiError(err.message || 'Request failed', res.status);
   }
   return res.json();
+}
+
+function canUseLocalAuthFallback(error: unknown) {
+  return error instanceof AuthApiError && (error.status === 404 || error.status === 405);
 }
 
 // ── Provider ─────────────────────────────────────────────────────────────────
@@ -167,8 +178,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       try {
         const data = await apiCall('/auth/signin', 'POST', { email, password });
         user = data.user;
-      } catch {
-        // Fallback: local auth for demo
+      } catch (error) {
+        if (!canUseLocalAuthFallback(error)) throw error;
+        // Fallback is limited to a missing local API route for development/demo mode.
         const stored = localStorage.getItem(`enosx-user-${email}`);
         if (!stored) throw new Error('Invalid email or password');
         const storedUser = JSON.parse(stored);
@@ -197,8 +209,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       };
       try {
         await apiCall('/auth/signup', 'POST', { ...newUser, password });
-      } catch {
-        // Fallback: store locally
+      } catch (error) {
+        if (!canUseLocalAuthFallback(error)) throw error;
+        // Fallback is limited to a missing local API route for development/demo mode.
         localStorage.setItem(`enosx-user-${email}`, JSON.stringify({ profile: newUser, password: btoa(password) }));
       }
       setUser(newUser);

@@ -319,7 +319,7 @@ export default function ProfilePanel({ isOpen, onClose, onOpenAdminConsole, onOp
               {error && (
                 <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }}
                   className="px-5 py-2 flex items-center gap-2 text-xs"
-                  style={{ background: 'rgba(220,20,60,0.12)', borderBottom: '1px solid rgba(220,20,60,0.2)', color: '#ff6b8a' }}>
+                  style={{ background: 'rgba(245,158,11,0.12)', borderBottom: '1px solid rgba(245,158,11,0.2)', color: '#fbbf24' }}>
                   <AlertCircle size={12} />{error}
                 </motion.div>
               )}

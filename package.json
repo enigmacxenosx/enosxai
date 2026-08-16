@@ -14,5 +14,8 @@
     "@vercel/node": "^5.8.17",
     "prettier": "^3.8.3",
     "typescript": "~5.9.3"
+  },
+  "dependencies": {
+    "@neondatabase/serverless": "^1.1.0"
   }
 }

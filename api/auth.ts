@@ -1,5 +1,4 @@
 import type { VercelRequest, VercelResponse } from "@vercel/node";
-import { neon } from "@neondatabase/serverless";
 import { createHash, randomUUID } from "node:crypto";
 
 type UserRow = {
@@ -19,8 +18,10 @@ type UserRow = {
   updated_at: string | null;
 };
 
-const databaseUrl = process.env.DATABASE_URL;
-const sql = databaseUrl ? neon(databaseUrl) : null;
+type NeonSql = (...args: any[]) => Promise<unknown>;
+
+let databaseClient: NeonSql | null = null;
+let databaseUnavailable = false;
 let tableReady: Promise<unknown> | null = null;
 
 function hashPassword(password: string) {
@@ -50,10 +51,29 @@ function mapUser(row: UserRow | undefined) {
   };
 }
 
-async function ensureTable() {
-  if (!sql) throw new Error("DATABASE_URL not configured");
+async function getDatabase(): Promise<NeonSql | null> {
+  if (databaseUnavailable) return null;
+  const databaseUrl = process.env.DATABASE_URL;
+  if (!databaseUrl) {
+    databaseUnavailable = true;
+    return null;
+  }
+
+  try {
+    if (!databaseClient) {
+      const { neon } = await import("@neondatabase/serverless");
+      databaseClient = neon(databaseUrl) as unknown as NeonSql;
+    }
+    return databaseClient;
+  } catch {
+    databaseUnavailable = true;
+    return null;
+  }
+}
+
+async function ensureTable(database: NeonSql) {
   if (!tableReady) {
-    tableReady = sql`
+    tableReady = database`
       CREATE TABLE IF NOT EXISTS enosx_users (
         id TEXT PRIMARY KEY,
         email TEXT UNIQUE NOT NULL,
@@ -100,14 +120,15 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   const action = actionFromRequest(req);
   const body = bodyFromRequest(req);
+  const database = await getDatabase();
 
-  if (!sql) {
+  if (!database) {
     res.status(503).json({ message: "Email authentication is unavailable until DATABASE_URL is configured." });
     return;
   }
 
   try {
-    await ensureTable();
+    await ensureTable(database);
 
     if (action === "signup" && req.method === "POST") {
       const email = typeof body.email === "string" ? body.email.trim().toLowerCase() : "";
@@ -122,7 +143,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         return;
       }
 
-      const inserted = await queryRows<UserRow>(sql`
+      const inserted = await queryRows<UserRow>(database`
         INSERT INTO enosx_users (id, email, display_name, avatar_url, provider, password_hash)
         VALUES (${id}, ${email}, ${displayName}, ${avatarUrl}, ${provider}, ${hashPassword(password)})
         ON CONFLICT (email) DO NOTHING
@@ -147,7 +168,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         return;
       }
 
-      const rows = await queryRows<UserRow>(sql`SELECT * FROM enosx_users WHERE email = ${email} LIMIT 1`);
+      const rows = await queryRows<UserRow>(database`SELECT * FROM enosx_users WHERE email = ${email} LIMIT 1`);
       const user = rows[0];
       if (!user || (user.password_hash && user.password_hash !== hashPassword(password))) {
         res.status(401).json({ message: "Invalid email or password" });
@@ -170,7 +191,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         return;
       }
 
-      const rows = await queryRows<UserRow>(sql`
+      const rows = await queryRows<UserRow>(database`
         INSERT INTO enosx_users (id, email, display_name, avatar_url, provider, updated_at)
         VALUES (${id}, ${email}, ${displayName}, ${avatarUrl}, ${provider}, NOW())
         ON CONFLICT (email) DO UPDATE SET
@@ -191,7 +212,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         return;
       }
 
-      const rows = await queryRows<UserRow>(sql`
+      const rows = await queryRows<UserRow>(database`
         UPDATE enosx_users SET
           display_name = COALESCE(${typeof body.displayName === "string" ? body.displayName.trim() : null}, display_name),
           ai_personality = COALESCE(${typeof body.aiPersonality === "string" ? body.aiPersonality : null}, ai_personality),
@@ -221,7 +242,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         return;
       }
 
-      const rows = await queryRows<UserRow>(sql`SELECT * FROM enosx_users WHERE id = ${id} LIMIT 1`);
+      const rows = await queryRows<UserRow>(database`SELECT * FROM enosx_users WHERE id = ${id} LIMIT 1`);
       if (!rows[0]) {
         res.status(404).json({ message: "User not found" });
         return;

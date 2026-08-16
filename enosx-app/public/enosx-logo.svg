@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" role="img" aria-labelledby="title desc">
+  <title id="title">ENOSX AI</title>
+  <desc id="desc">Glass EX logo for ENOSX AI</desc>
+  <defs>
+    <linearGradient id="glass" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#2a3238" stop-opacity="0.96" />
+      <stop offset="1" stop-color="#10161a" stop-opacity="0.98" />
+    </linearGradient>
+    <filter id="glow" x="-40%" y="-40%" width="180%" height="180%">
+      <feGaussianBlur stdDeviation="4" result="blur" />
+      <feMerge>
+        <feMergeNode in="blur" />
+        <feMergeNode in="SourceGraphic" />
+      </feMerge>
+    </filter>
+  </defs>
+  <rect width="128" height="128" rx="30" fill="#050505" />
+  <rect x="10" y="10" width="108" height="108" rx="30" fill="url(#glass)" stroke="#ffffff" stroke-opacity="0.2" />
+  <rect x="16" y="16" width="96" height="96" rx="25" fill="none" stroke="#00f2ff" stroke-opacity="0.16" />
+  <text x="64" y="78" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="48" font-weight="900" letter-spacing="-4" fill="#ffffff" filter="url(#glow)">EX</text>
+</svg>

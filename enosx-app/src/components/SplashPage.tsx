@@ -1,5 +1,6 @@
 import { motion } from "framer-motion";
 import { useEffect, useState } from "react";
+import BrandMark from "./BrandMark";
 
 export default function SplashPage({ onComplete }: { onComplete: () => void }) {
   const [isExiting, setIsExiting] = useState(false);
@@ -50,23 +51,8 @@ export default function SplashPage({ onComplete }: { onComplete: () => void }) {
           initial={{ scale: 0.8, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
           transition={{ duration: 1.5, ease: [0.23, 1, 0.32, 1] }}
-          className="relative w-32 h-32 flex items-center justify-center rounded-3xl border border-white/20 shadow-2xl overflow-hidden"
-          style={{
-            background: "linear-gradient(135deg, rgba(255, 255, 255, 0.1) 0%, rgba(255, 255, 255, 0.05) 100%)",
-            backdropFilter: "blur(20px)",
-            WebkitBackdropFilter: "blur(20px)",
-          }}
         >
-          {/* Shimmer effect */}
-          <motion.div
-            animate={{ left: ["-100%", "200%"] }}
-            transition={{ duration: 3, repeat: Infinity, ease: "easeInOut", repeatDelay: 1 }}
-            className="absolute top-0 bottom-0 w-1/2 bg-gradient-to-r from-transparent via-white/10 to-transparent skew-x-12"
-          />
-
-          <span className="text-5xl font-black tracking-tighter text-white drop-shadow-[0_0_15px_rgba(255,255,255,0.5)]">
-            EX
-          </span>
+          <BrandMark size={128} animate />
         </motion.div>
       </div>
 

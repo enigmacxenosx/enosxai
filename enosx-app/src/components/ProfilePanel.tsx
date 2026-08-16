@@ -22,6 +22,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { useTheme, THEMES, type Theme } from '../contexts/ThemeContext';
 import { useWallpaper, WALLPAPER_PRESETS } from '../contexts/WallpaperContext';
 import VoiceSettingsPanel from './VoiceSettingsPanel';
+import BrandMark from './BrandMark';
 import { useVoice } from '../hooks/useVoice';
 
 type View = 'auth' | 'profile' | 'preferences' | 'appearance' | 'privacy' | 'voice';
@@ -330,9 +331,7 @@ export default function ProfilePanel({ isOpen, onClose, onOpenAdminConsole, onOp
               {view === 'auth' && (
                 <div className="px-5 py-6 space-y-5">
                   <div className="text-center space-y-2 pb-2">
-                    <div className="w-16 h-16 rounded-2xl mx-auto flex items-center justify-center" style={{ background: `rgba(${accentRgb},0.12)`, border: `1px solid rgba(${accentRgb},0.25)` }}>
-                      <span className="text-2xl font-black" style={{ color: accentColor }}>EX</span>
-                    </div>
+                    <BrandMark size={64} animate className="mx-auto" />
                     <div className="text-lg font-bold" style={{ color: 'rgba(255,255,255,0.9)' }}>
                       {authMode === 'signin' ? 'Welcome back' : 'Join ENOSX'}
                     </div>

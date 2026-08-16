@@ -8,6 +8,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useState, useEffect } from "react";
 import { useTheme } from "@/contexts/ThemeContext";
 import { useWallpaper } from "@/contexts/WallpaperContext";
+import BrandMark from "./BrandMark";
 
 interface WelcomeScreenProps {
   onSuggestion: (text: string) => void;
@@ -44,27 +45,10 @@ export default function WelcomeScreen({ onSuggestion, isCompact }: WelcomeScreen
           initial={{ scale: 0.8, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
           transition={{ duration: 1.5, ease: [0.23, 1, 0.32, 1] }}
-          className="relative w-24 h-24 mb-4 flex items-center justify-center rounded-2xl border border-white/10 shadow-[0_0_40px_rgba(124,111,247,0.3)] overflow-hidden group"
-          style={{
-            background: "linear-gradient(135deg, rgba(255, 255, 255, 0.08) 0%, rgba(255, 255, 255, 0.04) 100%)",
-            backdropFilter: "blur(20px)",
-            WebkitBackdropFilter: "blur(20px)",
-          }}
+          className="mb-4"
           title="ENOSX AI (EX) - Enosx Technologies"
         >
-          <img src="/favicon.png" alt="EX Logo" className="w-16 h-16 object-contain drop-shadow-[0_0_15px_rgba(255,255,255,0.3)]" />
-          <motion.div
-            className="absolute -bottom-8 left-1/2 -translate-x-1/2 text-xs font-semibold text-white/60 whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity"
-            initial={{ opacity: 0, y: -5 }}
-            whileHover={{ opacity: 1, y: 0 }}
-          >
-            ENOSX AI
-          </motion.div>
-          <motion.div
-            animate={{ left: ["-100%", "200%"] }}
-            transition={{ duration: 3, repeat: Infinity, ease: "easeInOut", repeatDelay: 1 }}
-            className="absolute top-0 bottom-0 w-1/2 bg-gradient-to-r from-transparent via-white/5 to-transparent skew-x-12"
-          />
+          <BrandMark size={96} animate />
         </motion.div>
 
         {/* Title */}

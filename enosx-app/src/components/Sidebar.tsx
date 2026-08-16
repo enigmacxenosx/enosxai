@@ -23,6 +23,7 @@ import {
 } from "lucide-react";
 import { Conversation } from "@/lib/types";
 import { useTheme } from "@/contexts/ThemeContext";
+import BrandMark from "./BrandMark";
 import { useWallpaper } from "@/contexts/WallpaperContext";
 import { useAuth } from "@/contexts/AuthContext";
 
@@ -142,7 +143,7 @@ export default function Sidebar({
             }}
             title={collapsed ? "Expand sidebar" : "Collapse sidebar"}
           >
-            <img src="/favicon.png" alt="EX" className="w-full h-full object-cover" />
+            <BrandMark size={32} />
           </motion.button>
           {!collapsed && (
             <motion.span

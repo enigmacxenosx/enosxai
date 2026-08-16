@@ -1,6 +1,4 @@
 import type { VercelRequest, VercelResponse } from "@vercel/node";
-import { createHash, randomUUID } from "node:crypto";
-
 type UserRow = {
   id: string;
   email: string;
@@ -25,8 +23,10 @@ type DatabaseClient = {
 let pool: DatabaseClient | null = null;
 let tableReady: Promise<unknown> | null = null;
 
-function hashPassword(password: string) {
-  return createHash("sha256").update(`${password}enosx_salt_2024`).digest("hex");
+async function hashPassword(password: string) {
+  const data = new TextEncoder().encode(`${password}enosx_salt_2024`);
+  const digest = await globalThis.crypto.subtle.digest("SHA-256", data);
+  return Array.from(new Uint8Array(digest), (byte) => byte.toString(16).padStart(2, "0")).join("");
 }
 
 async function getDatabase(): Promise<DatabaseClient | null> {
@@ -133,7 +133,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       const email = typeof body.email === "string" ? body.email.trim().toLowerCase() : "";
       const password = typeof body.password === "string" ? body.password : "";
       const displayName = typeof body.displayName === "string" ? body.displayName.trim() : "";
-      const id = typeof body.id === "string" && body.id ? body.id : `email_${randomUUID()}`;
+      const id = typeof body.id === "string" && body.id ? body.id : `email_${globalThis.crypto.randomUUID()}`;
       const avatarUrl = typeof body.avatarUrl === "string" ? body.avatarUrl : "";
       const provider = typeof body.provider === "string" ? body.provider : "email";
 
@@ -148,7 +148,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
          VALUES ($1, $2, $3, $4, $5, $6)
          ON CONFLICT (email) DO NOTHING
          RETURNING *`,
-        [id, email, displayName, avatarUrl, provider, hashPassword(password)],
+        [id, email, displayName, avatarUrl, provider, await hashPassword(password)],
       );
 
       if (!inserted[0]) {
@@ -175,7 +175,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         [email],
       );
       const user = rows[0];
-      if (!user || (user.password_hash && user.password_hash !== hashPassword(password))) {
+      if (!user || (user.password_hash && user.password_hash !== await hashPassword(password)
+)) {
         res.status(401).json({ message: "Invalid email or password" });
         return;
       }

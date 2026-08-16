@@ -168,6 +168,9 @@ export default function ChatPage() {
   const messagesContainerRef = useRef<HTMLDivElement>(null);
   const activeIdRef = useRef<string | null>(null);
   const conversationsRef = useRef<Conversation[]>([]);
+  // Prevent double submission (e.g. rapid Enter presses) from adding the same
+  // prompt twice to the conversation.
+  const sendingRef = useRef(false);
 
   // Keep refs in sync
   useEffect(() => { activeIdRef.current = activeId; }, [activeId]);
@@ -313,6 +316,11 @@ export default function ChatPage() {
 
   const handleSend = useCallback(
     async (text: string, aiMode?: AIMode): Promise<string> => {
+      // In-flight guard: ignore overlapping calls so a prompt is added exactly
+      // once per user action.
+      if (sendingRef.current) return "";
+      sendingRef.current = true;
+      try {
       if (aiMode) setActiveMode(aiMode);
       let convId = activeIdRef.current;
 
@@ -401,77 +409,26 @@ export default function ChatPage() {
         return imgResult?.url ? "Image generated successfully." : "Image generation did not return an image."; // Don't continue with normal chat
       }
 
-      setConversations((prev) =>
-        prev.map((c) =>
-          c.id === targetConvId
-            ? { ...c, messages: [...c.messages, userMessage, assistantMessage], updatedAt: new Date() }
-            : c
-        )
-      );
+      const existingUserMessage = conversationsRef.current
+        .find((c) => c.id === targetConvId)
+        ?.messages.find((m) => m.role === "user" && m.content === userMessage.content);
+
+      if (!existingUserMessage) {
+        // Duplicate-message guard: if a user message with this exact content
+        // already exists in the thread (e.g. a stray double-submit that raced
+        // past the in-flight check), skip appending it again.
+        setConversations((prev) =>
+          prev.map((c) =>
+            c.id === targetConvId
+              ? { ...c, messages: [...c.messages, userMessage, assistantMessage], updatedAt: new Date() }
+              : c
+          )
+        );
+      }
 
       const currentConv = conversationsRef.current.find((c) => c.id === targetConvId);
       const history = currentConv ? currentConv.messages : [];
       const githubContext = await (window as any).__getGitHubContext?.();
-
-      // ── Image generation mode ────────────────────────────────────────────────
-      if (isImageModeRef.current) {
-        setIsImageMode(false);
-        // Show generating state
-        setConversations((prev) =>
-          prev.map((c) =>
-            c.id === targetConvId
-              ? {
-                  ...c,
-                  messages: [...c.messages, userMessage, assistantMessage],
-                  updatedAt: new Date(),
-                }
-              : c
-          )
-        );
-
-        const imgResult = await generateImage(text);
-        if (imgResult && imgResult.url) {
-          const imageMarkdown = imgResult.revisedPrompt
-            ? `Here's the image I generated for you:\n\n![Generated Image](${imgResult.url})\n\n*Prompt: ${imgResult.revisedPrompt}*`
-            : `Here's the image I generated for you:\n\n![Generated Image](${imgResult.url})`;
-
-          setConversations((prev) =>
-            prev.map((c) =>
-              c.id === targetConvId
-                ? {
-                    ...c,
-                    messages: c.messages.map((m) =>
-                      m.id === assistantId ? { ...m, content: imageMarkdown } : m
-                    ),
-                  }
-                : c
-            )
-          );
-        } else {
-          setConversations((prev) =>
-            prev.map((c) =>
-              c.id === targetConvId
-                ? {
-                    ...c,
-                    messages: c.messages.map((m) =>
-                      m.id === assistantId ? { ...m, content: "Sorry, I couldn't generate that image. If you're on Free Mode, image generation requires top-up credits on OpenRouter. Please try again later." } : m
-                    ),
-                  }
-                : c
-            )
-          );
-        }
-        return imgResult?.url ? "Image generated successfully." : "Image generation did not return an image."; // Don't continue with normal chat
-      }
-
-      setConversations((prev) =>
-        prev.map((c) =>
-          c.id === targetConvId
-            ? { ...c, messages: [...c.messages, userMessage, assistantMessage], updatedAt: new Date() }
-            : c
-        )
-      );
-
 
 // ── SYSTEM PROMPT CONSTRUCTION ──────────────────────────────────────────────
       const identity = getAIIdentity();
@@ -579,6 +536,10 @@ ${getAdminContext()}` : ""}`,
       );
 
       return removeActionBlocks(streamedContent) || "ENOSX Core returned an empty response.";
+      } finally {
+        // Release the guard even if something threw mid-flight.
+        sendingRef.current = false;
+      }
     },
     [sendMessage, speak, autoSpeak, fileContext.isLoaded, getFileContextMessage, getMemoryContext, enrichMessageWithContext, activeWindow, clearFiles, parseActions, speechSettings.continuousConversation, scheduleListenAgain]
   );

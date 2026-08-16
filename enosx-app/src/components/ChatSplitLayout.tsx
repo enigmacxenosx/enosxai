@@ -2,8 +2,8 @@
  * ENOSX AI — ChatSplitLayout
  * Manus-style split view used directly from the Chat page: ENOSX AI chat on
  * the left, the live Enosx Computer workspace on the right.
- * The layout is resizable, and the computer surface is wrapped in its own
- * ComputerWorkspaceProvider so window state is scoped to this view.
+ * The layout is resizable. The computer surface shares the workspace context
+ * provided by the page, so the AI's live coding actions can drive its windows.
  */
 import { useState } from "react";
 import {
@@ -11,7 +11,6 @@ import {
   ResizablePanel,
   ResizableHandle,
 } from "@/components/ui/resizable";
-import { ComputerWorkspaceProvider } from "@/contexts/ComputerWorkspaceContext";
 import WorkspaceComputerPane from "@/components/WorkspaceComputerPane";
 
 const SPLIT_SIZE_KEY = "enosx-chat-split-sizes-v1";
@@ -59,9 +58,7 @@ export default function ChatSplitLayout({ children }: { children: React.ReactNod
           withHandle
         />
         <ResizablePanel defaultSize={sizes[1]} minSize={30}>
-          <ComputerWorkspaceProvider>
-            <WorkspaceComputerPane />
-          </ComputerWorkspaceProvider>
+          <WorkspaceComputerPane />
         </ResizablePanel>
       </ResizablePanelGroup>
     </div>

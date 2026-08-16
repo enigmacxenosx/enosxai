@@ -51,6 +51,9 @@ import LeadCaptureDialog from "@/components/LeadCaptureDialog";
 import AdminConsoleDialog from "@/components/AdminConsoleDialog";
 import ChatSplitLayout from "@/components/ChatSplitLayout";
 import { getSplitEnabled, setSplitEnabled, onSplitPrefChange, notifySplitPrefChanged } from "@/lib/splitPref";
+import { WORKSPACE_DIRECTIVES } from "@/lib/workspaceDirectives";
+import { useCommandChain, type SystemAction } from "@/hooks/useCommandChain";
+import { ComputerWorkspaceProvider, useComputerWorkspace } from "@/contexts/ComputerWorkspaceContext";
 import { ChevronDown, Columns2, Menu, MonitorSmartphone } from "lucide-react";
 
 // Declare global window interface for settings handler
@@ -77,6 +80,25 @@ const ACTION_BLOCK = /\[\[ACTION:\s*({[\s\S]*?})\s*\]\]/g;
 
 function removeActionBlocks(content: string) {
   return content.replace(ACTION_BLOCK, "").replace(/\n{3,}/g, "\n\n").trim();
+}
+
+function parseWorkspaceActions(text: string): SystemAction[] {
+  const actions: SystemAction[] = [];
+  const regex = /\[\[ACTION:\s*({.*?})\s*\]\]/g;
+  let match;
+  while ((match = regex.exec(text)) !== null) {
+    try {
+      const action = JSON.parse(match[1]) as SystemAction;
+      if (
+        ["open_url", "launch_app", "read_webpage", "extract_links", "click_element", "fill_form", "chain", "delay", "create_script", "run_script"].includes(action.type)
+      ) {
+        actions.push(action);
+      }
+    } catch {
+      /* ignore malformed blocks */
+    }
+  }
+  return actions;
 }
 
 export default function ChatPage() {
@@ -451,8 +473,11 @@ export default function ChatPage() {
         ? `### Selected Connectors\nThe user selected these connector services for this chat: ${selectedConnectorNames.join(", ")}. Treat them as requested context. Use a connector only when its capability is actually available to the runtime; if it is not connected, state that clearly instead of claiming an external action was completed.`
         : "";
 
-// ── SYSTEM PROMPT CONSTRUCTION ──────────────────────────────────────────────
+      // ── SYSTEM PROMPT CONSTRUCTION ──────────────────────────────────────────────
       const identity = getAIIdentity();
+      // Workspace mode: when the split-screen computer pane is visible, teach the
+      // AI to emit [[ACTION: ...]] blocks so its coding runs live in the pane.
+      const workspaceDirectives = chatSplitEnabled && deviceType === "desktop" ? `\n\n${WORKSPACE_DIRECTIVES}` : "";
       const memoryContext = getMemoryContext();
       const leadershipInfo = identity.leadership.map(l => `- ${l.name}: ${l.role} (${l.specialty})`).join('\n');
       const companyFacts = identity.companyFacts.map(fact => `- ${fact}`).join('\n');
@@ -497,7 +522,7 @@ ${connectorContext}
 - Identify potential bugs before they occur
 - Recommend appropriate abstractions and refactoring opportunities
 
-Current System Status: ONLINE
+Current System Status: ONLINE${workspaceDirectives}
 ${memoryContext}
 ${getAdminContext().trim() ? `
 ### Additional Context (administrator configured)
@@ -531,6 +556,8 @@ ${getAdminContext()}` : ""}`,
         () => {
           const proposedActions = parseActions(streamedContent) as AssistantAction[];
           const cleanContent = removeActionBlocks(streamedContent);
+          // Workspace mode: execute the AI's actions automatically in the computer pane.
+          (window as any).__chatExecuteWorkspaceActions?.(parseWorkspaceActions(streamedContent));
           setConversations((prev) =>
             prev.map((conversation) =>
               conversation.id === targetConvId
@@ -713,6 +740,56 @@ ${getAdminContext()}` : ""}`,
 
   const wrapWithSplit = (content: React.ReactNode) =>
     chatSplitEnabled ? <ChatSplitLayout>{content}</ChatSplitLayout> : content;
+
+  // ── Live coding in the computer pane ──────────────────────────────────────────
+  // The command chain is a module-level singleton, so any executor component in
+  // the tree can run actions into the SAME script store the terminal watches.
+  const { executeChain } = useCommandChain();
+  // Keep the latest chatSplitEnabled available to executor components rendered
+  // below the workspace provider (avoiding block-scoped ordering issues).
+  const chatSplitEnabledRef = useRef(chatSplitEnabled);
+  useEffect(() => {
+    chatSplitEnabledRef.current = chatSplitEnabled;
+  }, [chatSplitEnabled]);
+
+  // This component lives inside the ComputerWorkspaceProvider (when split is on)
+  // and drives the pane: it runs the AI's actions automatically and opens the
+  // right apps so the coding is visible without any clicks.
+  function WorkspaceActionsController() {
+    const { openWindow, focusWindow } = useComputerWorkspace();
+    const handleWorkspaceActions = useCallback(
+      (actions: SystemAction[]) => {
+        if (!chatSplitEnabledRef.current || actions.length === 0) return;
+        const types = actions.map((a) => a.type);
+        const needsTerminal = types.some((t) => t === "create_script" || t === "run_script");
+        const needsBrowser = types.some((t) => t === "open_url" || t === "read_webpage" || t === "extract_links");
+        if (needsTerminal) focusWindow("terminal");
+        else if (needsBrowser) focusWindow("browser");
+        toast.info(`ENOSX is executing ${actions.length} action(s) in the computer pane...`);
+        void executeChain(actions);
+      },
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+      [executeChain, focusWindow]
+    );
+    const handleWorkspaceActionsRef = useRef(handleWorkspaceActions);
+    useEffect(() => {
+      handleWorkspaceActionsRef.current = handleWorkspaceActions;
+    }, [handleWorkspaceActions]);
+
+    // Auto-open the terminal and browser so AI coding appears automatically.
+    useEffect(() => {
+      if (!chatSplitEnabledRef.current) return;
+      openWindow("terminal");
+      openWindow("browser");
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
+
+    // Expose the executor to the handleSend flow above via the same module-level
+    // singleton used elsewhere (last-write-wins is fine — the ref is always fresh).
+    (window as any).__chatExecuteWorkspaceActions = (actions: SystemAction[]) =>
+      handleWorkspaceActionsRef.current(actions);
+    return null;
+  }
 
   const chatBody = (
     <div className="flex h-full w-full overflow-hidden text-white font-sans selection:bg-cyan-500/30">
@@ -921,9 +998,22 @@ ${getAdminContext()}` : ""}`,
     </div>
   );
 
+  // Workspace-aware view: split content is served inside a ComputerWorkspaceProvider
+  // so the AI's live coding actions (open/focus windows, run scripts) drive the pane.
+  const chatBodyWithProvider = chatSplitEnabled ? (
+    <ComputerWorkspaceProvider>
+      <WorkspaceActionsController />
+      {chatBody}
+    </ComputerWorkspaceProvider>
+  ) : (
+    chatBody
+  );
+
+  const workspaceBody = wrapWithSplit(chatBodyWithProvider);
+
   return (
     <GlobalLayout>
-      {wrapWithSplit(chatBody)}
+      {workspaceBody}
       {/* Floating dialogs and overlays live outside the split so they always render above it */}
       <GodModeSecurityBanner
         isOpen={showGodModeWarning}

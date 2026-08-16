@@ -1,8 +1,5 @@
 import type { VercelRequest, VercelResponse } from "@vercel/node";
-import pg from "pg";
 import { createHash, randomUUID } from "node:crypto";
-
-const { Pool } = pg;
 
 type UserRow = {
   id: string;
@@ -21,21 +18,33 @@ type UserRow = {
   updated_at: string | null;
 };
 
-let pool: InstanceType<typeof Pool> | null = null;
+type DatabaseClient = {
+  query: (text: string, values?: unknown[]) => Promise<{ rows: unknown[] }>;
+};
+
+let pool: DatabaseClient | null = null;
 let tableReady: Promise<unknown> | null = null;
 
 function hashPassword(password: string) {
   return createHash("sha256").update(`${password}enosx_salt_2024`).digest("hex");
 }
 
-function getDatabase() {
+async function getDatabase(): Promise<DatabaseClient | null> {
   const databaseUrl = process.env.DATABASE_URL;
   if (!databaseUrl) return null;
-  if (!pool) pool = new Pool({ connectionString: databaseUrl, max: 1 });
-  return pool;
+
+  try {
+    if (!pool) {
+      const { default: pg } = await import("pg");
+      pool = new pg.Pool({ connectionString: databaseUrl, max: 1 });
+    }
+    return pool;
+  } catch {
+    return null;
+  }
 }
 
-async function queryRows<T>(database: InstanceType<typeof Pool>, text: string, values: unknown[] = []) {
+async function queryRows<T>(database: DatabaseClient, text: string, values: unknown[] = []) {
   const result = await database.query(text, values);
   return result.rows as T[];
 }
@@ -59,7 +68,7 @@ function mapUser(row: UserRow | undefined) {
   };
 }
 
-async function ensureTable(database: InstanceType<typeof Pool>) {
+async function ensureTable(database: DatabaseClient) {
   if (!tableReady) {
     tableReady = database.query(`
       CREATE TABLE IF NOT EXISTS enosx_users (
@@ -111,7 +120,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   try {
     action = actionFromRequest(req);
     const body = bodyFromRequest(req);
-    const database = getDatabase();
+    const database = await getDatabase();
 
     if (!database) {
       res.status(503).json({ message: "Email authentication is unavailable until DATABASE_URL is configured." });

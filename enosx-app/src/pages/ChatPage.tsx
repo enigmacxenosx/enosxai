@@ -13,7 +13,6 @@ import MessageBubble from "@/components/MessageBubble";
 import CommandBar, { type AIMode } from "@/components/CommandBar";
 import WelcomeScreen from "@/components/WelcomeScreen";
 import ConversationSearchDialog from "@/components/ConversationSearchDialog";
-import FaqChips from "@/components/FaqChips";
 import FileDropZone from "@/components/FileDropZone";
 import FileContextBadge from "@/components/FileContextBadge";
 import GodModeTerminal from "@/components/GodModeTerminal";
@@ -884,11 +883,6 @@ ${getAdminContext()}` : ""}`,
               onRemove={removeFile}
               onClear={clearFiles}
             />
-
-            {/* Guided FAQ starters — help users get value fast */}
-            <div className="mb-2">
-              <FaqChips onSend={(text) => void handleSendTracked(text)} limit={5} />
-            </div>
 
             <CommandBar
               onSend={handleSendTracked}

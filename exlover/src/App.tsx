@@ -3,6 +3,7 @@ import "./styles.css";
 
 type Role = "user" | "assistant";
 type Mode = "clarity" | "communication" | "boundaries" | "healing";
+type Theme = "light" | "dark";
 
 type Message = {
   id: string;
@@ -52,6 +53,7 @@ const starters: Starter[] = [
 
 const dailyPrompt = "What would feel honest, kind, and self-respecting today?";
 const storageKey = "exlover-conversation-v1";
+const themeStorageKey = "exlover-theme-v1";
 
 const initialAssistantMessage: Message = {
   id: "welcome",
@@ -86,6 +88,24 @@ export default function App() {
   const [isSending, setIsSending] = useState(false);
   const [isSaved, setIsSaved] = useState(false);
   const [showAbout, setShowAbout] = useState(false);
+  const [theme, setTheme] = useState<Theme>(() => {
+    try {
+      const savedTheme = window.localStorage.getItem(themeStorageKey);
+      if (savedTheme === "light" || savedTheme === "dark") return savedTheme;
+      return window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+    } catch {
+      return "light";
+    }
+  });
+
+  useEffect(() => {
+    document.documentElement.dataset.theme = theme;
+    try {
+      window.localStorage.setItem(themeStorageKey, theme);
+    } catch {
+      // Theme preference is a convenience and should never block the app.
+    }
+  }, [theme]);
 
   useEffect(() => {
     try {
@@ -181,8 +201,9 @@ export default function App() {
   };
 
   return (
-    <div className="app-shell">
+    <div className={`app-shell ${theme === "dark" ? "theme-dark" : ""}`}>
       <header className="topbar">
+
         <a className="brand" href="/" aria-label="ExLover home">
           <span className="brand-logo" aria-hidden="true"><img src="/enosx-mark.svg" alt="" /></span>
           <span><strong>ExLover</strong><small>BY ENOSX TECHNOLOGIES</small></span>
@@ -190,6 +211,16 @@ export default function App() {
         <div className="topbar-actions">
           <div className="identity-chip"><span className="identity-dot" />An Enosx Technologies product</div>
           <button className="text-button" onClick={() => setShowAbout(true)}>How it works</button>
+          <button
+            className="theme-toggle"
+            type="button"
+            aria-pressed={theme === "dark"}
+            aria-label={theme === "dark" ? "Switch to light theme" : "Switch to dark theme"}
+            onClick={() => setTheme((current) => current === "dark" ? "light" : "dark")}
+          >
+            <span className="theme-toggle-icon" aria-hidden="true">{theme === "dark" ? "☼" : "☾"}</span>
+            <span>{theme === "dark" ? "Light" : "Dark"}</span>
+          </button>
           <button className="quiet-button" onClick={startOver}>New reflection <span>↗</span></button>
         </div>
       </header>

@@ -1,11 +1,18 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "version": 2,
+  "framework": "vite",
   "outputDirectory": "enosx-app/dist/public",
   "buildCommand": "pnpm run build",
+  "functions": {
+    "api/**/*.ts": {
+      "runtime": "nodejs24.x",
+      "maxDuration": 60
+    }
+  },
   "rewrites": [
     {
-      "source": "/(.*)",
+      "source": "/:path((?!api/).*)",
       "destination": "/index.html"
     }
   ]

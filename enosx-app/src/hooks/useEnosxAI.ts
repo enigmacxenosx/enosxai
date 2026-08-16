@@ -52,6 +52,10 @@ function getFriendlyErrorMessage(message: string) {
     return "The AI service is temporarily unavailable. Please try again shortly.";
   }
 
+  if (/FUNCTION_INVOCATION_FAILED|failed to invoke|internal server error/i.test(message)) {
+    return "The AI service is temporarily unavailable. Please try again shortly.";
+  }
+
   return "Sorry, I’m having trouble connecting right now. Please try again in a moment.";
 }
 
@@ -162,7 +166,8 @@ export function useEnosxAI() {
         onDone();
       } catch (err) {
         const errorMessage = err instanceof Error ? err.message : "Unknown error";
-        setError(errorMessage);
+        const friendlyError = getFriendlyErrorMessage(errorMessage);
+        setError(friendlyError);
         console.error("[useEnosxAI] Error:", errorMessage);
 
         // Resilience path: if the serverless chat route is down (FUNCTION_INVOCATION_FAILED),
@@ -178,7 +183,7 @@ export function useEnosxAI() {
           }
         }
 
-        onChunk(getFriendlyErrorMessage(errorMessage));
+        onChunk(friendlyError);
         onDone();
       } finally {
         setIsLoading(false);

@@ -15,6 +15,7 @@ import { VoiceState } from "@/lib/types";
 import { useTheme } from "@/contexts/ThemeContext";
 import { useWallpaper } from "@/contexts/WallpaperContext";
 import VoiceVisualizer from "./VoiceVisualizer";
+import ConnectorPicker from "./ConnectorPicker";
 
 export type AIMode = "ex" | "ex-pro" | "smart" | "fast" | "balanced" | "task" | "creative" | "imagine";
 
@@ -93,7 +94,7 @@ export const AI_MODES: AIModeOption[] = [
 ];
 
 interface CommandBarProps {
-  onSend: (text: string, aiMode?: AIMode) => void;
+  onSend: (text: string, aiMode?: AIMode, selectedConnectorIds?: string[]) => void;
   onFileSelect?: (file: File) => void;
   isLoading: boolean;
   voiceState: VoiceState;
@@ -128,6 +129,7 @@ export default function CommandBar({
   const [value, setValue] = useState("");
   const [aiMode, setAiMode] = useState<AIMode>("ex");
   const [modeOpen, setModeOpen] = useState(false);
+  const [selectedConnectorIds, setSelectedConnectorIds] = useState<string[]>([]);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const modeRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -168,12 +170,20 @@ export default function CommandBar({
   const handleSend = useCallback(() => {
     const text = value.trim();
     if (!text || disabled || isLoading) return;
-    onSend(text, aiMode);
+    onSend(text, aiMode, selectedConnectorIds);
     setValue("");
     if (textareaRef.current) {
       textareaRef.current.style.height = "auto";
     }
-  }, [value, disabled, isLoading, onSend, aiMode]);
+  }, [value, disabled, isLoading, onSend, aiMode, selectedConnectorIds]);
+
+  const handleToggleConnector = useCallback((connectorId: string) => {
+    setSelectedConnectorIds((current) =>
+      current.includes(connectorId)
+        ? current.filter((id) => id !== connectorId)
+        : [...current, connectorId],
+    );
+  }, []);
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === "Enter" && !e.shiftKey) {
@@ -273,6 +283,11 @@ export default function CommandBar({
                   />
                 </motion.button>
               </div>
+
+              <ConnectorPicker
+                selectedConnectorIds={selectedConnectorIds}
+                onToggleConnector={handleToggleConnector}
+              />
 
               {isFreeMode && (
                 <motion.div

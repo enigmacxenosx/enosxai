@@ -46,6 +46,7 @@ import PhoneChatLayout from "@/components/PhoneChatLayout";
 import TVChatLayout from "@/components/TVChatLayout";
 import { getAIIdentity } from "@/const";
 import { getSystemPrompt } from "@/lib/prompts";
+import { CONNECTOR_CATALOG } from "@/lib/connectorCatalog";
 import LeadCaptureDialog from "@/components/LeadCaptureDialog";
 import AdminConsoleDialog from "@/components/AdminConsoleDialog";
 import { ChevronDown, Menu } from "lucide-react";
@@ -315,7 +316,7 @@ export default function ChatPage() {
   }, []);
 
   const handleSend = useCallback(
-    async (text: string, aiMode?: AIMode): Promise<string> => {
+    async (text: string, aiMode?: AIMode, selectedConnectorIds?: string[]): Promise<string> => {
       // In-flight guard: ignore overlapping calls so a prompt is added exactly
       // once per user action.
       if (sendingRef.current) return "";
@@ -429,6 +430,12 @@ export default function ChatPage() {
       const currentConv = conversationsRef.current.find((c) => c.id === targetConvId);
       const history = currentConv ? currentConv.messages : [];
       const githubContext = await (window as any).__getGitHubContext?.();
+      const selectedConnectorNames = (selectedConnectorIds ?? [])
+        .map((id) => CONNECTOR_CATALOG.find((connector) => connector.id === id)?.name)
+        .filter((name): name is string => Boolean(name));
+      const connectorContext = selectedConnectorNames.length
+        ? `### Selected Connectors\nThe user selected these connector services for this chat: ${selectedConnectorNames.join(", ")}. Treat them as requested context. Use a connector only when its capability is actually available to the runtime; if it is not connected, state that clearly instead of claiming an external action was completed.`
+        : "";
 
 // ── SYSTEM PROMPT CONSTRUCTION ──────────────────────────────────────────────
       const identity = getAIIdentity();
@@ -460,6 +467,8 @@ ${companyFaqs}
 
 ### Development Context
 ${githubContext}
+
+${connectorContext}
 
 ### Operational Directives
 - Optimize for readability first, then performance
@@ -553,9 +562,9 @@ ${getAdminContext()}` : ""}`,
 
   // Record outgoing messages for the usage dashboard
   const handleSendTracked = useCallback(
-    async (text: string, aiMode?: AIMode): Promise<string> => {
+    async (text: string, aiMode?: AIMode, selectedConnectorIds?: string[]): Promise<string> => {
       recordOutgoingMessage(text);
-      return handleSend(text, aiMode);
+      return handleSend(text, aiMode, selectedConnectorIds);
     },
     [handleSend, recordOutgoingMessage]
   );

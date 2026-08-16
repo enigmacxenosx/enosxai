@@ -102,6 +102,10 @@ type PyodideLike = {
 
 let pyodidePromise: Promise<PyodideLike> | null = null;
 
+// Holds the script id of the run that is currently executing, so the shared
+// pyodide instance routes stdout/stderr to the right run.
+const pyRunIdRef = { current: "__py__" };
+
 function loadPyodide(): Promise<PyodideLike> {
   if (pyodidePromise) return pyodidePromise;
   pyodidePromise = new Promise<PyodideLike>((resolve, reject) => {
@@ -119,9 +123,11 @@ function loadPyodide(): Promise<PyodideLike> {
       .then(() => {
         const Pyodide = win.loadPyodide as (opts?: any) => Promise<any>;
         if (!Pyodide) throw new Error("Pyodide global not found");
+        // stdout/stderr are attached with the currently running script id at
+        // call time, so each run captures its own output.
         return Pyodide({
-          stdout: (text: string) => appendRunOutput("__py__", text + "\n"),
-          stderr: (text: string) => appendRunOutput("__py__", text + "\n", true),
+          stdout: (text: string) => appendRunOutput(pyRunIdRef.current, text + "\n"),
+          stderr: (text: string) => appendRunOutput(pyRunIdRef.current, text + "\n", true),
         });
       })
       .then(resolve, reject);
@@ -131,9 +137,10 @@ function loadPyodide(): Promise<PyodideLike> {
 
 async function runPythonScript(script: ScriptFile, run: ScriptRun): Promise<void> {
   setRun({ ...run, status: "running" });
+  pyRunIdRef.current = script.id;
   try {
     const pyodide = await loadPyodide();
-    pyodide.runPythonAsync(script.content);
+    await pyodide.runPythonAsync(script.content);
     setRun({ ...run, status: "done", exitCode: 0 });
     setScripts((scripts) =>
       scripts.map((s) =>

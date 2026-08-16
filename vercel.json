@@ -6,7 +6,6 @@
   "buildCommand": "pnpm run build",
   "functions": {
     "api/**/*.ts": {
-      "runtime": "nodejs24.x",
       "maxDuration": 60
     }
   },

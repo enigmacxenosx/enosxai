@@ -73,15 +73,27 @@ export function useEnosxAI() {
       setIsThinking(true);
 
       try {
-        const response = await fetch("/api/chat", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            messages,
-            githubContext: options?.githubContext,
-            aiMode: options?.aiMode,
-          }),
-        });
+        // One automatic retry on 500-class server errors before treating the
+        // request as failed. Transient Vercel serverless hiccups
+        // (FUNCTION_INVOCATION_FAILED) often clear on a second attempt, and the
+        // server route itself now performs provider-level retries too.
+        const sendRequest = async () =>
+          fetch("/api/chat", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              messages,
+              githubContext: options?.githubContext,
+              aiMode: options?.aiMode,
+            }),
+          });
+
+        let response = await sendRequest();
+        if (!response.ok && response.status >= 500) {
+          console.warn("[useEnosxAI] Server returned", response.status, "— retrying once");
+          await new Promise(r => setTimeout(r, 2500));
+          response = await sendRequest();
+        }
 
         if (!response.ok) {
           throw new Error(await getErrorMessage(response));

@@ -875,7 +875,7 @@ ${getAdminContext()}` : ""}`,
           </AnimatePresence>
         </div>
 
-        <div className={`p-4 ${isCompactMode ? "pb-6" : "md:p-6"} z-20`}>
+        <div className={`px-4 pb-2 pt-3 ${isCompactMode ? "pb-4" : "md:px-6 md:pb-2 md:pt-4"} z-20`}>
           <div className="max-w-5xl mx-auto relative">
             {/* File context badges */}
             <FileContextBadge

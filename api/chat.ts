@@ -8,7 +8,11 @@
  */
 import type { VercelRequest, VercelResponse } from "@vercel/node";
 
-export const maxDuration = 60;
+// NOTE: maxDuration intentionally omitted. An explicit per-function override can
+// conflict with the project-wide Vercel runtime configuration and cause
+// FUNCTION_INVOCATION_FAILED (HTTP 500) on deployment. The default serverless
+// timeout is sufficient for a single synchronous OpenRouter completion call
+// with one short retry.
 
 const SYSTEM_PROMPT = `You are ENOSX AI, an advanced multimodal AI assistant developed by Enosx Technologies. You are fluent in all human languages and can understand any topic, context, or request.
 
@@ -168,6 +172,46 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     console.log("[API] OpenRouter response status:", openRouterResponse.status);
 
     if (!openRouterResponse.ok) {
+      // 5xx provider errors are worth one automatic retry since model
+      // candidates already include the automatic router on first attempt.
+      const isRetryable =
+        openRouterResponse.status === 429 || openRouterResponse.status >= 500;
+      if (isRetryable) {
+        try {
+          console.log(`[API] Retryable status ${openRouterResponse.status}. Retrying once after 5s...`);
+          await new Promise(r => setTimeout(r, 5000));
+          const retryResponse = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${apiKey}`,
+              "HTTP-Referer": process.env.OPENROUTER_SITE_URL || "https://enosxtechnologies450.vercel.app",
+              "X-Title": "ENOSX AI",
+            },
+            body: JSON.stringify({
+              models: ["openrouter/auto"],
+              messages: chatMessages,
+              stream: false,
+              max_tokens: 2048,
+              temperature: 0.7,
+            }),
+          });
+
+          if (retryResponse.ok) {
+            const retryData = await retryResponse.json();
+            const retryContent = retryData?.choices?.[0]?.message?.content;
+            if (typeof retryContent === "string" && retryContent.length > 0) {
+              console.log("[API] Retry succeeded with the automatic model router.");
+              return sendMockResponse(res, retryContent);
+            }
+          } else {
+            console.error("[API] Retry also failed:", retryResponse.status);
+          }
+        } catch (retryErr) {
+          console.error("[API] Retry exception:", retryErr);
+        }
+      }
+
       const errorText = await openRouterResponse.text().catch(() => "Unknown error");
       console.error("[API] OpenRouter error:", openRouterResponse.status, errorText);
 

@@ -100,7 +100,7 @@ export default function PhoneChatLayout({
       </main>
 
       {/* Mobile Command Bar */}
-      <div className="fixed bottom-0 left-0 right-0 z-30 p-4 bg-gradient-to-t from-black via-black/80 to-transparent">
+      <div className="fixed bottom-0 left-0 right-0 z-30 px-4 pb-2 pt-3 bg-gradient-to-t from-black via-black/80 to-transparent">
         <CommandBar
           onSend={handleSend}
           isLoading={isLoading}

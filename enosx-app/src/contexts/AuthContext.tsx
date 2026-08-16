@@ -41,7 +41,7 @@ interface AuthContextType extends AuthState {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 const STORAGE_KEY = 'enosx-auth-user';
-const NEON_API_BASE = import.meta.env.VITE_NEON_API_URL || '/api';
+const NEON_API_BASE = (import.meta.env.VITE_NEON_API_URL as string | undefined)?.replace(/\/$/, '') || null;
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -68,6 +68,10 @@ class AuthApiError extends Error {
 }
 
 async function apiCall(path: string, method: string, body?: object) {
+  if (!NEON_API_BASE) {
+    throw new AuthApiError('Remote auth is not configured', 404);
+  }
+
   const res = await fetch(`${NEON_API_BASE}${path}`, {
     method,
     headers: { 'Content-Type': 'application/json' },

@@ -68,7 +68,22 @@ let store: { scripts: ScriptFile[]; runs: Map<string, ScriptRun>; listeners: Set
 function notifyStore() {
   store.tick += 1;
   store.listeners.forEach((fn) => fn());
-  saveScripts(store.scripts);
+  schedulePersist();
+}
+
+// ---------------------------------------------------------------------------
+// P3 — Debounced localStorage persistence
+// Writes to localStorage at most every ~1.5 s (never mid-stream), avoiding
+// repeated multi-megabyte JSON serializations on every output chunk.
+// ---------------------------------------------------------------------------
+let persistTimer: ReturnType<typeof setTimeout> | null = null;
+
+function schedulePersist() {
+  if (persistTimer) return;
+  persistTimer = setTimeout(() => {
+    persistTimer = null;
+    saveScripts(store.scripts);
+  }, 1500);
 }
 
 function setScripts(updater: (scripts: ScriptFile[]) => ScriptFile[]) {
@@ -128,9 +143,13 @@ function loadPyodide(): Promise<PyodideLike> {
         if (!Pyodide) throw new Error("Pyodide global not found");
         // stdout/stderr are attached with the currently running script id at
         // call time, so each run captures its own output.
+        // lineBuffered: true — without it Pyodide buffers stdout and only the
+        // final chunk (or nothing) reaches the callback, so most output was
+        // silently lost for every run.
         return Pyodide({
           stdout: (text: string) => appendRunOutput(pyRunIdRef.current, text + "\n"),
           stderr: (text: string) => appendRunOutput(pyRunIdRef.current, text + "\n", true),
+          lineBuffered: true,
         });
       })
       .then(resolve, reject);
@@ -138,13 +157,51 @@ function loadPyodide(): Promise<PyodideLike> {
   return pyodidePromise;
 }
 
+// ---------------------------------------------------------------------------
+// Auto-loading of external packages
+// The "full" Pyodide distribution ships many packages (numpy, pandas, …) but
+// does NOT install them automatically. Before running a script we scan its
+// imports and load any recognised packages via Pyodide's loadPackage
+// (idempotent — already-loaded packages are skipped). micropip itself must be
+// loaded explicitly before `import micropip` works.
+// ---------------------------------------------------------------------------
+
+const PYTHON_PACKAGE_MAP: Record<string, string> = {
+  numpy: "numpy",
+  pandas: "pandas",
+  scipy: "scipy",
+  matplotlib: "matplotlib",
+  "matplotlib.pyplot": "matplotlib",
+  yaml: "pyyaml",
+  requests: "requests",
+  beautifulsoup4: "beautifulsoup4",
+  bs4: "beautifulsoup4",
+  sympy: "sympy",
+  micropip: "micropip",
+};
+
+function loadPackagesFor(code: string, pyodide: PyodideLike): Promise<unknown> {
+  const names = new Set<string>();
+  for (const line of code.split("\n")) {
+    const m = /^\s*(?:import|from)\s+([A-Za-z0-9_.]+)/.exec(line);
+    if (!m) continue;
+    const mod = m[1];
+    if (PYTHON_PACKAGE_MAP[mod]) names.add(PYTHON_PACKAGE_MAP[mod]);
+  }
+  if (names.size === 0) return Promise.resolve();
+  const load = (pyodide as any).loadPackage;
+  if (typeof load !== "function") return Promise.resolve();
+  return Promise.resolve(load.call(pyodide, [...names]));
+}
+
 async function runPythonScript(script: ScriptFile, run: ScriptRun): Promise<void> {
-  setRun({ ...run, status: "running" });
+  setRun({ ...(store.runs.get(script.id) ?? run), status: "running" });
   pyRunIdRef.current = script.id;
   try {
     const pyodide = await loadPyodide();
+    await loadPackagesFor(script.content, pyodide);
     await pyodide.runPythonAsync(script.content);
-    setRun({ ...run, status: "done", exitCode: 0 });
+    setRun({ ...(store.runs.get(script.id) ?? run), status: "done", exitCode: 0 });
     setScripts((scripts) =>
       scripts.map((s) =>
         s.id === script.id ? { ...s, lastOutput: store.runs.get(script.id)?.output.join("") ?? "", lastExitCode: 0, lastStatus: "success" } : s
@@ -153,7 +210,7 @@ async function runPythonScript(script: ScriptFile, run: ScriptRun): Promise<void
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
     appendRunOutput("__py__", `Traceback (most recent call last):\n${message}\n`, true);
-    setRun({ ...run, status: "error", exitCode: 1 });
+    setRun({ ...(store.runs.get(script.id) ?? run), status: "error", exitCode: 1 });
     setScripts((scripts) =>
       scripts.map((s) =>
         s.id === script.id ? { ...s, lastOutput: store.runs.get(script.id)?.output.join("") ?? "", lastExitCode: 1, lastStatus: "error" } : s
@@ -165,14 +222,68 @@ async function runPythonScript(script: ScriptFile, run: ScriptRun): Promise<void
 // Active python run id tracker for stdout routing
 let activePyRunId: string | null = null;
 
+// ---------------------------------------------------------------------------
+// P1 — Batched output updates (throttled streaming)
+// Accumulates output chunks and flushes at most every 75 ms, cutting
+// re-render volume by two orders of magnitude while keeping output visibly
+// "live" (~10–13 flushes per second).
+// ---------------------------------------------------------------------------
+const MAX_OUTPUT_LINES = 2_000; // P2 — cap output history per run
+const pendingOutputs = new Map<string, { run: ScriptRun; err: boolean }>();
+let flushTimer: ReturnType<typeof setTimeout> | null = null;
+
+function flushPendingOutputs() {
+  flushTimer = null;
+  if (pendingOutputs.size === 0) return;
+  const snapshot = new Map(pendingOutputs);
+  pendingOutputs.clear();
+  snapshot.forEach(({ run }) => {
+    // The pending entry already holds the accumulated output since the last
+    // flush; merge it onto the freshest store state so status/exitCode set by
+    // runPythonScript during the window are never lost.
+    const base = store.runs.get(run.scriptId) ?? run;
+    const merged: ScriptRun = {
+      ...base,
+      output: [...base.output, ...run.output.slice(base.output.length)],
+      exitCode: base.exitCode ?? run.exitCode,
+      status: base.status === "error" || base.status === "done" ? base.status : run.status,
+    };
+    setRun(merged);
+    // If the run finished while output was still pending, sync the stored
+    // script's lastOutput/exit/status so they reflect the full output.
+    if (merged.status === "done" || merged.status === "error") {
+      setScripts((scripts) =>
+        scripts.map((s) =>
+          s.id === merged.scriptId
+            ? { ...s, lastOutput: merged.output.join(""), lastExitCode: merged.exitCode ?? 1, lastStatus: merged.status === "done" ? "success" : "error" }
+            : s
+        )
+      );
+    }
+  });
+}
+
 function appendRunOutput(runId: string, text: string, isErr = false) {
-  const existing = store.runs.get(runId);
-  if (!existing) return;
-  setRun({
-    ...existing,
-    output: [...existing.output, text],
-    exitCode: isErr ? (existing.exitCode ?? 0) || 1 : existing.exitCode,
-  } as ScriptRun);
+  // Accumulate against the current pending entry if one exists, otherwise
+  // against the store. Building every snapshot off the store would discard
+  // all unflushed lines (the store is only updated at flush time), so each
+  // new append would start from a stale tail and only the last line before
+  // each flush would survive.
+  const priorRun = pendingOutputs.get(runId)?.run ?? store.runs.get(runId);
+  if (!priorRun) return;
+  // P2 — keep the tail only; long runs never grow past the cap
+  const tail = priorRun.output.length > MAX_OUTPUT_LINES
+    ? priorRun.output.slice(priorRun.output.length - MAX_OUTPUT_LINES)
+    : priorRun.output;
+  const updated: ScriptRun = {
+    ...priorRun,
+    output: [...tail, text],
+    exitCode: isErr ? (priorRun.exitCode ?? 0) || 1 : priorRun.exitCode,
+  };
+  pendingOutputs.set(runId, { run: updated, err: isErr });
+  if (!flushTimer) {
+    flushTimer = setTimeout(flushPendingOutputs, 75);
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -267,7 +378,7 @@ function substituteVars(text: string, env: Record<string, string>, vars: Record<
 function runShellScript(script: ScriptFile, run: ScriptRun) {
   const lines = script.content.split(/\r?\n/);
   const state = { cwd: "/home/enosx", files: ["workspace"], vars: { ...SHELL_ENV }, out: [] as string[] };
-  setRun({ ...run, status: "running" });
+  setRun({ ...(store.runs.get(script.id) ?? run), status: "running" });
   lines.forEach((line, i) => {
     setTimeout(() => {
       const current = store.runs.get(script.id);
@@ -275,7 +386,7 @@ function runShellScript(script: ScriptFile, run: ScriptRun) {
       execShellLine(line, { ...SHELL_ENV }, state);
       setRun({ ...current, output: [...state.out] });
       if (i === lines.length - 1) {
-        setRun({ ...current, output: [...state.out], status: "done", exitCode: 0 });
+        setRun({ ...(store.runs.get(script.id) ?? current), output: [...state.out], status: "done", exitCode: 0 });
         setScripts((scripts) =>
           scripts.map((s) =>
             s.id === script.id ? { ...s, lastOutput: state.out.join("\n"), lastExitCode: 0, lastStatus: "success" } : s
@@ -373,7 +484,7 @@ function runBatchScript(script: ScriptFile, run: ScriptRun) {
   state.out.push(`Microsoft Windows [${BATCH_INFO.os}]`);
   state.out.push(`(c) Enosx Technologies. All rights reserved.`);
   state.out.push("");
-  setRun({ ...run, status: "running" });
+  setRun({ ...(store.runs.get(script.id) ?? run), status: "running" });
   lines.forEach((line, i) => {
     setTimeout(() => {
       const current = store.runs.get(script.id);
@@ -443,6 +554,11 @@ export function useScriptRuntime() {
     }
     const run: ScriptRun = { scriptId, scriptName: script.name, status: "queued", output: [], exitCode: null };
     setRun(run);
+    // Flush immediately on run start so "running" state is visible right away
+    if (flushTimer) {
+      clearTimeout(flushTimer);
+      flushPendingOutputs();
+    }
     if (script.language === "python") {
       activePyRunId = scriptId;
       void runPythonScript(script, run);

@@ -45,10 +45,19 @@ export function TerminalWindow() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // P4 — Intent-aware instant auto-scroll:
+  // Only auto-scroll when the user is already at the bottom (they haven't
+  // manually scrolled up to inspect history), and scroll instantly. This
+  // eliminates the competing smooth-scroll animations that caused visible
+  // jank on fast output streams.
   useEffect(() => {
-    if (selectedId) {
-      outputRefs.current.get(selectedId)?.scrollTo({ top: 999999, behavior: "smooth" });
+    const el = selectedId ? outputRefs.current.get(selectedId) : undefined;
+    if (!el) return;
+    const atBottom = el.scrollHeight - el.scrollTop - el.clientHeight < 24;
+    if (atBottom) {
+      el.scrollTo({ top: el.scrollHeight });
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [scripts, runs, selectedId]);
 
   const selected = scripts.find((s) => s.id === selectedId) ?? scripts[0] ?? null;
@@ -128,11 +137,24 @@ export function TerminalWindow() {
                       style={{ color: config.accent }}
                     >
                       {r && r.output.length > 0 ? (
-                        r.output.map((line, i) => (
-                          <div key={i} className="whitespace-pre-wrap">
-                            {line === "" ? "\u00A0" : line}
-                          </div>
-                        ))
+                        (() => {
+                          // P5 — window the visible output to the tail only;
+                          // total output stays bounded (2k lines max in the
+                          // runtime), and per-frame DOM work stays constant.
+                          const CHUNK = 300;
+                          const visible = r.output.slice(-CHUNK);
+                          const skipped = r.output.length - visible.length;
+                          return (
+                            <>
+                              {skipped > 0 && <div className="text-white/25">… {skipped.toLocaleString()} older lines omitted …</div>}
+                              {visible.map((line, i) => (
+                                <div key={i} className="whitespace-pre-wrap">
+                                  {line === "" ? "\u00A0" : line}
+                                </div>
+                              ))}
+                            </>
+                          );
+                        })()
                       ) : r?.status === "queued" ? (
                         <div className="text-white/35">Preparing run…</div>
                       ) : r?.status === "running" ? (

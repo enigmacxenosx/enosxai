@@ -32,7 +32,7 @@ export default class ErrorBoundary extends React.Component<
           <div className="text-center max-w-md px-6">
             <div
               className="text-4xl font-black mb-4"
-              style={{ color: "#dc143c" }}
+              style={{ color: "#7c6ff7" }}
             >
               ENOSX
             </div>
@@ -52,9 +52,9 @@ export default class ErrorBoundary extends React.Component<
               onClick={() => window.location.reload()}
               className="px-4 py-2 rounded-xl text-sm"
               style={{
-                background: "rgba(220,20,60,0.15)",
-                border: "1px solid rgba(220,20,60,0.3)",
-                color: "#dc143c",
+                background: "rgba(124,111,247,0.15)",
+                border: "1px solid rgba(124,111,247,0.3)",
+                color: "#a99dff",
               }}
             >
               Reload

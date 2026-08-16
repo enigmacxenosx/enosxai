@@ -850,11 +850,11 @@ ${getAdminContext()}` : ""}`,
                       initial={{ opacity: 0, y: 10 }}
                       animate={{ opacity: 1, y: 0 }}
                       exit={{ opacity: 0, y: 10 }}
-                      className="p-4 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 text-sm flex flex-col gap-2"
+                      className="p-3 rounded-xl bg-amber-500/10 border border-amber-400/20 text-amber-200 text-sm flex flex-col gap-2"
                     >
                       <div className="font-bold flex items-center gap-2">
-                        <span className="w-2 h-2 rounded-full bg-red-500" />
-                        System Error
+                        <span className="w-2 h-2 rounded-full bg-amber-400" />
+                        Connection issue
                       </div>
                       <p className="opacity-80">{error}</p>
                       <motion.button
@@ -864,7 +864,7 @@ ${getAdminContext()}` : ""}`,
                           const lastUserMsg = activeConversation.messages.filter(m => m.role === 'user').pop();
                           if (lastUserMsg) void handleSendTracked(lastUserMsg.content);
                         }}
-                        className="mt-2 self-start px-4 py-1.5 rounded-lg bg-red-500/20 hover:bg-red-500/30 border border-red-500/30 transition-all text-xs font-bold"
+                        className="mt-2 self-start px-4 py-1.5 rounded-lg bg-amber-500/15 hover:bg-amber-500/25 border border-amber-400/25 transition-all text-xs font-bold"
                       >
                         Retry Transmission
                       </motion.button>

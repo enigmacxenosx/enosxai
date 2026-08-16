@@ -20,6 +20,7 @@ import {
   NotebookPen,
   BookOpen,
   Monitor,
+  Laptop,
 } from "lucide-react";
 import { Conversation } from "@/lib/types";
 import { useTheme } from "@/contexts/ThemeContext";
@@ -40,6 +41,7 @@ interface SidebarProps {
   onProfileClick?: () => void;
   onLibraryClick?: () => void;
   onScreenGuiderClick?: () => void;
+  onComputerClick?: () => void;
   isPro?: boolean;
   isMobileOpen?: boolean;
   onMobileClose?: () => void;
@@ -58,6 +60,7 @@ export default function Sidebar({
   onProfileClick,
   onLibraryClick,
   onScreenGuiderClick,
+  onComputerClick,
   isPro = false,
   isMobileOpen = false,
   onMobileClose,
@@ -88,6 +91,14 @@ export default function Sidebar({
       description: "AI takes full control",
       icon: Monitor,
       onClick: onScreenGuiderClick || (() => {}),
+      accent: false,
+      danger: false,
+    },
+    {
+      label: "Enosx Computer",
+      description: "Open your workspace surface",
+      icon: Laptop,
+      onClick: onComputerClick || (() => { window.location.href = "/computer"; }),
       accent: false,
       danger: false,
     },

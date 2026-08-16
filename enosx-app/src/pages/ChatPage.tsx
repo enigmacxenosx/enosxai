@@ -697,6 +697,7 @@ ${getAdminContext()}` : ""}`,
           onProfileClick={() => setShowProfilePanel(true)}
           onLibraryClick={() => conversationSearch.open()}
           onScreenGuiderClick={toggleScreenGuider}
+          onComputerClick={() => { window.location.href = "/computer"; }}
         />
       )}
 
@@ -725,6 +726,7 @@ ${getAdminContext()}` : ""}`,
           }}
           onLibraryClick={() => { setIsMobileSidebarOpen(false); conversationSearch.open(); }}
           onScreenGuiderClick={() => { setIsMobileSidebarOpen(false); toggleScreenGuider(); }}
+          onComputerClick={() => { setIsMobileSidebarOpen(false); window.location.href = "/computer"; }}
         />
       )}
 

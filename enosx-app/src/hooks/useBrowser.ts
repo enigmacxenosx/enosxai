@@ -77,40 +77,6 @@ function setSharedState(partial: Partial<SharedBrowserState>) {
   notifyShared();
 }
 
-interface SharedBrowserState {
-  isLoading: boolean;
-  error: string | null;
-  lastContent: WebPageContent | null;
-  lastLinks: Array<{ href: string; text: string }> | null;
-}
-const sharedState: SharedBrowserState = {
-  isLoading: false,
-  error: null,
-  lastContent: null,
-  lastLinks: null,
-};
-const sharedSubscribers = new Set<() => void>();
-
-function notifyShared() {
-  sharedSubscribers.forEach((cb) => cb());
-}
-
-export function onBrowserStateChange(callback: () => void): () => void {
-  sharedSubscribers.add(callback);
-  return () => {
-    sharedSubscribers.delete(callback);
-  };
-}
-
-export function getSharedBrowserState(): SharedBrowserState {
-  return sharedState;
-}
-
-function setSharedState(partial: Partial<SharedBrowserState>) {
-  Object.assign(sharedState, partial);
-  notifyShared();
-}
-
 export function useBrowser() {
   const [localState, setLocalState] = useState<UseBrowserState>(() => ({ ...sharedState }));
 
@@ -124,6 +90,7 @@ export function useBrowser() {
   }, []);
 
   const setState = setLocalState;
+  const state = localState;
 
   const setLoading = useCallback((loading: boolean) => {
     setState(prev => ({ ...prev, isLoading: loading }));

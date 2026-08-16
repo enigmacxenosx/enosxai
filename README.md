@@ -32,3 +32,9 @@ This project uses `pnpm` workspaces. To get started:
 2. Start the development server: `pnpm dev`
 
 For more details, see the [Setup Guide](docs/SETUP_GUIDE.md).
+
+## ExLover Coach
+
+`exlover/` is a standalone Vite + React relationship-coaching app in this repository. It includes a server-side Vercel function at `exlover/api/chat.ts`, so provider credentials are never sent to the browser. Configure `OPENROUTER_API_KEY` (preferred) or `OPENAI_API_KEY` in the Vercel project environment before production use; do not commit either secret.
+
+To work on the app locally, run `pnpm --filter @enosx/exlover dev`. To validate the production bundle, run `pnpm --filter @enosx/exlover typecheck && pnpm --filter @enosx/exlover build`.

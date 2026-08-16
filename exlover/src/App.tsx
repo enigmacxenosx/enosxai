@@ -57,7 +57,7 @@ const initialAssistantMessage: Message = {
   id: "welcome",
   role: "assistant",
   content:
-    "Hi, I’m ExLover Coach. Bring me the messy version — the text you keep rereading, the feeling you cannot name, or the conversation you are rehearsing. We’ll slow it down, find the honest need underneath, and choose one grounded next step.\n\nWhat is on your heart?",
+    "Hi, I’m ExLover Coach, a relationship-care product from Enosx Technologies. Bring me the messy version — the text you keep rereading, the feeling you cannot name, or the conversation you are rehearsing. We’ll slow it down, find the honest need underneath, and choose one grounded next step.\n\nWhat is on your heart?",
   timestamp: "Now",
 };
 
@@ -185,9 +185,10 @@ export default function App() {
       <header className="topbar">
         <a className="brand" href="/" aria-label="ExLover home">
           <span className="brand-mark" aria-hidden="true"><span /></span>
-          <span><strong>ExLover</strong><small>COACH</small></span>
+          <span><strong>ExLover</strong><small>BY ENOSX TECHNOLOGIES</small></span>
         </a>
         <div className="topbar-actions">
+          <div className="identity-chip"><span className="identity-dot" />An Enosx Technologies product</div>
           <button className="text-button" onClick={() => setShowAbout(true)}>How it works</button>
           <button className="quiet-button" onClick={startOver}>New reflection <span>↗</span></button>
         </div>
@@ -195,9 +196,10 @@ export default function App() {
 
       <main className="main-grid">
         <section className="intro-panel">
-          <div className="eyebrow"><span className="eyebrow-dot" />A private space for honest conversations</div>
+          <div className="eyebrow"><span className="eyebrow-dot" />ENOSX TECHNOLOGIES · NAIROBI, KENYA</div>
+          <div className="eyebrow-sub">A private space for honest conversations</div>
           <h1>Love, with <em>clarity.</em></h1>
-          <p className="intro-copy">An AI relationship coach for the moments you need to pause, understand yourself, and respond from a steadier place.</p>
+          <p className="intro-copy">An AI relationship coach from Enosx Technologies for the moments you need to pause, understand yourself, and respond from a steadier place.</p>
           <div className="trust-line"><span className="lock-icon">⌁</span> No judgement · No perfect answers · Just a little more clarity</div>
 
           <div className="starter-grid" aria-label="Choose a coaching intention">
@@ -259,7 +261,7 @@ export default function App() {
       </main>
 
       <footer className="footer">
-        <span>© 2026 ExLover Coach · Built for more thoughtful conversations.</span>
+        <span>© 2026 ExLover Coach · An Enosx Technologies product · Nairobi, Kenya</span>
         <div><button className="footer-button" onClick={saveReflection}>{isSaved ? "Saved locally" : "Save reflection"}</button><span className="footer-divider">·</span><button className="footer-button" onClick={() => setShowAbout(true)}>Care & safety</button></div>
       </footer>
 
@@ -269,6 +271,7 @@ export default function App() {
           <span className="card-label">A NOTE FROM THE COACH</span>
           <h2 id="about-title">You do not need to perform certainty.</h2>
           <p>ExLover helps you slow down, name what is happening, and choose language that respects both your needs and another person’s agency. It is not a therapist, crisis service, or a way to diagnose someone else.</p>
+          <p>ExLover Coach is part of <a className="company-link" href="https://enosxtechnologies.vercel.app" target="_blank" rel="noreferrer">Enosx Technologies</a>, founded in Nairobi, Kenya in 2024 by Enosh Yeswa. It sits alongside ENOSX AI and the Enosx Tech Store in the Enosx product family.</p>
           <p>If you are in immediate danger, being threatened, or thinking about harming yourself or someone else, contact local emergency services or a trusted person who can be with you now.</p>
           <button className="modal-action" onClick={() => setShowAbout(false)}>I understand <span>→</span></button>
         </div>

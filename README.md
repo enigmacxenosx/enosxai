@@ -1,6 +1,18 @@
-# ENOSX AI Project 
+# ENOSX AI Project
+
+![Enosx Technologies](https://img.shields.io/badge/Enosx-Technologies-0ea5e9) ![pnpm](https://img.shields.io/badge/package%20manager-pnpm-f69220) ![Live](https://img.shields.io/badge/live-enosxai.vercel.app-22c55e)
 
 This repository contains the core components of the ENOSX AI ecosystem, including the API server, the main application, and various utility scripts and documentation.
+
+> **ENOSX AI** is the flagship AI assistant of Enosx Technologies — founded in 2024 by [Enosh Yeswa](https://github.com/enigmacxenosx). WhatsApp [+254 798 303 978](https://wa.me/254798303978) · Instagram [@enosx_tech](https://instagram.com/enosx_tech) · [@engima_cx](https://instagram.com/engima_cx)
+
+## Live Site
+
+| Item | Details |
+| :--- | :--- |
+| Production | [enosxai.vercel.app](https://enosxai.vercel.app) |
+| Stack | Express API server, Vite + React frontend, pnpm workspaces |
+| Hosting | Vercel |
 
 ## Repository Structure
 
@@ -23,6 +35,24 @@ The repository has been organized to separate core application code from documen
 - [Design Document](docs/design_document.md)
 - [Bug Fixes Log](docs/FIXES.md)
 - [Identity Fix Summary](docs/IDENTITY_FIX_SUMMARY.md)
+
+Additional apps in this monorepo:
+
+| App | Path | Notes |
+| :--- | :--- | :--- |
+| ENOSX AI assistant | `enosx-app/` | Vite + React frontend |
+| API server | `api-server/` | Express-based main server |
+| Serverless functions | `api/` | Vercel deployments |
+| ExLover Coach | `exlover/` | Relationship-coaching app, live at [exlover.vercel.app](https://exlover.vercel.app) |
+
+## Enosx Portfolio
+
+| Product | URL |
+| :--- | :--- |
+| ENOSX AI | https://enosxai.vercel.app |
+| E-commerce Hub | https://enosxtech-hub.vercel.app |
+| Tech Site | https://enosxtech.vercel.app |
+| Exlover Coaching | https://exlover.vercel.app |
 
 ## Development
 

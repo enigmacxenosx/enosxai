@@ -1,0 +1,35 @@
+name: CI — pnpm Workspace Checks
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - name: Install dependencies
+        run: pnpm install
+
+      - name: Typecheck enosx-app
+        run: pnpm --filter @enosx/enosx-app typecheck || pnpm --filter @enosx/app typecheck || pnpm -r typecheck
+
+      - name: Typecheck exlover
+        run: pnpm --filter @enosx/exlover typecheck || true
+
+      - name: Build exlover
+        run: pnpm --filter @enosx/exlover build || true

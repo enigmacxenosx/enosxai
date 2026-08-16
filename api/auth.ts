@@ -118,16 +118,17 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return;
   }
 
-  const action = actionFromRequest(req);
-  const body = bodyFromRequest(req);
-  const database = await getDatabase();
-
-  if (!database) {
-    res.status(503).json({ message: "Email authentication is unavailable until DATABASE_URL is configured." });
-    return;
-  }
+  let action: string | string[] | undefined = "request";
 
   try {
+    action = actionFromRequest(req);
+    const body = bodyFromRequest(req);
+    const database = await getDatabase();
+    if (!database) {
+      res.status(503).json({ message: "Email authentication is unavailable until DATABASE_URL is configured." });
+      return;
+    }
+
     await ensureTable(database);
 
     if (action === "signup" && req.method === "POST") {
@@ -254,7 +255,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     res.status(404).json({ message: "Auth route not found" });
   } catch (error) {
-    console.error(`Auth ${action ?? "request"} failed`, error);
-    res.status(500).json({ message: action === "signin" ? "Sign in failed" : action === "signup" ? "Sign up failed" : "Authentication request failed" });
+    const actionName = Array.isArray(action) ? action[0] : action;
+    console.error(`Auth ${actionName ?? "request"} failed`, error);
+    res.status(500).json({ message: actionName === "signin" ? "Sign in failed" : actionName === "signup" ? "Sign up failed" : "Authentication request failed" });
   }
 }

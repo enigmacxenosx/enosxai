@@ -7,9 +7,6 @@
 import { useState, useCallback } from "react";
 import { Message } from "@/lib/types";
 
-const OPENROUTER_API_URL = "https://openrouter.ai/api/v1/chat/completions";
-const CLIENT_API_KEY = import.meta.env.VITE_OPENROUTER_API_KEY || "";
-
 type ChatOptions = {
   aiMode?: string;
   githubContext?: string;
@@ -170,16 +167,17 @@ export function useEnosxAI() {
         setError(friendlyError);
         console.error("[useEnosxAI] Error:", errorMessage);
 
-        // Resilience path: if the serverless chat route is down (FUNCTION_INVOCATION_FAILED),
-        // fall back to a direct client-side OpenRouter call when a client key is configured.
-        if (CLIENT_API_KEY && (errorMessage.includes("500") || errorMessage.includes("502") || errorMessage.includes("503"))) {
-          console.warn("[useEnosxAI] Server route unavailable — switching to direct OpenRouter fallback");
+        // Resilience path: if the serverless chat route is down
+        // (FUNCTION_INVOCATION_FAILED), retry once after a short delay instead
+        // of leaking API credentials to the browser.
+        if (errorMessage.includes("500") || errorMessage.includes("502") || errorMessage.includes("503")) {
+          console.warn("[useEnosxAI] Server route unavailable — retrying once");
           try {
-            await callOpenRouterDirect(messages, options, onChunk);
-            onDone();
+            await new Promise((r) => setTimeout(r, 5000));
+            await sendMessage(messages, onChunk, onDone, options);
             return;
-          } catch (directErr) {
-            console.error("[useEnosxAI] Direct fallback also failed:", directErr);
+          } catch (retryErr) {
+            console.error("[useEnosxAI] Retry also failed:", retryErr);
           }
         }
 
@@ -193,56 +191,6 @@ export function useEnosxAI() {
     [],
   );
 
-  async function callOpenRouterDirect(
-    messages: Message[],
-    options: ChatOptions | undefined,
-    onChunk: (chunk: string) => void,
-  ) {
-    const hasImages = messages.some((m) =>
-      Array.isArray(m.attachments) && m.attachments.some((a: any) => typeof a.type === "string" && a.type.startsWith("image/")),
-    );
-    const model = "openrouter/auto";
-    const response = await fetch(OPENROUTER_API_URL, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${CLIENT_API_KEY}`,
-        "HTTP-Referer": "https://enosxtechnologies450.vercel.app",
-        "X-Title": "ENOSX AI",
-      },
-      body: JSON.stringify({
-        model,
-        messages: messages.map((m) => ({ role: m.role, content: m.content })),
-        stream: true,
-        max_tokens: 2048,
-      }),
-    });
-    if (!response.ok) {
-      throw new Error(`API Error: ${response.status}`);
-    }
-    const reader = response.body?.getReader();
-    if (!reader) throw new Error("No stream available");
-    const decoder = new TextDecoder();
-    let buffer = "";
-    while (true) {
-      const { done, value } = await reader.read();
-      if (done) break;
-      buffer += decoder.decode(value, { stream: true });
-      const lines = buffer.split("\n");
-      buffer = lines.pop() ?? "";
-      for (const line of lines) {
-        if (!line.startsWith("data: ")) continue;
-        const data = line.slice(6).trim();
-        if (!data || data === "[DONE]") continue;
-        try {
-          const content = JSON.parse(data)?.choices?.[0]?.delta?.content;
-          if (typeof content === "string") onChunk(content);
-        } catch {
-          // ignore malformed chunks
-        }
-      }
-    }
-  }
 
   return { sendMessage, isLoading, isThinking, error, isFreeMode: false };
 }

@@ -376,8 +376,8 @@ export default function ChatPage() {
 
         const imgResult = await generateImage(text);
         if (imgResult && imgResult.url) {
-          const imageMarkdown = imgResult.revisedPrompt
-            ? `Here's the image I generated for you:\n\n![Generated Image](${imgResult.url})\n\n*Prompt: ${imgResult.revisedPrompt}*`
+          const imageMarkdown = imgResult.revised_prompt
+            ? `Here's the image I generated for you:\n\n![Generated Image](${imgResult.url})\n\n*Prompt: ${imgResult.revised_prompt}*`
             : `Here's the image I generated for you:\n\n![Generated Image](${imgResult.url})`;
 
           setConversations((prev) =>

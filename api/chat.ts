@@ -72,10 +72,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   try {
-    // Prefer the server-only key. The legacy VITE_ variable is retained as a
-    // temporary compatibility fallback for existing deployments and should be
-    // replaced with OPENROUTER_API_KEY in the hosting environment.
-    const apiKey = (process.env.OPENROUTER_API_KEY || process.env.VITE_OPENROUTER_API_KEY)?.trim();
+    // Server-side key only. A browser-exposed key (VITE_ prefix) must never
+    // be forwarded to OpenRouter; if only the legacy VITE_ variable is set,
+    // treat the configuration as missing.
+    const apiKey = process.env.OPENROUTER_API_KEY?.trim();
 
     if (!apiKey) {
       console.error("[API] OPENROUTER_API_KEY is not configured.");
@@ -141,9 +141,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const hasImages = chatMessages.some((message: any) =>
       Array.isArray(message.content) && message.content.some((part: any) => part.type === "image_url")
     );
+    // Verified against the live OpenRouter model catalog (August 2026).
+    // The legacy defaults (google/gemini-2.0-flash-001 and
+    // meta-llama/llama-3.3-70b-instruct) no longer exist in the catalog and
+    // were the cause of avoidable provider failures.
     const primaryModel = hasImages
-      ? (process.env.OPENROUTER_VISION_MODEL || "google/gemini-2.0-flash-001")
-      : (process.env.OPENROUTER_MODEL || "meta-llama/llama-3.3-70b-instruct");
+      ? (process.env.OPENROUTER_VISION_MODEL || "google/gemini-2.5-flash")
+      : (process.env.OPENROUTER_MODEL || "openai/gpt-oss-20b");
 
     // OpenRouter attempts these models in order before returning a provider
     // failure. This protects the chat experience against model-specific 5xxs

@@ -7,7 +7,7 @@ router.get("/healthz", (_req, res) => {
 });
 
 // Optimized speed-test endpoint for bandwidth measurement
-router.get("/speed-test", (req, res) => {
+router.get("/speed-test", (req, res): void => {
   const size = parseInt(req.query.size as string) || 128 * 1024; // Default 128KB
   const clampedSize = Math.max(1024, Math.min(size, 10 * 1024 * 1024)); // 1KB to 10MB
 
@@ -18,7 +18,8 @@ router.get("/speed-test", (req, res) => {
   res.setHeader("Content-Length", clampedSize.toString());
 
   if (req.method === "HEAD") {
-    return res.end();
+    res.end();
+    return;
   }
 
   const chunk = Buffer.alloc(Math.min(clampedSize, 64 * 1024), "X");

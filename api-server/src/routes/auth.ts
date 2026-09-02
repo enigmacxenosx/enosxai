@@ -4,7 +4,7 @@
  * Endpoints: POST /auth/signup, POST /auth/signin, POST /auth/upsert, PUT /auth/update, GET /auth/me
  */
 import { Router, Request, Response } from "express";
-import { createHash } from "crypto";
+import { createHash, createHmac, timingSafeEqual } from "crypto";
 
 const router = Router();
 
@@ -54,7 +54,8 @@ async function ensureTable() {
         theme TEXT,
         wallpaper TEXT,
         created_at TIMESTAMPTZ DEFAULT NOW(),
-        updated_at TIMESTAMPTZ DEFAULT NOW()
+        updated_at TIMESTAMPTZ DEFAULT NOW(),
+        role TEXT DEFAULT 'user'
       )
     `);
   } catch (err) {
@@ -195,6 +196,94 @@ router.get("/auth/me", async (req: Request, res: Response) => {
     console.error("Get user error:", err);
     res.status(500).json({ message: "Failed to get user" });
   }
+});
+
+const CEO_PROFILE_TABLE = `
+  CREATE TABLE IF NOT EXISTS enosx_ceo_profile (
+    id INTEGER PRIMARY KEY CHECK (id = 1),
+    display_name TEXT NOT NULL,
+    title TEXT NOT NULL,
+    notes TEXT DEFAULT '',
+    updated_at TIMESTAMPTZ DEFAULT NOW()
+  )
+`;
+
+function base64Url(value: string): string {
+  return Buffer.from(value).toString("base64url");
+}
+
+function createCeoSession(userId: string, email: string): string {
+  const secret = process.env.ENOSX_CEO_SESSION_SECRET;
+  if (!secret) throw new Error("ENOSX_CEO_SESSION_SECRET not configured");
+  const payload = base64Url(JSON.stringify({ sub: userId, email, role: "ceo", exp: Date.now() + 1000 * 60 * 60 * 12 }));
+  const signature = createHmac("sha256", secret).update(payload).digest("base64url");
+  return `${payload}.${signature}`;
+}
+
+function verifyCeoSession(req: Request): { sub: string; email: string } | null {
+  const secret = process.env.ENOSX_CEO_SESSION_SECRET;
+  const token = req.headers.authorization?.replace(/^Bearer\\s+/i, "");
+  if (!secret || !token) return null;
+  const [payload, signature] = token.split(".");
+  if (!payload || !signature) return null;
+  const expected = createHmac("sha256", secret).update(payload).digest("base64url");
+  if (signature.length !== expected.length || !timingSafeEqual(Buffer.from(signature), Buffer.from(expected))) return null;
+  try {
+    const decoded = JSON.parse(Buffer.from(payload, "base64url").toString("utf8"));
+    if (decoded.role !== "ceo" || decoded.exp < Date.now()) return null;
+    return { sub: decoded.sub, email: decoded.email };
+  } catch { return null; }
+}
+
+router.post("/auth/ceo/session", async (req: Request, res: Response) => {
+  try {
+    const { id, email } = req.body;
+    const configuredCeoEmail = process.env.ENOSX_CEO_EMAIL?.trim().toLowerCase();
+    if (!configuredCeoEmail || !process.env.ENOSX_CEO_SESSION_SECRET) {
+      res.status(503).json({ message: "CEO authentication is not configured on this server" });
+      return;
+    }
+    if (!id || !email || email.trim().toLowerCase() !== configuredCeoEmail) {
+      res.status(403).json({ message: "CEO profile access denied" });
+      return;
+    }
+    const rows = await queryNeon("SELECT id, email FROM enosx_users WHERE id = $1 AND email = $2", [id, email.trim().toLowerCase()]);
+    if (!rows[0]) {
+      res.status(403).json({ message: "Authenticated CEO account not found" });
+      return;
+    }
+    await queryNeon(CEO_PROFILE_TABLE);
+    await queryNeon(`INSERT INTO enosx_ceo_profile (id, display_name, title) VALUES (1, $1, $2) ON CONFLICT (id) DO NOTHING`, ["Enosh Yeswa", "Founder & Chief Executive Officer"]);
+    res.json({ token: createCeoSession(id, email.trim().toLowerCase()), expiresIn: 43200 });
+  } catch (err) {
+    console.error("CEO session error:", err);
+    res.status(500).json({ message: "CEO session creation failed" });
+  }
+});
+
+router.get("/auth/ceo/profile", async (req: Request, res: Response) => {
+  const session = verifyCeoSession(req);
+  if (!session) { res.status(401).json({ message: "Valid CEO session required" }); return; }
+  try {
+    const rows = await queryNeon("SELECT id, email FROM enosx_users WHERE id = $1 AND email = $2", [session.sub, session.email]);
+    if (!rows[0]) { res.status(401).json({ message: "CEO account is no longer valid" }); return; }
+    await queryNeon(CEO_PROFILE_TABLE);
+    const profile = await queryNeon("SELECT display_name, title, notes, updated_at FROM enosx_ceo_profile WHERE id = 1");
+    res.json({ profile: profile[0] });
+  } catch (err) { console.error("CEO profile read error:", err); res.status(500).json({ message: "CEO profile unavailable" }); }
+});
+
+router.put("/auth/ceo/profile", async (req: Request, res: Response) => {
+  const session = verifyCeoSession(req);
+  if (!session) { res.status(401).json({ message: "Valid CEO session required" }); return; }
+  try {
+    const rows = await queryNeon("SELECT id FROM enosx_users WHERE id = $1 AND email = $2", [session.sub, session.email]);
+    if (!rows[0]) { res.status(401).json({ message: "CEO account is no longer valid" }); return; }
+    await queryNeon(CEO_PROFILE_TABLE);
+    const notes = typeof req.body.notes === "string" ? req.body.notes.slice(0, 20000) : "";
+    await queryNeon("UPDATE enosx_ceo_profile SET notes = $1, updated_at = NOW() WHERE id = 1", [notes]);
+    res.json({ ok: true });
+  } catch (err) { console.error("CEO profile update error:", err); res.status(500).json({ message: "CEO profile update failed" }); }
 });
 
 // ── Map DB row to UserProfile ─────────────────────────────────────────────────

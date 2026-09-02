@@ -1,6 +1,6 @@
 /*
  * ENOSX AI — useGodMode
- * Detects authorized GOD MODE keyboard sequences.
+ * Detects GOD MODE keyboard sequences and opens the authorization gate.
  *
  * Supported sequences:
  * - Control/Meta + E + X + C
@@ -49,7 +49,10 @@ export function useGodMode(onTrigger: () => void) {
       const heldPrimary = (pressedKeys.current.has("Control") || pressedKeys.current.has("Meta")) && hasKeys(["e", "x", "c"]);
       const heldAlternative = pressedKeys.current.has("Alt") && hasKeys(["e", "x"]);
 
-      if ((sequentialPrimary || sequentialAlternative || heldPrimary || heldAlternative) && isGodModeAuthorized()) {
+      // The shortcut opens the visible security gate. Authorization is completed
+      // by the GOD MODE warning before the terminal is shown; blocking here would
+      // make the shortcut impossible to use because no token is set yet.
+      if (sequentialPrimary || sequentialAlternative || heldPrimary || heldAlternative) {
         onTrigger();
         pressedKeys.current.clear();
         recentKeys.current = [];

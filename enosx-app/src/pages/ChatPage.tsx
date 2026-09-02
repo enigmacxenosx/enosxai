@@ -21,6 +21,7 @@ import EthicalHackingQuiz from "@/components/EthicalHackingQuiz";
 import CircuitDoor from "@/components/CircuitDoor";
 import GitHubPanel from "@/components/GitHubPanel";
 import ProfilePanel from "@/components/ProfilePanel";
+import CEOProfilePanel from "@/components/CEOProfilePanel";
 import { GlobalLayout } from "@/components/GlobalLayout";
 import { useEnosxAI as useAI } from "@/hooks/useEnosxAI";
 import { useVoice } from "@/hooks/useVoice";
@@ -323,6 +324,7 @@ export default function ChatPage() {
   const [showGodModeWarning, setShowGodModeWarning] = useState(false);
   const [showGodTerminal, setShowGodTerminal] = useState(false);
   const [showEthicalHackingQuiz, setShowEthicalHackingQuiz] = useState(false);
+  const [showCEOProfile, setShowCEOProfile] = useState(false);
   const [screenGuiderActive, setScreenGuiderActive] = useState(false);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(true);
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
@@ -1098,6 +1100,7 @@ ${getAdminContext()}` : ""}`,
               setShowEthicalHackingQuiz(false);
             }}
             onOpenQuiz={() => setShowEthicalHackingQuiz(true)}
+            onOpenCEOProfile={() => setShowCEOProfile(true)}
             onExecute={executeGodCommand}
           />
         )}
@@ -1105,6 +1108,10 @@ ${getAdminContext()}` : ""}`,
       <EthicalHackingQuiz
         isOpen={showEthicalHackingQuiz}
         onClose={() => setShowEthicalHackingQuiz(false)}
+      />
+      <CEOProfilePanel
+        isOpen={showCEOProfile}
+        onClose={() => setShowCEOProfile(false)}
       />
       <AnimatePresence>
         {showGitHubPanel && (

@@ -86,10 +86,11 @@ interface GodModeTerminalProps {
   isOpen: boolean;
   onClose: () => void;
   onOpenQuiz: () => void;
+  onOpenCEOProfile?: () => void;
   onExecute: (command: string) => Promise<string>;
 }
 
-export default function GodModeTerminal({ isOpen, onClose, onOpenQuiz, onExecute }: GodModeTerminalProps) {
+export default function GodModeTerminal({ isOpen, onClose, onOpenQuiz, onOpenCEOProfile, onExecute }: GodModeTerminalProps) {
   const { config } = useTheme();
   const [history, setHistory] = useState<TerminalLine[]>([
     {
@@ -154,12 +155,18 @@ export default function GodModeTerminal({ isOpen, onClose, onOpenQuiz, onExecute
       addLine("system", "simulate wifi-audit --target authorized-lab-ap");
       addLine("system", "simulate vuln-scan --target authorized-lab-web");
       addLine("system", "simulate pentest --target authorized-lab-app");
-      addLine("system", "quiz | quiz start | clear | exit");
+      addLine("system", "quiz | quiz start | profile | ceo profile | clear | exit");
       addLine("system", "All simulations are deterministic previews: no scans, probes, packets, payloads, or credentials.");
       return;
     }
 
     const normalizedCommand = cmd.toLowerCase();
+
+    if (normalizedCommand === "profile" || normalizedCommand === "ceo profile") {
+      addLine("system", "Opening the CEO-only profile for Enosh Yeswa...");
+      onOpenCEOProfile?.();
+      return;
+    }
 
     if (normalizedCommand === "quiz" || normalizedCommand === "quiz start") {
       addLine("system", "Opening the Ethical Hacking Concepts Quiz...");

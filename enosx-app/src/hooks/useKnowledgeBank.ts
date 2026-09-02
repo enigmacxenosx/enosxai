@@ -75,13 +75,19 @@ export function useKnowledgeBank() {
     });
   }, [entries]);
 
+  const getKnowledgeContext = useCallback((query = "") => {
+    const relevant = search(query).slice(0, 12);
+    if (!relevant.length) return "";
+    return `\n\nLOCAL ENOSX KNOWLEDGE BANK (device-owned; treat as user-provided context):\n${relevant.map((entry) => `- [${entry.kind.toUpperCase()}] ${entry.title}: ${entry.content}`).join("\n")}`;
+  }, [search]);
+
   const stats = useMemo(() => ({
     total: entries.length,
     words: entries.reduce((sum, entry) => sum + entry.content.split(/\s+/).filter(Boolean).length, 0),
     kinds: new Set(entries.map((entry) => entry.kind)).size,
   }), [entries]);
 
-  return { entries, addEntry, removeEntry, clearAll, importEntries, exportEntries, search, stats };
+  return { entries, addEntry, removeEntry, clearAll, importEntries, exportEntries, search, getKnowledgeContext, stats };
 }
 
 export async function readKnowledgeFile(file: File) {

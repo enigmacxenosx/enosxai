@@ -36,6 +36,7 @@ import { useFileContext } from "@/hooks/useFileContext";
 import { useClipboardListener } from "@/hooks/useClipboardListener";
 import { useGodMode } from "@/hooks/useGodMode";
 import { useMemoryBank } from "@/hooks/useMemoryBank";
+import { useKnowledgeBank } from "@/hooks/useKnowledgeBank";
 import { AssistantAction, Conversation, Message } from "@/lib/types";
 import { useTheme } from "@/contexts/ThemeContext";
 import { useCompactMode } from "@/hooks/useCompactMode";
@@ -246,6 +247,7 @@ export default function ChatPage() {
   const { enrichMessageWithContext } = useContextAwareMessages();
   const { fileContext, getFileContextMessage, clearFiles, loadFile, removeFile } = useFileContext();
   const { getMemoryContext } = useMemoryBank();
+  const { getKnowledgeContext } = useKnowledgeBank();
   const { parseActions } = useSystemActions();
 
   const handleFileUpload = useCallback(
@@ -491,6 +493,7 @@ export default function ChatPage() {
       // AI to emit [[ACTION: ...]] blocks so its coding runs live in the pane.
       const workspaceDirectives = chatSplitEnabled && deviceType === "desktop" ? `\n\n${WORKSPACE_DIRECTIVES}` : "";
       const memoryContext = getMemoryContext();
+      const knowledgeContext = getKnowledgeContext(userMessage.content);
       const leadershipInfo = identity.leadership.map(l => `- ${l.name}: ${l.role} (${l.specialty})`).join('\n');
       const companyFacts = identity.companyFacts.map(fact => `- ${fact}`).join('\n');
       const companyFaqs = identity.companyFaqs.map(faq => `- Q: ${faq.question}\n  A: ${faq.answer}`).join('\n');
@@ -536,6 +539,7 @@ ${connectorContext}
 
 Current System Status: ONLINE${workspaceDirectives}
 ${memoryContext}
+${knowledgeContext}
 ${getAdminContext().trim() ? `
 ### Additional Context (administrator configured)
 ${getAdminContext()}` : ""}`,
@@ -625,7 +629,7 @@ ${getAdminContext()}` : ""}`,
         sendingRef.current = false;
       }
     },
-    [sendMessage, speak, autoSpeak, fileContext.isLoaded, getFileContextMessage, getMemoryContext, enrichMessageWithContext, activeWindow, clearFiles, parseActions, speechSettings.continuousConversation, scheduleListenAgain]
+    [sendMessage, speak, autoSpeak, fileContext.isLoaded, getFileContextMessage, getMemoryContext, getKnowledgeContext, enrichMessageWithContext, activeWindow, clearFiles, parseActions, speechSettings.continuousConversation, scheduleListenAgain]
   );
 
   const createNewChat = useCallback(() => {

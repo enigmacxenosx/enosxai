@@ -136,7 +136,7 @@ export default function ConnectorPicker({
                     <Cable size={15} style={{ color: config.accent }} />
                     Connectors
                     <span className="text-[10px] font-medium text-white/40">
-                      100 available
+                      {CONNECTOR_CATALOG.length} available
                     </span>
                   </div>
                   <p className="mt-1 text-[11px] leading-relaxed text-white/45">
@@ -232,7 +232,12 @@ export default function ConnectorPicker({
                       key={connector.id}
                       role="option"
                       aria-selected={selected}
-                      onClick={() => onToggleConnector(connector.id)}
+                      onClick={() => {
+                        onToggleConnector(connector.id);
+                        setOpen(false);
+                        setQuery("");
+                        setKindFilter("All");
+                      }}
                       className="w-full flex items-center gap-3 rounded-xl px-3 py-2 text-left transition-colors hover:bg-white/[0.06]"
                       style={{
                         background: selected

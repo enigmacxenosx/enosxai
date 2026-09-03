@@ -853,7 +853,6 @@ ${getAdminContext()}` : ""}`,
           collapsed={isSidebarCollapsed}
           onToggle={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
           onSettingsClick={() => setShowProfilePanel(true)}
-          onGitHubClick={() => setShowGitHubPanel(true)}
           onProfileClick={() => setShowProfilePanel(true)}
           onLibraryClick={() => conversationSearch.open()}
           onScreenGuiderClick={toggleScreenGuider}
@@ -875,10 +874,6 @@ ${getAdminContext()}` : ""}`,
           onSettingsClick={() => {
             setIsMobileSidebarOpen(false);
             setShowProfilePanel(true);
-          }}
-          onGitHubClick={() => {
-            setShowGitHubPanel(true);
-            setIsMobileSidebarOpen(false);
           }}
           onProfileClick={() => {
             setShowProfilePanel(true);

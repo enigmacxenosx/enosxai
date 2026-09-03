@@ -107,8 +107,16 @@ chatRouter.post("/chat", async (req: Request, res: Response) => {
     });
 
     // Prepend system prompt and context
+
+    const modeNotes: Record<string, string> = {
+      "ex-core": "\n\nYou are running in EX Core (Free) mode: be helpful, clear, reliable, and efficient.",
+      "ex-pro": "\n\nYou are running in EX Pro mode: provide expert-level, comprehensive, deeply technical responses.",
+      "enosh-mind": "\n\nYou are running in ENOSH MIND mode: use maximum analytical depth, strategic insight, cross-domain reasoning, and rigorous execution.",
+    };
+    const modeNote = modeNotes[aiMode] || modeNotes["ex-core"];
+
     const finalMessages = [
-      { role: "system", content: SYSTEM_PROMPT },
+      { role: "system", content: SYSTEM_PROMPT + modeNote },
       ...(ctxStr ? [{ role: "system", content: `GitHub repository context:\n${ctxStr}` }] : []),
       ...formattedMessages
     ];

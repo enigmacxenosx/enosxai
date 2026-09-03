@@ -156,7 +156,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       body: JSON.stringify({
         models: modelCandidates,
         messages: chatMessages,
-        stream: false,
+        stream: true,
         max_tokens: 2048,
         temperature: 0.7,
       }),
@@ -171,8 +171,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         openRouterResponse.status === 429 || openRouterResponse.status >= 500;
       if (isRetryable) {
         try {
-          console.log(`[API] Retryable status ${openRouterResponse.status}. Retrying once after 5s...`);
-          await new Promise(r => setTimeout(r, 5000));
+          console.log(`[API] Retryable status ${openRouterResponse.status}. Retrying once immediately...`);
           const retryResponse = await fetch("https://openrouter.ai/api/v1/chat/completions", {
             method: "POST",
             headers: {
@@ -210,8 +209,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
       // Handle 429 rate limit: retry with a free model
       if (openRouterResponse.status === 429) {
-        console.log("[API] 429 rate limited. Retrying with free model after 10s...");
-        await new Promise(r => setTimeout(r, 10000));
+        console.log("[API] 429 rate limited. Retrying immediately with the automatic model router...");
 
         try {
           const retryResponse = await fetch("https://openrouter.ai/api/v1/chat/completions", {
@@ -264,6 +262,21 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         res,
         `I'm having trouble reaching the AI service (${openRouterResponse.status}). Please try again in a moment.`
       );
+    }
+
+    if (openRouterResponse.body) {
+      res.setHeader("Content-Type", "text/event-stream; charset=utf-8");
+      res.setHeader("Cache-Control", "no-cache, no-transform");
+      res.setHeader("Connection", "keep-alive");
+      const reader = openRouterResponse.body.getReader();
+      const decoder = new TextDecoder();
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        res.write(decoder.decode(value, { stream: true }));
+      }
+      res.end();
+      return;
     }
 
     let responseData: any;

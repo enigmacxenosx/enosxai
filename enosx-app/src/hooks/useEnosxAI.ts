@@ -74,10 +74,6 @@ export function useEnosxAI() {
       setIsThinking(true);
 
       try {
-        // One automatic retry on 500-class server errors before treating the
-        // request as failed. Transient Vercel serverless hiccups
-        // (FUNCTION_INVOCATION_FAILED) often clear on a second attempt, and the
-        // server route itself now performs provider-level retries too.
         const sendRequest = async () =>
           fetch("/api/chat", {
             method: "POST",
@@ -89,12 +85,7 @@ export function useEnosxAI() {
             }),
           });
 
-        let response = await sendRequest();
-        if (!response.ok && response.status >= 500) {
-          console.warn("[useEnosxAI] Server returned", response.status, "— retrying once");
-          await new Promise(r => setTimeout(r, 2500));
-          response = await sendRequest();
-        }
+        const response = await sendRequest();
 
         if (!response.ok) {
           throw new Error(await getErrorMessage(response));
@@ -166,20 +157,6 @@ export function useEnosxAI() {
         const friendlyError = getFriendlyErrorMessage(errorMessage);
         setError(friendlyError);
         console.error("[useEnosxAI] Error:", errorMessage);
-
-        // Resilience path: if the serverless chat route is down
-        // (FUNCTION_INVOCATION_FAILED), retry once after a short delay instead
-        // of leaking API credentials to the browser.
-        if (errorMessage.includes("500") || errorMessage.includes("502") || errorMessage.includes("503")) {
-          console.warn("[useEnosxAI] Server route unavailable — retrying once");
-          try {
-            await new Promise((r) => setTimeout(r, 5000));
-            await sendMessage(messages, onChunk, onDone, options);
-            return;
-          } catch (retryErr) {
-            console.error("[useEnosxAI] Retry also failed:", retryErr);
-          }
-        }
 
         onChunk(friendlyError);
         onDone();

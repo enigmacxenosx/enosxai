@@ -175,8 +175,25 @@ export default function ChatPage() {
           const res = await fetch(`/api/history?userId=${user.id}`);
           if (res.ok) {
             const data = await res.json();
-            if (data.history && data.history.length > 0) {
-              setConversations(data.history);
+            if (Array.isArray(data.history) && data.history.length > 0) {
+              const normalizedHistory: Conversation[] = data.history.map((chat: any) => ({
+                ...chat,
+                createdAt: new Date(chat.createdAt ?? chat.created_at ?? Date.now()),
+                updatedAt: new Date(chat.updatedAt ?? chat.updated_at ?? chat.createdAt ?? Date.now()),
+                messages: Array.isArray(chat.messages)
+                  ? chat.messages.map((message: any) => ({
+                      ...message,
+                      timestamp: new Date(message.timestamp ?? Date.now()),
+                      proposedActions: message.proposedActions ?? message.proposed_actions ?? [],
+                    }))
+                  : [],
+              }));
+              setConversations(normalizedHistory);
+              setActiveId((current) =>
+                current && normalizedHistory.some((chat) => chat.id === current)
+                  ? current
+                  : normalizedHistory[0].id,
+              );
             }
           }
         } catch (err) {

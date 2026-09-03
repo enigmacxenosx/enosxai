@@ -111,10 +111,11 @@ export function useEnosxAI() {
         let streamError: string | null = null;
 
         const processEvent = (event: string) => {
-          for (const line of event.split("\n")) {
-            if (!line.startsWith("data: ")) continue;
+          for (const line of event.split(/\r?\n/)) {
+            const normalizedLine = line.trim();
+            if (!normalizedLine.startsWith("data:")) continue;
 
-            const data = line.slice(6).trim();
+            const data = normalizedLine.slice(5).trim();
             if (!data || data === "[DONE]") continue;
 
             try {

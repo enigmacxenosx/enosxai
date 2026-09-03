@@ -25,6 +25,10 @@ import {
   siEtsy,
   siExcalidraw,
   siGooglechrome,
+  siGithub,
+  siShopify,
+  siVercel,
+  siGmail,
 } from "simple-icons/icons";
 
 interface ConnectorLogoProps {
@@ -78,6 +82,11 @@ const LOCAL_LOGOS: Record<string, SimpleIcon> = {
   etsy: siEtsy,
   excalidraw: siExcalidraw,
   googlechrome: siGooglechrome,
+  github: siGithub,
+  shopify: siShopify,
+  vercel: siVercel,
+  gmail: siGmail,
+  email: siGmail,
 };
 
 function toLogoSlug(name: string) {

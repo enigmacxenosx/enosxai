@@ -18,7 +18,6 @@ import {
   User,
   NotebookPen,
   BookOpen,
-  Monitor,
   Laptop,
 } from "lucide-react";
 import { Conversation } from "@/lib/types";
@@ -80,14 +79,6 @@ export default function Sidebar({
       description: "Browse past conversations",
       icon: BookOpen,
       onClick: onLibraryClick || (() => {}),
-      accent: false,
-      danger: false,
-    },
-    {
-      label: "Screen Guide",
-      description: "AI takes full control",
-      icon: Monitor,
-      onClick: onScreenGuiderClick || (() => {}),
       accent: false,
       danger: false,
     },

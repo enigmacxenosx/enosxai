@@ -2,7 +2,7 @@
  * ENOSX AI — CommandBar
  * Enlarged floating command bar with voice visualization, micro-interactions
  * Features:
- *   - AI mode selector inside message bar as horizontal tabs
+ *   - AI mode selector inside the message bar as a three-tier dropdown
  *   - Larger message input area
  *   - Upward arrow send button
  *   - Auto-resize textarea, voice input, glassmorphism
@@ -17,7 +17,7 @@ import { useWallpaper } from "@/contexts/WallpaperContext";
 import VoiceVisualizer from "./VoiceVisualizer";
 import ConnectorPicker from "./ConnectorPicker";
 
-export type AIMode = "ex" | "ex-pro" | "smart" | "fast" | "balanced" | "task" | "creative" | "imagine";
+export type AIMode = "ex-core" | "ex-pro" | "enosh-mind";
 
 export interface AIModeOption {
   id: AIMode;
@@ -29,8 +29,8 @@ export interface AIModeOption {
 
 export const AI_MODES: AIModeOption[] = [
   {
-    id: "ex",
-    label: "EX",
+    id: "ex-core",
+    label: "EX Core",
     color: "#7c6ff7",
     bgColor: "rgba(124,111,247,0.15)",
     borderColor: "rgba(124,111,247,0.4)",
@@ -43,50 +43,8 @@ export const AI_MODES: AIModeOption[] = [
     borderColor: "rgba(168,85,247,0.4)",
   },
   {
-    id: "smart",
-    label: "Smart",
-    color: "#3b82f6",
-    bgColor: "rgba(59,130,246,0.15)",
-    borderColor: "rgba(59,130,246,0.4)",
-  },
-  {
-    id: "fast",
-    label: "Fast",
-    color: "#10b981",
-    bgColor: "rgba(16,185,129,0.15)",
-    borderColor: "rgba(16,185,129,0.4)",
-  },
-  {
-    id: "balanced",
-    label: "Analysis",
-    color: "#f59e0b",
-    bgColor: "rgba(245,158,11,0.15)",
-    borderColor: "rgba(245,158,11,0.4)",
-  },
-  {
-    id: "task",
-    label: "Reasoning",
-    color: "#ef4444",
-    bgColor: "rgba(239,68,68,0.15)",
-    borderColor: "rgba(239,68,68,0.4)",
-  },
-  {
-    id: "fast",
-    label: "Fast",
-    color: "#10b981",
-    bgColor: "rgba(16,185,129,0.15)",
-    borderColor: "rgba(16,185,129,0.4)",
-  },
-  {
-    id: "creative",
-    label: "Creative",
-    color: "#ec4899",
-    bgColor: "rgba(236,72,153,0.15)",
-    borderColor: "rgba(236,72,153,0.4)",
-  },
-  {
-    id: "imagine",
-    label: "Imagine",
+    id: "enosh-mind",
+    label: "ENOSH MIND",
     color: "#00f2ff",
     bgColor: "rgba(0,242,255,0.15)",
     borderColor: "rgba(0,242,255,0.4)",
@@ -127,7 +85,7 @@ export default function CommandBar({
   const { config } = useTheme();
   const { settings: wallpaperSettings } = useWallpaper();
   const [value, setValue] = useState("");
-  const [aiMode, setAiMode] = useState<AIMode>("ex");
+  const [aiMode, setAiMode] = useState<AIMode>("ex-core");
   const [modeOpen, setModeOpen] = useState(false);
   const [selectedConnectorIds, setSelectedConnectorIds] = useState<string[]>([]);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -294,10 +252,10 @@ export default function CommandBar({
                   initial={{ opacity: 0, x: -10 }}
                   animate={{ opacity: 1, x: 0 }}
                   className="px-2 py-0.5 rounded-md bg-yellow-500/10 border border-yellow-500/30 text-[10px] font-bold text-yellow-400 flex items-center gap-1.5"
-                  title="Running in Free Mode due to low credits"
+                  title="Running on the EX Core free tier"
                 >
                   <div className="w-1.5 h-1.5 rounded-full bg-yellow-500 animate-pulse" />
-                  FREE MODE
+                  EX CORE (FREE)
                 </motion.div>
               )}
             </div>

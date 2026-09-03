@@ -30,7 +30,7 @@ export interface AIModeOption {
 export const AI_MODES: AIModeOption[] = [
   {
     id: "ex-core",
-    label: "EX Core",
+    label: "EX Core (Free)",
     color: "#7c6ff7",
     bgColor: "rgba(124,111,247,0.15)",
     borderColor: "rgba(124,111,247,0.4)",

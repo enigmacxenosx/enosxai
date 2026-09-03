@@ -14,6 +14,19 @@ This repository contains the core components of the ENOSX AI ecosystem, includin
 | Stack | Express API server, Vite + React frontend, pnpm workspaces |
 | Hosting | Vercel |
 
+### GitHub OAuth setup
+
+The GitHub integration uses an OAuth App; users do not enter personal access tokens in ENOSX AI. Configure these server-side environment variables in Vercel:
+
+| Variable | Value |
+| :--- | :--- |
+| `GITHUB_CLIENT_ID` | GitHub OAuth App client ID |
+| `GITHUB_CLIENT_SECRET` | GitHub OAuth App client secret |
+| `GITHUB_OAUTH_STATE_SECRET` | Random long secret used to sign OAuth state values |
+| `GITHUB_OAUTH_REDIRECT_ORIGIN` | `https://enosxai.vercel.app` |
+
+Register `https://enosxai.vercel.app/api/github/oauth/callback` as the OAuth App callback URL. The server exchanges the authorization code and the browser receives the authenticated account through a same-origin popup message.
+
 ## Repository Structure
 
 The repository has been organized to separate core application code from documentation and session artifacts:

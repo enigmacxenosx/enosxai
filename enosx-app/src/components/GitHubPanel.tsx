@@ -10,7 +10,7 @@ import {
   Plus, RefreshCw, GitBranch, ChevronDown, Check,
   Sparkles, Lock, Unlock, User, LogOut,
   Loader2, AlertCircle, CheckCircle2, FolderClosed,
-  Key, ChevronLeft,
+  ChevronLeft,
 } from 'lucide-react';
 import { useGitHub, GitHubRepo, GitHubFile } from '../hooks/useGitHub';
 import { useTheme } from '../contexts/ThemeContext';
@@ -29,14 +29,13 @@ export default function GitHubPanel({ isOpen, onClose }: GitHubPanelProps) {
   const {
     accounts, activeAccount, repos, currentRepo, branches,
     files, currentFile, isLoading, error,
-    addAccount, removeAccount, switchAccount,
+    connectWithOAuth, removeAccount, switchAccount,
     fetchRepos, addRepoByName, selectRepo, selectBranch,
     browseDirectory, selectFile, updateFileContent, pushChanges, createFile,
   } = useGitHub();
 
   const [view, setView] = useState<PanelView>('accounts');
-  const [tokenInput, setTokenInput] = useState('');
-  const [showTokenInput, setShowTokenInput] = useState(false);
+  const [isConnecting, setIsConnecting] = useState(false);
   const [repoInput, setRepoInput] = useState('');
   const [commitMessage, setCommitMessage] = useState('');
   const [aiPrompt, setAiPrompt] = useState('');
@@ -59,10 +58,11 @@ export default function GitHubPanel({ isOpen, onClose }: GitHubPanelProps) {
     if (currentFile) setView('editor');
   }, [currentFile]);
 
-  const handleAddAccount = async () => {
-    if (!tokenInput.trim()) return;
-    const ok = await addAccount('', tokenInput.trim());
-    if (ok) { setTokenInput(''); setShowTokenInput(false); setView('repos'); fetchRepos(); }
+  const handleConnect = async () => {
+    setIsConnecting(true);
+    const ok = await connectWithOAuth();
+    setIsConnecting(false);
+    if (ok) { setView('repos'); fetchRepos(); }
   };
 
   const handleSelectRepo = async (repo: GitHubRepo) => {
@@ -208,43 +208,18 @@ export default function GitHubPanel({ isOpen, onClose }: GitHubPanelProps) {
                 <>
                   <div className="flex items-center justify-between mb-2">
                     <span className="text-xs font-bold tracking-wider" style={{ color: 'rgba(255,255,255,0.35)' }}>GITHUB ACCOUNTS</span>
-                    <button onClick={() => setShowTokenInput(v => !v)}
+                    <button onClick={handleConnect} disabled={isConnecting}
                       className="flex items-center gap-1 px-2 py-1 rounded-lg text-xs transition-all hover:bg-white/10"
                       style={{ color: accentColor, border: `1px solid rgba(${accentRgb},0.25)` }}>
-                      <Plus size={11} />Add Account
+                      {isConnecting ? <Loader2 size={11} className="animate-spin" /> : <Plus size={11} />}Connect Account
                     </button>
                   </div>
-
-                  <AnimatePresence>
-                    {showTokenInput && (
-                      <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="overflow-hidden">
-                        <div className="p-3 rounded-xl space-y-2" style={{ background: `rgba(${accentRgb},0.06)`, border: `1px solid rgba(${accentRgb},0.15)` }}>
-                          <div className="flex items-center gap-1.5 text-xs" style={{ color: 'rgba(255,255,255,0.5)' }}><Key size={11} />GitHub Personal Access Token</div>
-                          <div className="flex gap-2">
-                            <input type="password" value={tokenInput} onChange={e => setTokenInput(e.target.value)} onKeyDown={e => e.key === 'Enter' && handleAddAccount()}
-                              placeholder="ghp_xxxxxxxxxxxxxxxxxxxx"
-                              className="flex-1 px-3 py-2 rounded-lg text-xs outline-none font-mono"
-                              style={{ background: 'rgba(255,255,255,0.06)', border: `1px solid rgba(${accentRgb},0.2)`, color: 'rgba(255,255,255,0.9)' }} />
-                            <button onClick={handleAddAccount} disabled={isLoading}
-                              className="px-3 py-2 rounded-lg text-xs font-medium transition-all"
-                              style={{ background: `rgba(${accentRgb},0.2)`, color: accentColor, border: `1px solid rgba(${accentRgb},0.3)` }}>
-                              {isLoading ? <Loader2 size={12} className="animate-spin" /> : 'Connect'}
-                            </button>
-                          </div>
-                          <div className="text-xs" style={{ color: 'rgba(255,255,255,0.3)' }}>
-                            Needs: repo, read:user scopes.{' '}
-                            <a href="https://github.com/settings/tokens/new" target="_blank" rel="noopener noreferrer" className="underline" style={{ color: accentColor }}>Create token</a>
-                          </div>
-                        </div>
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
 
                   {accounts.length === 0 ? (
                     <div className="flex flex-col items-center justify-center py-10 text-center space-y-3" style={{ color: 'rgba(255,255,255,0.3)' }}>
                       <Github size={32} style={{ opacity: 0.3 }} />
                       <div className="text-sm">No accounts connected</div>
-                      <div className="text-xs">Add a GitHub PAT token to get started</div>
+                      <div className="text-xs">Connect securely with GitHub OAuth to get started</div>
                     </div>
                   ) : (
                     <div className="space-y-2">

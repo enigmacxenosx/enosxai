@@ -1,6 +1,6 @@
 /**
  * useGitHub — Enhanced GitHub integration hook.
- * Supports multi-account PAT tokens, repo browsing, file editing,
+ * Supports multi-account OAuth tokens, repo browsing, file editing,
  * AI-assisted content generation, and pushing commits via GitHub REST API.
  */
 import { useState, useCallback } from 'react';
@@ -122,6 +122,40 @@ export function useGitHub() {
       return false;
     }
   }, [setLoading, setError]);
+
+  const connectWithOAuth = useCallback((): Promise<boolean> => {
+    return new Promise((resolve) => {
+      const popup = window.open("/api/github/oauth/start", "enosx-github-oauth", "popup,width=620,height=760");
+      if (!popup) {
+        setError("Please allow popups to connect GitHub.");
+        resolve(false);
+        return;
+      }
+      let settled = false;
+      let checkClosed: number;
+      const onMessage = async (event: MessageEvent) => {
+        if (event.origin !== window.location.origin || event.data?.type !== "enosx-github-oauth") return;
+        const account = event.data.payload?.account as GitHubAccount | undefined;
+        if (!account?.token) {
+          setError(event.data.payload?.error || "GitHub connection failed");
+          finish(false);
+          return;
+        }
+        finish(await addAccount(account.username, account.token));
+      };
+      const finish = (success: boolean) => {
+        if (settled) return;
+        settled = true;
+        window.removeEventListener("message", onMessage);
+        window.clearInterval(checkClosed);
+        resolve(success);
+      };
+      checkClosed = window.setInterval(() => {
+        if (popup.closed) finish(false);
+      }, 500);
+      window.addEventListener("message", onMessage);
+    });
+  }, [addAccount, setError]);
 
   const removeAccount = useCallback((id: string) => {
     setState(prev => {
@@ -467,6 +501,7 @@ export function useGitHub() {
     isLoading: state.isLoading,
     error: state.error,
     addAccount,
+    connectWithOAuth,
     removeAccount,
     switchAccount,
     fetchRepos,

@@ -8,6 +8,7 @@ import { useEffect, useRef } from "react";
 import { motion } from "framer-motion";
 import { Search, MessageSquare, X } from "lucide-react";
 import { ConversationSearchMatch } from "@/hooks/useConversationSearch";
+import { Conversation } from "@/lib/types";
 import { useTheme } from "@/contexts/ThemeContext";
 
 interface ConversationSearchDialogProps {
@@ -15,6 +16,7 @@ interface ConversationSearchDialogProps {
   query: string;
   setQuery: (value: string) => void;
   results: ConversationSearchMatch[];
+  conversations: Conversation[];
   onClose: () => void;
   onSelect: (conversationId: string) => void;
   onOpenLeadCapture?: () => void;
@@ -25,6 +27,7 @@ export default function ConversationSearchDialog({
   query,
   setQuery,
   results,
+  conversations,
   onClose,
   onSelect,
   onOpenLeadCapture,
@@ -89,11 +92,35 @@ export default function ConversationSearchDialog({
         <div className="max-h-[55vh] overflow-y-auto">
           {query.trim().length < 2 && (
             <div className="px-4 py-6">
-              <p className="text-center text-xs text-white/40 mb-3">
-                Type at least two characters to search across every conversation.
+              <p className="text-xs text-white/40 mb-3">
+                {conversations.length > 0
+                  ? "Select a conversation or search across your history."
+                  : "No saved conversations yet. Start a new chat to see it here."}
               </p>
+              {conversations.length > 0 && (
+                <div className="space-y-1">
+                  {conversations.map((conversation) => (
+                    <button
+                      key={conversation.id}
+                      onClick={() => {
+                        onSelect(conversation.id);
+                        onClose();
+                      }}
+                      className="w-full flex items-center gap-3 rounded-xl px-3 py-2.5 text-left hover:bg-white/[0.06] transition-colors"
+                    >
+                      <MessageSquare size={14} className="shrink-0" style={{ color: config.accent }} />
+                      <span className="min-w-0 flex-1 truncate text-sm text-white/80">
+                        {conversation.title || "New Chat"}
+                      </span>
+                      <span className="shrink-0 text-[10px] text-white/35">
+                        {conversation.messages.length} {conversation.messages.length === 1 ? "message" : "messages"}
+                      </span>
+                    </button>
+                  ))}
+                </div>
+              )}
               {onOpenLeadCapture && (
-                <p className="text-center text-xs text-white/50">
+                <p className="text-center text-xs text-white/50 mt-4">
                   Or{" "}
                   <button
                     onClick={() => {

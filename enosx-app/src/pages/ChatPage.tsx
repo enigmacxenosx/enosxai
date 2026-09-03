@@ -1060,6 +1060,7 @@ ${getAdminContext()}` : ""}`,
         query={conversationSearch.query}
         setQuery={conversationSearch.setQuery}
         results={conversationSearch.results}
+        conversations={conversations}
         onClose={conversationSearch.close}
         onSelect={(id) => {
           setActiveId(id);

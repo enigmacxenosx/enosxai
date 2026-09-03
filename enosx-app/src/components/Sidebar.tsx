@@ -15,7 +15,6 @@ import {
   Crown,
   Info,
   X,
-  Github,
   User,
   NotebookPen,
   BookOpen,
@@ -37,7 +36,6 @@ interface SidebarProps {
   collapsed?: boolean;
   onToggle?: () => void;
   onSettingsClick?: () => void;
-  onGitHubClick?: () => void;
   onProfileClick?: () => void;
   onLibraryClick?: () => void;
   onScreenGuiderClick?: () => void;
@@ -56,7 +54,6 @@ export default function Sidebar({
   collapsed = true,
   onToggle,
   onSettingsClick,
-  onGitHubClick,
   onProfileClick,
   onLibraryClick,
   onScreenGuiderClick,
@@ -109,15 +106,6 @@ export default function Sidebar({
       onClick: onComputerClick || (() => { window.location.href = "/computer"; }),
       accent: false,
       danger: false,
-    },
-    {
-      label: "GitHub",
-      description: "Deploy & Push to Cloud",
-      icon: Github,
-      onClick: onGitHubClick || (() => {}),
-      accent: false,
-      danger: false,
-      details: "Connected"
     },
     {
       label: "About ENOSX",
@@ -208,11 +196,6 @@ export default function Sidebar({
                 <div className="flex flex-col items-start overflow-hidden flex-1">
                   <div className="flex items-center justify-between w-full">
                     <span className="text-sm font-semibold whitespace-nowrap">{item.label}</span>
-                    {item.details && (
-                      <span className="text-[8px] px-1.5 py-0.5 rounded-full bg-green-500/20 text-green-400 font-bold uppercase tracking-tighter border border-green-500/30">
-                        {item.details}
-                      </span>
-                    )}
                   </div>
                   <span className="text-[10px] opacity-60 whitespace-nowrap">{item.description}</span>
                 </div>

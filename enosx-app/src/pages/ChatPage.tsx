@@ -852,9 +852,8 @@ ${getAdminContext()}` : ""}`,
           onDelete={deleteConversation}
           collapsed={isSidebarCollapsed}
           onToggle={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
-          onSettingsClick={() => setShowProfilePanel(true)}
-          onGitHubClick={() => setShowGitHubPanel(true)}
-          onProfileClick={() => setShowProfilePanel(true)}
+  onSettingsClick={() => setShowProfilePanel(true)}
+  onProfileClick={() => setShowProfilePanel(true)}
           onLibraryClick={() => conversationSearch.open()}
           onScreenGuiderClick={toggleScreenGuider}
           onComputerClick={() => { window.location.href = "/computer"; }}
@@ -876,10 +875,7 @@ ${getAdminContext()}` : ""}`,
             setIsMobileSidebarOpen(false);
             setShowProfilePanel(true);
           }}
-          onGitHubClick={() => {
-            setShowGitHubPanel(true);
-            setIsMobileSidebarOpen(false);
-          }}
+
           onProfileClick={() => {
             setShowProfilePanel(true);
             setIsMobileSidebarOpen(false);

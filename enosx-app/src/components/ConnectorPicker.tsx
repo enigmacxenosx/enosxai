@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { Cable, Check, Search, SlidersHorizontal, X } from "lucide-react";
 import { useTheme } from "@/contexts/ThemeContext";
-import { CONNECTOR_CATALOG, ConnectorKind } from "@/lib/connectorCatalog";
+import { CONNECTOR_CATALOG, CONNECTOR_COUNT, ConnectorKind } from "@/lib/connectorCatalog";
 import ConnectorLogo from "./ConnectorLogo";
 
 interface ConnectorPickerProps {
@@ -136,7 +136,7 @@ export default function ConnectorPicker({
                     <Cable size={15} style={{ color: config.accent }} />
                     Connectors
                     <span className="text-[10px] font-medium text-white/40">
-                      100 available
+                      {CONNECTOR_COUNT} available
                     </span>
                   </div>
                   <p className="mt-1 text-[11px] leading-relaxed text-white/45">

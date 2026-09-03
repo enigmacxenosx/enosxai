@@ -140,7 +140,7 @@ export default function ChatPage() {
   const [activeId, setActiveId] = useState<string | null>(() => {
     return localStorage.getItem("enosx_active_chat");
   });
-  const [activeMode, setActiveMode] = useState<AIMode>("ex");
+  const [activeMode, setActiveMode] = useState<AIMode>("ex-core");
   const { user, isAuthenticated } = useAuth();
 
   // Persist conversations to localStorage and Neon
@@ -452,7 +452,7 @@ export default function ChatPage() {
                 ? {
                     ...c,
                     messages: c.messages.map((m) =>
-                      m.id === assistantId ? { ...m, content: "Sorry, I couldn't generate that image. If you're on Free Mode, image generation requires top-up credits on OpenRouter. Please try again later." } : m
+                      m.id === assistantId ? { ...m, content: "Sorry, I couldn't generate that image. If you're on EX Core (Free), image generation requires top-up credits on OpenRouter. Please try again later." } : m
                     ),
                   }
                 : c

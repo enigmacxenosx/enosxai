@@ -26,8 +26,6 @@ export default function CompactMode({
   const [position, setPosition] = useState({ x: window.innerWidth - 420, y: 100 });
   const dragRef = useRef<HTMLDivElement>(null);
 
-  if (!isOpen) return null;
-
   const handleDragEnd = (_: unknown, info: any) => {
     const x = info.point.x;
     const y = info.point.y;
@@ -46,6 +44,8 @@ export default function CompactMode({
 
     setPosition({ x: snappedX, y: snappedY });
   };
+
+  if (!isOpen) return null;
 
   return (
     <motion.div

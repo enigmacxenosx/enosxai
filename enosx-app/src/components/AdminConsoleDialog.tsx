@@ -36,8 +36,6 @@ export default function AdminConsoleDialog({ isOpen, onClose }: AdminConsoleDial
   const [instructions, setInstructions] = useState(config.extraInstructions);
   const [facts, setFacts] = useState(config.extraFacts);
 
-  if (!isOpen) return null;
-
   const handleSave = () => {
     updateConfig({ extraInstructions: instructions, extraFacts: facts });
     toast.success("Admin context saved. New conversations will use it immediately.");
@@ -49,6 +47,8 @@ export default function AdminConsoleDialog({ isOpen, onClose }: AdminConsoleDial
   };
 
   const contextSummary = getAdminContext().trim();
+
+  if (!isOpen) return null;
 
   return (
     <motion.div

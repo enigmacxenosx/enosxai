@@ -110,32 +110,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     const ctxStr = typeof githubContext === "string" ? githubContext.slice(0, 20000) : "";
 
-    // Adjust system prompt based on AI mode
-    let modeNote = "";
-    if (aiMode) {
-      switch (aiMode) {
-        case "ex-pro":
-          modeNote = "\n\nYou are running in EX Pro mode: provide expert-level, comprehensive, deeply detailed responses.";
-          break;
-        case "smart":
-          modeNote = "\n\nYou are running in Smart mode: prioritize accuracy, reasoning, and thoughtful analysis.";
-          break;
-        case "fast":
-          modeNote = "\n\nYou are running in Fast mode: be concise, direct, and respond as quickly as possible.";
-          break;
-        case "balanced":
-          modeNote = "\n\nYou are running in Balanced mode: provide clear, well-structured responses with good depth.";
-          break;
-        case "task":
-          modeNote = "\n\nYou are running in Task mode: focus on actionable steps, structured outputs, and task completion.";
-          break;
-        case "creative":
-          modeNote = "\n\nYou are running in Creative mode: be imaginative, expressive, and think outside the box.";
-          break;
-        default:
-          break;
-      }
-    }
+    // Keep the public mode contract aligned with the three-tier selector.
+    const modeNotes: Record<string, string> = {
+      "ex-core": "\n\nYou are running in EX Core (Free) mode: be helpful, clear, reliable, and efficient.",
+      "ex-pro": "\n\nYou are running in EX Pro mode: provide expert-level, comprehensive, deeply technical responses.",
+      "enosh-mind": "\n\nYou are running in ENOSH MIND mode: use maximum analytical depth, strategic insight, cross-domain reasoning, and rigorous execution.",
+    };
+    const modeNote = modeNotes[aiMode] || modeNotes["ex-core"];
 
     const chatMessages = [
       { role: "system", content: SYSTEM_PROMPT + modeNote },

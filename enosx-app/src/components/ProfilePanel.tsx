@@ -329,9 +329,9 @@ export default function ProfilePanel({ isOpen, onClose, onOpenAdminConsole, onOp
 
               {/* ── AUTH VIEW ── */}
               {view === 'auth' && (
-                <div className="px-5 py-6 space-y-5">
+                <div className="auth-neon-shell px-5 py-6 space-y-5">
                   <div className="text-center space-y-2 pb-2">
-                    <BrandMark size={64} animate className="mx-auto" />
+                    <BrandMark size={64} animate className="auth-neon-brand mx-auto" />
                     <div className="text-lg font-bold" style={{ color: 'rgba(255,255,255,0.9)' }}>
                       {authMode === 'signin' ? 'Welcome back' : 'Join ENOSX'}
                     </div>
@@ -346,7 +346,7 @@ export default function ProfilePanel({ isOpen, onClose, onOpenAdminConsole, onOp
                         <label style={labelStyle}>DISPLAY NAME</label>
                         <div className="relative">
                           <User size={14} className="absolute left-3 top-1/2 -translate-y-1/2" style={{ color: 'rgba(255,255,255,0.3)' }} />
-                          <input type="text" value={displayName} onChange={e => setDisplayName(e.target.value)} placeholder="Your name" style={{ ...inputStyle, paddingLeft: 36 }} />
+                          <input type="text" value={displayName} onChange={e => setDisplayName(e.target.value)} placeholder="Your name" className="auth-neon-input" style={{ ...inputStyle, paddingLeft: 36 }} />
                         </div>
                       </div>
                     )}
@@ -354,14 +354,14 @@ export default function ProfilePanel({ isOpen, onClose, onOpenAdminConsole, onOp
                       <label style={labelStyle}>EMAIL</label>
                       <div className="relative">
                         <Mail size={14} className="absolute left-3 top-1/2 -translate-y-1/2" style={{ color: 'rgba(255,255,255,0.3)' }} />
-                        <input type="email" value={email} onChange={e => setEmail(e.target.value)} onKeyDown={e => e.key === 'Enter' && handleEmailAuth()} placeholder="you@example.com" style={{ ...inputStyle, paddingLeft: 36 }} />
+                        <input type="email" value={email} onChange={e => setEmail(e.target.value)} onKeyDown={e => e.key === 'Enter' && handleEmailAuth()} placeholder="you@example.com" className="auth-neon-input" style={{ ...inputStyle, paddingLeft: 36 }} />
                       </div>
                     </div>
                     <div>
                       <label style={labelStyle}>PASSWORD</label>
                       <div className="relative">
                         <Lock size={14} className="absolute left-3 top-1/2 -translate-y-1/2" style={{ color: 'rgba(255,255,255,0.3)' }} />
-                        <input type={showPassword ? 'text' : 'password'} value={password} onChange={e => setPassword(e.target.value)} onKeyDown={e => e.key === 'Enter' && handleEmailAuth()} placeholder="••••••••" style={{ ...inputStyle, paddingLeft: 36, paddingRight: 40 }} />
+                        <input type={showPassword ? 'text' : 'password'} value={password} onChange={e => setPassword(e.target.value)} onKeyDown={e => e.key === 'Enter' && handleEmailAuth()} placeholder="••••••••" className="auth-neon-input" style={{ ...inputStyle, paddingLeft: 36, paddingRight: 40 }} />
                         <button onClick={() => setShowPassword(v => !v)} className="absolute right-3 top-1/2 -translate-y-1/2" style={{ color: 'rgba(255,255,255,0.3)' }}>
                           {showPassword ? <EyeOff size={14} /> : <Eye size={14} />}
                         </button>
@@ -372,7 +372,7 @@ export default function ProfilePanel({ isOpen, onClose, onOpenAdminConsole, onOp
                   <button
                     onClick={handleEmailAuth}
                     disabled={isLoading || !email || !password || (authMode === 'signup' && !displayName)}
-                    className="w-full py-3 rounded-2xl text-sm font-bold transition-all hover:scale-[1.02] active:scale-[0.98] flex items-center justify-center gap-2"
+                    className="auth-neon-button w-full py-3 rounded-2xl text-sm font-bold transition-all hover:scale-[1.02] active:scale-[0.98] flex items-center justify-center gap-2"
                     style={{ background: `linear-gradient(135deg, rgba(${accentRgb},0.8), rgba(${accentRgb},0.5))`, border: `1px solid rgba(${accentRgb},0.5)`, color: '#fff', boxShadow: `0 4px 20px rgba(${accentRgb},0.25)`, opacity: isLoading || !email || !password ? 0.7 : 1 }}
                   >
                     {isLoading ? <Loader2 size={15} className="animate-spin" /> : authMode === 'signin' ? 'Sign In' : 'Create Account'}
@@ -394,7 +394,7 @@ export default function ProfilePanel({ isOpen, onClose, onOpenAdminConsole, onOp
                   <button
                     onClick={continueAsGuest}
                     className="w-full py-3 rounded-2xl text-sm font-bold transition-all hover:scale-[1.02] active:scale-[0.98] flex items-center justify-center gap-2"
-                    style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.12)', color: 'rgba(255,255,255,0.85)' }}
+                    className="auth-neon-ghost-button" style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.12)', color: 'rgba(255,255,255,0.85)' }}
                   >
                     Continue as Guest
                   </button>

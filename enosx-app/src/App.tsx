@@ -16,6 +16,7 @@ const AboutPage = lazy(() => import("./pages/AboutPage"));
 const ComputerPage = lazy(() => import("./pages/ComputerPage"));
 const WorkspacePage = lazy(() => import("./pages/WorkspacePage"));
 const KnowledgeBankPage = lazy(() => import("./pages/KnowledgeBankPage"));
+const MediaLibraryPage = lazy(() => import("./pages/MediaLibraryPage"));
 const SplashPage = lazy(() => import("./components/SplashPage"));
 
 // Loading fallback component
@@ -46,6 +47,7 @@ function Router() {
         <Route path={"/computer"} component={ComputerPage} />
         <Route path={"/workspace"} component={WorkspacePage} />
         <Route path={"/knowledge-bank"} component={KnowledgeBankPage} />
+        <Route path={"/media-library"} component={MediaLibraryPage} />
         <Route path={"/about"} component={AboutPage} />
         <Route path={"/404"} component={NotFound} />
         <Route component={NotFound} />

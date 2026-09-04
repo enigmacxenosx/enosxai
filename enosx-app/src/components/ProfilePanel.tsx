@@ -393,8 +393,8 @@ export default function ProfilePanel({ isOpen, onClose, onOpenAdminConsole, onOp
 
                   <button
                     onClick={continueAsGuest}
-                    className="w-full py-3 rounded-2xl text-sm font-bold transition-all hover:scale-[1.02] active:scale-[0.98] flex items-center justify-center gap-2"
-                    className="auth-neon-ghost-button" style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.12)', color: 'rgba(255,255,255,0.85)' }}
+                    className="auth-neon-ghost-button w-full py-3 rounded-2xl text-sm font-bold transition-all hover:scale-[1.02] active:scale-[0.98] flex items-center justify-center gap-2"
+                    style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.12)', color: 'rgba(255,255,255,0.85)' }}
                   >
                     Continue as Guest
                   </button>

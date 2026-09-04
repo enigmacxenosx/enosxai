@@ -288,7 +288,7 @@ export default function ChatPage() {
         toast.error("File too large (maximum 25MB per file)");
         return;
       }
-      try {      try {
+      try {
         let content = "";
         if (isText) {
           content = await file.text();

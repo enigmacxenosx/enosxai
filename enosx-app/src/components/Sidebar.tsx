@@ -19,6 +19,7 @@ import {
   NotebookPen,
   BookOpen,
   Laptop,
+  Library,
 } from "lucide-react";
 import { Conversation } from "@/lib/types";
 import { useTheme } from "@/contexts/ThemeContext";
@@ -81,6 +82,14 @@ export default function Sidebar({
       description: "Browse past conversations",
       icon: BookOpen,
       onClick: onLibraryClick || (() => {}),
+      accent: false,
+      danger: false,
+    },
+    {
+      label: "Media Library",
+      description: "Your files, folders, and playlists",
+      icon: Library,
+      onClick: () => { window.location.href = "/media-library"; },
       accent: false,
       danger: false,
     },

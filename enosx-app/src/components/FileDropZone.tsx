@@ -128,7 +128,7 @@ export default function FileDropZone({ onFileSelected, isActive = true, currentF
                   className="text-sm"
                   style={{ color: config.textMuted }}
                 >
-                  Images, Documents (PDF/Word/Excel), Code, or JSON
+                  Any file type — images, audio, video, documents, code, and more
                 </p>
                 <p className="text-xs mt-2" style={{ color: config.accent }}>
                   {currentFileCount} / 10 files uploaded

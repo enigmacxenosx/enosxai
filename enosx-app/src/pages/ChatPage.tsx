@@ -265,8 +265,8 @@ export default function ChatPage() {
   const { activeWindow } = useActiveWindow();
   const { enrichMessageWithContext } = useContextAwareMessages();
   const { fileContext, getFileContextMessage, clearFiles, loadFile, removeFile } = useFileContext();
-  const { getMemoryContext } = useMemoryBank();
-  const { getKnowledgeContext } = useKnowledgeBank();
+  const { getMemoryContext, addMemory } = useMemoryBank();
+  const { getKnowledgeContext, addEntry } = useKnowledgeBank();
   const { parseActions } = useSystemActions();
 
   const handleFileUpload = useCallback(
@@ -417,6 +417,16 @@ export default function ChatPage() {
         timestamp: new Date(),
         attachments: fileContext.isLoaded ? [...fileContext.files] : undefined,
       };
+
+      // Explicit memory capture: phrases beginning with remember/save this are
+      // committed to both durable memory and the vector-indexed Knowledge Bank.
+      const rememberMatch = text.match(/^(?:remember(?: that)?|save this|store this)\\s*[:,-]?\\s*(.+)$/i);
+      if (rememberMatch?.[1]) {
+        const remembered = rememberMatch[1].trim();
+        addMemory("fact", remembered, { source: "chat", capturedAt: new Date().toISOString() });
+        addEntry({ title: remembered.slice(0, 80), content: remembered, kind: "fact", source: "Chat memory capture", tags: ["remembered", "chat"] });
+        toast.success("Saved to ENOSX long-term memory and Knowledge Bank");
+      }
 
       // Clear files after sending
       clearFiles();
@@ -649,7 +659,7 @@ ${getAdminContext()}` : ""}`,
         sendingRef.current = false;
       }
     },
-    [sendMessage, speak, autoSpeak, fileContext.isLoaded, getFileContextMessage, getMemoryContext, getKnowledgeContext, enrichMessageWithContext, activeWindow, clearFiles, parseActions, speechSettings.continuousConversation, scheduleListenAgain]
+    [sendMessage, speak, autoSpeak, fileContext.isLoaded, getFileContextMessage, getMemoryContext, getKnowledgeContext, addMemory, addEntry, enrichMessageWithContext, activeWindow, clearFiles, parseActions, speechSettings.continuousConversation, scheduleListenAgain]
   );
 
   const createNewChat = useCallback(() => {

@@ -16,8 +16,15 @@ export interface MemoryEntry {
 
 const STORAGE_KEY = "enosx_memory_bank";
 
+function loadStoredMemories(): MemoryEntry[] {
+  try {
+    const stored = localStorage.getItem(STORAGE_KEY);
+    return stored ? JSON.parse(stored).map((m: any) => ({ ...m, timestamp: new Date(m.timestamp) })) : [];
+  } catch { return []; }
+}
+
 export function useMemoryBank() {
-  const [memories, setMemories] = useState<MemoryEntry[]>([]);
+  const [memories, setMemories] = useState<MemoryEntry[]>(loadStoredMemories);
 
   // System-level memories that are always present but not necessarily stored in localStorage
   const systemMemories = useMemo<MemoryEntry[]>(() => [
@@ -59,23 +66,18 @@ export function useMemoryBank() {
     },
   ], []);
 
-  // Load memories on mount
   useEffect(() => {
-    const stored = localStorage.getItem(STORAGE_KEY);
-    if (stored) {
-      try {
-        const parsed = JSON.parse(stored);
-        setMemories(parsed.map((m: any) => ({ ...m, timestamp: new Date(m.timestamp) })));
-      } catch (e) {
-        console.error("Failed to parse memories", e);
-      }
-    }
+    const refresh = () => setMemories(loadStoredMemories());
+    window.addEventListener("storage", refresh);
+    window.addEventListener("enosx:memory-updated", refresh);
+    return () => { window.removeEventListener("storage", refresh); window.removeEventListener("enosx:memory-updated", refresh); };
   }, []);
 
-  // Save memories whenever they change
-  useEffect(() => {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(memories));
-  }, [memories]);
+  const commitMemories = useCallback((next: MemoryEntry[]) => {
+    setMemories(next);
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
+    window.dispatchEvent(new CustomEvent("enosx:memory-updated"));
+  }, []);
 
   const addMemory = useCallback((category: MemoryEntry["category"], content: string, metadata?: Record<string, any>) => {
     const newEntry: MemoryEntry = {
@@ -85,16 +87,16 @@ export function useMemoryBank() {
       timestamp: new Date(),
       metadata
     };
-    setMemories(prev => [newEntry, ...prev]);
-  }, []);
+    commitMemories([newEntry, ...loadStoredMemories()]);
+  }, [commitMemories]);
 
   const removeMemory = useCallback((id: string) => {
-    setMemories(prev => prev.filter(m => m.id !== id));
-  }, []);
+    commitMemories(loadStoredMemories().filter(m => m.id !== id));
+  }, [commitMemories]);
 
   const clearMemories = useCallback(() => {
-    setMemories([]);
-  }, []);
+    commitMemories([]);
+  }, [commitMemories]);
 
   const getMemoryContext = useCallback(() => {
     const allMemories = [...systemMemories, ...memories];

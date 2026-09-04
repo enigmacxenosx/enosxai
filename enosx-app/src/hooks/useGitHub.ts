@@ -53,6 +53,10 @@ interface UseGitHubState {
 }
 
 const STORAGE_KEY = 'enosx-github-accounts';
+const CURRENT_REPO_KEY = 'enosx-github-current-repo';
+function loadCurrentRepo(): GitHubRepo | null {
+  try { const raw = localStorage.getItem(CURRENT_REPO_KEY); return raw ? JSON.parse(raw) : null; } catch { return null; }
+}
 
 function loadAccounts(): GitHubAccount[] {
   try {
@@ -75,7 +79,7 @@ export function useGitHub() {
       accounts,
       activeAccount: accounts[0] ?? null,
       repos: [],
-      currentRepo: null,
+      currentRepo: loadCurrentRepo(),
       branches: [],
       files: [],
       currentFile: null,
@@ -264,6 +268,7 @@ export function useGitHub() {
       const files: GitHubFile[] = Array.isArray(filesData)
         ? filesData.map((f: any) => ({ path: f.path, name: f.name, type: f.type === 'dir' ? 'dir' : 'file', sha: f.sha, size: f.size }))
         : [];
+      localStorage.setItem(CURRENT_REPO_KEY, JSON.stringify(repo));
       setState(prev => ({ ...prev, currentRepo: repo, branches, files, currentFile: null, isLoading: false }));
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to select repo');
@@ -398,6 +403,23 @@ export function useGitHub() {
     }
   }, [state.activeAccount, state.currentRepo, setLoading, setError]);
 
+  const upsertFile = useCallback(async (path: string, content: string, commitMessage: string): Promise<boolean> => {
+    const account = state.activeAccount;
+    const repo = state.currentRepo;
+    if (!account || !repo) { setError('Select a GitHub account and repository first'); return false; }
+    setLoading(true); setError(null);
+    try {
+      const fileRes = await fetch(`https://api.github.com/repos/${repo.fullName}/contents/${path}?ref=${repo.branch}`, { headers: { Authorization: `Bearer ${account.token}`, Accept: 'application/vnd.github+json' } });
+      const existing = fileRes.ok ? await fileRes.json() : null;
+      const encodedContent = btoa(unescape(encodeURIComponent(content)));
+      const body: any = { message: commitMessage, content: encodedContent, branch: repo.branch };
+      if (existing?.sha) body.sha = existing.sha;
+      const res = await fetch(`https://api.github.com/repos/${repo.fullName}/contents/${path}`, { method: 'PUT', headers: { Authorization: `Bearer ${account.token}`, Accept: 'application/vnd.github+json', 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+      if (!res.ok) { const data = await res.json().catch(() => null); throw new Error(data?.message || 'Knowledge Bank push failed'); }
+      setLoading(false); return true;
+    } catch (err) { setError(err instanceof Error ? err.message : 'Knowledge Bank push failed'); setLoading(false); return false; }
+  }, [state.activeAccount, state.currentRepo, setLoading, setError]);
+
   const deleteFile = useCallback(async (path: string, commitMessage: string): Promise<boolean> => {
     const account = state.activeAccount;
     const repo = state.currentRepo;
@@ -514,6 +536,7 @@ export function useGitHub() {
     updateFile,
     pushChanges,
     createFile,
+    upsertFile,
     deleteFile,
     createPullRequest,
     getPullRequests,

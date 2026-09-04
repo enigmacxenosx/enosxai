@@ -276,37 +276,19 @@ export default function ChatPage() {
         return;
       }
 
-      const SUPPORTED_TEXT_TYPES = [
-        "text/plain", "text/markdown", "application/json", "text/javascript", 
-        "text/typescript", "text/x-python", "text/x-java", "text/x-c", 
-        "text/x-cpp", "application/xml", "text/html", "text/css"
-      ];
-      const SUPPORTED_IMAGE_TYPES = ["image/jpeg", "image/png", "image/gif", "image/webp"];
-      const SUPPORTED_DOC_TYPES = [
-        "application/pdf", "application/msword", 
-        "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-        "application/vnd.ms-excel", 
-        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-        "application/vnd.ms-powerpoint", 
-        "application/vnd.openxmlformats-officedocument.presentationml.presentation"
-      ];
-
-      const isText = SUPPORTED_TEXT_TYPES.includes(file.type) || file.name.match(/\.(txt|md|json|js|ts|py|java|c|cpp|xml|html|css)$/i);
-      const isImage = SUPPORTED_IMAGE_TYPES.includes(file.type) || file.name.match(/\.(jpg|jpeg|png|gif|webp)$/i);
-      const isDoc = SUPPORTED_DOC_TYPES.includes(file.type) || file.name.match(/\.(pdf|doc|docx|xls|xlsx|ppt|pptx)$/i);
-
-      if (!isText && !isImage && !isDoc) {
-        toast.error(`Unsupported file type: ${file.name.split(".").pop()}`);
-        return;
-      }
-
-      const maxSize = isDoc ? 10 * 1024 * 1024 : 5 * 1024 * 1024;
+      // ENOSX accepts any file type. Text is sent as readable context; binary files
+      // are kept as data URLs so images, music, video, and unknown formats can be
+      // previewed or downloaded in the conversation.
+      const extension = file.name.split(".").pop()?.toLowerCase() || "";
+      const isText = file.type.startsWith("text/") || [
+        "txt", "md", "json", "js", "ts", "tsx", "jsx", "py", "java", "c", "cpp", "xml", "html", "css", "sql", "yaml", "yml", "csv"
+      ].includes(extension);
+      const maxSize = 25 * 1024 * 1024;
       if (file.size > maxSize) {
-        toast.error(`File too large (max ${isDoc ? "10MB" : "5MB"})`);
+        toast.error("File too large (maximum 25MB per file)");
         return;
       }
-
-      try {
+      try {      try {
         let content = "";
         if (isText) {
           content = await file.text();
@@ -325,6 +307,10 @@ export default function ChatPage() {
     },
     [fileContext.files.length, loadFile]
   );
+
+  const handleFilesSelected = useCallback((files: File[]) => {
+    files.forEach((file) => { void handleFileUpload(file); });
+  }, [handleFileUpload]);
 
   const [isGodModeActive, setIsGodModeActive] = useState(false);
   // Standalone split-screen toggle (shared with /workspace via localStorage).
@@ -745,6 +731,7 @@ ${getAdminContext()}` : ""}`,
           isImageMode={isImageMode}
           onToggleImageMode={handleToggleImageMode}
           isFreeMode={isFreeMode}
+          onFilesSelected={handleFilesSelected}
         />
       </GlobalLayout>
     );
@@ -775,6 +762,7 @@ ${getAdminContext()}` : ""}`,
           isImageMode={isImageMode}
           onToggleImageMode={handleToggleImageMode}
           isFreeMode={isFreeMode}
+          onFilesSelected={handleFilesSelected}
         />
       </GlobalLayout>
     );
@@ -1052,6 +1040,7 @@ ${getAdminContext()}` : ""}`,
               isImageMode={isImageMode}
               onToggleImageMode={handleToggleImageMode}
               isFreeMode={isFreeMode}
+              onFilesSelected={handleFilesSelected}
             />
           </div>
         </div>

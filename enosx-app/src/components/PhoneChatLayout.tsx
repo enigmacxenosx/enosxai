@@ -30,6 +30,7 @@ interface PhoneChatLayoutProps {
   isImageMode?: boolean;
   onToggleImageMode?: () => void;
   isFreeMode?: boolean;
+  onFilesSelected?: (files: File[]) => void;
 }
 
 export default function PhoneChatLayout({
@@ -54,6 +55,7 @@ export default function PhoneChatLayout({
   isImageMode = false,
   onToggleImageMode,
   isFreeMode = false,
+  onFilesSelected,
 }: PhoneChatLayoutProps) {
   const { config } = useTheme();
 
@@ -113,6 +115,7 @@ export default function PhoneChatLayout({
           isImageMode={isImageMode}
           onToggleImageMode={onToggleImageMode}
           isFreeMode={isFreeMode}
+          onFilesSelected={onFilesSelected}
         />
       </div>
 

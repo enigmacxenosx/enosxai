@@ -7,6 +7,7 @@ import imageRouter from "./image";
 import historyRouter from "./history";
 import githubOAuthRouter from "./githubOAuth";
 import connectorOAuthRouter from "./connectorOAuth";
+import mediaRouter from "./media";
 
 const router: IRouter = Router();
 
@@ -16,6 +17,7 @@ router.use(authRouter);
 router.use("/browser", browserRouter);
 router.use(imageRouter);
 router.use(historyRouter);
+router.use(mediaRouter);
 router.use(githubOAuthRouter);
 router.use(connectorOAuthRouter);
 

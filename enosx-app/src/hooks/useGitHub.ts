@@ -186,6 +186,7 @@ export function useGitHub() {
     if (!account) return;
     try {
       const res = await fetch('https://api.github.com/user/repos?per_page=100&sort=updated', {
+        cache: 'no-store',
         headers: {
           Authorization: `Bearer ${account.token}`,
           Accept: 'application/vnd.github+json',
@@ -256,9 +257,11 @@ export function useGitHub() {
     try {
       const [branchRes, filesRes] = await Promise.all([
         fetch(`https://api.github.com/repos/${repo.fullName}/branches`, {
+          cache: 'no-store',
           headers: { Authorization: `Bearer ${account.token}`, Accept: 'application/vnd.github+json' },
         }),
         fetch(`https://api.github.com/repos/${repo.fullName}/contents?ref=${repo.branch}`, {
+          cache: 'no-store',
           headers: { Authorization: `Bearer ${account.token}`, Accept: 'application/vnd.github+json' },
         }),
       ]);

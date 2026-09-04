@@ -495,10 +495,16 @@ export default function ChatPage() {
 
       const currentConv = conversationsRef.current.find((c) => c.id === targetConvId);
       const history = currentConv ? currentConv.messages : [];
-      const githubContext = await (window as any).__getGitHubContext?.();
       const selectedConnectorNames = (selectedConnectorIds ?? [])
         .map((id) => CONNECTOR_CATALOG.find((connector) => connector.id === id)?.name)
         .filter((name): name is string => Boolean(name));
+      // Connector access is opt-in. An authorized connector must not be
+      // inspected just because it exists; only a connector selected for this
+      // prompt may contribute runtime context.
+      const githubSelected = (selectedConnectorIds ?? []).includes("github");
+      const githubContext = githubSelected
+        ? await (window as any).__getGitHubContext?.()
+        : "";
       const connectorContext = selectedConnectorNames.length
         ? `### Selected Connectors\nThe user selected these connector services for this chat: ${selectedConnectorNames.join(", ")}. Treat them as requested context. Use a connector only when its capability is actually available to the runtime; if it is not connected, state that clearly instead of claiming an external action was completed.`
         : "";
@@ -539,6 +545,11 @@ ${companyFaqs}
 ${githubContext}
 
 ${connectorContext}
+
+### Connector Privacy and Access
+- Never inspect, query, or use a connected connector unless the user explicitly selected it for this prompt.
+- Do not access connectors to check deployment status or deployment errors unless the user explicitly selected the relevant connector and asked for that check.
+- If no connector is selected, answer from the current conversation and available local context only.
 
 ### Operational Directives
 - Optimize for readability first, then performance

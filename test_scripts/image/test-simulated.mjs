@@ -16,7 +16,7 @@ let handler;
 try {
   const esbuild = await import("esbuild");
   const compiled = esbuild.buildSync({
-    entryPoints: [join(__dirname, "generate.ts")],
+    entryPoints: [join(__dirname, "../../api/image/generate.ts")],
     bundle: true,
     write: false,
     format: "esm",

@@ -1,83 +1,66 @@
-# ENOSX AI Project
+# ENOSX AI
 
-![Enosx Technologies](https://img.shields.io/badge/Enosx-Technologies-0ea5e9) ![pnpm](https://img.shields.io/badge/package%20manager-pnpm-f69220) ![Live](https://img.shields.io/badge/live-enosxai.vercel.app-22c55e)
+ENOSX AI is the flagship AI assistant and application platform from [Enosx Technologies](https://github.com/enigmacxenosx). This monorepo contains the React application, API services, shared libraries, and supporting documentation.
 
-This repository contains the core components of the ENOSX AI ecosystem, including the API server, the main application, and various utility scripts and documentation.
+[![Live site](https://img.shields.io/badge/live-enosxai.vercel.app-22c55e)](https://enosxai.vercel.app) [![Package manager](https://img.shields.io/badge/package%20manager-pnpm-f69220)](https://pnpm.io/)
 
-> **ENOSX AI** is the flagship AI assistant of Enosx Technologies — founded in 2024 by [Enosh Yeswa](https://github.com/enigmacxenosx). WhatsApp [+254 798 303 978](https://wa.me/254798303978) · Instagram [@enosx_tech](https://instagram.com/enosx_tech) · [@engima_cx](https://instagram.com/engima_cx)
+## Product
 
-## Live Site
+The platform combines a Vite and React frontend with Express and Vercel API services. It also includes the standalone ExLover Coach application under `exlover/`.
 
-| Item | Details |
-| :--- | :--- |
-| Production | [enosxai.vercel.app](https://enosxai.vercel.app) |
-| Stack | Express API server, Vite + React frontend, pnpm workspaces |
-| Hosting | Vercel |
+## Live applications
 
-### GitHub OAuth setup
+| Application | URL |
+|---|---|
+| ENOSX AI | [enosxai.vercel.app](https://enosxai.vercel.app) |
+| ExLover Coach | [exlover.vercel.app](https://exlover.vercel.app) |
 
-The GitHub integration uses an OAuth App; users do not enter personal access tokens in ENOSX AI. Configure these server-side environment variables in Vercel:
+## Repository structure
 
-| Variable | Value |
-| :--- | :--- |
-| `GITHUB_CLIENT_ID` | GitHub OAuth App client ID |
-| `GITHUB_CLIENT_SECRET` | GitHub OAuth App client secret |
-| `GITHUB_OAUTH_STATE_SECRET` | Random long secret used to sign OAuth state values |
-| `GITHUB_OAUTH_REDIRECT_ORIGIN` | `https://enosxai.vercel.app` |
+| Path | Purpose |
+|---|---|
+| `enosx-app/` | Vite and React frontend |
+| `api-server/` | Main Express API server |
+| `api/` | Vercel serverless functions |
+| `lib/` | Shared schemas, clients, and utilities |
+| `exlover/` | Relationship-coaching application |
+| `docs/` | Setup, design, and maintenance documentation |
+| `scripts/` | Project utilities and automation |
 
-Register `https://enosxai.vercel.app/api/github/oauth/callback` as the OAuth App callback URL. The server exchanges the authorization code and the browser receives the authenticated account through a same-origin popup message.
+## Getting started
 
-## Repository Structure
+Requirements: Node.js and [pnpm](https://pnpm.io/installation).
 
-The repository has been organized to separate core application code from documentation and session artifacts:
+```bash
+git clone https://github.com/enigmacxenosx/enosxai.git
+cd enosxai
+pnpm install
+pnpm dev
+```
 
-| Directory | Description |
-| :--- | :--- |
-| `api/` | Serverless API functions for Vercel deployment. |
-| `api-server/` | The main Express-based API server for ENOSX AI. |
-| `enosx-app/` | The frontend application for the ENOSX AI assistant. |
-| `lib/` | Shared libraries, including database schemas and API clients. |
-| `mockup-sandbox/` | A development environment for UI mockups and testing. |
-| `docs/` | Project documentation, including fix summaries and design documents. |
-| `chats/` | Artifacts and scripts generated during AI chat sessions. |
-| `scripts/` | Project-wide utility scripts and automation. |
+See the [setup guide](docs/SETUP_GUIDE.md) for the full development and deployment workflow. For a production validation of ExLover Coach, run `pnpm --filter @enosx/exlover typecheck && pnpm --filter @enosx/exlover build`.
 
-## Key Documentation
+## Configuration
 
-- [Setup Guide](docs/SETUP_GUIDE.md)
-- [Design Document](docs/design_document.md)
-- [Bug Fixes Log](docs/FIXES.md)
-- [Identity Fix Summary](docs/IDENTITY_FIX_SUMMARY.md)
+GitHub sign-in uses an OAuth App. Configure these values in the deployment environment; never commit credentials:
 
-Additional apps in this monorepo:
+- `GITHUB_CLIENT_ID`
+- `GITHUB_CLIENT_SECRET`
+- `GITHUB_OAUTH_STATE_SECRET`
+- `GITHUB_OAUTH_REDIRECT_ORIGIN`
 
-| App | Path | Notes |
-| :--- | :--- | :--- |
-| ENOSX AI assistant | `enosx-app/` | Vite + React frontend |
-| API server | `api-server/` | Express-based main server |
-| Serverless functions | `api/` | Vercel deployments |
-| ExLover Coach | `exlover/` | Relationship-coaching app, live at [exlover.vercel.app](https://exlover.vercel.app) |
+The callback URL for production is `https://enosxai.vercel.app/api/github/oauth/callback`. ExLover Coach uses `OPENROUTER_API_KEY` or `OPENAI_API_KEY` on the server side.
 
-## Enosx Portfolio
+## Deployment and security
 
-| Product | URL |
-| :--- | :--- |
-| ENOSX AI | https://enosxai.vercel.app |
-| E-commerce Hub | https://enosxtech-hub.vercel.app |
-| Tech Site | https://enosxtech.vercel.app |
-| Exlover Coaching | https://exlover.vercel.app |
+The production deployment targets Vercel. Provider credentials remain server-side and must be stored as encrypted deployment secrets. Review the project documentation and run the available checks before release.
 
-## Development
+## Enosx portfolio
 
-This project uses `pnpm` workspaces. To get started:
+- [E-commerce Hub](https://enosxtech-hub.vercel.app)
+- [Official website](https://enosxtech.vercel.app)
+- [Enosh Blog](https://github.com/enigmacxenosx/enosh-blog)
 
-1. Install dependencies: `pnpm install`
-2. Start the development server: `pnpm dev`
+## License
 
-For more details, see the [Setup Guide](docs/SETUP_GUIDE.md).
-
-## ExLover Coach
-
-`exlover/` is a standalone Vite + React relationship-coaching app in this repository. It includes a server-side Vercel function at `exlover/api/chat.ts`, so provider credentials are never sent to the browser. Configure `OPENROUTER_API_KEY` (preferred) or `OPENAI_API_KEY` in the Vercel project environment before production use; do not commit either secret.
-
-To work on the app locally, run `pnpm --filter @enosx/exlover dev`. To validate the production bundle, run `pnpm --filter @enosx/exlover typecheck && pnpm --filter @enosx/exlover build`.
+Proprietary — © 2024–2026 Enosx Technologies. All rights reserved.

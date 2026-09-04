@@ -25,6 +25,7 @@ interface TVChatLayoutProps {
   isImageMode?: boolean;
   onToggleImageMode?: () => void;
   isFreeMode?: boolean;
+  onFilesSelected?: (files: File[]) => void;
 }
 
 export default function TVChatLayout({
@@ -46,6 +47,7 @@ export default function TVChatLayout({
   isImageMode = false,
   onToggleImageMode,
   isFreeMode = false,
+  onFilesSelected,
 }: TVChatLayoutProps) {
   const { config } = useTheme();
   const containerRef = useRef<HTMLDivElement>(null);
@@ -171,6 +173,7 @@ export default function TVChatLayout({
           isImageMode={isImageMode}
           onToggleImageMode={onToggleImageMode}
           isFreeMode={isFreeMode}
+          onFilesSelected={onFilesSelected}
         />
       </div>
     </div>

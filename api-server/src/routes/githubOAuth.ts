@@ -1,5 +1,8 @@
 import { Router, type Request, type Response } from "express";
+// These Vercel handlers are intentionally shared with the Express adapter.
+// @ts-ignore Shared Vercel handler lives outside api-server/src by design.
 import startHandler from "../../../api/github/oauth/start";
+// @ts-ignore Shared Vercel handler lives outside api-server/src by design.
 import callbackHandler from "../../../api/github/oauth/callback";
 
 const router = Router();

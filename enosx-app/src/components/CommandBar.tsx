@@ -10,7 +10,7 @@
 
 import { useState, useRef, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { ArrowUp, Mic, MicOff, Square, Loader2, ChevronDown } from "lucide-react";
+import { ArrowUp, Mic, MicOff, Square, Loader2, ChevronDown, Lock } from "lucide-react";
 import { VoiceState } from "@/lib/types";
 import { useTheme } from "@/contexts/ThemeContext";
 import { useWallpaper } from "@/contexts/WallpaperContext";
@@ -22,6 +22,8 @@ export type AIMode = "ex-core" | "ex-pro" | "enosh-mind";
 export interface AIModeOption {
   id: AIMode;
   label: string;
+  description: string;
+  isPaid: boolean;
   color: string;
   bgColor: string;
   borderColor: string;
@@ -30,7 +32,9 @@ export interface AIModeOption {
 export const AI_MODES: AIModeOption[] = [
   {
     id: "ex-core",
-    label: "EX Core (Free)",
+    label: "EX Core",
+    description: "Everyday intelligence · Free",
+    isPaid: false,
     color: "#7c6ff7",
     bgColor: "rgba(124,111,247,0.15)",
     borderColor: "rgba(124,111,247,0.4)",
@@ -38,6 +42,8 @@ export const AI_MODES: AIModeOption[] = [
   {
     id: "ex-pro",
     label: "EX Pro",
+    description: "Expert intelligence · Paid",
+    isPaid: true,
     color: "#a855f7",
     bgColor: "rgba(168,85,247,0.15)",
     borderColor: "rgba(168,85,247,0.4)",
@@ -45,6 +51,8 @@ export const AI_MODES: AIModeOption[] = [
   {
     id: "enosh-mind",
     label: "ENOSH MIND",
+    description: "Maximum intelligence · Paid",
+    isPaid: true,
     color: "#00f2ff",
     bgColor: "rgba(0,242,255,0.15)",
     borderColor: "rgba(0,242,255,0.4)",
@@ -231,7 +239,7 @@ export default function CommandBar({
                 onToggleConnector={handleToggleConnector}
               />
 
-              {isFreeMode && (
+              {isFreeMode && currentMode.id === "ex-core" && (
                 <motion.div
                   initial={{ opacity: 0, x: -10 }}
                   animate={{ opacity: 1, x: 0 }}
@@ -251,14 +259,14 @@ export default function CommandBar({
                     animate={{ opacity: 1, y: 0, scale: 1 }}
                     exit={{ opacity: 0, y: -4, scale: 0.97 }}
                     transition={{ duration: 0.15 }}
-                    className="absolute bottom-full mb-2 left-0 flex flex-wrap gap-1.5 p-2 rounded-xl z-50"
+                    className="absolute bottom-full mb-2 left-0 flex flex-col gap-1.5 p-2 rounded-xl z-50"
                     style={{
                       background: "rgba(12,12,18,0.97)",
                       border: "1px solid rgba(255,255,255,0.08)",
                       backdropFilter: "blur(16px)",
                       WebkitBackdropFilter: "blur(16px)",
                       boxShadow: "0 8px 32px rgba(0,0,0,0.5)",
-                      minWidth: 220,
+                      minWidth: 250,
                     }}
                   >
                     {AI_MODES.map((mode) => (
@@ -267,7 +275,7 @@ export default function CommandBar({
                         whileHover={{ scale: 1.05 }}
                         whileTap={{ scale: 0.95 }}
                         onClick={() => { setAiMode(mode.id); setModeOpen(false); }}
-                        className="px-3 py-1.5 rounded-lg font-semibold text-xs whitespace-nowrap transition-all"
+                        className="flex items-center justify-between gap-4 px-3 py-2 rounded-lg text-left transition-all"
                         style={
                           aiMode === mode.id
                             ? {
@@ -283,7 +291,11 @@ export default function CommandBar({
                               }
                         }
                       >
-                        {mode.label}
+                        <span className="flex flex-col gap-0.5">
+                          <span className="font-semibold text-xs whitespace-nowrap">{mode.label}</span>
+                          <span className="text-[10px] font-normal opacity-70 whitespace-nowrap">{mode.description}</span>
+                        </span>
+                        {mode.isPaid && <Lock size={11} aria-label="Paid tier" />}
                       </motion.button>
                     ))}
                   </motion.div>

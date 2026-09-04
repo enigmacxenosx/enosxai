@@ -45,7 +45,11 @@ chatRouter.post("/chat", async (req: Request, res: Response) => {
       return;
     }
 
-    const { messages, githubContext, aiMode } = req.body;
+    const { messages, githubContext, aiMode: requestedAiMode } = req.body;
+    const supportedModes = new Set(["ex-core", "ex-pro", "enosh-mind"]);
+    const aiMode = typeof requestedAiMode === "string" && supportedModes.has(requestedAiMode)
+      ? requestedAiMode
+      : "ex-core";
 
     if (!messages || !Array.isArray(messages)) {
       res.status(400).json({ 
@@ -110,8 +114,8 @@ chatRouter.post("/chat", async (req: Request, res: Response) => {
 
     const modeNotes: Record<string, string> = {
       "ex-core": "\n\nYou are running in EX Core (Free) mode: be helpful, clear, reliable, and efficient.",
-      "ex-pro": "\n\nYou are running in EX Pro mode: provide expert-level, comprehensive, deeply technical responses.",
-      "enosh-mind": "\n\nYou are running in ENOSH MIND mode: use maximum analytical depth, strategic insight, cross-domain reasoning, and rigorous execution.",
+      "ex-pro": "\n\nYou are running in EX Pro (Paid) mode: provide expert-level, comprehensive, deeply technical responses.",
+      "enosh-mind": "\n\nYou are running in ENOSH MIND (Paid, highest intelligence) mode: use maximum analytical depth, strategic insight, cross-domain reasoning, and rigorous execution.",
     };
     const modeNote = modeNotes[aiMode] || modeNotes["ex-core"];
 

@@ -10,7 +10,7 @@
 
 import { useState, useRef, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { ArrowUp, Mic, MicOff, Square, Loader2, ChevronDown, Lock } from "lucide-react";
+import { ArrowUp, Mic, MicOff, Square, Loader2, ChevronDown, Lock, Paperclip } from "lucide-react";
 import { VoiceState } from "@/lib/types";
 import { useTheme } from "@/contexts/ThemeContext";
 import { useWallpaper } from "@/contexts/WallpaperContext";
@@ -72,6 +72,7 @@ interface CommandBarProps {
   isImageMode?: boolean;
   onToggleImageMode?: () => void;
   isFreeMode?: boolean;
+  onFilesSelected?: (files: File[]) => void;
 }
 
 export default function CommandBar({
@@ -87,6 +88,7 @@ export default function CommandBar({
   isImageMode = false,
   onToggleImageMode,
   isFreeMode = false,
+  onFilesSelected,
 }: CommandBarProps) {
   const { config } = useTheme();
   const { settings: wallpaperSettings } = useWallpaper();
@@ -96,6 +98,7 @@ export default function CommandBar({
   const [selectedConnectorIds, setSelectedConnectorIds] = useState<string[]>([]);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const modeRef = useRef<HTMLDivElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -153,6 +156,12 @@ export default function CommandBar({
       e.preventDefault();
       handleSend();
     }
+  };
+
+  const handleFilePickerChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(event.target.files ?? []);
+    if (files.length > 0) onFilesSelected?.(files);
+    event.target.value = "";
   };
 
   const handleVoiceClick = () => {
@@ -332,6 +341,22 @@ export default function CommandBar({
 
               {/* Action buttons */}
               <div className="flex items-center gap-1.5 flex-shrink-0">
+                <input ref={fileInputRef} type="file" multiple className="hidden" onChange={handleFilePickerChange} />
+                {onFilesSelected && (
+                  <motion.button
+                    whileHover={{ scale: 1.08 }}
+                    whileTap={{ scale: 0.92 }}
+                    type="button"
+                    onClick={() => fileInputRef.current?.click()}
+                    className="w-9 h-9 rounded-xl flex items-center justify-center transition-all duration-200"
+                    style={{ background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.08)", color: config.textMuted }}
+                    title="Attach any file"
+                    aria-label="Attach any file"
+                  >
+                    <Paperclip size={16} />
+                  </motion.button>
+                )}
+
                 {/* Voice button */}
                 {isVoiceSupported && (
                   <motion.button

@@ -13,4 +13,10 @@ This directory is the desktop-integration boundary for ENOSX AI. It is intention
 
 ## Implementation Choice
 
-Use **Tauri 2** for a future packaged desktop release. It offers a small native shell around the current `enosx-app` Vite frontend, uses explicit Rust-side commands for privileged work, and keeps the assistant’s public web deployment free from OS automation privileges. No desktop command should run directly from model output; the frontend must render each command as an explicit, user-reviewed proposal first.
+Use **Tauri 2** for the packaged desktop release. It offers a small native shell around the current `enosx-app` Vite frontend, uses explicit Rust-side commands for privileged work, and keeps the assistant’s public web deployment free from OS automation privileges. No desktop command should run directly from model output; the frontend must render each command as an explicit, user-reviewed proposal first.
+
+## Downloadable installers
+
+The web app and desktop app share the same frontend and backend. To build locally from the repository root, run `pnpm --dir desktop-shell install` followed by `pnpm --dir desktop-shell build:installer`. Tauri writes platform-specific bundles under `desktop-shell/src-tauri/target/release/bundle/`.
+
+To publish installers automatically, create and push a version tag such as `v0.1.0`. The `Build ENOSX AI installers` GitHub Actions workflow builds Windows `.msi` and `.exe`, macOS `.dmg`, and Linux `.AppImage` and `.deb` packages, then attaches them to a draft GitHub release for review before publication. The workflow can also be started manually from the Actions tab.

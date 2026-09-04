@@ -7,7 +7,7 @@
     "beforeDevCommand": "pnpm --dir ../enosx-app dev",
     "devUrl": "http://localhost:5173",
     "beforeBuildCommand": "pnpm --dir ../enosx-app build",
-    "frontendDist": "../enosx-app/dist"
+    "frontendDist": "../../enosx-app/dist/public"
   },
   "app": {
     "windows": [

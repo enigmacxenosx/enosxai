@@ -20,6 +20,9 @@ fn propose_native_action(kind: String) -> NativeActionProposal {
 
 fn main() {
   tauri::Builder::default()
+    .plugin(tauri_plugin_dialog::init())
+    .plugin(tauri_plugin_process::init())
+    .plugin(tauri_plugin_updater::Builder::new().build())
     .invoke_handler(tauri::generate_handler![propose_native_action])
     .run(tauri::generate_context!())
     .expect("error while starting ENOSX AI Desktop");

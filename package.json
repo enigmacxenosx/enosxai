@@ -9,6 +9,7 @@
     "typecheck": "pnpm run typecheck:libs && pnpm -r --filter \"./enosx-app\" --filter \"./scripts\" --if-present run typecheck"
   },
   "private": true,
+  "packageManager": "pnpm@10.28.0",
   "devDependencies": {
     "@types/node": "catalog:",
     "@vercel/node": "^5.8.17",

@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import { Cable, Check, Github, Loader2, Search, SlidersHorizontal, X } from "lucide-react";
+import { Cable, Check, Loader2, Search, SlidersHorizontal, X } from "lucide-react";
 import { useTheme } from "@/contexts/ThemeContext";
 import { CONNECTOR_CATALOG, ConnectorKind } from "@/lib/connectorCatalog";
 import ConnectorLogo from "./ConnectorLogo";
@@ -36,6 +36,10 @@ export default function ConnectorPicker({
   const containerRef = useRef<HTMLDivElement>(null);
   const searchRef = useRef<HTMLInputElement>(null);
   const { accounts, connectWithOAuth, isLoading: isGitHubLoading } = useGitHub();
+  const [connectedIds, setConnectedIds] = useState<string[]>(() => {
+    try { return JSON.parse(localStorage.getItem("enosx-connector-accounts") || "[]").map((a: any) => a.connector); } catch { return []; }
+  });
+  const [connectingId, setConnectingId] = useState<string | null>(null);
 
   useEffect(() => {
     if (!open) return;
@@ -67,10 +71,28 @@ export default function ConnectorPicker({
 
   const selectedCount = selectedConnectorIds.length;
   const githubConnected = accounts.length > 0;
+  const isConnected = (id: string) => id === "github" ? githubConnected : connectedIds.includes(id);
 
-  const handleGitHubConnect = async (event: React.MouseEvent) => {
+  const handleConnectorConnect = async (connectorId: string, event: React.MouseEvent) => {
     event.stopPropagation();
-    await connectWithOAuth();
+    if (connectorId === "github") {
+      await connectWithOAuth();
+      return;
+    }
+    const shop = connectorId === "shopify" ? window.prompt("Enter your Shopify shop domain (example.myshopify.com)") : null;
+    if (connectorId === "shopify" && !shop) return;
+    setConnectingId(connectorId);
+    const popup = window.open(`/api/connectors/${connectorId}/oauth/start${shop ? `?shop=${encodeURIComponent(shop)}` : ""}`, `enosx-${connectorId}-oauth`, "popup,width=620,height=760");
+    if (!popup) { setConnectingId(null); return; }
+    const onMessage = (message: MessageEvent) => {
+      if (message.origin !== window.location.origin || message.data?.type !== "enosx-connector-oauth" || message.data.payload?.connector !== connectorId) return;
+      if (message.data.payload?.account) {
+        const account = { connector: connectorId, ...message.data.payload.account };
+        setConnectedIds((current) => { const next = [...current.filter((id) => id !== connectorId), connectorId]; localStorage.setItem("enosx-connector-accounts", JSON.stringify([{ ...account }, ...next.filter((id) => id !== connectorId).map((id) => ({ connector: id }))])); return next; });
+      }
+      window.removeEventListener("message", onMessage); setConnectingId(null);
+    };
+    window.addEventListener("message", onMessage);
   };
 
   return (
@@ -264,17 +286,17 @@ export default function ConnectorPicker({
                           {connector.kind}
                         </span>
                       </span>
-                      {connector.id === "github" && (
+                      {connector.id && (
                         <button
                           type="button"
-                          onClick={handleGitHubConnect}
-                          disabled={isGitHubLoading}
+                          onClick={(event) => handleConnectorConnect(connector.id, event)}
+                          disabled={isGitHubLoading || connectingId === connector.id}
                           className="inline-flex items-center gap-1 rounded-md px-2 py-1 text-[10px] font-semibold transition-colors hover:bg-white/[0.08] disabled:opacity-50"
-                          style={{ color: githubConnected ? "#4ade80" : config.accent }}
-                          title={githubConnected ? "Connect another GitHub account" : "Connect GitHub with OAuth"}
+                          style={{ color: isConnected(connector.id) ? "#4ade80" : config.accent }}
+                          title={isConnected(connector.id) ? `Connect another ${connector.name} account` : `Connect ${connector.name} with OAuth`}
                         >
-                          {isGitHubLoading ? <Loader2 size={11} className="animate-spin" /> : <Github size={11} />}
-                          {githubConnected ? "Connected" : "Connect"}
+                          {(isGitHubLoading && connector.id === "github") || connectingId === connector.id ? <Loader2 size={11} className="animate-spin" /> : null}
+                          {isConnected(connector.id) ? "Connected" : "Connect"}
                         </button>
                       )}
                       <span

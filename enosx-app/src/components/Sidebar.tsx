@@ -5,7 +5,7 @@
  * - New Chat uses notepad+pen icon
  * - Settings icon removed
  * - Profile icon pinned to bottom
- * - Library (Chat History) and Screen Guider icons
+ * - Library (Chat History) icon
  */
 
 import { motion, AnimatePresence } from "framer-motion";
@@ -15,11 +15,9 @@ import {
   Crown,
   Info,
   X,
-  Github,
   User,
   NotebookPen,
   BookOpen,
-  Monitor,
   Laptop,
 } from "lucide-react";
 import { Conversation } from "@/lib/types";
@@ -87,14 +85,6 @@ export default function Sidebar({
       danger: false,
     },
     {
-      label: "Screen Guide",
-      description: "AI takes full control",
-      icon: Monitor,
-      onClick: onScreenGuiderClick || (() => {}),
-      accent: false,
-      danger: false,
-    },
-    {
       label: "Workspace (Split)",
       description: "Chat + computer side by side, Manus-style",
       icon: Laptop,
@@ -109,15 +99,6 @@ export default function Sidebar({
       onClick: onComputerClick || (() => { window.location.href = "/computer"; }),
       accent: false,
       danger: false,
-    },
-    {
-      label: "GitHub",
-      description: "Connect account & manage repos",
-      icon: Github,
-      onClick: onGitHubClick || (() => {}),
-      accent: false,
-      danger: false,
-      details: "Connect"
     },
     {
       label: "About ENOSX",
@@ -208,11 +189,6 @@ export default function Sidebar({
                 <div className="flex flex-col items-start overflow-hidden flex-1">
                   <div className="flex items-center justify-between w-full">
                     <span className="text-sm font-semibold whitespace-nowrap">{item.label}</span>
-                    {item.details && (
-                      <span className="text-[8px] px-1.5 py-0.5 rounded-full bg-green-500/20 text-green-400 font-bold uppercase tracking-tighter border border-green-500/30">
-                        {item.details}
-                      </span>
-                    )}
                   </div>
                   <span className="text-[10px] opacity-60 whitespace-nowrap">{item.description}</span>
                 </div>
@@ -223,7 +199,7 @@ export default function Sidebar({
       </div>
 
       {/* Conversation history */}
-      <div className="flex-1 overflow-y-auto px-2.5 pb-2 space-y-1 scrollbar-thin">
+      <div className="min-h-0 flex-1 overflow-y-auto px-2.5 pb-2 space-y-1 scrollbar-thin">
         <AnimatePresence initial={false}>
           {conversations.map((conv, i) => (
             <motion.div
@@ -234,6 +210,7 @@ export default function Sidebar({
               transition={{ duration: 0.2, delay: i * 0.02 }}
               className="group relative"
             >
+              <div className={`relative w-full flex items-center ${collapsed ? 'justify-center' : 'justify-start'} rounded-xl transition-all duration-200`}>
               <motion.button
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
@@ -264,19 +241,19 @@ export default function Sidebar({
                     {conv.title}
                   </span>
                 )}
-                {!collapsed && (
-                   <motion.button
-                    whileHover={{ scale: 1.2, color: "#ff6b8a" }}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onDelete(conv.id);
-                    }}
-                    className="opacity-0 group-hover:opacity-100 transition-opacity p-1"
-                  >
-                    <Trash2 size={12} />
-                  </motion.button>
-                )}
               </motion.button>
+              {!collapsed && (
+                <motion.button
+                  type="button"
+                  whileHover={{ scale: 1.2, color: "#ff6b8a" }}
+                  onClick={() => onDelete(conv.id)}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity p-1"
+                  aria-label={`Delete ${conv.title}`}
+                >
+                  <Trash2 size={12} />
+                </motion.button>
+              )}
+              </div>
             </motion.div>
           ))}
         </AnimatePresence>

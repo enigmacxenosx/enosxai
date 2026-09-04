@@ -1,9 +1,10 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import { Cable, Check, Search, SlidersHorizontal, X } from "lucide-react";
+import { Cable, Check, Github, Loader2, Search, SlidersHorizontal, X } from "lucide-react";
 import { useTheme } from "@/contexts/ThemeContext";
 import { CONNECTOR_CATALOG, ConnectorKind } from "@/lib/connectorCatalog";
 import ConnectorLogo from "./ConnectorLogo";
+import { useGitHub } from "@/hooks/useGitHub";
 
 interface ConnectorPickerProps {
   selectedConnectorIds: string[];
@@ -34,6 +35,7 @@ export default function ConnectorPicker({
     useState<(typeof KIND_FILTERS)[number]>("All");
   const containerRef = useRef<HTMLDivElement>(null);
   const searchRef = useRef<HTMLInputElement>(null);
+  const { accounts, connectWithOAuth, isLoading: isGitHubLoading } = useGitHub();
 
   useEffect(() => {
     if (!open) return;
@@ -64,6 +66,12 @@ export default function ConnectorPicker({
   }, [kindFilter, query]);
 
   const selectedCount = selectedConnectorIds.length;
+  const githubConnected = accounts.length > 0;
+
+  const handleGitHubConnect = async (event: React.MouseEvent) => {
+    event.stopPropagation();
+    await connectWithOAuth();
+  };
 
   return (
     <div className="relative" ref={containerRef}>
@@ -227,8 +235,7 @@ export default function ConnectorPicker({
                   const selected = selectedConnectorIds.includes(connector.id);
                   const accent = kindColor(connector.kind);
                   return (
-                    <button
-                      type="button"
+                    <div
                       key={connector.id}
                       role="option"
                       aria-selected={selected}
@@ -257,6 +264,19 @@ export default function ConnectorPicker({
                           {connector.kind}
                         </span>
                       </span>
+                      {connector.id === "github" && (
+                        <button
+                          type="button"
+                          onClick={handleGitHubConnect}
+                          disabled={isGitHubLoading}
+                          className="inline-flex items-center gap-1 rounded-md px-2 py-1 text-[10px] font-semibold transition-colors hover:bg-white/[0.08] disabled:opacity-50"
+                          style={{ color: githubConnected ? "#4ade80" : config.accent }}
+                          title={githubConnected ? "Connect another GitHub account" : "Connect GitHub with OAuth"}
+                        >
+                          {isGitHubLoading ? <Loader2 size={11} className="animate-spin" /> : <Github size={11} />}
+                          {githubConnected ? "Connected" : "Connect"}
+                        </button>
+                      )}
                       <span
                         className="w-5 h-5 rounded-md flex items-center justify-center shrink-0"
                         style={
@@ -270,7 +290,7 @@ export default function ConnectorPicker({
                       >
                         {selected && <Check size={13} />}
                       </span>
-                    </button>
+                    </div>
                   );
                 })
               )}

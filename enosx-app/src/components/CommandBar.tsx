@@ -10,7 +10,7 @@
 
 import { useState, useRef, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { ArrowUp, Mic, MicOff, Square, Loader2, ChevronDown, Plus } from "lucide-react";
+import { ArrowUp, Mic, MicOff, Square, Loader2, ChevronDown } from "lucide-react";
 import { VoiceState } from "@/lib/types";
 import { useTheme } from "@/contexts/ThemeContext";
 import { useWallpaper } from "@/contexts/WallpaperContext";
@@ -53,7 +53,6 @@ export const AI_MODES: AIModeOption[] = [
 
 interface CommandBarProps {
   onSend: (text: string, aiMode?: AIMode, selectedConnectorIds?: string[]) => void;
-  onFileSelect?: (file: File) => void;
   isLoading: boolean;
   voiceState: VoiceState;
   transcript: string;
@@ -69,7 +68,6 @@ interface CommandBarProps {
 
 export default function CommandBar({
   onSend,
-  onFileSelect,
   isLoading,
   voiceState,
   transcript,
@@ -90,7 +88,6 @@ export default function CommandBar({
   const [selectedConnectorIds, setSelectedConnectorIds] = useState<string[]>([]);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const modeRef = useRef<HTMLDivElement>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -148,19 +145,6 @@ export default function CommandBar({
       e.preventDefault();
       handleSend();
     }
-  };
-
-  const handlePlusClick = () => {
-    fileInputRef.current?.click();
-  };
-
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file && onFileSelect) {
-      onFileSelect(file);
-    }
-    // Reset input so the same file can be selected again
-    e.target.value = "";
   };
 
   const handleVoiceClick = () => {
@@ -308,31 +292,6 @@ export default function CommandBar({
 	
 	              {/* Textarea and buttons container */}
 	              <div className="flex items-end gap-2">
-                {/* Plus button */}
-                <input
-                  type="file"
-                  ref={fileInputRef}
-                  onChange={handleFileChange}
-                  className="hidden"
-                  aria-label="Upload files"
-                  accept="image/*,.txt,.md,.json,.js,.ts,.py,.java,.c,.cpp,.xml,.html,.css,.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx"
-                />
-                <motion.button
-                  whileHover={{ scale: 1.08 }}
-                  whileTap={{ scale: 0.92 }}
-                  onClick={handlePlusClick}
-                  disabled={disabled || isLoading}
-                  className="w-9 h-9 mb-1.5 rounded-xl flex items-center justify-center transition-all duration-200"
-                  style={{
-                    background: "rgba(255,255,255,0.05)",
-                    border: "1px solid rgba(255,255,255,0.08)",
-                    color: config.textMuted,
-                  }}
-                  title="Upload files"
-                >
-                  <Plus size={18} />
-                </motion.button>
-
                 {/* Textarea — larger */}
               <textarea
                 ref={textareaRef}

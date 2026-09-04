@@ -78,6 +78,27 @@ const generateTitle = (firstMessage: string): string => {
   return words.join(" ") + (firstMessage.split(/\s+/).length > 6 ? "..." : "");
 };
 
+function normalizeConversation(raw: any): Conversation | null {
+  if (!raw || typeof raw.id !== "string") return null;
+  const now = new Date();
+  return {
+    id: raw.id,
+    title: typeof raw.title === "string" && raw.title.trim() ? raw.title : "New Chat",
+    createdAt: new Date(raw.createdAt ?? raw.created_at ?? now),
+    updatedAt: new Date(raw.updatedAt ?? raw.updated_at ?? now),
+    messages: Array.isArray(raw.messages)
+      ? raw.messages.filter(Boolean).map((message: any) => ({
+          id: String(message.id ?? nanoid()),
+          role: ["user", "assistant", "system"].includes(message.role) ? message.role : "assistant",
+          content: String(message.content ?? ""),
+          timestamp: new Date(message.timestamp ?? now),
+          attachments: message.attachments ?? undefined,
+          proposedActions: message.proposedActions ?? message.proposed_actions ?? undefined,
+        }))
+      : [],
+  };
+}
+
 const ACTION_BLOCK = /\[\[ACTION:\s*({[\s\S]*?})\s*\]\]/g;
 
 // Chat-page mapping of AI app names to workspace app ids (mirrors the workspace
@@ -122,15 +143,7 @@ export default function ChatPage() {
     if (saved) {
       try {
         const parsed = JSON.parse(saved);
-        return parsed.map((c: any) => ({
-          ...c,
-          createdAt: new Date(c.createdAt),
-          updatedAt: new Date(c.updatedAt),
-          messages: c.messages.map((m: any) => ({
-            ...m,
-            timestamp: new Date(m.timestamp)
-          }))
-        }));
+        return parsed.map(normalizeConversation).filter(Boolean) as Conversation[];
       } catch (e) {
         console.error("Failed to load chats", e);
       }
@@ -176,7 +189,12 @@ export default function ChatPage() {
           if (res.ok) {
             const data = await res.json();
             if (data.history && data.history.length > 0) {
-              setConversations(data.history);
+              const remote = data.history.map(normalizeConversation).filter(Boolean) as Conversation[];
+              setConversations((local) => {
+                const byId = new Map(local.map((conversation) => [conversation.id, conversation]));
+                remote.forEach((conversation) => byId.set(conversation.id, conversation));
+                return Array.from(byId.values()).sort((a, b) => b.updatedAt.getTime() - a.updatedAt.getTime());
+              });
             }
           }
         } catch (err) {
@@ -1021,7 +1039,6 @@ ${getAdminContext()}` : ""}`,
               onStopSpeaking={handleStopSpeak}
               voiceState={voiceState}
               transcript={transcript}
-              onFileSelect={handleFileUpload}
               isImageMode={isImageMode}
               onToggleImageMode={handleToggleImageMode}
               isFreeMode={isFreeMode}

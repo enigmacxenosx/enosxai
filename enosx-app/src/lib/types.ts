@@ -3,7 +3,8 @@ export interface Attachment {
   name: string;
   type: string;
   size: number;
-  content: string; // Base64 for images, text for others
+  content: string; // Data URL for binary files, text for text files
+  mimeType?: string; // Original browser MIME type, when available
   url?: string;
 }
 

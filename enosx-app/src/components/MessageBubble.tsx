@@ -8,11 +8,12 @@
 
 import { useState, useEffect, useRef } from "react";
 import { motion } from "framer-motion";
-import { Copy, Volume2, VolumeX, Check, Download, FileText, ExternalLink, FileSearch, ListTree, ShieldCheck } from "lucide-react";
+import { Copy, Volume2, VolumeX, Check, Download, ExternalLink, FileSearch, ListTree, ShieldCheck } from "lucide-react";
 import { Message } from "@/lib/types";
 import { useTheme } from "@/contexts/ThemeContext";
 import { useWallpaper } from "@/contexts/WallpaperContext";
 import ImageDisplay from "./ImageDisplay";
+import MediaAttachment from "./MediaAttachment";
 
 interface MessageBubbleProps {
   message: Message;
@@ -328,60 +329,10 @@ export default function MessageBubble({
             <div className="relative">
               {isUser ? (
                 <div className="flex flex-col gap-3">
-                  {/* User image attachments */}
+                  {/* User attachments — preview images, music, video, or downloadable files */}
                   {message.attachments && message.attachments.length > 0 && (
                     <div className="flex flex-wrap gap-2 mb-1">
-                      {message.attachments.map((att) => {
-                        const isImage = ["jpg", "jpeg", "png", "gif", "webp"].includes(att.type.toLowerCase());
-                        if (!isImage) return null;
-                        return (
-                          <motion.img
-                            key={att.id}
-                            src={att.content}
-                            alt={att.name}
-                            initial={{ opacity: 0, scale: 0.9 }}
-                            animate={{ opacity: 1, scale: 1 }}
-                            className="max-w-[200px] max-h-[200px] rounded-lg border border-white/10 shadow-lg object-cover cursor-pointer hover:scale-[1.02] transition-transform"
-                            onClick={() => window.open(att.content, '_blank')}
-                          />
-                        );
-                      })}
-                    </div>
-                  )}
-
-                  {/* User non-image attachments */}
-                  {message.attachments && message.attachments.some(att => !["jpg", "jpeg", "png", "gif", "webp"].includes(att.type.toLowerCase())) && (
-                    <div className="flex flex-col gap-2 mb-1">
-                      {message.attachments.map((att) => {
-                        const isImage = ["jpg", "jpeg", "png", "gif", "webp"].includes(att.type.toLowerCase());
-                        if (isImage) return null;
-                        return (
-                          <motion.div
-                            key={att.id}
-                            initial={{ opacity: 0, x: -10 }}
-                            animate={{ opacity: 1, x: 0 }}
-                            className="flex items-center gap-3 p-3 rounded-xl border border-white/10 bg-white/5 hover:bg-white/10 transition-colors cursor-pointer group"
-                            onClick={() => {
-                              const link = document.createElement('a');
-                              link.href = att.content;
-                              link.download = att.name;
-                              link.click();
-                            }}
-                          >
-                            <div className="w-8 h-8 rounded-lg bg-emerald-500/20 flex items-center justify-center text-emerald-400">
-                              <FileText size={18} />
-                            </div>
-                            <div className="flex flex-col min-w-0">
-                              <span className="text-sm font-medium truncate text-white/90 group-hover:text-white">
-                                {att.name}
-                              </span>
-                              <span className="text-[10px] text-white/40">
-                                {(att.size / 1024).toFixed(1)} KB • {att.type.toUpperCase()}
-                              </span>
-                            </div>
-                          </motion.div>
-                        );
-                      })}
+                      {message.attachments.map((att) => <MediaAttachment key={att.id} attachment={att} />)}
                     </div>
                   )}
                   <p
@@ -393,24 +344,10 @@ export default function MessageBubble({
                 </div>
               ) : (
                 <div className="flex flex-col gap-3">
-                  {/* Assistant image attachments (for Imagine mode) */}
+                  {/* Assistant media attachments */}
                   {message.attachments && message.attachments.length > 0 && (
                     <div className="flex flex-wrap gap-2 mb-1">
-                      {message.attachments.map((att) => {
-                        const isImage = ["jpg", "jpeg", "png", "gif", "webp"].includes(att.type.toLowerCase());
-                        if (!isImage) return null;
-                        return (
-                          <motion.img
-                            key={att.id}
-                            src={att.content}
-                            alt={att.name}
-                            initial={{ opacity: 0, scale: 0.9 }}
-                            animate={{ opacity: 1, scale: 1 }}
-                            className="max-w-full rounded-lg border border-white/10 shadow-lg object-cover cursor-pointer hover:scale-[1.01] transition-transform"
-                            onClick={() => window.open(att.content, '_blank')}
-                          />
-                        );
-                      })}
+                      {message.attachments.map((att) => <MediaAttachment key={att.id} attachment={att} />)}
                     </div>
                   )}
                   {/* Assistant content with inline image support */}

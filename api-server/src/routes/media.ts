@@ -1,8 +1,25 @@
 import { Router, Request, Response } from "express";
-import { randomUUID } from "crypto";
+import { createHmac, randomUUID, timingSafeEqual } from "crypto";
 
 const router = Router();
 const MAX_BYTES = 25 * 1024 * 1024;
+const MEDIA_URL_TTL_SECONDS = 60 * 60;
+
+function mediaSigningSecret() {
+  return process.env.ENOSX_MEDIA_SIGNING_SECRET || process.env.DATABASE_URL || "enosx-media-dev";
+}
+
+function createMediaToken(id: string, userId: string, expires: number) {
+  const payload = id + "." + userId + "." + expires;
+  return createHmac("sha256", mediaSigningSecret()).update(payload).digest("base64url");
+}
+
+function hasValidMediaToken(id: string, userId: string, expires: number, token: string) {
+  if (!Number.isFinite(expires) || expires < Math.floor(Date.now() / 1000) || !token) return false;
+  const expected = createMediaToken(id, userId, expires);
+  if (expected.length !== token.length) return false;
+  return timingSafeEqual(Buffer.from(expected), Buffer.from(token));
+}
 
 async function queryNeon(sql: string, params: any[] = []) {
   const neonUrl = process.env.DATABASE_URL;
@@ -50,7 +67,9 @@ function parseMediaIds(value: unknown): string[] {
 }
 
 function contentUrl(id: string, userId: string) {
-  return "/api/media/" + encodeURIComponent(id) + "/content?userId=" + encodeURIComponent(userId);
+  const expires = Math.floor(Date.now() / 1000) + MEDIA_URL_TTL_SECONDS;
+  const token = createMediaToken(id, userId, expires);
+  return "/api/media/" + encodeURIComponent(id) + "/content?userId=" + encodeURIComponent(userId) + "&expires=" + expires + "&token=" + encodeURIComponent(token);
 }
 
 router.get("/media", async (req: Request, res: Response) => {
@@ -159,6 +178,12 @@ router.delete("/media/playlists/:id/items/:mediaId", async (req: Request, res: R
 router.get("/media/:id/content", async (req: Request, res: Response) => {
   const userId = String(req.query.userId || "").trim();
   if (!userId) { res.status(400).json({ message: "User ID required" }); return; }
+  const expires = Number(req.query.expires);
+  const token = String(req.query.token || "");
+  if (!hasValidMediaToken(req.params.id, userId, expires, token)) {
+    res.status(401).json({ message: "Signed media URL is missing or expired" });
+    return;
+  }
   try {
     const rows = await queryNeon("SELECT name, mime_type, content FROM enosx_media_assets WHERE id = $1 AND user_id = $2", [req.params.id, userId]);
     if (!rows[0]) { res.status(404).json({ message: "Media not found" }); return; }

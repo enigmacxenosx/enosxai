@@ -350,31 +350,6 @@ export default function CommandBar({
 	
 	              {/* Textarea and buttons container */}
 	              <div className="flex items-end gap-2">
-                {/* Plus button */}
-                <input
-                  type="file"
-                  ref={fileInputRef}
-                  onChange={handleFileChange}
-                  className="hidden"
-                  aria-label="Upload files"
-                  accept="image/*,.txt,.md,.json,.js,.ts,.py,.java,.c,.cpp,.xml,.html,.css,.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx"
-                />
-                <motion.button
-                  whileHover={{ scale: 1.08 }}
-                  whileTap={{ scale: 0.92 }}
-                  onClick={handlePlusClick}
-                  disabled={disabled || isLoading}
-                  className="w-9 h-9 mb-1.5 rounded-xl flex items-center justify-center transition-all duration-200"
-                  style={{
-                    background: "rgba(255,255,255,0.05)",
-                    border: "1px solid rgba(255,255,255,0.08)",
-                    color: config.textMuted,
-                  }}
-                  title="Upload files"
-                >
-                  <Plus size={18} />
-                </motion.button>
-
                 {/* Textarea — larger */}
               <textarea
                 ref={textareaRef}

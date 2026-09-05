@@ -40,7 +40,6 @@ interface SidebarProps {
   onProfileClick?: () => void;
   onLibraryClick?: () => void;
   onScreenGuiderClick?: () => void;
-  onComputerClick?: () => void;
   isPro?: boolean;
   isMobileOpen?: boolean;
   onMobileClose?: () => void;
@@ -59,7 +58,6 @@ export default function Sidebar({
   onProfileClick,
   onLibraryClick,
   onScreenGuiderClick,
-  onComputerClick,
   isPro = false,
   isMobileOpen = false,
   onMobileClose,
@@ -99,14 +97,6 @@ export default function Sidebar({
       icon: Laptop,
       onClick: () => { window.location.href = "/workspace"; },
       accent: true,
-      danger: false,
-    },
-    {
-      label: "Enosx Computer",
-      description: "Open your workspace surface",
-      icon: Laptop,
-      onClick: onComputerClick || (() => { window.location.href = "/computer"; }),
-      accent: false,
       danger: false,
     },
     {

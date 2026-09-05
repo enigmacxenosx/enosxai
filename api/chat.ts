@@ -1,10 +1,10 @@
 /**
  * ENOSX AI — /api/chat  (Vercel Serverless Function)
- * Uses OpenRouter as the AI provider.
+ * Uses NVIDIA NIM through its OpenAI-compatible chat completions API.
  * Environment variables:
- *   - OPENROUTER_API_KEY (required; server-side only)
- *   - OPENROUTER_EX_CORE_MODEL, OPENROUTER_EX_PRO_MODEL, OPENROUTER_ENOSH_MIND_MODEL (optional)
- *   - OPENROUTER_EX_CORE_VISION_MODEL, OPENROUTER_EX_PRO_VISION_MODEL, OPENROUTER_ENOSH_MIND_VISION_MODEL (optional)
+ *   - NVIDIA_API_KEY (required; server-side only)
+ *   - NVIDIA_MODEL and NVIDIA_VISION_MODEL (optional model defaults)
+ *   - NVIDIA_EX_*_MODEL and NVIDIA_EX_*_VISION_MODEL (optional per-mode overrides)
  */
 import type { VercelRequest, VercelResponse } from "@vercel/node";
 import { consumeCoreMessage, getEntitlement, spendCredit, userExists } from "../lib/billing";
@@ -12,7 +12,7 @@ import { consumeCoreMessage, getEntitlement, spendCredit, userExists } from "../
 // NOTE: maxDuration intentionally omitted. An explicit per-function override can
 // conflict with the project-wide Vercel runtime configuration and cause
 // FUNCTION_INVOCATION_FAILED (HTTP 500) on deployment. The default serverless
-// timeout is sufficient for a single synchronous OpenRouter completion call
+// timeout is sufficient for a single synchronous NVIDIA completion call
 // with one short retry.
 
 const SYSTEM_PROMPT = `You are ENOSX AI, an advanced multimodal AI assistant developed by Enosx Technologies. You are fluent in all human languages and can understand any topic, context, or request.
@@ -41,7 +41,7 @@ Current ENOSX AI product updates (September 2026):
 - ENOSX AI has three modes: EX Core (Free), EX Pro (Paid), and ENOSH MIND (Paid, highest intelligence). Never claim that a user has access to a paid mode unless the server confirms an active entitlement.
 - EX Core chat is designed to remain available even when the optional database is not configured. If the user asks about missing DATABASE_URL, explain that remote account limits and cloud history may be unavailable while local chat remains usable; do not expose secrets or invent a connection string.
 - Conversation history is stored locally in the browser and synchronizes to the server when the history service is available. A history-sync failure should not be presented as a failure of the AI response.
-- The server uses a configured OpenRouter model with an automatic-router fallback. If a provider is temporarily unavailable or credit-limited, be transparent and suggest retrying rather than claiming the request was completed when it was not.
+- The server uses a configured NVIDIA model with a bounded retry. If a provider is temporarily unavailable or credit-limited, be transparent and suggest retrying rather than claiming the request was completed when it was not.
 - Each mode uses a distinct underlying model: EX Core favors speed and efficiency, EX Pro favors expert breadth, and ENOSH MIND favors deliberate reasoning. The selected model is a routing detail; never pretend that a model name alone guarantees correctness.
 - Workspace mode supports proposed actions for opening supported applications, opening URLs, chaining actions, creating scripts, and running scripts. Python scripts run in the browser runtime; shell and batch scripts are simulations. Explain an action before proposing or running it, and never claim to have changed the user's real device unless the client confirms execution.
 - Treat the current repository implementation and verified runtime behavior as the source of truth. Do not claim unsupported features, background access, unrestricted operating-system control, or permanent memory.
@@ -70,16 +70,16 @@ When a user message begins with [GOD MODE COMMAND], switch to advanced operator 
 const MODE_MODELS: Record<string, { text: string; vision: string }> = {
   // Defaults are overridable per deployment so model changes never require a code change.
   "ex-core": {
-    text: process.env.OPENROUTER_EX_CORE_MODEL || process.env.OPENROUTER_MODEL || "openai/gpt-oss-20b",
-    vision: process.env.OPENROUTER_EX_CORE_VISION_MODEL || process.env.OPENROUTER_VISION_MODEL || "google/gemini-2.5-flash",
+    text: process.env.NVIDIA_EX_CORE_MODEL || process.env.NVIDIA_MODEL || "meta/llama-3.1-8b-instruct",
+    vision: process.env.NVIDIA_EX_CORE_VISION_MODEL || process.env.NVIDIA_VISION_MODEL || "meta/llama-3.2-90b-vision-instruct",
   },
   "ex-pro": {
-    text: process.env.OPENROUTER_EX_PRO_MODEL || "anthropic/claude-sonnet-4",
-    vision: process.env.OPENROUTER_EX_PRO_VISION_MODEL || "google/gemini-2.5-pro",
+    text: process.env.NVIDIA_EX_PRO_MODEL || process.env.NVIDIA_MODEL || "meta/llama-3.1-8b-instruct",
+    vision: process.env.NVIDIA_EX_PRO_VISION_MODEL || process.env.NVIDIA_VISION_MODEL || "meta/llama-3.2-90b-vision-instruct",
   },
   "enosh-mind": {
-    text: process.env.OPENROUTER_ENOSH_MIND_MODEL || "openai/o3",
-    vision: process.env.OPENROUTER_ENOSH_MIND_VISION_MODEL || "google/gemini-2.5-pro",
+    text: process.env.NVIDIA_ENOSH_MIND_MODEL || process.env.NVIDIA_MODEL || "meta/llama-3.1-8b-instruct",
+    vision: process.env.NVIDIA_ENOSH_MIND_VISION_MODEL || process.env.NVIDIA_VISION_MODEL || "meta/llama-3.2-90b-vision-instruct",
   },
 };
 
@@ -113,14 +113,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   try {
     // Server-side key only. A browser-exposed key (VITE_ prefix) must never
-    // be forwarded to OpenRouter; if only the legacy VITE_ variable is set,
+    // be forwarded to NVIDIA API; if only the legacy VITE_ variable is set,
     // treat the configuration as missing.
-    const apiKey = process.env.OPENROUTER_API_KEY?.trim();
+    const apiKey = process.env.NVIDIA_API_KEY?.trim();
 
     if (!apiKey) {
-      console.error("[API] OPENROUTER_API_KEY is not configured.");
+      console.error("[API] NVIDIA_API_KEY is not configured.");
       return res.status(503).json({
-        error: "OPENROUTER_API_KEY is not configured on the server",
+        error: "NVIDIA_API_KEY is not configured on the server",
         status: "CONFIGURATION_ERROR",
       });
     }
@@ -194,30 +194,20 @@ You are running in ENOSH MIND (Paid, highest intelligence) mode. Operate as a ri
     const hasImages = chatMessages.some((message: any) =>
       Array.isArray(message.content) && message.content.some((part: any) => part.type === "image_url")
     );
-    // Verified against the live OpenRouter model catalog (August 2026).
-    // The legacy defaults (google/gemini-2.0-flash-001 and
-    // meta-llama/llama-3.3-70b-instruct) no longer exist in the catalog and
-    // were the cause of avoidable provider failures.
     const modeModels = MODE_MODELS[aiMode] || MODE_MODELS["ex-core"];
-    const primaryModel = hasImages ? modeModels.vision : modeModels.text;
+    const model = hasImages ? modeModels.vision : modeModels.text;
+    const nvidiaApiUrl = `${(process.env.NVIDIA_API_BASE_URL || "https://integrate.api.nvidia.com/v1").replace(/\/$/, "")}/chat/completions`;
 
-    // OpenRouter attempts these models in order before returning a provider
-    // failure. This protects the chat experience against model-specific 5xxs
-    // and stale configured model identifiers.
-    const modelCandidates = [...new Set([primaryModel, "openrouter/auto"])];
+    console.log("[API] Sending request to NVIDIA API with", chatMessages.length, "messages and model", model);
 
-    console.log("[API] Sending request to OpenRouter with", chatMessages.length, "messages and", modelCandidates.length, "model candidate(s)");
-
-    const openRouterResponse = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+    const nvidiaResponse = await fetch(nvidiaApiUrl, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
         Authorization: `Bearer ${apiKey}`,
-        "HTTP-Referer": process.env.OPENROUTER_SITE_URL || "https://enosxtechnologies450.vercel.app",
-        "X-Title": "ENOSX AI",
       },
       body: JSON.stringify({
-        models: modelCandidates,
+        model,
         messages: chatMessages,
         stream: true,
         max_tokens: 2048,
@@ -225,151 +215,22 @@ You are running in ENOSH MIND (Paid, highest intelligence) mode. Operate as a ri
       }),
     });
 
-    console.log("[API] OpenRouter response status:", openRouterResponse.status);
+    console.log("[API] NVIDIA API response status:", nvidiaResponse.status);
 
-    if (!openRouterResponse.ok) {
-      // OpenRouter can reject a request before generation when the account's
-      // remaining balance is smaller than max_tokens. Give the free/core
-      // experience one inexpensive chance before showing the provider error.
-      if (openRouterResponse.status === 402) {
-        try {
-          console.log("[API] 402 credit limit. Retrying with a 256-token automatic-router request...");
-          const creditLimitedRetry = await fetch("https://openrouter.ai/api/v1/chat/completions", {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              Authorization: `Bearer ${apiKey}`,
-              "HTTP-Referer": process.env.OPENROUTER_SITE_URL || "https://enosxtechnologies450.vercel.app",
-              "X-Title": "ENOSX AI",
-            },
-            body: JSON.stringify({
-              models: ["openrouter/auto"],
-              messages: chatMessages,
-              stream: false,
-              max_tokens: 256,
-              temperature: 0.7,
-            }),
-          });
-
-          if (creditLimitedRetry.ok) {
-            const retryData = await creditLimitedRetry.json();
-            const retryContent = retryData?.choices?.[0]?.message?.content;
-            if (typeof retryContent === "string" && retryContent.length > 0) {
-              console.log("[API] 402 low-token retry succeeded.");
-              return sendMockResponse(res, retryContent);
-            }
-          } else {
-            console.error("[API] 402 low-token retry also failed:", creditLimitedRetry.status);
-          }
-        } catch (retryErr) {
-          console.error("[API] 402 low-token retry exception:", retryErr);
-        }
-      }
-
-      // 5xx provider errors are worth one automatic retry since model
-      // candidates already include the automatic router on first attempt.
-      const isRetryable =
-        openRouterResponse.status === 429 || openRouterResponse.status >= 500;
-      if (isRetryable) {
-        try {
-          console.log(`[API] Retryable status ${openRouterResponse.status}. Retrying once immediately...`);
-          const retryResponse = await fetch("https://openrouter.ai/api/v1/chat/completions", {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              Authorization: `Bearer ${apiKey}`,
-              "HTTP-Referer": process.env.OPENROUTER_SITE_URL || "https://enosxtechnologies450.vercel.app",
-              "X-Title": "ENOSX AI",
-            },
-            body: JSON.stringify({
-              models: ["openrouter/auto"],
-              messages: chatMessages,
-              stream: false,
-              max_tokens: 2048,
-              temperature: 0.7,
-            }),
-          });
-
-          if (retryResponse.ok) {
-            const retryData = await retryResponse.json();
-            const retryContent = retryData?.choices?.[0]?.message?.content;
-            if (typeof retryContent === "string" && retryContent.length > 0) {
-              console.log("[API] Retry succeeded with the automatic model router.");
-              return sendMockResponse(res, retryContent);
-            }
-          } else {
-            console.error("[API] Retry also failed:", retryResponse.status);
-          }
-        } catch (retryErr) {
-          console.error("[API] Retry exception:", retryErr);
-        }
-      }
-
-      const errorText = await openRouterResponse.text().catch(() => "Unknown error");
-      console.error("[API] OpenRouter error:", openRouterResponse.status, errorText);
-
-      // Handle 429 rate limit: retry with a free model
-      if (openRouterResponse.status === 429) {
-        console.log("[API] 429 rate limited. Retrying immediately with the automatic model router...");
-
-        try {
-          const retryResponse = await fetch("https://openrouter.ai/api/v1/chat/completions", {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              Authorization: `Bearer ${apiKey}`,
-              "HTTP-Referer": process.env.OPENROUTER_SITE_URL || "https://enosxtechnologies450.vercel.app",
-              "X-Title": "ENOSX AI",
-            },
-            body: JSON.stringify({
-              models: ["openrouter/auto"],
-              messages: chatMessages,
-              stream: false,
-              max_tokens: 2048,
-              temperature: 0.7,
-            }),
-          });
-
-          if (retryResponse.ok) {
-            const retryData = await retryResponse.json();
-            const retryContent = retryData?.choices?.[0]?.message?.content;
-            if (typeof retryContent === "string" && retryContent.length > 0) {
-              console.log("[API] 429 retry succeeded with the automatic model router.");
-              return sendMockResponse(res, retryContent);
-            }
-          } else {
-            console.error("[API] 429 retry also failed:", retryResponse.status);
-          }
-        } catch (retryErr) {
-          console.error("[API] 429 retry exception:", retryErr);
-        }
-
-        return sendMockResponse(
-          res,
-          "Sorry, the AI is experiencing high traffic right now. Please try again in a minute."
-        );
-      }
-
-      let errorMessage = `OpenRouter API error: ${openRouterResponse.status}`;
-      try {
-        const errorData = JSON.parse(errorText);
-        errorMessage = errorData?.error?.message || errorData?.error || errorMessage;
-      } catch {
-        errorMessage = errorText || errorMessage;
-      }
-
-      // Send a helpful message instead of an error
+    if (!nvidiaResponse.ok) {
+      const errorText = await nvidiaResponse.text().catch(() => "Unknown error");
+      console.error("[API] NVIDIA API error:", nvidiaResponse.status, errorText);
       return sendMockResponse(
         res,
-        `I'm having trouble reaching the AI service (${openRouterResponse.status}). Please try again in a moment.`
+        `I'm having trouble reaching the AI service (${nvidiaResponse.status}). Please try again in a moment.`
       );
     }
 
-    if (openRouterResponse.body) {
+    if (nvidiaResponse.body) {
       res.setHeader("Content-Type", "text/event-stream; charset=utf-8");
       res.setHeader("Cache-Control", "no-cache, no-transform");
       res.setHeader("Connection", "keep-alive");
-      const reader = openRouterResponse.body.getReader();
+      const reader = nvidiaResponse.body.getReader();
       const decoder = new TextDecoder();
       while (true) {
         const { done, value } = await reader.read();
@@ -382,15 +243,15 @@ You are running in ENOSH MIND (Paid, highest intelligence) mode. Operate as a ri
 
     let responseData: any;
     try {
-      responseData = await openRouterResponse.json();
+      responseData = await nvidiaResponse.json();
     } catch (parseError) {
-      console.error("[API] Invalid JSON response from OpenRouter:", parseError);
+      console.error("[API] Invalid JSON response from NVIDIA API:", parseError);
       return sendMockResponse(res, "The AI service returned an invalid response. Please try again.");
     }
 
     const content = responseData?.choices?.[0]?.message?.content;
     if (typeof content !== "string" || content.length === 0) {
-      console.error("[API] OpenRouter response did not contain assistant content:", responseData);
+      console.error("[API] NVIDIA API response did not contain assistant content:", responseData);
       return sendMockResponse(res, "No response received from the AI service. Please try again.");
     }
 

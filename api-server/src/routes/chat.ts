@@ -4,16 +4,16 @@ const chatRouter = Router();
 
 const MODE_MODELS: Record<string, { text: string; vision: string }> = {
   "ex-core": {
-    text: process.env.OPENROUTER_EX_CORE_MODEL || process.env.OPENROUTER_MODEL || "openai/gpt-oss-20b",
-    vision: process.env.OPENROUTER_EX_CORE_VISION_MODEL || process.env.OPENROUTER_VISION_MODEL || "google/gemini-2.5-flash",
+    text: process.env.NVIDIA_EX_CORE_MODEL || process.env.NVIDIA_MODEL || "meta/llama-3.1-8b-instruct",
+    vision: process.env.NVIDIA_EX_CORE_VISION_MODEL || process.env.NVIDIA_VISION_MODEL || "meta/llama-3.2-90b-vision-instruct",
   },
   "ex-pro": {
-    text: process.env.OPENROUTER_EX_PRO_MODEL || "anthropic/claude-sonnet-4",
-    vision: process.env.OPENROUTER_EX_PRO_VISION_MODEL || "google/gemini-2.5-pro",
+    text: process.env.NVIDIA_EX_PRO_MODEL || process.env.NVIDIA_MODEL || "meta/llama-3.1-8b-instruct",
+    vision: process.env.NVIDIA_EX_PRO_VISION_MODEL || process.env.NVIDIA_VISION_MODEL || "meta/llama-3.2-90b-vision-instruct",
   },
   "enosh-mind": {
-    text: process.env.OPENROUTER_ENOSH_MIND_MODEL || "openai/o3",
-    vision: process.env.OPENROUTER_ENOSH_MIND_VISION_MODEL || "google/gemini-2.5-pro",
+    text: process.env.NVIDIA_ENOSH_MIND_MODEL || process.env.NVIDIA_MODEL || "meta/llama-3.1-8b-instruct",
+    vision: process.env.NVIDIA_ENOSH_MIND_VISION_MODEL || process.env.NVIDIA_VISION_MODEL || "meta/llama-3.2-90b-vision-instruct",
   },
 };
 
@@ -50,11 +50,11 @@ When a user message begins with [GOD MODE COMMAND], switch to advanced operator 
 
 chatRouter.post("/chat", async (req: Request, res: Response) => {
   try {
-    const apiKey = process.env.OPENROUTER_API_KEY?.trim();
+    const apiKey = process.env.NVIDIA_API_KEY?.trim();
 
     if (!apiKey) {
       res.status(503).json({
-        error: "OPENROUTER_API_KEY is not configured on the API server",
+        error: "NVIDIA_API_KEY is not configured on the API server",
         status: "CONFIGURATION_ERROR",
       });
       return;
@@ -151,13 +151,12 @@ You are running in ENOSH MIND (Paid, highest intelligence) mode. Operate as a ri
     const modeModels = MODE_MODELS[aiMode] || MODE_MODELS["ex-core"];
     const model = hasImages ? modeModels.vision : modeModels.text;
 
-    const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+    const nvidiaApiUrl = `${(process.env.NVIDIA_API_BASE_URL || "https://integrate.api.nvidia.com/v1").replace(/\/$/, "")}/chat/completions`;
+    const response = await fetch(nvidiaApiUrl, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
         Authorization: `Bearer ${apiKey}`,
-        "HTTP-Referer": process.env.OPENROUTER_SITE_URL || "https://enosxai.vercel.app",
-        "X-Title": "ENOSX AI",
       },
       body: JSON.stringify({
         model,
@@ -170,7 +169,7 @@ You are running in ENOSH MIND (Paid, highest intelligence) mode. Operate as a ri
 
     if (!response.ok) {
       const errText = await response.text().catch(() => "Unknown error");
-      console.error("OpenRouter API Error:", response.status, errText);
+      console.error("NVIDIA API Error:", response.status, errText);
       res.status(response.status || 500).json({ error: errText, status: "API_ERROR" });
       return;
     }

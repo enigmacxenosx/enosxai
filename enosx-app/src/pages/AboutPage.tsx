@@ -31,7 +31,7 @@ export default function AboutPage() {
     {
       icon: Cpu,
       title: "Architecture",
-      description: "Powered by OpenRouter and DALL-E 3 for multi-modal orchestration.",
+      description: "Powered by NVIDIA NIM and DALL-E 3 for multi-modal orchestration.",
       color: "#7000FF",
     },
     {

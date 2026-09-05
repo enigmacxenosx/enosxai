@@ -53,5 +53,5 @@ Standards: Cover security, reliability, maintainability, testing, trade-offs, an
 
 export function getSystemPrompt(mode: string = "ex-core"): string {
   const modePrompt = MODE_PROMPTS[mode] || MODE_PROMPTS["ex-core"];
-  return `${BASE_SYSTEM_PROMPT}\n${modePrompt}\n\n[Current Session Context: Operating via OpenRouter. High-performance inference enabled.]`;
+  return `${BASE_SYSTEM_PROMPT}\n${modePrompt}\n\n[Current Session Context: Operating via NVIDIA NIM. High-performance inference enabled.]`;
 }

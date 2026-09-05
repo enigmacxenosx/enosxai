@@ -5,6 +5,8 @@
 
 set -e
 
+REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+
 # Colors for output
 RED='\033[0;31m'
 GREEN='\033[0;32m'
@@ -22,11 +24,11 @@ if ! command -v pnpm &> /dev/null; then
     exit 1
 fi
 
-# Check if OPENROUTER_API_KEY is set
-if [ -z "$OPENROUTER_API_KEY" ]; then
-    echo -e "${YELLOW}⚠️  OPENROUTER_API_KEY environment variable is not set${NC}"
+# Check if NVIDIA_API_KEY is set
+if [ -z "$NVIDIA_API_KEY" ]; then
+    echo -e "${YELLOW}⚠️  NVIDIA_API_KEY environment variable is not set${NC}"
     echo "   Please set it before starting the services:"
-    echo "   export OPENROUTER_API_KEY=your_openrouter_api_key_here"
+    echo "   export NVIDIA_API_KEY=your_nvidia_api_key_here"
     echo ""
     read -p "Do you want to continue anyway? (y/n) " -n 1 -r
     echo
@@ -61,7 +63,7 @@ echo "   Port: 8080"
 echo "   Log: $LOGS_DIR/api-server.log"
 
 (
-    cd artifacts/api-server
+    cd "$REPO_ROOT/api-server"
     export PORT=8080
     export NODE_ENV=development
     pnpm run dev > "$LOGS_DIR/api-server.log" 2>&1
@@ -95,7 +97,7 @@ echo "   API Port: 8080"
 echo "   Log: $LOGS_DIR/frontend.log"
 
 (
-    cd artifacts/enosx-assistant
+    cd "$REPO_ROOT/enosx-app"
     export PORT=3000
     export BASE_PATH=/
     export API_PORT=8080

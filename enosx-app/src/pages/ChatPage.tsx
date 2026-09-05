@@ -166,14 +166,18 @@ export default function ChatPage() {
         try {
           // Sync all conversations (debounced or on change)
           for (const conv of conversations) {
-            await fetch('/api/history', {
+            const response = await fetch('/api/history', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({ userId: user.id, chat: conv }),
             });
+            // History persistence is optional. Keep the local cache as the
+            // source of truth until DATABASE_URL is provisioned in production.
+            if (!response.ok) break;
           }
         } catch (err) {
-          console.error("Failed to sync history to Neon:", err);
+          // Network/database outages must not interrupt chat or surface as an
+          // unexpected application error; localStorage remains available.
         }
       };
       syncHistory();
@@ -198,7 +202,7 @@ export default function ChatPage() {
             }
           }
         } catch (err) {
-          console.error("Failed to load history from Neon:", err);
+          // Remote history is optional; retain the locally cached conversations.
         }
       };
       loadHistory();

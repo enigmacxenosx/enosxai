@@ -28,6 +28,12 @@ export function getUserId(body: any, query?: any) {
 }
 
 export async function userExists(userId: string) {
+  // Database-backed accounts and usage limits are optional for EX Core. When
+  // the deployment has not provisioned DATABASE_URL yet, treat the request as
+  // an unknown user so free core chat can continue instead of failing with a
+  // configuration error. Paid tiers still fail closed in /api/chat because
+  // they require a persisted entitlement.
+  if (!process.env.DATABASE_URL?.trim()) return undefined;
   const rows = await db().query("SELECT id, email, display_name FROM enosx_users WHERE id = $1", [userId]);
   return rows[0] as any | undefined;
 }

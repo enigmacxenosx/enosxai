@@ -714,6 +714,14 @@ ${getAdminContext()}` : ""}`,
   const activeConversation = conversations.find((c) => c.id === activeId);
   const messages = activeConversation?.messages || [];
 
+  // Keep workspace hooks unconditional: phone and TV layouts return early, so
+  // every render must still execute the same hooks in the same order.
+  const { executeChain } = useCommandChain();
+  const chatSplitEnabledRef = useRef(chatSplitEnabled);
+  useEffect(() => {
+    chatSplitEnabledRef.current = chatSplitEnabled;
+  }, [chatSplitEnabled]);
+
   if (deviceType === "tv") {
     return (
       <GlobalLayout>
@@ -775,17 +783,6 @@ ${getAdminContext()}` : ""}`,
 
   const wrapWithSplit = (content: React.ReactNode) =>
     chatSplitEnabled ? <ChatSplitLayout>{content}</ChatSplitLayout> : content;
-
-  // ── Live coding in the computer pane ──────────────────────────────────────────
-  // The command chain is a module-level singleton, so any executor component in
-  // the tree can run actions into the SAME script store the terminal watches.
-  const { executeChain } = useCommandChain();
-  // Keep the latest chatSplitEnabled available to executor components rendered
-  // below the workspace provider (avoiding block-scoped ordering issues).
-  const chatSplitEnabledRef = useRef(chatSplitEnabled);
-  useEffect(() => {
-    chatSplitEnabledRef.current = chatSplitEnabled;
-  }, [chatSplitEnabled]);
 
   // This component lives inside the ComputerWorkspaceProvider (when split is on)
   // and drives the pane: it runs the AI's actions automatically and opens the

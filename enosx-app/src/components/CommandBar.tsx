@@ -219,24 +219,43 @@ export default function CommandBar({
               transition: "all 0.3s ease",
             }}
           >
-            <AnimatePresence initial={false}>
+            <AnimatePresence initial={false} mode="popLayout">
               {value.trim().length > 0 && !disabled && !isLoading && (
                 <motion.div
-                  initial={{ opacity: 0, y: 4 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: 4 }}
-                  transition={{ duration: 0.16 }}
+                  initial={{ opacity: 0, y: 6, scale: 0.985 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  exit={{ opacity: 0, y: 3, scale: 0.99 }}
+                  transition={{
+                    duration: 0.2,
+                    ease: [0.23, 1, 0.32, 1],
+                    scale: { duration: 0.24, ease: [0.23, 1, 0.32, 1] },
+                  }}
                   className="flex items-center gap-1.5 overflow-x-auto px-1 pt-0.5"
                   aria-label="Prompt suggestions"
                 >
-                  <span className="mr-0.5 shrink-0 text-[10px] text-white/35">Try</span>
-                  {QUICK_SUGGESTIONS.map((suggestion) => (
+                  <motion.span
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    transition={{ duration: 0.14, delay: 0.03 }}
+                    className="mr-0.5 shrink-0 text-[10px] text-white/35"
+                  >
+                    Try
+                  </motion.span>
+                  {QUICK_SUGGESTIONS.map((suggestion, index) => (
                     <motion.button
                       key={suggestion}
                       type="button"
-                      whileTap={{ scale: 0.96 }}
+                      initial={{ opacity: 0, x: -3 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{
+                        duration: 0.16,
+                        delay: 0.04 + index * 0.035,
+                        ease: [0.23, 1, 0.32, 1],
+                      }}
+                      whileHover={{ y: -1 }}
+                      whileTap={{ scale: 0.97, y: 0 }}
                       onClick={() => setValue((current) => `${current.trimEnd()}\n\n${suggestion}`)}
-                      className="shrink-0 rounded-full border px-2.5 py-1 text-[10px] leading-none text-white/60 transition-colors hover:text-white/90"
+                      className="shrink-0 rounded-full border px-2.5 py-1 text-[10px] leading-none text-white/60 transition-[color,background-color,border-color,transform] duration-150 hover:text-white/90"
                       style={{
                         borderColor: `rgba(${config.accentRgb}, 0.2)`,
                         background: `rgba(${config.accentRgb}, 0.06)`,

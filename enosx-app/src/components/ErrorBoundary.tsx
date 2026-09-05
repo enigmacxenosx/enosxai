@@ -20,6 +20,16 @@ export default class ErrorBoundary extends React.Component<
 
   componentDidCatch(error: Error, info: React.ErrorInfo) {
     console.error("ENOSX Error:", error, info);
+    if (/dynamically imported module|importing a module script failed|Loading chunk/i.test(error.message)) {
+      const recoveryKey = "enosx-chunk-recovery-v1";
+      if (!sessionStorage.getItem(recoveryKey)) {
+        sessionStorage.setItem(recoveryKey, "1");
+        void Promise.all([
+          navigator.serviceWorker?.getRegistrations().then((registrations) => Promise.all(registrations.map((registration) => registration.unregister()))),
+          window.caches?.keys().then((keys) => Promise.all(keys.map((key) => window.caches.delete(key)))),
+        ]).finally(() => window.location.reload());
+      }
+    }
   }
 
   render() {

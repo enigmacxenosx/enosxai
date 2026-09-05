@@ -58,7 +58,7 @@
       "destination": "/api/browser-routes?route=healthz"
     },
     {
-      "source": "/:path((?!api/).*)",
+      "source": "/:path((?!api/|assets/|sw\\.js$|workbox-).*)",
       "destination": "/index.html"
     }
   ]

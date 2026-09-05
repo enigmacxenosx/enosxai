@@ -80,6 +80,8 @@ export function useEnosxAI() {
       setError(null);
       // Surface a friendly in-message indicator while the AI is processing.
       setIsThinking(true);
+      const requestController = new AbortController();
+      const requestTimeout = window.setTimeout(() => requestController.abort(), 50_000);
 
       try {
         const sendRequest = async () => {
@@ -93,6 +95,7 @@ export function useEnosxAI() {
           return fetch("/api/chat", {
             method: "POST",
             cache: "no-store",
+            signal: requestController.signal,
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
               messages,
@@ -179,6 +182,7 @@ export function useEnosxAI() {
         onChunk(friendlyError);
         onDone();
       } finally {
+        window.clearTimeout(requestTimeout);
         setIsLoading(false);
         setIsThinking(false);
       }

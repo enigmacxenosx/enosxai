@@ -202,6 +202,7 @@ You are running in ENOSH MIND (Paid, highest intelligence) mode. Operate as a ri
 
     const nvidiaResponse = await fetch(nvidiaApiUrl, {
       method: "POST",
+      signal: AbortSignal.timeout(45_000),
       headers: {
         "Content-Type": "application/json",
         Authorization: `Bearer ${apiKey}`,
@@ -233,10 +234,15 @@ You are running in ENOSH MIND (Paid, highest intelligence) mode. Operate as a ri
       res.setHeader("Connection", "keep-alive");
       const reader = nvidiaResponse.body.getReader();
       const decoder = new TextDecoder();
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-        res.write(decoder.decode(value, { stream: true }));
+      try {
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          res.write(decoder.decode(value, { stream: true }));
+        }
+      } catch (streamError) {
+        console.error("[API] NVIDIA stream timed out or failed:", streamError);
+        res.write(`data: ${JSON.stringify({ error: { message: "The NVIDIA response timed out. Please try again." } })}\n\ndata: [DONE]\n\n`);
       }
       res.end();
       return;

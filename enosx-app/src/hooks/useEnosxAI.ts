@@ -33,12 +33,20 @@ async function getErrorMessage(response: Response) {
 }
 
 function getFriendlyErrorMessage(message: string) {
+  if (/this AI tier requires an active subscription/i.test(message)) {
+    return "ENOSH MIND and EX Pro require an active subscription. Switch to EX Core or upgrade your plan to continue.";
+  }
+
+  if (/sign in and subscribe to use this AI tier/i.test(message)) {
+    return "Please sign in with your ENOSX account and subscribe to use ENOSH MIND or EX Pro. EX Core is available without a subscription.";
+  }
+
   if (message.includes("401") || message.includes("403") || /authentication|unauthorized|forbidden/i.test(message)) {
-    return "The AI service credentials need attention. Please contact support if this continues.";
+    return "This AI mode requires an active ENOSX account and subscription. Switch to EX Core or sign in and upgrade your plan.";
   }
 
   if (message.includes("402") || /insufficient credits|payment required/i.test(message)) {
-    return "The AI service is temporarily unavailable because its usage balance needs attention. Please try again later.";
+    return "This AI mode requires an active subscription. Switch to EX Core or upgrade your ENOSX plan to continue.";
   }
 
   if (message.includes("429") || /rate limit|high traffic/i.test(message)) {

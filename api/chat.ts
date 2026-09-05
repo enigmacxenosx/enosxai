@@ -7,6 +7,7 @@
  *   - OPENROUTER_VISION_MODEL (optional)
  */
 import type { VercelRequest, VercelResponse } from "@vercel/node";
+import { consumeCoreMessage, getEntitlement, spendCredit, userExists } from "./billing/_shared";
 
 // NOTE: maxDuration intentionally omitted. An explicit per-function override can
 // conflict with the project-wide Vercel runtime configuration and cause
@@ -107,7 +108,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       return res.status(400).json({ error: "Invalid request body" });
     }
 
-    const { messages, githubContext, aiMode: requestedAiMode } = body;
+    const { messages, githubContext, aiMode: requestedAiMode, userId } = body;
     const supportedModes = new Set(["ex-core", "ex-pro", "enosh-mind"]);
     const aiMode = typeof requestedAiMode === "string" && supportedModes.has(requestedAiMode)
       ? requestedAiMode
@@ -116,6 +117,24 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     if (!messages || !Array.isArray(messages) || messages.length === 0) {
       console.error("[API] Invalid messages:", messages);
       return res.status(400).json({ error: "Messages array is required and must not be empty" });
+    }
+    const isGodMode = messages.some((message: any) => typeof message?.content === "string" && message.content.startsWith("[GOD MODE COMMAND]"));
+    if (userId && await userExists(userId)) {
+      const entitlement = await getEntitlement(userId);
+      if (aiMode !== "ex-core" && !entitlement) {
+        return res.status(402).json({ error: "This AI tier requires an active subscription." });
+      }
+      if (aiMode === "ex-core" && !isGodMode && !entitlement) {
+        const usage = await consumeCoreMessage(userId);
+        if (!usage.allowed) {
+          const paidWithCredit = await spendCredit(userId);
+          if (!paidWithCredit) {
+            return res.status(429).json({ error: "You have reached the 20 EX Core messages available today. Buy a credit pack or upgrade to continue." });
+          }
+        }
+      }
+    } else if (aiMode !== "ex-core") {
+      return res.status(401).json({ error: "Sign in and subscribe to use this AI tier." });
     }
 
     const ctxStr = typeof githubContext === "string" ? githubContext.slice(0, 20000) : "";

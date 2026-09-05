@@ -189,12 +189,24 @@ export default function ProfilePanel({ isOpen, onClose, onOpenAdminConsole, onOp
     } catch {}
   };
 
-  const beginUpgrade = async () => {
+  const beginStripeCheckout = async (plan: 'ex-pro' | 'enosh-mind') => {
     setCheckoutStatus('loading');
     try {
-      const response = await fetch('/api/billing/checkout?plan=pro', { credentials: 'include' });
+      const response = await fetch('/api/billing/checkout', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ plan, userId: user?.id }) });
       const payload = await response.json().catch(() => ({}));
       if (!response.ok || !payload.checkoutUrl) throw new Error(payload.error || 'Checkout is not available yet.');
+      window.location.assign(payload.checkoutUrl);
+    } catch {
+      setCheckoutStatus('unavailable');
+      setTimeout(() => setCheckoutStatus('idle'), 3500);
+    }
+  };
+  const beginPaystackCheckout = async (pack: 'starter' | 'builder' | 'power') => {
+    setCheckoutStatus('loading');
+    try {
+      const response = await fetch('/api/billing/paystack/initialize', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ pack, userId: user?.id }) });
+      const payload = await response.json().catch(() => ({}));
+      if (!response.ok || !payload.checkoutUrl) throw new Error(payload.error || 'Paystack is not available yet.');
       window.location.assign(payload.checkoutUrl);
     } catch {
       setCheckoutStatus('unavailable');
@@ -485,17 +497,24 @@ export default function ProfilePanel({ isOpen, onClose, onOpenAdminConsole, onOp
 	                    ))}
 	                  </div>
 
-	                  <div className="rounded-2xl p-3.5" style={{ background: `linear-gradient(135deg, rgba(${accentRgb},0.16), rgba(112,0,255,0.16))`, border: `1px solid rgba(${accentRgb},0.28)` }}>
-	                    <div className="flex items-center justify-between gap-3">
-	                      <div>
-	                        <div className="flex items-center gap-1.5 text-sm font-bold" style={{ color: 'rgba(255,255,255,0.9)' }}><Crown size={14} style={{ color: accentColor }} /> ENOSX Free</div>
-	                        <p className="mt-1 text-xs leading-relaxed" style={{ color: 'rgba(255,255,255,0.48)' }}>Core chat, personal context, and controlled web reading. Upgrade unlocks Pro model access and expanded usage once billing is configured.</p>
-	                      </div>
-	                      <button onClick={beginUpgrade} disabled={checkoutStatus === 'loading'} className="shrink-0 rounded-xl px-3 py-2 text-xs font-bold transition-opacity disabled:opacity-60" style={{ background: `rgba(${accentRgb},0.86)`, color: '#071014' }}>
-	                        {checkoutStatus === 'loading' ? 'Opening…' : 'Upgrade'}
-	                      </button>
+	                  <div className="rounded-2xl p-3.5 space-y-3" style={{ background: `linear-gradient(135deg, rgba(${accentRgb},0.16), rgba(112,0,255,0.16))`, border: `1px solid rgba(${accentRgb},0.28)` }}>
+	                    <div>
+	                      <div className="flex items-center gap-1.5 text-sm font-bold" style={{ color: 'rgba(255,255,255,0.9)' }}><Crown size={14} style={{ color: accentColor }} /> ENOSX Core · Free</div>
+	                      <p className="mt-1 text-xs leading-relaxed" style={{ color: 'rgba(255,255,255,0.48)' }}>20 EX Core messages per day. Authorized GOD MODE commands do not consume credits.</p>
 	                    </div>
-	                    {checkoutStatus === 'unavailable' && <p className="mt-2 text-[11px]" style={{ color: '#fbbf24' }}>Checkout will activate when the production billing link is configured.</p>}
+	                    <div className="grid grid-cols-2 gap-2">
+	                      <button onClick={() => beginStripeCheckout('ex-pro')} disabled={checkoutStatus === 'loading'} className="rounded-xl px-3 py-2 text-xs font-bold disabled:opacity-60" style={{ background: 'rgba(168,85,247,0.85)', color: '#fff' }}>EX Pro · $10/mo</button>
+	                      <button onClick={() => beginStripeCheckout('enosh-mind')} disabled={checkoutStatus === 'loading'} className="rounded-xl px-3 py-2 text-xs font-bold disabled:opacity-60" style={{ background: 'rgba(0,180,210,0.85)', color: '#061014' }}>ENOSH MIND · $25/mo</button>
+	                    </div>
+	                    <div>
+	                      <p className="mb-2 text-[10px] uppercase tracking-wider" style={{ color: 'rgba(255,255,255,0.42)' }}>Paystack credit packs · KES</p>
+	                      <div className="grid grid-cols-3 gap-2">
+	                        <button onClick={() => beginPaystackCheckout('starter')} disabled={checkoutStatus === 'loading'} className="rounded-xl px-2 py-2 text-[11px] font-semibold disabled:opacity-60" style={{ background: 'rgba(255,255,255,0.08)', color: '#fff' }}>100 · KES 500</button>
+	                        <button onClick={() => beginPaystackCheckout('builder')} disabled={checkoutStatus === 'loading'} className="rounded-xl px-2 py-2 text-[11px] font-semibold disabled:opacity-60" style={{ background: 'rgba(255,255,255,0.08)', color: '#fff' }}>500 · KES 2,000</button>
+	                        <button onClick={() => beginPaystackCheckout('power')} disabled={checkoutStatus === 'loading'} className="rounded-xl px-2 py-2 text-[11px] font-semibold disabled:opacity-60" style={{ background: 'rgba(255,255,255,0.08)', color: '#fff' }}>1,500 · KES 5,000</button>
+	                      </div>
+	                    </div>
+	                    {checkoutStatus === 'unavailable' && <p className="text-[11px]" style={{ color: '#fbbf24' }}>Billing is not configured yet. Add the provider keys and price IDs to activate checkout.</p>}
 	                  </div>
 
 	                  {/* Save */}

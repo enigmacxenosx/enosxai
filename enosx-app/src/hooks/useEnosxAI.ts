@@ -74,8 +74,15 @@ export function useEnosxAI() {
       setIsThinking(true);
 
       try {
-        const sendRequest = async () =>
-          fetch("/api/chat", {
+        const sendRequest = async () => {
+          let userId: string | undefined;
+          try {
+            const stored = localStorage.getItem("enosx-auth-user");
+            userId = stored ? JSON.parse(stored)?.id : undefined;
+          } catch {
+            userId = undefined;
+          }
+          return fetch("/api/chat", {
             method: "POST",
             cache: "no-store",
             headers: { "Content-Type": "application/json" },
@@ -83,8 +90,10 @@ export function useEnosxAI() {
               messages,
               githubContext: options?.githubContext,
               aiMode: options?.aiMode,
+              userId,
             }),
           });
+        };
 
         const response = await sendRequest();
 

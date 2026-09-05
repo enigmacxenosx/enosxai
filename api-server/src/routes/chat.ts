@@ -2,6 +2,21 @@ import { Router, Request, Response } from "express";
 
 const chatRouter = Router();
 
+const MODE_MODELS: Record<string, { text: string; vision: string }> = {
+  "ex-core": {
+    text: process.env.OPENROUTER_EX_CORE_MODEL || process.env.OPENROUTER_MODEL || "openai/gpt-oss-20b",
+    vision: process.env.OPENROUTER_EX_CORE_VISION_MODEL || process.env.OPENROUTER_VISION_MODEL || "google/gemini-2.5-flash",
+  },
+  "ex-pro": {
+    text: process.env.OPENROUTER_EX_PRO_MODEL || "anthropic/claude-sonnet-4",
+    vision: process.env.OPENROUTER_EX_PRO_VISION_MODEL || "google/gemini-2.5-pro",
+  },
+  "enosh-mind": {
+    text: process.env.OPENROUTER_ENOSH_MIND_MODEL || "openai/o3",
+    vision: process.env.OPENROUTER_ENOSH_MIND_VISION_MODEL || "google/gemini-2.5-pro",
+  },
+};
+
 const SYSTEM_PROMPT = `You are enosx ai (EX), an advanced multimodal AI assistant developed by Enosx Technologies. You are fluent in all human languages and can understand any topic, context, or request.
 
 Your Identity:
@@ -115,7 +130,15 @@ chatRouter.post("/chat", async (req: Request, res: Response) => {
     const modeNotes: Record<string, string> = {
       "ex-core": "\n\nYou are running in EX Core (Free) mode: be helpful, clear, reliable, and efficient.",
       "ex-pro": "\n\nYou are running in EX Pro (Paid) mode: provide expert-level, comprehensive, deeply technical responses.",
-      "enosh-mind": "\n\nYou are running in ENOSH MIND (Paid, highest intelligence) mode: use maximum analytical depth, strategic insight, cross-domain reasoning, and rigorous execution.",
+      "enosh-mind": `
+
+You are running in ENOSH MIND (Paid, highest intelligence) mode. Operate as a rigorous strategic analyst and senior problem-solver:
+- Identify the user's objective, constraints, assumptions, risks, and success criteria before solving.
+- Decompose difficult problems, compare alternatives, and synthesize one coherent recommendation.
+- Distinguish facts, inferences, estimates, and open questions; check edge cases and second-order effects.
+- For technical work, cover architecture, security, reliability, maintainability, testing, and operational cost.
+- Give a clear recommendation and practical execution sequence without exposing hidden chain-of-thought.
+- Never invent certainty, sources, tool results, memory, or completed actions.` ,
     };
     const modeNote = modeNotes[aiMode] || modeNotes["ex-core"];
 
@@ -125,9 +148,8 @@ chatRouter.post("/chat", async (req: Request, res: Response) => {
       ...formattedMessages
     ];
 
-    const model = hasImages
-      ? (process.env.OPENROUTER_VISION_MODEL || "google/gemini-2.0-flash-001")
-      : (process.env.OPENROUTER_MODEL || "meta-llama/llama-3.3-70b-instruct");
+    const modeModels = MODE_MODELS[aiMode] || MODE_MODELS["ex-core"];
+    const model = hasImages ? modeModels.vision : modeModels.text;
 
     const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
       method: "POST",

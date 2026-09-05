@@ -3,8 +3,8 @@
  * Uses OpenRouter as the AI provider.
  * Environment variables:
  *   - OPENROUTER_API_KEY (required; server-side only)
- *   - OPENROUTER_MODEL (optional)
- *   - OPENROUTER_VISION_MODEL (optional)
+ *   - OPENROUTER_EX_CORE_MODEL, OPENROUTER_EX_PRO_MODEL, OPENROUTER_ENOSH_MIND_MODEL (optional)
+ *   - OPENROUTER_EX_CORE_VISION_MODEL, OPENROUTER_EX_PRO_VISION_MODEL, OPENROUTER_ENOSH_MIND_VISION_MODEL (optional)
  */
 import type { VercelRequest, VercelResponse } from "@vercel/node";
 import { consumeCoreMessage, getEntitlement, spendCredit, userExists } from "../lib/billing";
@@ -42,6 +42,7 @@ Current ENOSX AI product updates (September 2026):
 - EX Core chat is designed to remain available even when the optional database is not configured. If the user asks about missing DATABASE_URL, explain that remote account limits and cloud history may be unavailable while local chat remains usable; do not expose secrets or invent a connection string.
 - Conversation history is stored locally in the browser and synchronizes to the server when the history service is available. A history-sync failure should not be presented as a failure of the AI response.
 - The server uses a configured OpenRouter model with an automatic-router fallback. If a provider is temporarily unavailable or credit-limited, be transparent and suggest retrying rather than claiming the request was completed when it was not.
+- Each mode uses a distinct underlying model: EX Core favors speed and efficiency, EX Pro favors expert breadth, and ENOSH MIND favors deliberate reasoning. The selected model is a routing detail; never pretend that a model name alone guarantees correctness.
 - Workspace mode supports proposed actions for opening supported applications, opening URLs, chaining actions, creating scripts, and running scripts. Python scripts run in the browser runtime; shell and batch scripts are simulations. Explain an action before proposing or running it, and never claim to have changed the user's real device unless the client confirms execution.
 - Treat the current repository implementation and verified runtime behavior as the source of truth. Do not claim unsupported features, background access, unrestricted operating-system control, or permanent memory.
 
@@ -65,6 +66,22 @@ language can be "python", "shell", or "batch". Keep scripts short and self-conta
 
 GOD MODE:
 When a user message begins with [GOD MODE COMMAND], switch to advanced operator mode. Give concise, direct, implementation-first answers.`;
+
+const MODE_MODELS: Record<string, { text: string; vision: string }> = {
+  // Defaults are overridable per deployment so model changes never require a code change.
+  "ex-core": {
+    text: process.env.OPENROUTER_EX_CORE_MODEL || process.env.OPENROUTER_MODEL || "openai/gpt-oss-20b",
+    vision: process.env.OPENROUTER_EX_CORE_VISION_MODEL || process.env.OPENROUTER_VISION_MODEL || "google/gemini-2.5-flash",
+  },
+  "ex-pro": {
+    text: process.env.OPENROUTER_EX_PRO_MODEL || "anthropic/claude-sonnet-4",
+    vision: process.env.OPENROUTER_EX_PRO_VISION_MODEL || "google/gemini-2.5-pro",
+  },
+  "enosh-mind": {
+    text: process.env.OPENROUTER_ENOSH_MIND_MODEL || "openai/o3",
+    vision: process.env.OPENROUTER_ENOSH_MIND_VISION_MODEL || "google/gemini-2.5-pro",
+  },
+};
 
 const sendMockResponse = (res: VercelResponse, message: string) => {
   res.setHeader("Content-Type", "text/event-stream; charset=utf-8");
@@ -151,7 +168,17 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const modeNotes: Record<string, string> = {
       "ex-core": "\n\nYou are running in EX Core (Free) mode: be helpful, clear, reliable, and efficient.",
       "ex-pro": "\n\nYou are running in EX Pro (Paid) mode: provide expert-level, comprehensive, deeply technical responses.",
-      "enosh-mind": "\n\nYou are running in ENOSH MIND (Paid, highest intelligence) mode: use maximum analytical depth, strategic insight, cross-domain reasoning, and rigorous execution.",
+      "enosh-mind": `
+
+You are running in ENOSH MIND (Paid, highest intelligence) mode. Operate as a rigorous strategic analyst and senior problem-solver:
+- First identify the user's actual objective, constraints, assumptions, risks, and success criteria.
+- Decompose difficult problems into explicit subproblems, then synthesize the results into one coherent answer.
+- Compare meaningful alternatives, state trade-offs, and distinguish facts, inferences, estimates, and open questions.
+- Check edge cases, failure modes, dependencies, second-order effects, and reversibility before recommending action.
+- For technical work, reason about architecture, security, reliability, maintainability, testing, and operational cost.
+- For decisions, give a clear recommendation, explain why it dominates the alternatives, and provide a practical execution sequence.
+- Be deeply analytical without exposing hidden chain-of-thought. Provide concise reasoning summaries, assumptions, evidence, and conclusions rather than private scratch work.
+- Never manufacture certainty, sources, tool results, memory, or completed actions. Ask only for information that materially changes the answer.` ,
     };
     const modeNote = modeNotes[aiMode] || modeNotes["ex-core"];
 
@@ -171,9 +198,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     // The legacy defaults (google/gemini-2.0-flash-001 and
     // meta-llama/llama-3.3-70b-instruct) no longer exist in the catalog and
     // were the cause of avoidable provider failures.
-    const primaryModel = hasImages
-      ? (process.env.OPENROUTER_VISION_MODEL || "google/gemini-2.5-flash")
-      : (process.env.OPENROUTER_MODEL || "openai/gpt-oss-20b");
+    const modeModels = MODE_MODELS[aiMode] || MODE_MODELS["ex-core"];
+    const primaryModel = hasImages ? modeModels.vision : modeModels.text;
 
     // OpenRouter attempts these models in order before returning a provider
     // failure. This protects the chat experience against model-specific 5xxs

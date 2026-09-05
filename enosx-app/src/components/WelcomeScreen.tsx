@@ -17,12 +17,19 @@ interface WelcomeScreenProps {
 
 const GREETINGS = [
   "Hello there!",
-  "I'm ENOSX AI (EX)",
+  "I'm ENOSX AI",
   "How can I assist you today?",
   "Let's build something amazing.",
   "Your AI workspace is ready.",
   "Powered by Enosx Technologies",
   "Ready to transform your workflow."
+];
+
+const SUGGESTIONS = [
+  "Explain a difficult idea simply",
+  "Help me plan my day",
+  "Write something for me",
+  "What can you help me do?",
 ];
 
 export default function WelcomeScreen({ onSuggestion, isCompact }: WelcomeScreenProps) {
@@ -46,7 +53,7 @@ export default function WelcomeScreen({ onSuggestion, isCompact }: WelcomeScreen
           animate={{ scale: 1, opacity: 1 }}
           transition={{ duration: 1.5, ease: [0.23, 1, 0.32, 1] }}
           className="mb-4"
-          title="ENOSX AI (EX) - Enosx Technologies"
+          title="ENOSX AI - Enosx Technologies"
         >
           <BrandMark size={96} animate />
         </motion.div>
@@ -80,6 +87,29 @@ export default function WelcomeScreen({ onSuggestion, isCompact }: WelcomeScreen
           >
             Powered by Enosx Technologies
           </motion.p>
+
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.45, duration: 0.6 }}
+            className="mt-8 grid w-full grid-cols-1 gap-2 sm:grid-cols-2"
+          >
+            {SUGGESTIONS.map((suggestion) => (
+              <button
+                key={suggestion}
+                type="button"
+                onClick={() => onSuggestion(suggestion)}
+                className="rounded-xl border px-4 py-3 text-left text-xs transition-colors hover:bg-white/10 active:bg-white/15"
+                style={{
+                  color: config.text,
+                  borderColor: `rgba(${config.accentRgb}, 0.25)`,
+                  background: `rgba(${config.accentRgb}, 0.07)`,
+                }}
+              >
+                {suggestion}
+              </button>
+            ))}
+          </motion.div>
         </motion.div>
 
 

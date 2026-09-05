@@ -4,6 +4,7 @@ import { VoiceState } from "@/lib/types";
 
 const ELEVEN_LABS_API_KEY = import.meta.env.VITE_ELEVEN_LABS_API_KEY || "";
 const ELEVEN_LABS_VOICE_ID = "EXAVITQu4vr4xnNLMSvx";
+const VOICE_SERVICE_URL = "/api/voice";
 
 /** Voice settings stored in localStorage (enosx_voice_settings). */
 export interface SpeechSettings {
@@ -143,7 +144,6 @@ export function useVoice() {
   const [settings, setSettings] = useState<SpeechSettings>(() => loadSpeechSettings());
   const recognitionRef = useRef<ISpeechRecognition | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
-  const browserUtteranceRef = useRef<SpeechSynthesisUtterance | null>(null);
   const languageRef = useRef("en-US");
   const settingsRef = useRef<SpeechSettings>(settings);
   const onFinalResultRef = useRef<((text: string) => void) | undefined>(undefined);
@@ -179,12 +179,6 @@ export function useVoice() {
 
   const stopSpeaking = useCallback(() => {
     releaseAudio();
-    browserUtteranceRef.current = null;
-
-    if (typeof window !== "undefined" && "speechSynthesis" in window) {
-      window.speechSynthesis.cancel();
-    }
-
     setVoiceState("idle");
   }, [releaseAudio]);
 
@@ -357,58 +351,6 @@ export function useVoice() {
     [startListening]
   );
 
-  const speakWithBrowser = useCallback(
-    (text: string) =>
-      new Promise<void>((resolve, reject) => {
-        if (!("speechSynthesis" in window)) {
-          reject(new Error("Browser speech synthesis is unavailable"));
-          return;
-        }
-
-        const chunks = splitIntoSpeechChunks(text);
-        if (!chunks.length) {
-          resolve();
-          return;
-        }
-
-        const speakSettings = settingsRef.current;
-        let chunkIndex = 0;
-        const speakNextChunk = () => {
-          if (chunkIndex >= chunks.length) {
-            browserUtteranceRef.current = null;
-            setVoiceState("idle");
-            resolve();
-            return;
-          }
-
-          const utterance = new SpeechSynthesisUtterance(chunks[chunkIndex]);
-          chunkIndex += 1;
-          utterance.lang = languageRef.current;
-          utterance.rate = Math.min(2, Math.max(0.5, speakSettings.rate));
-          utterance.pitch = Math.min(2, Math.max(0, speakSettings.pitch));
-          browserUtteranceRef.current = utterance;
-
-          utterance.onend = () => {
-            if (browserUtteranceRef.current !== utterance) return;
-            speakNextChunk();
-          };
-
-          utterance.onerror = (event) => {
-            if (event.error === "canceled" || event.error === "interrupted") return;
-            browserUtteranceRef.current = null;
-            setVoiceState("idle");
-            reject(new Error(`Browser speech failed: ${event.error}`));
-          };
-
-          window.speechSynthesis.speak(utterance);
-        };
-
-        setVoiceState("speaking");
-        speakNextChunk();
-      }),
-    []
-  );
-
   const speak = useCallback(
     async (text: string) => {
       const cleanText = cleanSpeechText(text);
@@ -416,71 +358,58 @@ export function useVoice() {
 
       stopSpeaking();
 
-      if (ELEVEN_LABS_API_KEY) {
-        try {
-          setVoiceState("speaking");
-          const response = await fetch(
-            `https://api.elevenlabs.io/v1/text-to-speech/${ELEVEN_LABS_VOICE_ID}`,
-            {
-              method: "POST",
-              headers: {
-                "Content-Type": "application/json",
-                "xi-api-key": ELEVEN_LABS_API_KEY,
-                Accept: "audio/mpeg",
-              },
-              body: JSON.stringify({
-                text: cleanText,
-                model_id: "eleven_flash_v2_5",
-                voice_settings: {
-                  stability: 0.5,
-                  similarity_boost: 0.75,
-                  style: 0,
-                  use_speaker_boost: true,
-                },
-              }),
-            }
-          );
-
-          if (!response.ok) throw new Error(`TTS request failed with ${response.status}`);
-
-          const blob = await response.blob();
-          const objectUrl = URL.createObjectURL(blob);
-          const audio = new Audio(objectUrl);
-          audioRef.current = audio;
-          audio.onended = () => {
-            if (audioRef.current !== audio) return;
-            releaseAudio();
-            setVoiceState("idle");
-            // Rate/pitch controls only apply to browser speech; keep settings
-            // in sync with what was actually played.
-            scheduleListenAgain(onFinalResultRef.current ?? (() => {}));
-          };
-          audio.onerror = () => {
-            if (audioRef.current !== audio) return;
-            releaseAudio();
-            setVoiceState("idle");
-            void speakWithBrowser(cleanText).catch((error) => {
-              console.error("Browser speech fallback failed", error);
-              toast.error("Spoken responses are unavailable in this browser.");
-            });
-          };
-          await audio.play();
-          return;
-        } catch (error) {
-          console.warn("Premium speech service failed; using browser speech instead.", error);
-          releaseAudio();
-        }
-      }
-
       try {
-        await speakWithBrowser(cleanText);
+        setVoiceState("speaking");
+        const requestUrl = ELEVEN_LABS_API_KEY
+          ? `https://api.elevenlabs.io/v1/text-to-speech/${ELEVEN_LABS_VOICE_ID}`
+          : VOICE_SERVICE_URL;
+        const headers: Record<string, string> = {
+          "Content-Type": "application/json",
+          Accept: "audio/mpeg",
+        };
+        if (ELEVEN_LABS_API_KEY) headers["xi-api-key"] = ELEVEN_LABS_API_KEY;
+        const response = await fetch(requestUrl, {
+          method: "POST",
+          headers,
+          body: JSON.stringify({
+            text: cleanText,
+            ...(ELEVEN_LABS_API_KEY ? { model_id: "eleven_flash_v2_5" } : {}),
+            voice_settings: {
+              stability: 0.5,
+              similarity_boost: 0.75,
+              style: 0,
+              use_speaker_boost: true,
+            },
+          }),
+        });
+        if (!response.ok) {
+          const detail = await response.json().catch(() => ({}));
+          throw new Error(detail.error || `Voice service failed with ${response.status}`);
+        }
+        const objectUrl = URL.createObjectURL(await response.blob());
+        const audio = new Audio(objectUrl);
+        audioRef.current = audio;
+        audio.onended = () => {
+          if (audioRef.current !== audio) return;
+          releaseAudio();
+          setVoiceState("idle");
+          scheduleListenAgain(onFinalResultRef.current ?? (() => {}));
+        };
+        audio.onerror = () => {
+          if (audioRef.current !== audio) return;
+          releaseAudio();
+          setVoiceState("idle");
+          toast.error("The ENOSX voice service could not play this response.");
+        };
+        await audio.play();
       } catch (error) {
-        console.error("Speech error", error);
+        console.error("ENOSX voice service failed", error);
+        releaseAudio();
         setVoiceState("idle");
-        toast.error("Spoken responses are unavailable in this browser.");
+        toast.error("ENOSX voice is unavailable. Configure the voice service to continue.");
       }
     },
-    [releaseAudio, speakWithBrowser, stopSpeaking]
+    [releaseAudio, scheduleListenAgain, stopSpeaking]
   );
 
   const setLanguage = useCallback((language: string) => {

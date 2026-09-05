@@ -51,6 +51,8 @@ GitHub sign-in uses an OAuth App. Configure these values in the deployment envir
 
 The callback URL for production is `https://enosxai.vercel.app/api/github/oauth/callback`. ExLover Coach uses `OPENROUTER_API_KEY` or `OPENAI_API_KEY` on the server side.
 
+ENOSX AI spoken responses use the server-side ElevenLabs voice service. Configure `ELEVEN_LABS_API_KEY` as an encrypted deployment secret; optionally set `ELEVEN_LABS_VOICE_ID` to choose another ElevenLabs voice. The client does not use browser `speechSynthesis`, so Windows system voices are never selected as a fallback.
+
 ## Deployment and security
 
 The production deployment targets Vercel. Provider credentials remain server-side and must be stored as encrypted deployment secrets. Review the project documentation and run the available checks before release.

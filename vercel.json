@@ -22,6 +22,22 @@
   ],
   "rewrites": [
     {
+      "source": "/api/connectors/:connector/oauth/:phase",
+      "destination": "/api/connectors/oauth?route=:connector/:phase"
+    },
+    {
+      "source": "/api/browser/read",
+      "destination": "/api/browser-routes?route=read"
+    },
+    {
+      "source": "/api/browser/extract-links",
+      "destination": "/api/browser-routes?route=extract-links"
+    },
+    {
+      "source": "/api/healthz",
+      "destination": "/api/browser-routes?route=healthz"
+    },
+    {
       "source": "/:path((?!api/).*)",
       "destination": "/index.html"
     }

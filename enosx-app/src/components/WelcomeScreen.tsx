@@ -25,13 +25,6 @@ const GREETINGS = [
   "Ready to transform your workflow."
 ];
 
-const SUGGESTIONS = [
-  "Explain a difficult idea simply",
-  "Help me plan my day",
-  "Write something for me",
-  "What can you help me do?",
-];
-
 export default function WelcomeScreen({ onSuggestion, isCompact }: WelcomeScreenProps) {
   const { config } = useTheme();
   const { settings: wallpaperSettings } = useWallpaper();
@@ -87,29 +80,6 @@ export default function WelcomeScreen({ onSuggestion, isCompact }: WelcomeScreen
           >
             Powered by Enosx Technologies
           </motion.p>
-
-          <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.45, duration: 0.6 }}
-            className="mt-8 grid w-full grid-cols-1 gap-2 sm:grid-cols-2"
-          >
-            {SUGGESTIONS.map((suggestion) => (
-              <button
-                key={suggestion}
-                type="button"
-                onClick={() => onSuggestion(suggestion)}
-                className="rounded-xl border px-4 py-3 text-left text-xs transition-colors hover:bg-white/10 active:bg-white/15"
-                style={{
-                  color: config.text,
-                  borderColor: `rgba(${config.accentRgb}, 0.25)`,
-                  background: `rgba(${config.accentRgb}, 0.07)`,
-                }}
-              >
-                {suggestion}
-              </button>
-            ))}
-          </motion.div>
         </motion.div>
 
 

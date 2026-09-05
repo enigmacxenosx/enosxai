@@ -59,6 +59,8 @@ export const AI_MODES: AIModeOption[] = [
   },
 ];
 
+const QUICK_SUGGESTIONS = ["Explain simply", "Add examples", "Make a plan"];
+
 interface CommandBarProps {
   onSend: (text: string, aiMode?: AIMode, selectedConnectorIds?: string[]) => void;
   isLoading: boolean;
@@ -217,6 +219,36 @@ export default function CommandBar({
               transition: "all 0.3s ease",
             }}
           >
+            <AnimatePresence initial={false}>
+              {value.trim().length > 0 && !disabled && !isLoading && (
+                <motion.div
+                  initial={{ opacity: 0, y: 4 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: 4 }}
+                  transition={{ duration: 0.16 }}
+                  className="flex items-center gap-1.5 overflow-x-auto px-1 pt-0.5"
+                  aria-label="Prompt suggestions"
+                >
+                  <span className="mr-0.5 shrink-0 text-[10px] text-white/35">Try</span>
+                  {QUICK_SUGGESTIONS.map((suggestion) => (
+                    <motion.button
+                      key={suggestion}
+                      type="button"
+                      whileTap={{ scale: 0.96 }}
+                      onClick={() => setValue((current) => `${current.trimEnd()}\n\n${suggestion}`)}
+                      className="shrink-0 rounded-full border px-2.5 py-1 text-[10px] leading-none text-white/60 transition-colors hover:text-white/90"
+                      style={{
+                        borderColor: `rgba(${config.accentRgb}, 0.2)`,
+                        background: `rgba(${config.accentRgb}, 0.06)`,
+                      }}
+                    >
+                      {suggestion}
+                    </motion.button>
+                  ))}
+                </motion.div>
+              )}
+            </AnimatePresence>
+
             {/* AI Mode selector — single compact tab with dropdown */}
             <div className="flex items-center gap-2">
               <div className="relative" ref={modeRef}>

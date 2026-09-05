@@ -169,6 +169,44 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     console.log("[API] OpenRouter response status:", openRouterResponse.status);
 
     if (!openRouterResponse.ok) {
+      // OpenRouter can reject a request before generation when the account's
+      // remaining balance is smaller than max_tokens. Give the free/core
+      // experience one inexpensive chance before showing the provider error.
+      if (openRouterResponse.status === 402) {
+        try {
+          console.log("[API] 402 credit limit. Retrying with a 256-token automatic-router request...");
+          const creditLimitedRetry = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${apiKey}`,
+              "HTTP-Referer": process.env.OPENROUTER_SITE_URL || "https://enosxtechnologies450.vercel.app",
+              "X-Title": "ENOSX AI",
+            },
+            body: JSON.stringify({
+              models: ["openrouter/auto"],
+              messages: chatMessages,
+              stream: false,
+              max_tokens: 256,
+              temperature: 0.7,
+            }),
+          });
+
+          if (creditLimitedRetry.ok) {
+            const retryData = await creditLimitedRetry.json();
+            const retryContent = retryData?.choices?.[0]?.message?.content;
+            if (typeof retryContent === "string" && retryContent.length > 0) {
+              console.log("[API] 402 low-token retry succeeded.");
+              return sendMockResponse(res, retryContent);
+            }
+          } else {
+            console.error("[API] 402 low-token retry also failed:", creditLimitedRetry.status);
+          }
+        } catch (retryErr) {
+          console.error("[API] 402 low-token retry exception:", retryErr);
+        }
+      }
+
       // 5xx provider errors are worth one automatic retry since model
       // candidates already include the automatic router on first attempt.
       const isRetryable =

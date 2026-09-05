@@ -162,8 +162,9 @@ You are running in ENOSH MIND (Paid, highest intelligence) mode. Operate as a ri
         model,
         messages: finalMessages,
         stream: true,
-        max_tokens: 2048,
+        max_tokens: 1024,
         temperature: 0.7,
+        reasoning_effort: "low",
       }),
     });
 

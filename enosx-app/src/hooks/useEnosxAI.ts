@@ -77,6 +77,7 @@ export function useEnosxAI() {
         const sendRequest = async () =>
           fetch("/api/chat", {
             method: "POST",
+            cache: "no-store",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
               messages,

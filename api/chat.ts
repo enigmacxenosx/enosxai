@@ -7,7 +7,7 @@
  *   - OPENROUTER_VISION_MODEL (optional)
  */
 import type { VercelRequest, VercelResponse } from "@vercel/node";
-import { consumeCoreMessage, getEntitlement, spendCredit, userExists } from "./billing/_shared";
+import { consumeCoreMessage, getEntitlement, spendCredit, userExists } from "../lib/billing";
 
 // NOTE: maxDuration intentionally omitted. An explicit per-function override can
 // conflict with the project-wide Vercel runtime configuration and cause

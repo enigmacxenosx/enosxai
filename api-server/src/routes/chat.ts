@@ -4,15 +4,15 @@ const chatRouter = Router();
 
 const MODE_MODELS: Record<string, { text: string; vision: string }> = {
   "ex-core": {
-    text: process.env.NVIDIA_EX_CORE_MODEL || process.env.NVIDIA_MODEL || "meta/llama-3.1-8b-instruct",
+    text: process.env.NVIDIA_EX_CORE_MODEL || process.env.NVIDIA_MODEL || "openai/gpt-oss-20b",
     vision: process.env.NVIDIA_EX_CORE_VISION_MODEL || process.env.NVIDIA_VISION_MODEL || "meta/llama-3.2-90b-vision-instruct",
   },
   "ex-pro": {
-    text: process.env.NVIDIA_EX_PRO_MODEL || process.env.NVIDIA_MODEL || "meta/llama-3.1-8b-instruct",
+    text: process.env.NVIDIA_EX_PRO_MODEL || process.env.NVIDIA_MODEL || "openai/gpt-oss-20b",
     vision: process.env.NVIDIA_EX_PRO_VISION_MODEL || process.env.NVIDIA_VISION_MODEL || "meta/llama-3.2-90b-vision-instruct",
   },
   "enosh-mind": {
-    text: process.env.NVIDIA_ENOSH_MIND_MODEL || process.env.NVIDIA_MODEL || "meta/llama-3.1-8b-instruct",
+    text: process.env.NVIDIA_ENOSH_MIND_MODEL || process.env.NVIDIA_MODEL || "openai/gpt-oss-20b",
     vision: process.env.NVIDIA_ENOSH_MIND_VISION_MODEL || process.env.NVIDIA_VISION_MODEL || "meta/llama-3.2-90b-vision-instruct",
   },
 };

@@ -49,7 +49,7 @@ GitHub sign-in uses an OAuth App. Configure these values in the deployment envir
 - `GITHUB_OAUTH_STATE_SECRET`
 - `GITHUB_OAUTH_REDIRECT_ORIGIN`
 
-The callback URL for production is `https://enosxai.vercel.app/api/github/oauth/callback`. ENOSX AI chat uses the server-side `NVIDIA_API_KEY` with NVIDIA's OpenAI-compatible API. Set `NVIDIA_MODEL` and `NVIDIA_VISION_MODEL` as needed; per-mode overrides are also supported with `NVIDIA_EX_*_MODEL` and `NVIDIA_EX_*_VISION_MODEL`. Image generation uses NVIDIA Visual Generative AI NIM through `NVIDIA_IMAGE_MODEL` (default: `qwen-image`).
+The callback URL for production is `https://enosxai.vercel.app/api/github/oauth/callback`. ENOSX AI chat uses the server-side `NVIDIA_API_KEY` with NVIDIA's OpenAI-compatible API. Set `NVIDIA_MODEL` (default: `openai/gpt-oss-20b`) and `NVIDIA_VISION_MODEL` as needed; per-mode overrides are also supported with `NVIDIA_EX_*_MODEL` and `NVIDIA_EX_*_VISION_MODEL`. Image generation uses NVIDIA Visual Generative AI NIM through `NVIDIA_IMAGE_MODEL` (default: `qwen-image`).
 
 ENOSX AI spoken responses use the server-side ElevenLabs voice service. Configure `ELEVEN_LABS_API_KEY` as an encrypted deployment secret; optionally set `ELEVEN_LABS_VOICE_ID` to choose another ElevenLabs voice. The client does not use browser `speechSynthesis`, so Windows system voices are never selected as a fallback.
 

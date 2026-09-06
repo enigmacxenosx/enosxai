@@ -88,11 +88,12 @@ export default function ProfilePanel({ isOpen, onClose, onOpenAdminConsole, onOp
   const [view, setView] = useState<View>(isAuthenticated ? 'profile' : 'auth');
   const [authMode, setAuthMode] = useState<AuthMode>('signin');
   const [showPassword, setShowPassword] = useState(false);
+  const [rememberMe, setRememberMe] = useState(() => localStorage.getItem('enosx-remember-email') === 'true');
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
   const [authTilt, setAuthTilt] = useState({ x: 0, y: 0 });
 
   // Form state
-  const [email, setEmail] = useState('');
+  const [email, setEmail] = useState(() => localStorage.getItem('enosx-login-email') ?? '');
   const [password, setPassword] = useState('');
   const [displayName, setDisplayName] = useState('');
 
@@ -137,6 +138,14 @@ export default function ProfilePanel({ isOpen, onClose, onOpenAdminConsole, onOp
 
   const handleEmailAuth = async () => {
     clearError();
+    if (!email.trim() || !password) return;
+    if (rememberMe) {
+      localStorage.setItem('enosx-remember-email', 'true');
+      localStorage.setItem('enosx-login-email', email.trim());
+    } else {
+      localStorage.removeItem('enosx-remember-email');
+      localStorage.removeItem('enosx-login-email');
+    }
     if (authMode === 'signin') {
       await signInWithEmail(email, password);
     } else {
@@ -279,7 +288,7 @@ export default function ProfilePanel({ isOpen, onClose, onOpenAdminConsole, onOp
             />
             <div className="relative flex h-full flex-col">
             {/* Header */}
-            <div className="flex items-center justify-between px-5 py-4 flex-shrink-0" style={{ borderBottom: `1px solid rgba(255,255,255,0.06)` }}>
+            {view !== 'auth' && <div className="flex items-center justify-between px-5 py-4 flex-shrink-0" style={{ borderBottom: `1px solid rgba(255,255,255,0.06)` }}>
               <div className="flex items-center gap-3">
                 {(view === 'appearance' || view === 'privacy' || view === 'voice') && (
                   <button onClick={() => setView('preferences')} className="w-7 h-7 rounded-lg flex items-center justify-center hover:bg-white/10 transition-all" style={{ color: 'rgba(255,255,255,0.5)' }}>
@@ -297,8 +306,7 @@ export default function ProfilePanel({ isOpen, onClose, onOpenAdminConsole, onOp
                     {view === 'appearance' ? 'Appearance & Theme'
                       : view === 'privacy' ? 'Privacy & Security'
                       : view === 'voice' ? 'Voice Assistant'
-                      : isAuthenticated ? user?.displayName ?? 'Profile'
-                      : view === 'auth' && authMode === 'signup' ? 'Create Account' : 'Sign In'}
+                      : user?.displayName ?? 'Profile'}
                   </div>
                   <div className="text-xs" style={{ color: 'rgba(255,255,255,0.3)' }}>
                     {view === 'appearance' ? 'Colors, fonts, and wallpaper'
@@ -327,7 +335,7 @@ export default function ProfilePanel({ isOpen, onClose, onOpenAdminConsole, onOp
                   <X size={15} />
                 </button>
               </div>
-            </div>
+            </div>}
 
             {/* Error banner */}
             <AnimatePresence>
@@ -348,20 +356,23 @@ export default function ProfilePanel({ isOpen, onClose, onOpenAdminConsole, onOp
                   initial={{ opacity: 0, y: 34, scale: 0.88, rotateX: 18 }}
                   animate={{ opacity: 1, y: 0, scale: 1, rotateX: 0 }}
                   transition={{ type: 'spring', stiffness: 220, damping: 20, mass: 0.8 }}
-                  className="auth-neon-shell auth-live-stage auth-form-layout px-6 py-7 space-y-5"
+                  className="auth-neon-shell auth-live-stage auth-form-layout px-6 py-8 sm:px-10 sm:py-10 space-y-5"
                   style={{ '--auth-rgb': accentRgb, '--auth-accent': accentColor } as React.CSSProperties}
                 >
                   <span className="auth-particle auth-particle-one" />
                   <span className="auth-particle auth-particle-two" />
                   <span className="auth-particle auth-particle-three" />
+                  <span className="auth-blob auth-blob-cyan" />
+                  <span className="auth-blob auth-blob-pink" />
+                  <span className="auth-blob auth-blob-blue" />
                   <div className="auth-energy-core" aria-hidden="true"><span /></div>
                   <div className="text-center space-y-2 pb-2">
-                    <BrandMark size={64} animate className="auth-neon-brand mx-auto" />
-                    <div className="text-lg font-bold" style={{ color: 'rgba(255,255,255,0.9)' }}>
-                      {authMode === 'signin' ? 'Welcome back' : 'Join ENOSX'}
+                    <div className="auth-login-kicker">ENOSX AI</div>
+                    <div className="text-4xl sm:text-5xl font-black tracking-tight" style={{ color: '#fff', textShadow: '0 4px 24px rgba(0,0,0,0.22)' }}>
+                      {authMode === 'signin' ? 'Login' : 'Create account'}
                     </div>
-                    <div className="text-xs" style={{ color: 'rgba(255,255,255,0.4)' }}>
-                      {authMode === 'signin' ? 'Sign in to sync your preferences' : 'Create your account to get started'}
+                    <div className="text-xs sm:text-sm" style={{ color: 'rgba(255,255,255,0.68)' }}>
+                      {authMode === 'signin' ? 'Welcome back. Your AI workspace is ready.' : 'Start your private AI workspace in seconds.'}
                     </div>
                   </div>
 
@@ -374,7 +385,7 @@ export default function ProfilePanel({ isOpen, onClose, onOpenAdminConsole, onOp
                     type="button"
                     onClick={() => { playSound('authGoogle'); signInWithGoogle(); }}
                     disabled={isLoading}
-                    className="auth-google-button w-full py-3 rounded-2xl text-sm font-semibold transition-all hover:scale-[1.02] active:scale-[0.98] flex items-center justify-center gap-3"
+                    className="auth-google-button w-full py-3 rounded-xl text-sm font-semibold transition-all hover:scale-[1.02] active:scale-[0.98] flex items-center justify-center gap-3"
                     style={{ background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.16)', color: 'rgba(255,255,255,0.9)', opacity: isLoading ? 0.7 : 1 }}
                   >
                     <span className="flex h-5 w-5 items-center justify-center rounded-full bg-white text-xs font-black" style={{ color: '#4285F4' }}>G</span>
@@ -401,26 +412,35 @@ export default function ProfilePanel({ isOpen, onClose, onOpenAdminConsole, onOp
                       <label style={labelStyle}>EMAIL</label>
                       <div className="relative">
                         <Mail size={14} className="absolute left-3 top-1/2 -translate-y-1/2" style={{ color: 'rgba(255,255,255,0.3)' }} />
-                        <input type="email" value={email} onChange={e => setEmail(e.target.value)} onKeyDown={e => e.key === 'Enter' && handleEmailAuth()} placeholder="you@example.com" className="auth-neon-input" style={{ ...inputStyle, paddingLeft: 36 }} />
+                        <input aria-label="Email address" type="email" value={email} onChange={e => setEmail(e.target.value)} onKeyDown={e => e.key === 'Enter' && handleEmailAuth()} placeholder="you@example.com" className="auth-neon-input" style={{ ...inputStyle, paddingLeft: 36 }} />
                       </div>
                     </div>
                     <div>
                       <label style={labelStyle}>PASSWORD</label>
                       <div className="relative">
                         <Lock size={14} className="absolute left-3 top-1/2 -translate-y-1/2" style={{ color: 'rgba(255,255,255,0.3)' }} />
-                        <input type={showPassword ? 'text' : 'password'} value={password} onChange={e => setPassword(e.target.value)} onKeyDown={e => e.key === 'Enter' && handleEmailAuth()} placeholder="••••••••" className="auth-neon-input" style={{ ...inputStyle, paddingLeft: 36, paddingRight: 40 }} />
-                        <button onClick={() => setShowPassword(v => !v)} className="absolute right-3 top-1/2 -translate-y-1/2" style={{ color: 'rgba(255,255,255,0.3)' }}>
+                        <input aria-label="Password" type={showPassword ? 'text' : 'password'} value={password} onChange={e => setPassword(e.target.value)} onKeyDown={e => e.key === 'Enter' && handleEmailAuth()} placeholder="••••••••" className="auth-neon-input" style={{ ...inputStyle, paddingLeft: 36, paddingRight: 40 }} />
+                        <button type="button" aria-label={showPassword ? 'Hide password' : 'Show password'} onClick={() => setShowPassword(v => !v)} className="absolute right-3 top-1/2 -translate-y-1/2" style={{ color: 'rgba(255,255,255,0.3)' }}>
                           {showPassword ? <EyeOff size={14} /> : <Eye size={14} />}
                         </button>
                       </div>
                     </div>
                   </div>
 
+                  {authMode === 'signin' && <div className="flex items-center justify-between text-xs">
+                    <label className="auth-checkbox-label">
+                      <input type="checkbox" checked={rememberMe} onChange={e => setRememberMe(e.target.checked)} />
+                      <span className="auth-checkmark"><Check size={11} /></span>
+                      Remember me
+                    </label>
+                    <button type="button" className="auth-forgot" onClick={() => window.open('mailto:Enosxtech@gmail.com?subject=ENOSX%20AI%20password%20reset', '_self')}>Forgot password?</button>
+                  </div>}
+
                   <button
                     onClick={handleEmailAuth}
                     disabled={isLoading || !email || !password || (authMode === 'signup' && !displayName)}
-                    className="auth-neon-button auth-primary-button w-full py-3 rounded-2xl text-sm font-bold transition-all hover:scale-[1.02] active:scale-[0.98] flex items-center justify-center gap-2"
-                    style={{ background: `linear-gradient(135deg, rgba(${accentRgb},0.8), rgba(${accentRgb},0.5))`, border: `1px solid rgba(${accentRgb},0.5)`, color: '#fff', boxShadow: `0 4px 20px rgba(${accentRgb},0.25)`, opacity: isLoading || !email || !password ? 0.7 : 1 }}
+                    className="auth-neon-button auth-primary-button w-full py-3 rounded-xl text-sm font-bold transition-all hover:scale-[1.02] active:scale-[0.98] flex items-center justify-center gap-2"
+                    style={{ background: 'linear-gradient(135deg, #ffb20f, #ff8a00)', border: '1px solid rgba(255,255,255,0.26)', color: '#fff', boxShadow: '0 8px 26px rgba(255,145,0,0.32)', opacity: isLoading || !email || !password ? 0.7 : 1 }}
                   >
                     {isLoading ? <Loader2 size={15} className="animate-spin" /> : authMode === 'signin' ? 'Sign In' : 'Create Account'}
                   </button>

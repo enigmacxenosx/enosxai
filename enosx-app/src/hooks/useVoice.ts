@@ -2,8 +2,6 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { VoiceState } from "@/lib/types";
 
-const ELEVEN_LABS_API_KEY = import.meta.env.VITE_ELEVEN_LABS_API_KEY || "";
-const ELEVEN_LABS_VOICE_ID = "EXAVITQu4vr4xnNLMSvx";
 const VOICE_SERVICE_URL = "/api/voice";
 
 /** Voice settings stored in localStorage (enosx_voice_settings). */
@@ -360,27 +358,10 @@ export function useVoice() {
 
       try {
         setVoiceState("speaking");
-        const requestUrl = ELEVEN_LABS_API_KEY
-          ? `https://api.elevenlabs.io/v1/text-to-speech/${ELEVEN_LABS_VOICE_ID}`
-          : VOICE_SERVICE_URL;
-        const headers: Record<string, string> = {
-          "Content-Type": "application/json",
-          Accept: "audio/mpeg",
-        };
-        if (ELEVEN_LABS_API_KEY) headers["xi-api-key"] = ELEVEN_LABS_API_KEY;
-        const response = await fetch(requestUrl, {
+        const response = await fetch(VOICE_SERVICE_URL, {
           method: "POST",
-          headers,
-          body: JSON.stringify({
-            text: cleanText,
-            ...(ELEVEN_LABS_API_KEY ? { model_id: "eleven_flash_v2_5" } : {}),
-            voice_settings: {
-              stability: 0.5,
-              similarity_boost: 0.75,
-              style: 0,
-              use_speaker_boost: true,
-            },
-          }),
+          headers: { "Content-Type": "application/json", Accept: "audio/mpeg" },
+          body: JSON.stringify({ text: cleanText }),
         });
         if (!response.ok) {
           const detail = await response.json().catch(() => ({}));

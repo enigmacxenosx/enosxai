@@ -4,7 +4,8 @@
  */
 import type { VercelRequest, VercelResponse } from "@vercel/node";
 
-const VOICE_ID = process.env.ELEVEN_LABS_VOICE_ID?.trim() || "EXAVITQu4vr4xnNLMSvx";
+// Rachel is a standard ElevenLabs voice available when no custom voice is configured.
+const VOICE_ID = process.env.ELEVEN_LABS_VOICE_ID?.trim() || "21m00Tcm4TlvDq8ikWAM";
 const MODEL_ID = process.env.ELEVEN_LABS_MODEL_ID?.trim() || "eleven_flash_v2_5";
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {

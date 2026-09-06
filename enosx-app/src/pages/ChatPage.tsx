@@ -51,6 +51,7 @@ import { getSystemPrompt } from "@/lib/prompts";
 import { CONNECTOR_CATALOG } from "@/lib/connectorCatalog";
 import LeadCaptureDialog from "@/components/LeadCaptureDialog";
 import AdminConsoleDialog from "@/components/AdminConsoleDialog";
+import EnosxOnboardingDialog from "@/components/EnosxOnboardingDialog";
 import ChatSplitLayout from "@/components/ChatSplitLayout";
 import { getSplitEnabled, setSplitEnabled, onSplitPrefChange, notifySplitPrefChanged } from "@/lib/splitPref";
 import { WORKSPACE_DIRECTIVES } from "@/lib/workspaceDirectives";
@@ -175,7 +176,7 @@ export default function ChatPage() {
     return localStorage.getItem("enosx_active_chat");
   });
   const [activeMode, setActiveMode] = useState<AIMode>("ex-core");
-  const { user, isAuthenticated } = useAuth();
+  const { user, isAuthenticated, updateProfile } = useAuth();
 
   // Persist conversations to localStorage and Neon
   useEffect(() => {
@@ -241,6 +242,7 @@ export default function ChatPage() {
   const [showProfilePanel, setShowProfilePanel] = useState(false);
   const [showAdminConsole, setShowAdminConsole] = useState(false);
   const [showLeadCapture, setShowLeadCapture] = useState(false);
+  const [showEnosxOnboarding, setShowEnosxOnboarding] = useState(false);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
@@ -419,6 +421,22 @@ export default function ChatPage() {
       if (sendingRef.current) return "";
       sendingRef.current = true;
       try {
+      // A short "Enosx" greeting opens guided setup instead of sending a
+      // low-context prompt to the model. Normal questions keep the chat flow.
+      if (/^enosx(?:\s+ai)?[.!?]*$/i.test(text.trim())) {
+        let onboardingComplete = false;
+        try {
+          onboardingComplete = localStorage.getItem("enosx-onboarding-complete") === "true";
+        } catch {
+          // Continue with the dialog when localStorage is unavailable.
+        }
+        if (onboardingComplete) {
+          toast.info("Your ENOSX space is already configured. Open Profile to change it.");
+        } else {
+          setShowEnosxOnboarding(true);
+        }
+        return "";
+      }
       if (aiMode) setActiveMode(aiMode);
       let convId = activeIdRef.current;
 
@@ -810,6 +828,13 @@ ${getAdminContext()}` : ""}`,
   if (deviceType === "tv") {
     return (
       <GlobalLayout>
+        <EnosxOnboardingDialog
+          isOpen={showEnosxOnboarding}
+          user={user}
+          updateProfile={updateProfile}
+          onClose={() => setShowEnosxOnboarding(false)}
+          onSaved={() => toast.success("Your ENOSX space is ready")}
+        />
         <TVChatLayout
           conversations={conversations}
           activeId={activeId}
@@ -838,6 +863,13 @@ ${getAdminContext()}` : ""}`,
   if (deviceType === "phone") {
     return (
       <GlobalLayout>
+        <EnosxOnboardingDialog
+          isOpen={showEnosxOnboarding}
+          user={user}
+          updateProfile={updateProfile}
+          onClose={() => setShowEnosxOnboarding(false)}
+          onSaved={() => toast.success("Your ENOSX space is ready")}
+        />
         <PhoneChatLayout
           conversations={conversations}
           activeId={activeId}
@@ -1165,6 +1197,13 @@ ${getAdminContext()}` : ""}`,
     <GlobalLayout>
       {workspaceBody}
       {/* Floating dialogs and overlays live outside the split so they always render above it */}
+      <EnosxOnboardingDialog
+        isOpen={showEnosxOnboarding}
+        user={user}
+        updateProfile={updateProfile}
+        onClose={() => setShowEnosxOnboarding(false)}
+        onSaved={() => toast.success("Your ENOSX space is ready")}
+      />
       <GodModeSecurityBanner
         isOpen={showGodModeWarning}
         onAcknowledge={acknowledgeGodModeWarning}

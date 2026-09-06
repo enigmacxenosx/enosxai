@@ -18,7 +18,6 @@ import {
   User,
   NotebookPen,
   BookOpen,
-  Laptop,
   Library,
 } from "lucide-react";
 import { Conversation } from "@/lib/types";
@@ -89,14 +88,6 @@ export default function Sidebar({
       icon: Library,
       onClick: () => { window.location.href = "/media-library"; },
       accent: false,
-      danger: false,
-    },
-    {
-      label: "Workspace (Split)",
-      description: "Chat + computer side by side, Manus-style",
-      icon: Laptop,
-      onClick: () => { window.location.href = "/workspace"; },
-      accent: true,
       danger: false,
     },
     {

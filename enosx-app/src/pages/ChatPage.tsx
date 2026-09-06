@@ -52,11 +52,17 @@ import { CONNECTOR_CATALOG } from "@/lib/connectorCatalog";
 import LeadCaptureDialog from "@/components/LeadCaptureDialog";
 import AdminConsoleDialog from "@/components/AdminConsoleDialog";
 import ChatSplitLayout from "@/components/ChatSplitLayout";
-import { getSplitEnabled, onSplitPrefChange } from "@/lib/splitPref";
+import { getSplitEnabled, setSplitEnabled, onSplitPrefChange, notifySplitPrefChanged } from "@/lib/splitPref";
 import { WORKSPACE_DIRECTIVES } from "@/lib/workspaceDirectives";
 import { useCommandChain, type SystemAction } from "@/hooks/useCommandChain";
 import { ComputerWorkspaceProvider, useComputerWorkspace } from "@/contexts/ComputerWorkspaceContext";
-import { ChevronDown, Menu } from "lucide-react";
+import { Bell, BellRing, ChevronDown, Columns2, Menu, MonitorSmartphone } from "lucide-react";
+import { useScriptRuntime, type ScriptLanguage } from "@/hooks/useScriptRuntime";
+import {
+  getNotificationPermission,
+  requestEnosxNotificationPermission,
+  sendEnosxNotification,
+} from "@/lib/notifications";
 
 // Declare global window interface for settings handler
 declare global {
@@ -117,6 +123,21 @@ function removeActionBlocks(content: string) {
   return content.replace(ACTION_BLOCK, "").replace(/\n{3,}/g, "\n\n").trim();
 }
 
+function extractLiveCodePreview(content: string): { language: ScriptLanguage; name: string; content: string } | null {
+  const matches = [...content.matchAll(/```([a-zA-Z0-9+#_-]*)\s*\n([\s\S]*?)(?:```|$)/g)];
+  const latest = matches.at(-1);
+  if (!latest?.[2]?.trim() || latest[2].trim().length < 8) return null;
+
+  const rawLanguage = (latest[1] || "").toLowerCase();
+  const language: ScriptLanguage = rawLanguage === "sh" || rawLanguage === "bash" || rawLanguage === "shell"
+    ? "shell"
+    : rawLanguage === "bat" || rawLanguage === "batch" || rawLanguage === "cmd"
+      ? "batch"
+      : "python";
+  const extension = language === "python" ? "py" : language === "shell" ? "sh" : "bat";
+  return { language, name: `enosx-live-preview.${extension}`, content: latest[2] };
+}
+
 function parseWorkspaceActions(text: string): SystemAction[] {
   const actions: SystemAction[] = [];
   const regex = /\[\[ACTION:\s*({.*?})\s*\]\]/g;
@@ -166,18 +187,14 @@ export default function ChatPage() {
         try {
           // Sync all conversations (debounced or on change)
           for (const conv of conversations) {
-            const response = await fetch('/api/history', {
+            await fetch('/api/history', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({ userId: user.id, chat: conv }),
             });
-            // History persistence is optional. Keep the local cache as the
-            // source of truth until DATABASE_URL is provisioned in production.
-            if (!response.ok) break;
           }
         } catch (err) {
-          // Network/database outages must not interrupt chat or surface as an
-          // unexpected application error; localStorage remains available.
+          console.error("Failed to sync history to Neon:", err);
         }
       };
       syncHistory();
@@ -202,7 +219,7 @@ export default function ChatPage() {
             }
           }
         } catch (err) {
-          // Remote history is optional; retain the locally cached conversations.
+          console.error("Failed to load history from Neon:", err);
         }
       };
       loadHistory();
@@ -239,6 +256,10 @@ export default function ChatPage() {
 
   const { sendMessage, isLoading: isChatLoading, isThinking, error: chatError, isFreeMode } = useAI();
   const { generateImage, isGenerating, error: imageError } = useImageGeneration();
+  const { createScript, updateScript, deleteScript } = useScriptRuntime();
+  const [notificationPermission, setNotificationPermission] = useState<NotificationPermission | "unsupported">(() => getNotificationPermission());
+  const liveDraftIdRef = useRef<string | null>(null);
+  const liveCodingNotifiedRef = useRef(false);
   const isLoading = isChatLoading || isGenerating;
   const error = chatError || imageError;
 
@@ -323,6 +344,12 @@ export default function ChatPage() {
     const unsub = onSplitPrefChange(() => setChatSplitEnabled(getSplitEnabled()));
     return unsub;
   }, []);
+  const handleToggleChatSplit = useCallback((next: boolean) => {
+    setSplitEnabled(next);
+    notifySplitPrefChanged();
+    setChatSplitEnabled(next);
+    toast.success(next ? "Split-screen enabled — workspace now visible beside the chat" : "Split-screen off — full chat view");
+  }, []);
   const [showGodModeWarning, setShowGodModeWarning] = useState(false);
   const [showGodTerminal, setShowGodTerminal] = useState(false);
   const [showEthicalHackingQuiz, setShowEthicalHackingQuiz] = useState(false);
@@ -357,6 +384,22 @@ export default function ChatPage() {
   }, []);
 
   useGodMode(handleGodModeTrigger);
+
+  const handleEnableNotifications = useCallback(async () => {
+    const permission = await requestEnosxNotificationPermission();
+    setNotificationPermission(permission);
+    if (permission === "granted") {
+      toast.success("ENOSX notifications enabled in your system notification bar");
+      sendEnosxNotification({
+        title: "ENOSX AI notifications enabled",
+        body: "You will be notified when ENOSX finishes writing or running code.",
+        tag: "enosx-notifications-enabled",
+        data: { url: window.location.href },
+      });
+    } else if (permission === "denied") {
+      toast.error("Notifications are blocked. Enable them in your browser site settings.");
+    }
+  }, []);
 
   const handleToggleImageMode = useCallback(() => {
     setIsImageMode((prev) => {
@@ -464,7 +507,7 @@ export default function ChatPage() {
                 ? {
                     ...c,
                     messages: c.messages.map((m) =>
-                      m.id === assistantId ? { ...m, content: "Sorry, I couldn't generate that image. Image generation may require an active NVIDIA API entitlement or available credits. Please try again later." } : m
+                      m.id === assistantId ? { ...m, content: "Sorry, I couldn't generate that image. If you're on EX Core (Free), image generation requires top-up credits on OpenRouter. Please try again later." } : m
                     ),
                   }
                 : c
@@ -581,6 +624,31 @@ ${getAdminContext()}` : ""}`,
         enrichedMessages,
         (chunk) => {
           streamedContent += chunk;
+
+          const livePreview = extractLiveCodePreview(streamedContent);
+          if (livePreview) {
+            if (!chatSplitEnabledRef.current) {
+              setSplitEnabled(true);
+              notifySplitPrefChanged();
+              setChatSplitEnabled(true);
+              toast.info("Live coding detected — opening the split workspace automatically");
+            }
+            if (!liveCodingNotifiedRef.current) {
+              liveCodingNotifiedRef.current = true;
+              sendEnosxNotification({
+                title: "ENOSX AI is writing code",
+                body: "The live coding workspace has opened so you can watch the code appear.",
+                tag: "enosx-live-coding",
+                data: { url: window.location.href },
+              });
+            }
+            if (!liveDraftIdRef.current) {
+              liveDraftIdRef.current = createScript(livePreview.name, livePreview.language, livePreview.content).id;
+            } else {
+              updateScript(liveDraftIdRef.current, livePreview.content);
+            }
+          }
+
           setConversations((prev) =>
             prev.map((c) =>
               c.id === targetConvId
@@ -599,6 +667,19 @@ ${getAdminContext()}` : ""}`,
           const cleanContent = removeActionBlocks(streamedContent);
           // Workspace mode: execute the AI's actions automatically in the computer pane.
           const actions = parseWorkspaceActions(streamedContent);
+          if (liveDraftIdRef.current && actions.some((action) => action.type === "create_script" || action.type === "run_script")) {
+            deleteScript(liveDraftIdRef.current);
+            liveDraftIdRef.current = null;
+          }
+          if (liveCodingNotifiedRef.current) {
+            sendEnosxNotification({
+              title: "ENOSX AI finished writing code",
+              body: "The generated code is ready in the live workspace.",
+              tag: "enosx-live-coding-complete",
+              data: { url: window.location.href },
+            });
+            liveCodingNotifiedRef.current = false;
+          }
           // Also auto-run any review-free proposed actions (e.g. "Launch terminal") so
           // the AI's coding shows up live even when the model skips [[ACTION: ...]] blocks.
           for (const pa of proposedActions) {
@@ -654,7 +735,7 @@ ${getAdminContext()}` : ""}`,
         sendingRef.current = false;
       }
     },
-    [sendMessage, speak, autoSpeak, fileContext.isLoaded, getFileContextMessage, getMemoryContext, getKnowledgeContext, addMemory, addEntry, enrichMessageWithContext, activeWindow, clearFiles, parseActions, speechSettings.continuousConversation, scheduleListenAgain]
+    [sendMessage, speak, autoSpeak, fileContext.isLoaded, getFileContextMessage, getMemoryContext, getKnowledgeContext, addMemory, addEntry, enrichMessageWithContext, activeWindow, clearFiles, parseActions, speechSettings.continuousConversation, scheduleListenAgain, createScript, updateScript, deleteScript]
   );
 
   const createNewChat = useCallback(() => {
@@ -719,7 +800,7 @@ ${getAdminContext()}` : ""}`,
   const messages = activeConversation?.messages || [];
 
   // Keep workspace hooks unconditional: phone and TV layouts return early, so
-  // every render must still execute the same hooks in the same order.
+  // every render must execute the same hooks in the same order.
   const { executeChain } = useCommandChain();
   const chatSplitEnabledRef = useRef(chatSplitEnabled);
   useEffect(() => {
@@ -785,8 +866,38 @@ ${getAdminContext()}` : ""}`,
     );
   }
 
+  const splitToggle = (
+    <div className="flex items-center gap-1 rounded-full border p-1" style={{ borderColor: "rgba(255,255,255,0.12)", background: "rgba(6,8,14,0.55)" }}>
+      {chatSplitEnabled ? (
+        <button
+          type="button"
+          onClick={() => handleToggleChatSplit(false)}
+          title="Turn split-screen off — switch to full chat"
+          className="flex items-center gap-1.5 rounded-full px-3 py-1 text-[11px] font-semibold transition"
+          style={{ background: "rgba(255,255,255,0.12)", color: "rgba(255,255,255,0.9)" }}
+        >
+          <Columns2 size={12} /> Split: On
+        </button>
+      ) : (
+        <button
+          type="button"
+          onClick={() => handleToggleChatSplit(true)}
+          title="Turn split-screen back on"
+          className="flex items-center gap-1.5 rounded-full px-3 py-1 text-[11px] font-semibold transition"
+          style={{ background: config.accent, color: "#040811" }}
+        >
+          <MonitorSmartphone size={12} /> Split: Off
+        </button>
+      )}
+    </div>
+  );
+
   const wrapWithSplit = (content: React.ReactNode) =>
     chatSplitEnabled ? <ChatSplitLayout>{content}</ChatSplitLayout> : content;
+
+  // ── Live coding in the computer pane ──────────────────────────────────────────
+  // The command chain is a module-level singleton, so any executor component in
+  // the tree can run actions into the SAME script store the terminal watches.
 
   // This component lives inside the ComputerWorkspaceProvider (when split is on)
   // and drives the pane: it runs the AI's actions automatically and opens the
@@ -899,6 +1010,17 @@ ${getAdminContext()}` : ""}`,
           </div>
 
           <div className="flex items-center gap-3">
+            {splitToggle}
+            <button
+              type="button"
+              onClick={() => void handleEnableNotifications()}
+              title={notificationPermission === "granted" ? "ENOSX notifications are enabled" : "Enable ENOSX notifications"}
+              className="flex items-center gap-1.5 rounded-full border px-3 py-1 text-[11px] font-semibold transition hover:bg-white/10"
+              style={{ borderColor: notificationPermission === "granted" ? "rgba(52,211,153,0.35)" : "rgba(255,255,255,0.12)", color: notificationPermission === "granted" ? "#6ee7b7" : "rgba(255,255,255,0.78)" }}
+            >
+              {notificationPermission === "granted" ? <BellRing size={12} /> : <Bell size={12} />}
+              {notificationPermission === "granted" ? "Alerts On" : "Enable Alerts"}
+            </button>
             {screenGuiderActive && (
               <motion.div 
                 initial={{ opacity: 0, scale: 0.8 }}

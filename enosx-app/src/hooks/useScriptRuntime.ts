@@ -539,6 +539,10 @@ export function useScriptRuntime() {
     return script;
   }, []);
 
+  const updateScript = useCallback((id: string, content: string) => {
+    setScripts((list) => list.map((script) => script.id === id ? { ...script, content } : script));
+  }, []);
+
   const deleteScript = useCallback((id: string) => {
     setScripts((list) => list.filter((s) => s.id !== id));
     store.runs.delete(id);
@@ -569,5 +573,5 @@ export function useScriptRuntime() {
     }
   }, []);
 
-  return { scripts, runs, createScript, deleteScript, runScript };
+  return { scripts, runs, createScript, updateScript, deleteScript, runScript };
 }

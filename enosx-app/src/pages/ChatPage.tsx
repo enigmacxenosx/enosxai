@@ -514,7 +514,7 @@ export default function ChatPage() {
                 ? {
                     ...c,
                     messages: c.messages.map((m) =>
-                      m.id === assistantId ? { ...m, content: "Sorry, I couldn't generate that image. If you're on EX Core (Free), image generation requires top-up credits on OpenRouter. Please try again later." } : m
+                      m.id === assistantId ? { ...m, content: "Sorry, I couldn't generate that image. Please try again later." } : m
                     ),
                   }
                 : c

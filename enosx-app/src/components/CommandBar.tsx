@@ -10,7 +10,7 @@
 
 import { useState, useRef, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { ArrowUp, Mic, MicOff, Square, Loader2, ChevronDown, Lock, Paperclip } from "lucide-react";
+import { ArrowUp, Mic, MicOff, Square, Loader2, ChevronDown, Paperclip } from "lucide-react";
 import { VoiceState } from "@/lib/types";
 import { useTheme } from "@/contexts/ThemeContext";
 import { useWallpaper } from "@/contexts/WallpaperContext";
@@ -23,7 +23,6 @@ export interface AIModeOption {
   id: AIMode;
   label: string;
   description: string;
-  isPaid: boolean;
   color: string;
   bgColor: string;
   borderColor: string;
@@ -33,8 +32,7 @@ export const AI_MODES: AIModeOption[] = [
   {
     id: "ex-core",
     label: "EX Core",
-    description: "Everyday intelligence · Free",
-    isPaid: false,
+    description: "Everyday intelligence",
     color: "#7c6ff7",
     bgColor: "rgba(124,111,247,0.15)",
     borderColor: "rgba(124,111,247,0.4)",
@@ -42,8 +40,7 @@ export const AI_MODES: AIModeOption[] = [
   {
     id: "ex-pro",
     label: "EX Pro",
-    description: "Expert intelligence · Paid",
-    isPaid: true,
+    description: "Expert intelligence",
     color: "#a855f7",
     bgColor: "rgba(168,85,247,0.15)",
     borderColor: "rgba(168,85,247,0.4)",
@@ -51,8 +48,7 @@ export const AI_MODES: AIModeOption[] = [
   {
     id: "enosh-mind",
     label: "ENOSH MIND",
-    description: "Maximum intelligence · Paid",
-    isPaid: true,
+    description: "Maximum intelligence",
     color: "#00f2ff",
     bgColor: "rgba(0,242,255,0.15)",
     borderColor: "rgba(0,242,255,0.4)",
@@ -355,7 +351,6 @@ export default function CommandBar({
                           <span className="font-semibold text-xs whitespace-nowrap">{mode.label}</span>
                           <span className="text-[10px] font-normal opacity-70 whitespace-nowrap">{mode.description}</span>
                         </span>
-                        {mode.isPaid && <Lock size={11} aria-label="Paid tier" />}
                       </motion.button>
                     ))}
                   </motion.div>

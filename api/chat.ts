@@ -7,7 +7,6 @@
  *   - NVIDIA_EX_*_MODEL and NVIDIA_EX_*_VISION_MODEL (optional per-mode overrides)
  */
 import type { VercelRequest, VercelResponse } from "@vercel/node";
-import { consumeCoreMessage, getEntitlement, spendCredit, userExists } from "../lib/billing";
 
 // NOTE: maxDuration intentionally omitted. An explicit per-function override can
 // conflict with the project-wide Vercel runtime configuration and cause
@@ -38,7 +37,7 @@ Writing style:
 - Prefer short paragraphs and simple headings. Use bullets only when they improve clarity.
 
 Current ENOSX AI product updates (September 2026):
-- ENOSX AI has three modes: EX Core (Free), EX Pro (Paid), and ENOSH MIND (Paid, highest intelligence). Never claim that a user has access to a paid mode unless the server confirms an active entitlement.
+- ENOSX AI has three modes: EX Core, EX Pro, and ENOSH MIND. All modes are available without payment or a subscription.
 - EX Core chat is designed to remain available even when the optional database is not configured. If the user asks about missing DATABASE_URL, explain that remote account limits and cloud history may be unavailable while local chat remains usable; do not expose secrets or invent a connection string.
 - Conversation history is stored locally in the browser and synchronizes to the server when the history service is available. A history-sync failure should not be presented as a failure of the AI response.
 - The server uses a configured NVIDIA model with a bounded retry. If a provider is temporarily unavailable or credit-limited, be transparent and suggest retrying rather than claiming the request was completed when it was not.
@@ -160,7 +159,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       return res.status(400).json({ error: "Invalid request body" });
     }
 
-    const { messages, githubContext, aiMode: requestedAiMode, userId } = body;
+    const { messages, githubContext, aiMode: requestedAiMode } = body;
     const supportedModes = new Set(["ex-core", "ex-pro", "enosh-mind"]);
     const aiMode = typeof requestedAiMode === "string" && supportedModes.has(requestedAiMode)
       ? requestedAiMode
@@ -170,43 +169,15 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       console.error("[API] Invalid messages:", messages);
       return res.status(400).json({ error: "Messages array is required and must not be empty" });
     }
-    const isGodMode = messages.some((message: any) => typeof message?.content === "string" && message.content.startsWith("[GOD MODE COMMAND]"));
-    const account = userId ? await userExists(userId) : undefined;
-    const operatorIds = new Set((process.env.ENOSX_MIND_OPERATOR_USER_IDS || "").split(",").map((value) => value.trim()).filter(Boolean));
-    const operatorEmails = new Set((process.env.ENOSX_MIND_OPERATOR_EMAILS || "").split(",").map((value) => value.trim().toLowerCase()).filter(Boolean));
-    const isAuthorizedMindOperator = Boolean(
-      account && (operatorIds.has(String(account.id)) || (typeof account.email === "string" && operatorEmails.has(account.email.toLowerCase())))
-    );
-    if (account) {
-      const entitlement = await getEntitlement(userId!);
-      // GOD MODE is an operator UI and never grants a paid tier. Only an active
-      // subscription or an explicitly server-configured operator identity can
-      // unlock ENOSH MIND. A phrase in a user message is not authorization.
-      if (aiMode !== "ex-core" && !entitlement && !isAuthorizedMindOperator) {
-        return res.status(402).json({ error: "This AI tier requires an active subscription." });
-      }
-      if (aiMode === "ex-core" && !isGodMode && !entitlement) {
-        const usage = await consumeCoreMessage(userId);
-        if (!usage.allowed) {
-          const paidWithCredit = await spendCredit(userId);
-          if (!paidWithCredit) {
-            return res.status(429).json({ error: "You have reached the 20 EX Core messages available today. Buy a credit pack or upgrade to continue." });
-          }
-        }
-      }
-    } else if (aiMode !== "ex-core") {
-      return res.status(401).json({ error: "Sign in and subscribe to use this AI tier." });
-    }
-
     const ctxStr = typeof githubContext === "string" ? githubContext.slice(0, 20000) : "";
 
     // Keep the public mode contract aligned with the three-tier selector.
     const modeNotes: Record<string, string> = {
-      "ex-core": "\n\nYou are running in EX Core (Free) mode: be helpful, clear, reliable, and efficient.",
-      "ex-pro": "\n\nYou are running in EX Pro (Paid) mode: provide expert-level, comprehensive, deeply technical responses.",
+      "ex-core": "\n\nYou are running in EX Core mode: be helpful, clear, reliable, and efficient.",
+      "ex-pro": "\n\nYou are running in EX Pro mode: provide expert-level, comprehensive, deeply technical responses.",
       "enosh-mind": `
 
-You are running in ENOSH MIND (Paid, highest intelligence) mode. Operate as a rigorous strategic analyst and senior problem-solver:
+You are running in ENOSH MIND (highest intelligence) mode. Operate as a rigorous strategic analyst and senior problem-solver:
 - First identify the user's actual objective, constraints, assumptions, risks, and success criteria.
 - Decompose difficult problems into explicit subproblems, then synthesize the results into one coherent answer.
 - Compare meaningful alternatives, state trade-offs, and distinguish facts, inferences, estimates, and open questions.

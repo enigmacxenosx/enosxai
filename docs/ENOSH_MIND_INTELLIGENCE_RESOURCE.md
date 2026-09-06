@@ -12,6 +12,4 @@ When ENOSH MIND receives a request for intelligence practice, it should generate
 
 ## Access control
 
-ENOSH MIND remains a paid tier. The API checks the account's persisted subscription entitlement before serving it. GOD MODE is an operator interface and does not grant a subscription. A phrase such as `enosxenoshmnd`, a prompt injection, or a client-side mode selection cannot unlock ENOSH MIND.
-
-If the deployment needs a non-paying founder/operator account, configure the server-only environment variables `ENOSX_MIND_OPERATOR_USER_IDS` and/or `ENOSX_MIND_OPERATOR_EMAILS` with an explicit allowlist. Never put these values in `VITE_` variables, localStorage, frontend code, or chat prompts.
+ENOSH MIND is available to all users without payment or a subscription. The server still validates and routes the selected AI mode, but access is not tied to account entitlements or payment-provider state.

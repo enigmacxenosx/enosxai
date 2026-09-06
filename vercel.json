@@ -22,26 +22,6 @@
   ],
   "rewrites": [
     {
-      "source": "/api/billing/checkout",
-      "destination": "/api/billing?route=checkout"
-    },
-    {
-      "source": "/api/billing/paystack/initialize",
-      "destination": "/api/billing?route=paystack-initialize"
-    },
-    {
-      "source": "/api/billing/status",
-      "destination": "/api/billing?route=status"
-    },
-    {
-      "source": "/api/billing/webhooks/stripe",
-      "destination": "/api/billing?route=stripe-webhook"
-    },
-    {
-      "source": "/api/billing/webhooks/paystack",
-      "destination": "/api/billing?route=paystack-webhook"
-    },
-    {
       "source": "/api/connectors/:connector/oauth/:phase",
       "destination": "/api/connectors/oauth?route=:connector/:phase"
     },

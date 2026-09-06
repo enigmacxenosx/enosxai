@@ -470,7 +470,7 @@ export default function ProfilePanel({ isOpen, onClose, onOpenAdminConsole, onOp
 
               {/* ── PROFILE VIEW ── */}
               {view === 'profile' && user && (
-                <div className="px-5 py-5 space-y-5">
+                <div className="neon-settings-view px-5 py-5 space-y-5">
                   {/* Avatar with upload */}
                   <div className="flex flex-col items-center gap-3 py-2">
                     <div className="relative">
@@ -571,7 +571,7 @@ export default function ProfilePanel({ isOpen, onClose, onOpenAdminConsole, onOp
 
               {/* ── PREFERENCES VIEW ── */}
               {view === 'preferences' && user && (
-                <div className="px-5 py-5 space-y-5">
+                <div className="neon-settings-view px-5 py-5 space-y-5">
                   <div className="text-xs font-bold tracking-wider mb-1" style={{ color: 'rgba(255,255,255,0.35)' }}>PREFERENCES</div>
 
                   {/* Language */}
@@ -671,7 +671,7 @@ export default function ProfilePanel({ isOpen, onClose, onOpenAdminConsole, onOp
 
               {/* ── VOICE VIEW ── */}
               {view === 'voice' && (
-                <div className="px-5 py-5 space-y-4">
+                <div className="neon-settings-view px-5 py-5 space-y-4">
                   <div className="text-xs font-bold tracking-wider" style={{ color: 'rgba(255,255,255,0.35)' }}>VOICE ASSISTANT</div>
                   <div className="rounded-xl" style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)' }}>
                     <VoiceSettingsPanel settings={speechSettings} onUpdate={updateSpeechSettings} />

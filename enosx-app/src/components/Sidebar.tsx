@@ -105,7 +105,7 @@ export default function Sidebar({
       initial={false}
       animate={{ width: isMobileOpen ? 280 : collapsed ? 64 : 280 }}
       transition={{ type: "spring", stiffness: 300, damping: 30 }}
-      className="relative flex-shrink-0 flex flex-col h-full overflow-hidden"
+      className="neon-dashboard-sidebar relative flex-shrink-0 flex flex-col h-full overflow-hidden"
       style={{
         background: `linear-gradient(180deg, rgba(7,8,12,${settings.panelOpacity * 0.96}) 0%, rgba(12,12,18,${settings.panelOpacity * 0.9}) 100%)`,
         backdropFilter: `blur(${settings.blurAmount}px)`,
@@ -158,7 +158,7 @@ export default function Sidebar({
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
               onClick={item.onClick}
-              className={`w-full flex items-center ${collapsed ? 'justify-center' : 'justify-start px-4'} py-2.5 rounded-lg transition-all duration-200 gap-3`}
+              className={`neon-dashboard-nav w-full flex items-center ${collapsed ? 'justify-center' : 'justify-start px-4'} py-2.5 rounded-lg transition-all duration-200 gap-3`}
               style={{
                 background: item.accent
                   ? `linear-gradient(135deg, rgba(${config.accentRgb}, 0.18), rgba(${config.accentRgb}, 0.07))`
@@ -255,7 +255,7 @@ export default function Sidebar({
           whileHover={{ scale: 1.02 }}
           whileTap={{ scale: 0.98 }}
           onClick={onProfileClick}
-          className={`w-full flex items-center ${collapsed ? 'justify-center' : 'justify-start px-3'} py-2.5 rounded-xl transition-all duration-200 gap-3`}
+          className={`neon-dashboard-profile w-full flex items-center ${collapsed ? 'justify-center' : 'justify-start px-3'} py-2.5 rounded-xl transition-all duration-200 gap-3`}
           style={{
             background: `rgba(${config.accentRgb}, 0.07)`,
             border: `1px solid rgba(${config.accentRgb}, 0.18)`,

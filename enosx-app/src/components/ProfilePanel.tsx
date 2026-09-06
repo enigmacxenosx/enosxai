@@ -24,6 +24,7 @@ import { useWallpaper, WALLPAPER_PRESETS } from '../contexts/WallpaperContext';
 import VoiceSettingsPanel from './VoiceSettingsPanel';
 import BrandMark from './BrandMark';
 import { useVoice } from '../hooks/useVoice';
+import { useSoundEffects } from '../hooks/useSoundEffects';
 
 type View = 'auth' | 'profile' | 'preferences' | 'appearance' | 'privacy' | 'voice';
 
@@ -79,6 +80,7 @@ const FEATURED_WALLPAPERS = [
 
 export default function ProfilePanel({ isOpen, onClose, onOpenAdminConsole, onOpenLeadCapture }: ProfilePanelProps) {
   const { settings: speechSettings, updateSettings: updateSpeechSettings } = useVoice();
+  const { play: playSound } = useSoundEffects();
   const { config, theme, setTheme } = useTheme();
   const { settings, setPreset: setActivePreset, setCustomUrl, setBlurAmount } = useWallpaper();
   const { user, isLoading, error, isAuthenticated, signInWithGoogle, signInWithEmail, signUpWithEmail, continueAsGuest, signOut, updateProfile, clearError } = useAuth();
@@ -119,6 +121,10 @@ export default function ProfilePanel({ isOpen, onClose, onOpenAdminConsole, onOp
     if (isAuthenticated && view === 'auth') setView('profile');
     if (!isAuthenticated) setView('auth');
   }, [isAuthenticated]);
+
+  React.useEffect(() => {
+    if (isOpen && !isAuthenticated && view === 'auth') playSound('authOpen');
+  }, [isOpen, isAuthenticated, view, playSound]);
 
   React.useEffect(() => {
     if (user) {
@@ -369,6 +375,7 @@ export default function ProfilePanel({ isOpen, onClose, onOpenAdminConsole, onOp
                   animate={{ opacity: 1, y: 0, scale: 1, rotateX: 0 }}
                   transition={{ type: 'spring', stiffness: 220, damping: 20, mass: 0.8 }}
                   className="auth-neon-shell auth-live-stage px-5 py-6 space-y-5"
+                  style={{ '--auth-rgb': accentRgb, '--auth-accent': accentColor } as React.CSSProperties}
                 >
                   <span className="auth-particle auth-particle-one" />
                   <span className="auth-particle auth-particle-two" />
@@ -386,7 +393,7 @@ export default function ProfilePanel({ isOpen, onClose, onOpenAdminConsole, onOp
 
                   <button
                     type="button"
-                    onClick={signInWithGoogle}
+                    onClick={() => { playSound('authGoogle'); signInWithGoogle(); }}
                     disabled={isLoading}
                     className="w-full py-3 rounded-2xl text-sm font-semibold transition-all hover:scale-[1.02] active:scale-[0.98] flex items-center justify-center gap-3"
                     style={{ background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.16)', color: 'rgba(255,255,255,0.9)', opacity: isLoading ? 0.7 : 1 }}

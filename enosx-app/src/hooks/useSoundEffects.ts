@@ -7,7 +7,7 @@
 
 import { useCallback, useRef } from "react";
 
-type SoundType = "click" | "send" | "receive" | "listenStart" | "listenStop" | "error" | "godMode";
+type SoundType = "click" | "send" | "receive" | "listenStart" | "listenStop" | "error" | "godMode" | "authOpen" | "authGoogle";
 
 function createAudioContext(): AudioContext | null {
   try {
@@ -132,6 +132,20 @@ export function useSoundEffects() {
             playTone(ctx, 2200, 0.35, "sine", 0.06);
             playTone(ctx, 880, 0.5, "sine", 0.05); // Undertone
           }, 1600);
+          break;
+
+        case "authOpen":
+          // Soft holographic boot-up chord for the login reveal.
+          playTone(ctx, 220, 0.32, "sine", 0.045);
+          setTimeout(() => playTone(ctx, 440, 0.28, "triangle", 0.035), 90);
+          setTimeout(() => playTone(ctx, 660, 0.24, "sine", 0.025), 180);
+          break;
+
+        case "authGoogle":
+          // Bright confirmation chirp for the Google action.
+          playTone(ctx, 523.25, 0.12, "sine", 0.055);
+          setTimeout(() => playTone(ctx, 659.25, 0.14, "sine", 0.05), 75);
+          setTimeout(() => playTone(ctx, 783.99, 0.2, "triangle", 0.04), 150);
           break;
       }
     } catch {

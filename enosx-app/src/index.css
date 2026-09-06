@@ -690,6 +690,17 @@
   }
   .auth-neon-shell > * { position: relative; z-index: 1; }
   .auth-live-stage { transform-style: preserve-3d; }
+  .auth-form-layout { background: linear-gradient(155deg, rgba(29,32,48,0.96), rgba(7,8,16,0.98)); }
+  .auth-mode-switch { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; padding: 4px; border: 1px solid rgba(var(--auth-rgb, 0,242,255),0.18); border-radius: 15px; background: rgba(0,0,0,0.24); }
+  .auth-mode-switch button { border: 0; border-radius: 11px; padding: 9px 8px; color: rgba(255,255,255,0.42); background: transparent; font-size: 11px; font-weight: 700; transition: 220ms ease; }
+  .auth-mode-switch button:hover { color: rgba(255,255,255,0.82); background: rgba(255,255,255,0.05); }
+  .auth-mode-switch button.is-active { color: #fff; background: linear-gradient(135deg, rgba(var(--auth-rgb, 0,242,255),0.48), rgba(var(--auth-rgb, 0,242,255),0.16)); box-shadow: 0 0 18px rgba(var(--auth-rgb, 0,242,255),0.2), inset 0 1px 0 rgba(255,255,255,0.18); }
+  .auth-google-button { background: rgba(255,255,255,0.075) !important; border: 1px solid rgba(255,255,255,0.18) !important; box-shadow: 0 8px 22px rgba(0,0,0,0.2), inset 0 1px 0 rgba(255,255,255,0.1); }
+  .auth-google-button:hover { background: rgba(255,255,255,0.13) !important; border-color: rgba(255,255,255,0.34) !important; box-shadow: 0 10px 30px rgba(var(--auth-rgb, 0,242,255),0.16), inset 0 1px 0 rgba(255,255,255,0.16); }
+  .auth-primary-button { min-height: 50px; letter-spacing: 0.01em; box-shadow: 0 10px 30px rgba(var(--auth-rgb, 0,242,255),0.24), inset 0 1px 0 rgba(255,255,255,0.28) !important; }
+  .auth-primary-button:disabled { filter: saturate(0.35); cursor: not-allowed; }
+  .auth-guest-button { border-color: rgba(255,255,255,0.15) !important; color: rgba(255,255,255,0.62) !important; background: rgba(255,255,255,0.025) !important; }
+  .auth-guest-button:hover { color: #fff !important; background: rgba(255,255,255,0.08) !important; }
   .auth-live-stage > *:not(.auth-particle):not(.auth-energy-core) { animation: auth-control-reveal 650ms cubic-bezier(.2,.8,.2,1) both; }
   .auth-live-stage > *:nth-child(5) { animation-delay: 120ms; }
   .auth-live-stage > *:nth-child(6) { animation-delay: 220ms; }

@@ -374,7 +374,7 @@ export default function ProfilePanel({ isOpen, onClose, onOpenAdminConsole, onOp
                   initial={{ opacity: 0, y: 34, scale: 0.88, rotateX: 18 }}
                   animate={{ opacity: 1, y: 0, scale: 1, rotateX: 0 }}
                   transition={{ type: 'spring', stiffness: 220, damping: 20, mass: 0.8 }}
-                  className="auth-neon-shell auth-live-stage px-5 py-6 space-y-5"
+                  className="auth-neon-shell auth-live-stage auth-form-layout px-6 py-7 space-y-5"
                   style={{ '--auth-rgb': accentRgb, '--auth-accent': accentColor } as React.CSSProperties}
                 >
                   <span className="auth-particle auth-particle-one" />
@@ -391,11 +391,16 @@ export default function ProfilePanel({ isOpen, onClose, onOpenAdminConsole, onOp
                     </div>
                   </div>
 
+                  <div className="auth-mode-switch" role="tablist" aria-label="Authentication mode">
+                    <button type="button" role="tab" aria-selected={authMode === 'signin'} onClick={() => { setAuthMode('signin'); clearError(); }} className={authMode === 'signin' ? 'is-active' : ''}>Sign in</button>
+                    <button type="button" role="tab" aria-selected={authMode === 'signup'} onClick={() => { setAuthMode('signup'); clearError(); }} className={authMode === 'signup' ? 'is-active' : ''}>Create account</button>
+                  </div>
+
                   <button
                     type="button"
                     onClick={() => { playSound('authGoogle'); signInWithGoogle(); }}
                     disabled={isLoading}
-                    className="w-full py-3 rounded-2xl text-sm font-semibold transition-all hover:scale-[1.02] active:scale-[0.98] flex items-center justify-center gap-3"
+                    className="auth-google-button w-full py-3 rounded-2xl text-sm font-semibold transition-all hover:scale-[1.02] active:scale-[0.98] flex items-center justify-center gap-3"
                     style={{ background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.16)', color: 'rgba(255,255,255,0.9)', opacity: isLoading ? 0.7 : 1 }}
                   >
                     <span className="flex h-5 w-5 items-center justify-center rounded-full bg-white text-xs font-black" style={{ color: '#4285F4' }}>G</span>
@@ -440,7 +445,7 @@ export default function ProfilePanel({ isOpen, onClose, onOpenAdminConsole, onOp
                   <button
                     onClick={handleEmailAuth}
                     disabled={isLoading || !email || !password || (authMode === 'signup' && !displayName)}
-                    className="auth-neon-button w-full py-3 rounded-2xl text-sm font-bold transition-all hover:scale-[1.02] active:scale-[0.98] flex items-center justify-center gap-2"
+                    className="auth-neon-button auth-primary-button w-full py-3 rounded-2xl text-sm font-bold transition-all hover:scale-[1.02] active:scale-[0.98] flex items-center justify-center gap-2"
                     style={{ background: `linear-gradient(135deg, rgba(${accentRgb},0.8), rgba(${accentRgb},0.5))`, border: `1px solid rgba(${accentRgb},0.5)`, color: '#fff', boxShadow: `0 4px 20px rgba(${accentRgb},0.25)`, opacity: isLoading || !email || !password ? 0.7 : 1 }}
                   >
                     {isLoading ? <Loader2 size={15} className="animate-spin" /> : authMode === 'signin' ? 'Sign In' : 'Create Account'}
@@ -461,7 +466,7 @@ export default function ProfilePanel({ isOpen, onClose, onOpenAdminConsole, onOp
 
                   <button
                     onClick={continueAsGuest}
-                    className="auth-neon-ghost-button w-full py-3 rounded-2xl text-sm font-bold transition-all hover:scale-[1.02] active:scale-[0.98] flex items-center justify-center gap-2"
+                    className="auth-neon-ghost-button auth-guest-button w-full py-3 rounded-2xl text-sm font-bold transition-all hover:scale-[1.02] active:scale-[0.98] flex items-center justify-center gap-2"
                     style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.12)', color: 'rgba(255,255,255,0.85)' }}
                   >
                     Continue as Guest

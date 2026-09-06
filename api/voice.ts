@@ -62,7 +62,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
 
     const audio = Buffer.from(await upstream.arrayBuffer());
-    res.setHeader("Content-Type", upstream.headers.get("content-type") || "audio/wav");
+    // NVIDIA returns a WAV container for /synthesize. Keep a stable media type
+    // for browsers even if the upstream proxy omits or alters its header.
+    res.setHeader("Content-Type", "audio/wav");
     res.setHeader("Content-Length", audio.length.toString());
     return res.status(200).send(audio);
   } catch (error) {

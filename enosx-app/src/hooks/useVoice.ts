@@ -177,6 +177,9 @@ export function useVoice() {
 
   const stopSpeaking = useCallback(() => {
     releaseAudio();
+    if (typeof window !== "undefined" && "speechSynthesis" in window) {
+      window.speechSynthesis.cancel();
+    }
     setVoiceState("idle");
   }, [releaseAudio]);
 
@@ -356,19 +359,45 @@ export function useVoice() {
 
       stopSpeaking();
 
+      const speakWithBrowser = () => {
+        if (typeof window === "undefined" || !("speechSynthesis" in window)) {
+          throw new Error("Speech synthesis is not supported in this browser.");
+        }
+
+        const utterance = new SpeechSynthesisUtterance(cleanText);
+        utterance.lang = languageRef.current;
+        utterance.rate = settingsRef.current.rate;
+        utterance.pitch = settingsRef.current.pitch;
+        utterance.onend = () => {
+          setVoiceState("idle");
+          scheduleListenAgain(onFinalResultRef.current ?? (() => {}));
+        };
+        utterance.onerror = () => {
+          setVoiceState("idle");
+          toast.error("The ENOSX voice could not be played by this browser.");
+        };
+        setVoiceState("speaking");
+        window.speechSynthesis.speak(utterance);
+      };
+
       try {
         setVoiceState("speaking");
         const response = await fetch(VOICE_SERVICE_URL, {
           method: "POST",
-          headers: { "Content-Type": "application/json", Accept: "audio/mpeg" },
+          headers: { "Content-Type": "application/json", Accept: "audio/wav" },
           body: JSON.stringify({ text: cleanText }),
         });
         if (!response.ok) {
           const detail = await response.json().catch(() => ({}));
           throw new Error(detail.error || `Voice service failed with ${response.status}`);
         }
-        const objectUrl = URL.createObjectURL(await response.blob());
+        const audioBlob = await response.blob();
+        if (!audioBlob.size) throw new Error("Voice service returned empty audio.");
+        const objectUrl = URL.createObjectURL(
+          audioBlob.type ? audioBlob : new Blob([audioBlob], { type: "audio/wav" })
+        );
         const audio = new Audio(objectUrl);
+        audio.preload = "auto";
         audioRef.current = audio;
         audio.onended = () => {
           if (audioRef.current !== audio) return;
@@ -386,8 +415,14 @@ export function useVoice() {
       } catch (error) {
         console.error("ENOSX voice service failed", error);
         releaseAudio();
-        setVoiceState("idle");
-        toast.error("ENOSX voice is unavailable. Configure the voice service to continue.");
+        try {
+          // Keep voice available when server TTS is unavailable or delayed audio autoplay is rejected.
+          speakWithBrowser();
+        } catch (fallbackError) {
+          console.error("Browser speech fallback failed", fallbackError);
+          setVoiceState("idle");
+          toast.error("ENOSX voice is unavailable. Check your browser audio settings.");
+        }
       }
     },
     [releaseAudio, scheduleListenAgain, stopSpeaking]

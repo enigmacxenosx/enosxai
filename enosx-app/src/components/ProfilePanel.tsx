@@ -81,7 +81,7 @@ export default function ProfilePanel({ isOpen, onClose, onOpenAdminConsole, onOp
   const { settings: speechSettings, updateSettings: updateSpeechSettings } = useVoice();
   const { config, theme, setTheme } = useTheme();
   const { settings, setPreset: setActivePreset, setCustomUrl, setBlurAmount } = useWallpaper();
-  const { user, isLoading, error, isAuthenticated, signInWithEmail, signUpWithEmail, continueAsGuest, signOut, updateProfile, clearError } = useAuth();
+  const { user, isLoading, error, isAuthenticated, signInWithGoogle, signInWithEmail, signUpWithEmail, continueAsGuest, signOut, updateProfile, clearError } = useAuth();
 
   const [view, setView] = useState<View>(isAuthenticated ? 'profile' : 'auth');
   const [authMode, setAuthMode] = useState<AuthMode>('signin');
@@ -350,6 +350,23 @@ export default function ProfilePanel({ isOpen, onClose, onOpenAdminConsole, onOp
                     <div className="text-xs" style={{ color: 'rgba(255,255,255,0.4)' }}>
                       {authMode === 'signin' ? 'Sign in to sync your preferences' : 'Create your account to get started'}
                     </div>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={signInWithGoogle}
+                    disabled={isLoading}
+                    className="w-full py-3 rounded-2xl text-sm font-semibold transition-all hover:scale-[1.02] active:scale-[0.98] flex items-center justify-center gap-3"
+                    style={{ background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.16)', color: 'rgba(255,255,255,0.9)', opacity: isLoading ? 0.7 : 1 }}
+                  >
+                    <span className="flex h-5 w-5 items-center justify-center rounded-full bg-white text-xs font-black" style={{ color: '#4285F4' }}>G</span>
+                    Continue with Google
+                  </button>
+
+                  <div className="relative flex items-center gap-3">
+                    <div className="flex-1 h-px" style={{ background: 'rgba(255,255,255,0.08)' }} />
+                    <span className="text-xs" style={{ color: 'rgba(255,255,255,0.3)' }}>or use email</span>
+                    <div className="flex-1 h-px" style={{ background: 'rgba(255,255,255,0.08)' }} />
                   </div>
 
                   <div className="space-y-3">

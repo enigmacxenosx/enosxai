@@ -272,7 +272,7 @@ export default function ProfilePanel({ isOpen, onClose, onOpenAdminConsole, onOp
                 });
               }}
               onPointerLeave={() => setAuthTilt({ x: 0, y: 0 })}
-              className="auth-modal-frame flex h-[min(860px,calc(100vh-2rem))] w-full max-w-[460px] flex-col overflow-hidden rounded-[32px]"
+              className="auth-modal-frame flex h-[min(900px,calc(100vh-2rem))] w-full max-w-[520px] flex-col overflow-hidden rounded-[32px]"
               style={{
                 pointerEvents: 'auto',
                 background: `rgba(8,8,14,${settings.panelOpacity * 0.99})`,
@@ -359,6 +359,17 @@ export default function ProfilePanel({ isOpen, onClose, onOpenAdminConsole, onOp
                   className="auth-neon-shell auth-live-stage auth-form-layout px-6 py-8 sm:px-10 sm:py-10 space-y-5"
                   style={{ '--auth-rgb': accentRgb, '--auth-accent': accentColor } as React.CSSProperties}
                 >
+                  <div className="auth-hero-visual" aria-hidden="true">
+                    <div className="auth-hero-grid" />
+                    <div className="auth-hero-orb auth-hero-orb-a" />
+                    <div className="auth-hero-orb auth-hero-orb-b" />
+                    <div className="auth-hero-orb auth-hero-orb-c" />
+                    <div className="auth-hero-orbit auth-hero-orbit-one" />
+                    <div className="auth-hero-orbit auth-hero-orbit-two" />
+                    <div className="auth-hero-meta"><span>ENOSX / AI WORKSPACE</span><b>01</b></div>
+                    <BrandMark size={48} className="auth-hero-brand" animate />
+                    <div className="auth-hero-copy"><strong>Intelligence, in focus.</strong><span>Build a better flow.</span></div>
+                  </div>
                   <span className="auth-particle auth-particle-one" />
                   <span className="auth-particle auth-particle-two" />
                   <span className="auth-particle auth-particle-three" />
@@ -367,7 +378,7 @@ export default function ProfilePanel({ isOpen, onClose, onOpenAdminConsole, onOp
                   <span className="auth-blob auth-blob-blue" />
                   <div className="auth-energy-core" aria-hidden="true"><span /></div>
                   <div className="text-center space-y-2 pb-2">
-                    <div className="auth-login-kicker">ENOSX AI</div>
+                    <div className="auth-login-kicker"><span className="auth-kicker-dot" /> ENOSX AI <span className="auth-kicker-line" /></div>
                     <div className="text-4xl sm:text-5xl font-black tracking-tight" style={{ color: '#fff', textShadow: '0 4px 24px rgba(0,0,0,0.22)' }}>
                       {authMode === 'signin' ? 'Login' : 'Create account'}
                     </div>
@@ -440,9 +451,9 @@ export default function ProfilePanel({ isOpen, onClose, onOpenAdminConsole, onOp
                     onClick={handleEmailAuth}
                     disabled={isLoading || !email || !password || (authMode === 'signup' && !displayName)}
                     className="auth-neon-button auth-primary-button w-full py-3 rounded-xl text-sm font-bold transition-all hover:scale-[1.02] active:scale-[0.98] flex items-center justify-center gap-2"
-                    style={{ background: 'linear-gradient(135deg, #ffb20f, #ff8a00)', border: '1px solid rgba(255,255,255,0.26)', color: '#fff', boxShadow: '0 8px 26px rgba(255,145,0,0.32)', opacity: isLoading || !email || !password ? 0.7 : 1 }}
+                    style={{ background: 'linear-gradient(135deg, #22d3ee 0%, #6d5dfc 56%, #d946ef 100%)', border: '1px solid rgba(255,255,255,0.3)', color: '#fff', boxShadow: '0 10px 28px rgba(77,126,255,0.32)', opacity: isLoading || !email || !password ? 0.7 : 1 }}
                   >
-                    {isLoading ? <Loader2 size={15} className="animate-spin" /> : authMode === 'signin' ? 'Sign In' : 'Create Account'}
+                      {isLoading ? <Loader2 size={15} className="animate-spin" /> : authMode === 'signin' ? 'Enter Workspace' : 'Create Account'}
                   </button>
 
                   <div className="text-center text-xs" style={{ color: 'rgba(255,255,255,0.4)' }}>
@@ -458,13 +469,14 @@ export default function ProfilePanel({ isOpen, onClose, onOpenAdminConsole, onOp
                     <div className="flex-1 h-px" style={{ background: 'rgba(255,255,255,0.08)' }} />
                   </div>
 
-                  <button
+                    <button
                     onClick={continueAsGuest}
                     className="auth-neon-ghost-button auth-guest-button w-full py-3 rounded-2xl text-sm font-bold transition-all hover:scale-[1.02] active:scale-[0.98] flex items-center justify-center gap-2"
                     style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.12)', color: 'rgba(255,255,255,0.85)' }}
                   >
                     Continue as Guest
                   </button>
+                  <div className="auth-trust-row"><span className="auth-trust-lock"><Shield size={11} /></span><span>Private by design</span><i /> <span>Fast, focused, yours</span></div>
                 </motion.div>
               )}
 

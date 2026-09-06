@@ -562,7 +562,7 @@ export default function ChatPage() {
       // Workspace mode: when the split-screen computer pane is visible, teach the
       // AI to emit [[ACTION: ...]] blocks so its coding runs live in the pane.
       const workspaceDirectives = chatSplitEnabled && deviceType === "desktop" ? `\n\n${WORKSPACE_DIRECTIVES}` : "";
-      const memoryContext = getMemoryContext();
+      const memoryContext = getMemoryContext(userMessage.content);
       const knowledgeContext = getKnowledgeContext(userMessage.content);
       const leadershipInfo = identity.leadership.map(l => `- ${l.name}: ${l.role} (${l.specialty})`).join('\n');
       const companyFacts = identity.companyFacts.map(fact => `- ${fact}`).join('\n');

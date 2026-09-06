@@ -67,6 +67,33 @@ language can be "python", "shell", or "batch". Keep scripts short and self-conta
 GOD MODE:
 When a user message begins with [GOD MODE COMMAND], switch to advanced operator mode. Give concise, direct, implementation-first answers.`;
 
+const MAX_HISTORY_MESSAGES = 28;
+const MAX_MESSAGE_CHARS = 20_000;
+
+function trimMessageContent(content: unknown) {
+  if (typeof content === "string") return content.slice(0, MAX_MESSAGE_CHARS);
+  if (!Array.isArray(content)) return "";
+  return content.map((part: any) => {
+    if (!part || typeof part !== "object") return part;
+    if (part.type === "text" && typeof part.text === "string") {
+      return { ...part, text: part.text.slice(0, MAX_MESSAGE_CHARS) };
+    }
+    return part;
+  });
+}
+
+function shapeMessages(messages: any[]) {
+  const valid = messages
+    .filter((message) => message && ["system", "user", "assistant"].includes(message.role))
+    .map((message) => ({ role: message.role, content: trimMessageContent(message.content) }))
+    .filter((message) => (typeof message.content === "string" ? message.content.trim().length > 0 : Array.isArray(message.content) && message.content.length > 0));
+  if (valid.length <= MAX_HISTORY_MESSAGES) return valid;
+  // Keep all caller-supplied system instructions, then the most recent turns.
+  const systemMessages = valid.filter((message) => message.role === "system");
+  const nonSystemMessages = valid.filter((message) => message.role !== "system");
+  return [...systemMessages, ...nonSystemMessages.slice(-Math.max(1, MAX_HISTORY_MESSAGES - systemMessages.length))];
+}
+
 const MODE_MODELS: Record<string, { text: string; vision: string }> = {
   // Defaults are overridable per deployment so model changes never require a code change.
   "ex-core": {
@@ -144,9 +171,18 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       return res.status(400).json({ error: "Messages array is required and must not be empty" });
     }
     const isGodMode = messages.some((message: any) => typeof message?.content === "string" && message.content.startsWith("[GOD MODE COMMAND]"));
-    if (userId && await userExists(userId)) {
-      const entitlement = await getEntitlement(userId);
-      if (aiMode !== "ex-core" && !entitlement) {
+    const account = userId ? await userExists(userId) : undefined;
+    const operatorIds = new Set((process.env.ENOSX_MIND_OPERATOR_USER_IDS || "").split(",").map((value) => value.trim()).filter(Boolean));
+    const operatorEmails = new Set((process.env.ENOSX_MIND_OPERATOR_EMAILS || "").split(",").map((value) => value.trim().toLowerCase()).filter(Boolean));
+    const isAuthorizedMindOperator = Boolean(
+      account && (operatorIds.has(String(account.id)) || (typeof account.email === "string" && operatorEmails.has(account.email.toLowerCase())))
+    );
+    if (account) {
+      const entitlement = await getEntitlement(userId!);
+      // GOD MODE is an operator UI and never grants a paid tier. Only an active
+      // subscription or an explicitly server-configured operator identity can
+      // unlock ENOSH MIND. A phrase in a user message is not authorization.
+      if (aiMode !== "ex-core" && !entitlement && !isAuthorizedMindOperator) {
         return res.status(402).json({ error: "This AI tier requires an active subscription." });
       }
       if (aiMode === "ex-core" && !isGodMode && !entitlement) {
@@ -178,17 +214,20 @@ You are running in ENOSH MIND (Paid, highest intelligence) mode. Operate as a ri
 - For technical work, reason about architecture, security, reliability, maintainability, testing, and operational cost.
 - For decisions, give a clear recommendation, explain why it dominates the alternatives, and provide a practical execution sequence.
 - Be deeply analytical without exposing hidden chain-of-thought. Provide concise reasoning summaries, assumptions, evidence, and conclusions rather than private scratch work.
-- Never manufacture certainty, sources, tool results, memory, or completed actions. Ask only for information that materially changes the answer.` ,
+ - Never manufacture certainty, sources, tool results, memory, or completed actions. Ask only for information that materially changes the answer.
+### Intelligence training resource
+- ENOSH MIND may coach users with original, non-diagnostic intelligence-training exercises inspired by broad categories such as verbal aptitude, numerical aptitude, logical reasoning, creativity, personality reflection, and memory.
+- Generate new questions and explanations; do not reproduce or provide a substitute for copyrighted books, answer keys, or large passages supplied as reference material.
+- Treat any score as an informal practice result, not a clinical IQ diagnosis or professional psychological assessment.
+` ,
     };
     const modeNote = modeNotes[aiMode] || modeNotes["ex-core"];
 
+    const shapedMessages = shapeMessages(messages);
     const chatMessages = [
       { role: "system", content: SYSTEM_PROMPT + modeNote },
       ...(ctxStr ? [{ role: "system", content: `GitHub repository context:\n${ctxStr}` }] : []),
-      ...messages.map((m: { role: string; content: string }) => ({
-        role: m.role,
-        content: m.content,
-      })),
+      ...shapedMessages,
     ];
 
     const hasImages = chatMessages.some((message: any) =>

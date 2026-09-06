@@ -424,17 +424,7 @@ export default function ChatPage() {
       // A short "Enosx" greeting opens guided setup instead of sending a
       // low-context prompt to the model. Normal questions keep the chat flow.
       if (/^enosx(?:\s+ai)?[.!?]*$/i.test(text.trim())) {
-        let onboardingComplete = false;
-        try {
-          onboardingComplete = localStorage.getItem("enosx-onboarding-complete") === "true";
-        } catch {
-          // Continue with the dialog when localStorage is unavailable.
-        }
-        if (onboardingComplete) {
-          toast.info("Your ENOSX space is already configured. Open Profile to change it.");
-        } else {
-          setShowEnosxOnboarding(true);
-        }
+        setShowEnosxOnboarding(true);
         return "";
       }
       if (aiMode) setActiveMode(aiMode);

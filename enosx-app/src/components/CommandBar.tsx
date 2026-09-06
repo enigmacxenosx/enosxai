@@ -295,17 +295,6 @@ export default function CommandBar({
                 onToggleConnector={handleToggleConnector}
               />
 
-              {isFreeMode && currentMode.id === "ex-core" && (
-                <motion.div
-                  initial={{ opacity: 0, x: -10 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  className="px-2 py-0.5 rounded-md bg-yellow-500/10 border border-yellow-500/30 text-[10px] font-bold text-yellow-400 flex items-center gap-1.5"
-                  title="Running on the EX Core free tier"
-                >
-                  <div className="w-1.5 h-1.5 rounded-full bg-yellow-500 animate-pulse" />
-                  EX CORE (FREE)
-                </motion.div>
-              )}
             </div>
 
               <AnimatePresence>

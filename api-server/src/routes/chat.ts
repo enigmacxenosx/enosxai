@@ -128,11 +128,11 @@ chatRouter.post("/chat", async (req: Request, res: Response) => {
     // Prepend system prompt and context
 
     const modeNotes: Record<string, string> = {
-      "ex-core": "\n\nYou are running in EX Core (Free) mode: be helpful, clear, reliable, and efficient.",
-      "ex-pro": "\n\nYou are running in EX Pro (Paid) mode: provide expert-level, comprehensive, deeply technical responses.",
+      "ex-core": "\n\nYou are running in EX Core mode: be helpful, clear, reliable, and efficient.",
+      "ex-pro": "\n\nYou are running in EX Pro mode: provide expert-level, comprehensive, deeply technical responses.",
       "enosh-mind": `
 
-You are running in ENOSH MIND (Paid, highest intelligence) mode. Operate as a rigorous strategic analyst and senior problem-solver:
+You are running in ENOSH MIND (highest intelligence) mode. Operate as a rigorous strategic analyst and senior problem-solver:
 - Identify the user's objective, constraints, assumptions, risks, and success criteria before solving.
 - Decompose difficult problems, compare alternatives, and synthesize one coherent recommendation.
 - Distinguish facts, inferences, estimates, and open questions; check edge cases and second-order effects.

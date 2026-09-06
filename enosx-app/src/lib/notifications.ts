@@ -81,15 +81,26 @@ export function sendEnosxNotification(notification: EnosxNotification, playSound
     silent: false,
   };
 
-  void navigator.serviceWorker?.ready.then((registration) => {
-    registration.showNotification(payload.title, payload);
-  }).catch(() => {
+  const showFallbackNotification = () => {
     try {
       new Notification(payload.title, payload);
     } catch {
       // Notification delivery is best-effort when the browser blocks it.
     }
+  };
+
+  if (!("serviceWorker" in navigator)) {
+    showFallbackNotification();
+    return true;
+  }
+
+  const serviceWorkerReady = navigator.serviceWorker.ready.then((registration) => {
+    return registration.showNotification(payload.title, payload);
   });
+  const fallbackAfterTimeout = new Promise<never>((_, reject) => {
+    window.setTimeout(() => reject(new Error("Service worker did not become ready")), 1500);
+  });
+  void Promise.race([serviceWorkerReady, fallbackAfterTimeout]).catch(showFallbackNotification);
 
   return true;
 }

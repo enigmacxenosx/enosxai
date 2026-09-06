@@ -30,7 +30,7 @@ Your mission is to empower users with enterprise-grade intelligence and fluid, O
 
 export const MODE_PROMPTS: Record<string, string> = {
   "ex-core": `
-Mode: EX Core (Free)
+Mode: EX Core
 Personality: Balanced, versatile, and highly responsive.
 Tone: Helpful, clear, and efficient.
 Goal: Provide reliable, high-quality assistance for everyday tasks, questions, and creative brainstorming.

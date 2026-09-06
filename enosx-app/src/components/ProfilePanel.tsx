@@ -364,7 +364,16 @@ export default function ProfilePanel({ isOpen, onClose, onOpenAdminConsole, onOp
 
               {/* ── AUTH VIEW ── */}
               {view === 'auth' && (
-                <div className="auth-neon-shell px-5 py-6 space-y-5">
+                <motion.div
+                  initial={{ opacity: 0, y: 34, scale: 0.88, rotateX: 18 }}
+                  animate={{ opacity: 1, y: 0, scale: 1, rotateX: 0 }}
+                  transition={{ type: 'spring', stiffness: 220, damping: 20, mass: 0.8 }}
+                  className="auth-neon-shell auth-live-stage px-5 py-6 space-y-5"
+                >
+                  <span className="auth-particle auth-particle-one" />
+                  <span className="auth-particle auth-particle-two" />
+                  <span className="auth-particle auth-particle-three" />
+                  <div className="auth-energy-core" aria-hidden="true"><span /></div>
                   <div className="text-center space-y-2 pb-2">
                     <BrandMark size={64} animate className="auth-neon-brand mx-auto" />
                     <div className="text-lg font-bold" style={{ color: 'rgba(255,255,255,0.9)' }}>
@@ -450,7 +459,7 @@ export default function ProfilePanel({ isOpen, onClose, onOpenAdminConsole, onOp
                   >
                     Continue as Guest
                   </button>
-                </div>
+                </motion.div>
               )}
 
               {/* ── PROFILE VIEW ── */}

@@ -689,6 +689,22 @@
     animation: auth-shell-pulse 5s ease-in-out infinite;
   }
   .auth-neon-shell > * { position: relative; z-index: 1; }
+  .auth-live-stage { transform-style: preserve-3d; }
+  .auth-live-stage > *:not(.auth-particle):not(.auth-energy-core) { animation: auth-control-reveal 650ms cubic-bezier(.2,.8,.2,1) both; }
+  .auth-live-stage > *:nth-child(5) { animation-delay: 120ms; }
+  .auth-live-stage > *:nth-child(6) { animation-delay: 220ms; }
+  .auth-live-stage > *:nth-child(7) { animation-delay: 320ms; }
+  .auth-live-stage > *:nth-child(8) { animation-delay: 420ms; }
+  .auth-live-stage > *:nth-child(9) { animation-delay: 520ms; }
+  .auth-live-stage > *:nth-child(10) { animation-delay: 620ms; }
+  .auth-particle { position: absolute !important; z-index: 2 !important; width: 5px; height: 5px; border-radius: 50%; background: #8ffcff; box-shadow: 0 0 12px 3px rgba(0,242,255,0.8); pointer-events: none; }
+  .auth-particle-one { top: 18%; left: 9%; animation: auth-particle-float 4.5s ease-in-out infinite; }
+  .auth-particle-two { top: 55%; right: 8%; width: 3px; height: 3px; animation: auth-particle-float 5.5s ease-in-out -1.5s infinite; }
+  .auth-particle-three { bottom: 17%; left: 20%; width: 4px; height: 4px; background: #ff7adf; box-shadow: 0 0 12px 3px rgba(255,0,180,0.65); animation: auth-particle-float 6s ease-in-out -3s infinite; }
+  .auth-energy-core { position: absolute !important; z-index: 0 !important; top: 38px; left: 50%; width: 120px; height: 120px; border: 1px solid rgba(0,242,255,0.25); border-radius: 50%; transform: translateX(-50%); box-shadow: 0 0 35px rgba(0,242,255,0.12), inset 0 0 28px rgba(0,242,255,0.12); animation: auth-core-spin 10s linear infinite; }
+  .auth-energy-core::before, .auth-energy-core::after { content: ''; position: absolute; inset: 13px; border: 1px solid rgba(255,0,180,0.25); border-radius: 50%; transform: rotateX(65deg) rotateZ(20deg); }
+  .auth-energy-core::after { inset: 26px; transform: rotateY(65deg) rotateZ(-20deg); border-color: rgba(151,115,255,0.35); }
+  .auth-energy-core span { position: absolute; inset: 48px; border-radius: 50%; background: #dffeff; box-shadow: 0 0 18px 8px rgba(0,242,255,0.65), 0 0 42px 14px rgba(146,80,255,0.3); animation: auth-core-pulse 1.8s ease-in-out infinite; }
   .auth-neon-shell::after {
     content: '';
     position: absolute;
@@ -763,6 +779,16 @@
     from { transform: translateY(-22%) rotate(-8deg); }
     to { transform: translateY(22%) rotate(-8deg); }
   }
+  @keyframes auth-control-reveal {
+    from { opacity: 0; transform: translateY(16px) translateZ(-24px); filter: blur(5px); }
+    to { opacity: 1; transform: translateY(0) translateZ(0); filter: blur(0); }
+  }
+  @keyframes auth-particle-float {
+    0%, 100% { transform: translate3d(0, 0, 0) scale(1); opacity: 0.35; }
+    50% { transform: translate3d(12px, -22px, 18px) scale(1.7); opacity: 1; }
+  }
+  @keyframes auth-core-spin { to { transform: translateX(-50%) rotate(360deg); } }
+  @keyframes auth-core-pulse { 0%, 100% { transform: scale(0.72); opacity: 0.7; } 50% { transform: scale(1.2); opacity: 1; } }
   @keyframes auth-orbit {
     from { transform: rotate(0deg) translateX(18px) rotate(0deg); }
     to { transform: rotate(360deg) translateX(18px) rotate(-360deg); }
@@ -774,6 +800,10 @@
     .auth-neon-shell::before,
     .auth-neon-shell::after,
     .auth-neon-button,
-    .auth-neon-brand { animation: none !important; transition: none !important; }
+    .auth-neon-brand,
+    .auth-live-stage > *,
+    .auth-particle,
+    .auth-energy-core,
+    .auth-energy-core span { animation: none !important; transition: none !important; }
   }
 }

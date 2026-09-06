@@ -368,7 +368,15 @@ export default function CommandBar({
               <textarea
                 ref={textareaRef}
                 value={value}
-                onChange={(e) => setValue(e.target.value)}
+                onChange={(e) => {
+                  const nextValue = e.target.value;
+                  setValue(nextValue);
+                  // Let the chat shell open guided setup immediately when the
+                  // user types the wake word, without requiring Send/Enter.
+                  if (/^enosx$/i.test(nextValue.trim())) {
+                    window.dispatchEvent(new CustomEvent("enosx-open-onboarding"));
+                  }
+                }}
                 onKeyDown={handleKeyDown}
 	                placeholder={
 	                  isListening

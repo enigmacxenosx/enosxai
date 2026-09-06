@@ -255,6 +255,11 @@ export default function ChatPage() {
   // Keep refs in sync
   useEffect(() => { activeIdRef.current = activeId; }, [activeId]);
   useEffect(() => { conversationsRef.current = conversations; }, [conversations]);
+  useEffect(() => {
+    const openOnboarding = () => setShowEnosxOnboarding(true);
+    window.addEventListener("enosx-open-onboarding", openOnboarding);
+    return () => window.removeEventListener("enosx-open-onboarding", openOnboarding);
+  }, []);
 
   const { sendMessage, isLoading: isChatLoading, isThinking, error: chatError, isFreeMode } = useAI();
   const { generateImage, isGenerating, error: imageError } = useImageGeneration();

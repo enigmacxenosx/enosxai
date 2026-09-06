@@ -87,6 +87,7 @@ export default function ProfilePanel({ isOpen, onClose, onOpenAdminConsole, onOp
   const [authMode, setAuthMode] = useState<AuthMode>('signin');
   const [showPassword, setShowPassword] = useState(false);
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
+  const [authTilt, setAuthTilt] = useState({ x: 0, y: 0 });
 
   // Form state
   const [email, setEmail] = useState('');
@@ -272,8 +273,16 @@ export default function ProfilePanel({ isOpen, onClose, onOpenAdminConsole, onOp
             }}
           >
             <motion.section
-              animate={{ rotateY: [0, 1.2, 0, -1.2, 0], rotateX: [0, -0.6, 0, 0.6, 0] }}
-              transition={{ duration: 12, repeat: Infinity, ease: 'easeInOut' }}
+              animate={{ rotateY: authTilt.x, rotateX: authTilt.y }}
+              transition={{ type: 'spring', stiffness: 180, damping: 22 }}
+              onPointerMove={(event) => {
+                const rect = event.currentTarget.getBoundingClientRect();
+                setAuthTilt({
+                  x: Number(((((event.clientX - rect.left) / rect.width) - 0.5) * 7).toFixed(2)),
+                  y: Number(((((event.clientY - rect.top) / rect.height) - 0.5) * -7).toFixed(2)),
+                });
+              }}
+              onPointerLeave={() => setAuthTilt({ x: 0, y: 0 })}
               className="auth-modal-frame flex h-[min(860px,calc(100vh-2rem))] w-full max-w-[460px] flex-col overflow-hidden rounded-[32px]"
               style={{
                 pointerEvents: 'auto',

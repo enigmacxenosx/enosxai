@@ -2,17 +2,19 @@
  * ENOSX AI — Shared split-screen preference
  * One global setting used by both the Workspace page (/workspace) and the
  * Chat page (/). Flipping the toggle on either page flips it on the other.
+ * The regular chat route starts in chat-only mode; users can explicitly open
+ * Workspace/Split when they want the Enosx Computer surface.
  */
 
-export const SPLIT_PREF_KEY = "enosx-workspace-split-enabled-v1";
+export const SPLIT_PREF_KEY = "enosx-workspace-split-enabled-v2";
 
 export function getSplitEnabled(): boolean {
   try {
     const saved = localStorage.getItem(SPLIT_PREF_KEY);
-    if (saved === null) return true; // first-time visitors get split on
+    if (saved === null) return false; // first-time visitors start in chat only
     return saved !== "false";
   } catch {
-    return true;
+    return false;
   }
 }
 

@@ -629,6 +629,38 @@
 
 /* Auth surfaces — neumorphic depth with ENOSX neon edge lighting */
 @layer components {
+  .auth-modal-frame {
+    transform-style: preserve-3d;
+    position: relative;
+    isolation: isolate;
+  }
+  .auth-modal-frame::before,
+  .auth-modal-frame::after {
+    content: '';
+    position: absolute;
+    pointer-events: none;
+    border-radius: 999px;
+    filter: blur(1px);
+    opacity: 0.7;
+  }
+  .auth-modal-frame::before {
+    width: 190px;
+    height: 190px;
+    top: -90px;
+    right: -70px;
+    border: 1px solid rgba(0, 242, 255, 0.3);
+    box-shadow: 0 0 30px rgba(0, 242, 255, 0.24), inset 0 0 30px rgba(0, 242, 255, 0.12);
+    animation: auth-orbit 9s linear infinite;
+  }
+  .auth-modal-frame::after {
+    width: 140px;
+    height: 140px;
+    bottom: -72px;
+    left: -54px;
+    border: 1px solid rgba(255, 0, 180, 0.28);
+    box-shadow: 0 0 28px rgba(255, 0, 180, 0.2), inset 0 0 24px rgba(255, 0, 180, 0.1);
+    animation: auth-orbit 7s linear infinite reverse;
+  }
   .auth-neon-shell {
     position: relative;
     isolation: isolate;
@@ -652,6 +684,7 @@
     border: 1px solid rgba(var(--enosx-accent-rgb), 0.12);
     box-shadow: 0 0 22px rgba(var(--enosx-accent-rgb), 0.1);
     pointer-events: none;
+    animation: auth-shell-pulse 5s ease-in-out infinite;
   }
   .auth-neon-shell > * { position: relative; z-index: 1; }
   .auth-neon-brand { filter: drop-shadow(0 0 14px rgba(var(--enosx-accent-rgb), 0.55)); }
@@ -697,5 +730,20 @@
   @keyframes auth-neon-breathe {
     0%, 100% { filter: drop-shadow(0 0 5px rgba(var(--enosx-accent-rgb), 0.18)); }
     50% { filter: drop-shadow(0 0 13px rgba(var(--enosx-accent-rgb), 0.42)); }
+  }
+  @keyframes auth-shell-pulse {
+    0%, 100% { transform: scale(1); opacity: 0.65; }
+    50% { transform: scale(1.015); opacity: 1; }
+  }
+  @keyframes auth-orbit {
+    from { transform: rotate(0deg) translateX(18px) rotate(0deg); }
+    to { transform: rotate(360deg) translateX(18px) rotate(-360deg); }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .auth-modal-frame,
+    .auth-modal-frame::before,
+    .auth-modal-frame::after,
+    .auth-neon-shell::before,
+    .auth-neon-button { animation: none !important; transition: none !important; }
   }
 }

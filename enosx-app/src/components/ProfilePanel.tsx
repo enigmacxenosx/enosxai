@@ -263,18 +263,32 @@ export default function ProfilePanel({ isOpen, onClose, onOpenAdminConsole, onOp
             style={{ background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(3px)' }}
           />
           <motion.div
-            initial={{ x: 420, opacity: 0 }} animate={{ x: 0, opacity: 1 }} exit={{ x: 420, opacity: 0 }}
-            transition={{ type: 'spring', stiffness: 360, damping: 36 }}
-            className="fixed right-0 top-0 h-screen flex flex-col z-50"
+            initial={{ opacity: 0, scale: 0.86, y: 28, rotateX: 8 }} animate={{ opacity: 1, scale: 1, y: 0, rotateX: 0 }} exit={{ opacity: 0, scale: 0.9, y: 24, rotateX: -5 }}
+            transition={{ type: 'spring', stiffness: 280, damping: 25 }}
+            className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6"
             style={{
-              width: 380,
-              background: `rgba(8,8,14,${settings.panelOpacity * 0.99})`,
-              backdropFilter: `blur(${settings.blurAmount}px)`,
-              WebkitBackdropFilter: `blur(${settings.blurAmount}px)`,
-              borderLeft: `1px solid rgba(${accentRgb},0.15)`,
-              boxShadow: `-16px 0 60px rgba(0,0,0,0.7)`,
+              perspective: 1400,
+              pointerEvents: 'none',
             }}
           >
+            <motion.section
+              animate={{ rotateY: [0, 1.2, 0, -1.2, 0], rotateX: [0, -0.6, 0, 0.6, 0] }}
+              transition={{ duration: 12, repeat: Infinity, ease: 'easeInOut' }}
+              className="auth-modal-frame flex h-[min(860px,calc(100vh-2rem))] w-full max-w-[460px] flex-col overflow-hidden rounded-[32px]"
+              style={{
+                pointerEvents: 'auto',
+                background: `rgba(8,8,14,${settings.panelOpacity * 0.99})`,
+                backdropFilter: `blur(${settings.blurAmount}px)`,
+                WebkitBackdropFilter: `blur(${settings.blurAmount}px)`,
+                border: `1px solid rgba(${accentRgb},0.22)`,
+                boxShadow: `0 30px 100px rgba(0,0,0,0.72), 0 0 55px rgba(${accentRgb},0.16)`,
+              }}
+            >
+            <div
+              className="pointer-events-none absolute inset-0 opacity-70"
+              style={{ background: `radial-gradient(circle at 15% 10%, rgba(${accentRgb},0.18), transparent 28%), radial-gradient(circle at 90% 90%, rgba(83,122,255,0.16), transparent 30%)` }}
+            />
+            <div className="relative flex h-full flex-col">
             {/* Header */}
             <div className="flex items-center justify-between px-5 py-4 flex-shrink-0" style={{ borderBottom: `1px solid rgba(255,255,255,0.06)` }}>
               <div className="flex items-center gap-3">
@@ -819,6 +833,8 @@ export default function ProfilePanel({ isOpen, onClose, onOpenAdminConsole, onOp
               )}
 
             </div>
+            </div>
+            </motion.section>
           </motion.div>
         </>
       )}

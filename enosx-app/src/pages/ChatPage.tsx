@@ -57,7 +57,7 @@ import { getSplitEnabled, setSplitEnabled, onSplitPrefChange, notifySplitPrefCha
 import { WORKSPACE_DIRECTIVES } from "@/lib/workspaceDirectives";
 import { useCommandChain, type SystemAction } from "@/hooks/useCommandChain";
 import { ComputerWorkspaceProvider, useComputerWorkspace } from "@/contexts/ComputerWorkspaceContext";
-import { Bell, BellRing, ChevronDown, Columns2, Menu, MonitorSmartphone } from "lucide-react";
+import { Bell, BellRing, ChevronDown, Menu } from "lucide-react";
 import { useScriptRuntime, type ScriptLanguage } from "@/hooks/useScriptRuntime";
 import {
   getNotificationPermission,
@@ -345,12 +345,6 @@ export default function ChatPage() {
   useEffect(() => {
     const unsub = onSplitPrefChange(() => setChatSplitEnabled(getSplitEnabled()));
     return unsub;
-  }, []);
-  const handleToggleChatSplit = useCallback((next: boolean) => {
-    setSplitEnabled(next);
-    notifySplitPrefChanged();
-    setChatSplitEnabled(next);
-    toast.success(next ? "Split-screen enabled — workspace now visible beside the chat" : "Split-screen off — full chat view");
   }, []);
   const [showGodModeWarning, setShowGodModeWarning] = useState(false);
   const [showGodTerminal, setShowGodTerminal] = useState(false);
@@ -888,32 +882,6 @@ ${getAdminContext()}` : ""}`,
     );
   }
 
-  const splitToggle = (
-    <div className="flex items-center gap-1 rounded-full border p-1" style={{ borderColor: "rgba(255,255,255,0.12)", background: "rgba(6,8,14,0.55)" }}>
-      {chatSplitEnabled ? (
-        <button
-          type="button"
-          onClick={() => handleToggleChatSplit(false)}
-          title="Turn split-screen off — switch to full chat"
-          className="flex items-center gap-1.5 rounded-full px-3 py-1 text-[11px] font-semibold transition"
-          style={{ background: "rgba(255,255,255,0.12)", color: "rgba(255,255,255,0.9)" }}
-        >
-          <Columns2 size={12} /> Split: On
-        </button>
-      ) : (
-        <button
-          type="button"
-          onClick={() => handleToggleChatSplit(true)}
-          title="Turn split-screen back on"
-          className="flex items-center gap-1.5 rounded-full px-3 py-1 text-[11px] font-semibold transition"
-          style={{ background: config.accent, color: "#040811" }}
-        >
-          <MonitorSmartphone size={12} /> Split: Off
-        </button>
-      )}
-    </div>
-  );
-
   const wrapWithSplit = (content: React.ReactNode) =>
     chatSplitEnabled ? <ChatSplitLayout>{content}</ChatSplitLayout> : content;
 
@@ -1032,7 +1000,6 @@ ${getAdminContext()}` : ""}`,
           </div>
 
           <div className="flex items-center gap-3">
-            {splitToggle}
             <button
               type="button"
               onClick={() => void handleEnableNotifications()}

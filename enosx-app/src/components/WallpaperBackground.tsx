@@ -8,9 +8,28 @@ import { useTheme } from "@/contexts/ThemeContext";
 export default function WallpaperBackground() {
   const { activeWallpaperUrl, settings } = useWallpaper();
   const { config } = useTheme();
+  const wallpaperId = settings.activePresetId;
+  const livePalette: Record<string, { primary: string; secondary: string; speed: string }> = {
+    aurora: { primary: "90, 255, 218", secondary: "122, 92, 255", speed: "18s" },
+    cosmos: { primary: "144, 96, 255", secondary: "32, 180, 255", speed: "32s" },
+    ocean: { primary: "34, 211, 238", secondary: "20, 100, 255", speed: "24s" },
+    forest: { primary: "74, 222, 128", secondary: "14, 116, 144", speed: "28s" },
+    city: { primary: "255, 83, 185", secondary: "64, 180, 255", speed: "16s" },
+    cyberpunk: { primary: "255, 0, 170", secondary: "0, 242, 255", speed: "12s" },
+    "enosx-neon-city": { primary: "0, 242, 255", secondary: "168, 85, 247", speed: "14s" },
+    "enosx-galaxy-tech": { primary: "168, 85, 247", secondary: "0, 242, 255", speed: "26s" },
+    "dark-circuits": { primary: "0, 242, 255", secondary: "29, 78, 216", speed: "20s" },
+    "enosx-ex-circuits": { primary: "0, 255, 136", secondary: "0, 242, 255", speed: "18s" },
+  };
+  const profile = livePalette[wallpaperId] ?? { primary: config.accentRgb, secondary: "168, 85, 247", speed: "22s" };
+  const liveStyle = {
+    "--live-primary": profile.primary,
+    "--live-secondary": profile.secondary,
+    "--live-speed": profile.speed,
+  } as React.CSSProperties;
 
   return (
-    <div className="fixed inset-0 pointer-events-none z-0" aria-hidden>
+    <div className="live-wallpaper fixed inset-0 pointer-events-none z-0" data-live-wallpaper={wallpaperId} style={liveStyle} aria-hidden>
       {/* Solid base color */}
       <div
         className="absolute inset-0 transition-colors duration-500"
@@ -30,6 +49,16 @@ export default function WallpaperBackground() {
           }}
         />
       )}
+
+      {/* Wallpaper-specific 3D depth field: parallax orbs, grid floor, and star particles. */}
+      <div className="live-3d-field absolute inset-0 overflow-hidden" style={liveStyle}>
+        <div className="live-orb live-orb-one" />
+        <div className="live-orb live-orb-two" />
+        <div className="live-orb live-orb-three" />
+        <div className="live-grid-floor" />
+        <div className="live-star-field" />
+        <div className="live-horizon" />
+      </div>
 
       {/* Premium Iridescent Animated Fog */}
       <div className="absolute inset-0 overflow-hidden opacity-30 pointer-events-none">

@@ -1186,10 +1186,6 @@ ${getAdminContext()}` : ""}`,
         transcript={activeConversation?.messages.map((m) => `${m.role === "user" ? "User" : "Enosx AI"}: ${m.content}`).join("\n\n") || ""}
         conversationTitle={activeConversation?.title || ""}
       />
-      <EnosxOnboardingDialog
-        isOpen={showEnosxOnboarding}
-        onClose={() => setShowEnosxOnboarding(false)}
-      />
       <AdminConsoleDialog
         isOpen={showAdminConsole}
         onClose={() => setShowAdminConsole(false)}

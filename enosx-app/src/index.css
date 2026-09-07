@@ -11,6 +11,21 @@
 @import "tailwindcss";
 @import "tw-animate-css";
 
+/* Dynamic 3D wallpaper field. The selected preset supplies the live palette and speed. */
+.live-3d-field { perspective: 900px; transform-style: preserve-3d; mix-blend-mode: screen; opacity: 0.72; }
+.live-orb { position: absolute; width: 34vw; height: 34vw; max-width: 520px; max-height: 520px; border-radius: 50%; filter: blur(42px); opacity: 0.26; background: radial-gradient(circle, rgba(var(--live-primary),0.75), transparent 68%); animation: live-orb-drift var(--live-speed, 22s) ease-in-out infinite alternate; }
+.live-orb-one { top: 8%; left: 9%; }
+.live-orb-two { right: 2%; bottom: 10%; width: 28vw; height: 28vw; background: radial-gradient(circle, rgba(var(--live-secondary),0.68), transparent 68%); animation-delay: -7s; animation-direction: alternate-reverse; }
+.live-orb-three { top: 42%; left: 44%; width: 18vw; height: 18vw; opacity: 0.16; filter: blur(28px); animation-delay: -12s; }
+.live-grid-floor { position: absolute; left: -12%; right: -12%; bottom: -34%; height: 72%; transform: rotateX(68deg); transform-origin: bottom; background-image: linear-gradient(rgba(var(--live-primary),0.16) 1px, transparent 1px), linear-gradient(90deg, rgba(var(--live-secondary),0.12) 1px, transparent 1px); background-size: 58px 58px; mask-image: linear-gradient(to top, black, transparent 78%); animation: live-grid-scroll 9s linear infinite; }
+.live-star-field { position: absolute; inset: 0; opacity: 0.55; background-image: radial-gradient(circle at 12% 25%, rgba(var(--live-primary),0.8) 0 1px, transparent 2px), radial-gradient(circle at 28% 68%, rgba(255,255,255,0.65) 0 1px, transparent 2px), radial-gradient(circle at 62% 18%, rgba(var(--live-secondary),0.8) 0 1px, transparent 2px), radial-gradient(circle at 81% 42%, rgba(255,255,255,0.6) 0 1px, transparent 2px), radial-gradient(circle at 92% 78%, rgba(var(--live-primary),0.75) 0 1px, transparent 2px); background-size: 240px 210px, 320px 260px, 280px 240px, 360px 300px, 300px 250px; animation: live-stars-drift 30s linear infinite; }
+.live-horizon { position: absolute; left: 12%; right: 12%; bottom: 22%; height: 1px; background: linear-gradient(90deg, transparent, rgba(var(--live-primary),0.6), rgba(var(--live-secondary),0.6), transparent); box-shadow: 0 0 26px rgba(var(--live-primary),0.45); animation: live-horizon-pulse 4s ease-in-out infinite; }
+@keyframes live-orb-drift { 0% { transform: translate3d(-3vw, 2vh, -40px) scale(0.9); } 50% { transform: translate3d(4vw, -3vh, 80px) scale(1.08); } 100% { transform: translate3d(-1vw, 5vh, 20px) scale(0.96); } }
+@keyframes live-grid-scroll { from { background-position: 0 0, 0 0; } to { background-position: 0 58px, 58px 0; } }
+@keyframes live-stars-drift { from { transform: translate3d(0,0,0) scale(1); } to { transform: translate3d(-28px, 18px, 0) scale(1.04); } }
+@keyframes live-horizon-pulse { 0%, 100% { opacity: 0.35; transform: scaleX(0.84); } 50% { opacity: 0.9; transform: scaleX(1); } }
+@media (prefers-reduced-motion: reduce) { .live-orb, .live-grid-floor, .live-star-field, .live-horizon { animation: none !important; } }
+
 @custom-variant dark (&:is(.dark *));
 @custom-variant neon (&:is(.neon *));
 @custom-variant cyberpunk (&:is(.cyberpunk *));

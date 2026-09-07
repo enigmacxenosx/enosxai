@@ -272,7 +272,7 @@ export default function ProfilePanel({ isOpen, onClose, onOpenAdminConsole, onOp
                 });
               }}
               onPointerLeave={() => setAuthTilt({ x: 0, y: 0 })}
-              className="auth-modal-frame flex h-[min(900px,calc(100vh-2rem))] w-full max-w-[520px] flex-col overflow-hidden rounded-[32px]"
+              className="auth-modal-frame flex h-[min(640px,calc(100vh-2rem))] w-full max-w-[860px] flex-col overflow-hidden rounded-[32px]"
               style={{
                 pointerEvents: 'auto',
                 background: `rgba(8,8,14,${settings.panelOpacity * 0.99})`,
@@ -353,130 +353,108 @@ export default function ProfilePanel({ isOpen, onClose, onOpenAdminConsole, onOp
               {/* ── AUTH VIEW ── */}
               {view === 'auth' && (
                 <motion.div
-                  initial={{ opacity: 0, y: 34, scale: 0.88, rotateX: 18 }}
-                  animate={{ opacity: 1, y: 0, scale: 1, rotateX: 0 }}
-                  transition={{ type: 'spring', stiffness: 220, damping: 20, mass: 0.8 }}
-                  className="auth-neon-shell auth-live-stage auth-form-layout px-6 py-8 sm:px-10 sm:py-10 space-y-5"
+                  initial={{ opacity: 0, y: 26, scale: 0.96 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  transition={{ type: 'spring', stiffness: 220, damping: 22 }}
+                  className={`auth-slide-shell ${authMode === 'signup' ? 'is-signup' : 'is-signin'}`}
                   style={{ '--auth-rgb': accentRgb, '--auth-accent': accentColor } as React.CSSProperties}
                 >
-                  <div className="auth-hero-visual" aria-hidden="true">
-                    <div className="auth-hero-grid" />
-                    <div className="auth-hero-orb auth-hero-orb-a" />
-                    <div className="auth-hero-orb auth-hero-orb-b" />
-                    <div className="auth-hero-orb auth-hero-orb-c" />
-                    <div className="auth-hero-orbit auth-hero-orbit-one" />
-                    <div className="auth-hero-orbit auth-hero-orbit-two" />
-                    <div className="auth-hero-meta"><span>ENOSX / AI WORKSPACE</span><b>01</b></div>
-                    <BrandMark size={48} className="auth-hero-brand" animate />
-                    <div className="auth-hero-copy"><strong>Intelligence, in focus.</strong><span>Build a better flow.</span></div>
-                  </div>
-                  <span className="auth-particle auth-particle-one" />
-                  <span className="auth-particle auth-particle-two" />
-                  <span className="auth-particle auth-particle-three" />
-                  <span className="auth-blob auth-blob-cyan" />
-                  <span className="auth-blob auth-blob-pink" />
-                  <span className="auth-blob auth-blob-blue" />
-                  <div className="auth-energy-core" aria-hidden="true"><span /></div>
-                  <div className="text-center space-y-2 pb-2">
-                    <div className="auth-login-kicker"><span className="auth-kicker-dot" /> ENOSX AI <span className="auth-kicker-line" /></div>
-                    <div className="text-4xl sm:text-5xl font-black tracking-tight" style={{ color: '#fff', textShadow: '0 4px 24px rgba(0,0,0,0.22)' }}>
-                      {authMode === 'signin' ? 'Login' : 'Create account'}
+                  <div className="auth-slide-art" aria-hidden="true">
+                    <div className="auth-art-glow auth-art-glow-one" />
+                    <div className="auth-art-glow auth-art-glow-two" />
+                    <div className="auth-art-orbit auth-art-orbit-one" />
+                    <div className="auth-art-orbit auth-art-orbit-two" />
+                    <div className="auth-art-orb auth-art-orb-one" />
+                    <div className="auth-art-orb auth-art-orb-two" />
+                    <div className="auth-art-orb auth-art-orb-three" />
+                    <div className="auth-art-grid" />
+                    <div className="auth-art-content">
+                      <BrandMark size={58} className="auth-art-brand" animate />
+                      <div className="auth-art-kicker">ENOSX AI / PRIVATE WORKSPACE</div>
+                      <h2>{authMode === 'signin' ? 'Welcome back.' : 'Make it yours.'}</h2>
+                      <p>{authMode === 'signin' ? 'Your intelligent workspace is ready when you are.' : 'Create an account and shape your AI workflow.'}</p>
                     </div>
-                    <div className="text-xs sm:text-sm" style={{ color: 'rgba(255,255,255,0.68)' }}>
-                      {authMode === 'signin' ? 'Welcome back. Your AI workspace is ready.' : 'Start your private AI workspace in seconds.'}
+                    <div className="auth-art-footer">INTELLIGENCE, IN FOCUS <span>01</span></div>
+                  </div>
+
+                  <div className="auth-slide-form">
+                    <div className="auth-slide-heading">
+                      <span className="auth-slide-eyebrow">ENOSX AI</span>
+                      <h1>{authMode === 'signin' ? 'Login' : 'Create account'}</h1>
+                      <p>{authMode === 'signin' ? 'Sign in to continue to your workspace.' : 'Start your private AI workspace in seconds.'}</p>
                     </div>
-                  </div>
 
-                  <div className="auth-mode-switch" role="tablist" aria-label="Authentication mode">
-                    <button type="button" role="tab" aria-selected={authMode === 'signin'} onClick={() => { setAuthMode('signin'); clearError(); }} className={authMode === 'signin' ? 'is-active' : ''}>Sign in</button>
-                    <button type="button" role="tab" aria-selected={authMode === 'signup'} onClick={() => { setAuthMode('signup'); clearError(); }} className={authMode === 'signup' ? 'is-active' : ''}>Create account</button>
-                  </div>
+                    <div className="auth-slide-provider-row">
+                      <button
+                        type="button"
+                        onClick={() => { playSound('authGoogle'); signInWithGoogle(); }}
+                        disabled={isLoading}
+                        className="auth-slide-google"
+                      >
+                        <span className="auth-google-mark">G</span>
+                        Continue with Google
+                      </button>
+                    </div>
 
-                  <button
-                    type="button"
-                    onClick={() => { playSound('authGoogle'); signInWithGoogle(); }}
-                    disabled={isLoading}
-                    className="auth-google-button w-full py-3 rounded-xl text-sm font-semibold transition-all hover:scale-[1.02] active:scale-[0.98] flex items-center justify-center gap-3"
-                    style={{ background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.16)', color: 'rgba(255,255,255,0.9)', opacity: isLoading ? 0.7 : 1 }}
-                  >
-                    <span className="flex h-5 w-5 items-center justify-center rounded-full bg-white text-xs font-black" style={{ color: '#4285F4' }}>G</span>
-                    Continue with Google
-                  </button>
+                    <div className="auth-slide-divider"><span>or use email</span></div>
 
-                  <div className="relative flex items-center gap-3">
-                    <div className="flex-1 h-px" style={{ background: 'rgba(255,255,255,0.08)' }} />
-                    <span className="text-xs" style={{ color: 'rgba(255,255,255,0.3)' }}>or use email</span>
-                    <div className="flex-1 h-px" style={{ background: 'rgba(255,255,255,0.08)' }} />
-                  </div>
-
-                  <div className="space-y-3">
-                    {authMode === 'signup' && (
-                      <div>
-                        <label style={labelStyle}>DISPLAY NAME</label>
-                        <div className="relative">
-                          <User size={14} className="absolute left-3 top-1/2 -translate-y-1/2" style={{ color: 'rgba(255,255,255,0.3)' }} />
-                          <input type="text" value={displayName} onChange={e => setDisplayName(e.target.value)} placeholder="Your name" className="auth-neon-input" style={{ ...inputStyle, paddingLeft: 36 }} />
+                    <form className="auth-slide-fields" onSubmit={(event) => { event.preventDefault(); handleEmailAuth(); }}>
+                      {authMode === 'signup' && (
+                        <label className="auth-slide-field">
+                          <span>Display name</span>
+                          <div className="auth-slide-input-wrap">
+                            <User size={15} />
+                            <input type="text" value={displayName} onChange={e => setDisplayName(e.target.value)} placeholder="Your name" autoComplete="name" />
+                          </div>
+                        </label>
+                      )}
+                      <label className="auth-slide-field">
+                        <span>Email</span>
+                        <div className="auth-slide-input-wrap">
+                          <Mail size={15} />
+                          <input aria-label="Email address" type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="you@example.com" autoComplete="email" />
                         </div>
-                      </div>
-                    )}
-                    <div>
-                      <label style={labelStyle}>EMAIL</label>
-                      <div className="relative">
-                        <Mail size={14} className="absolute left-3 top-1/2 -translate-y-1/2" style={{ color: 'rgba(255,255,255,0.3)' }} />
-                        <input aria-label="Email address" type="email" value={email} onChange={e => setEmail(e.target.value)} onKeyDown={e => e.key === 'Enter' && handleEmailAuth()} placeholder="you@example.com" className="auth-neon-input" style={{ ...inputStyle, paddingLeft: 36 }} />
-                      </div>
+                      </label>
+                      <label className="auth-slide-field">
+                        <span>Password</span>
+                        <div className="auth-slide-input-wrap">
+                          <Lock size={15} />
+                          <input aria-label="Password" type={showPassword ? 'text' : 'password'} value={password} onChange={e => setPassword(e.target.value)} placeholder="••••••••" autoComplete={authMode === 'signin' ? 'current-password' : 'new-password'} />
+                          <button type="button" aria-label={showPassword ? 'Hide password' : 'Show password'} onClick={() => setShowPassword(v => !v)} className="auth-slide-eye">
+                            {showPassword ? <EyeOff size={15} /> : <Eye size={15} />}
+                          </button>
+                        </div>
+                      </label>
+
+                      {authMode === 'signin' && <div className="auth-slide-options">
+                        <label className="auth-checkbox-label">
+                          <input type="checkbox" checked={rememberMe} onChange={e => setRememberMe(e.target.checked)} />
+                          <span className="auth-checkmark"><Check size={11} /></span>
+                          Remember me
+                        </label>
+                        <button type="button" className="auth-slide-link" onClick={() => window.open('mailto:Enosxtech@gmail.com?subject=ENOSX%20AI%20password%20reset', '_self')}>Forgot password?</button>
+                      </div>}
+
+                      <button
+                        type="submit"
+                        disabled={isLoading || !email || !password || (authMode === 'signup' && !displayName)}
+                        className="auth-slide-submit"
+                      >
+                        {isLoading ? <Loader2 size={16} className="animate-spin" /> : authMode === 'signin' ? 'Login' : 'Create account'}
+                      </button>
+                    </form>
+
+                    <div className="auth-slide-switch">
+                      <span>{authMode === 'signin' ? "Don't have an account?" : 'Already have an account?'}</span>
+                      <button type="button" onClick={() => { setAuthMode(authMode === 'signin' ? 'signup' : 'signin'); clearError(); }}>
+                        {authMode === 'signin' ? 'Create account' : 'Sign in'}
+                      </button>
                     </div>
-                    <div>
-                      <label style={labelStyle}>PASSWORD</label>
-                      <div className="relative">
-                        <Lock size={14} className="absolute left-3 top-1/2 -translate-y-1/2" style={{ color: 'rgba(255,255,255,0.3)' }} />
-                        <input aria-label="Password" type={showPassword ? 'text' : 'password'} value={password} onChange={e => setPassword(e.target.value)} onKeyDown={e => e.key === 'Enter' && handleEmailAuth()} placeholder="••••••••" className="auth-neon-input" style={{ ...inputStyle, paddingLeft: 36, paddingRight: 40 }} />
-                        <button type="button" aria-label={showPassword ? 'Hide password' : 'Show password'} onClick={() => setShowPassword(v => !v)} className="absolute right-3 top-1/2 -translate-y-1/2" style={{ color: 'rgba(255,255,255,0.3)' }}>
-                          {showPassword ? <EyeOff size={14} /> : <Eye size={14} />}
-                        </button>
-                      </div>
+
+                    <div className="auth-slide-guest-row">
+                      <button type="button" onClick={continueAsGuest} className="auth-slide-guest">Continue as guest</button>
                     </div>
                   </div>
-
-                  {authMode === 'signin' && <div className="flex items-center justify-between text-xs">
-                    <label className="auth-checkbox-label">
-                      <input type="checkbox" checked={rememberMe} onChange={e => setRememberMe(e.target.checked)} />
-                      <span className="auth-checkmark"><Check size={11} /></span>
-                      Remember me
-                    </label>
-                    <button type="button" className="auth-forgot" onClick={() => window.open('mailto:Enosxtech@gmail.com?subject=ENOSX%20AI%20password%20reset', '_self')}>Forgot password?</button>
-                  </div>}
-
-                  <button
-                    onClick={handleEmailAuth}
-                    disabled={isLoading || !email || !password || (authMode === 'signup' && !displayName)}
-                    className="auth-neon-button auth-primary-button w-full py-3 rounded-xl text-sm font-bold transition-all hover:scale-[1.02] active:scale-[0.98] flex items-center justify-center gap-2"
-                    style={{ background: 'linear-gradient(135deg, #22d3ee 0%, #6d5dfc 56%, #d946ef 100%)', border: '1px solid rgba(255,255,255,0.3)', color: '#fff', boxShadow: '0 10px 28px rgba(77,126,255,0.32)', opacity: isLoading || !email || !password ? 0.7 : 1 }}
-                  >
-                      {isLoading ? <Loader2 size={15} className="animate-spin" /> : authMode === 'signin' ? 'Enter Workspace' : 'Create Account'}
-                  </button>
-
-                  <div className="text-center text-xs" style={{ color: 'rgba(255,255,255,0.4)' }}>
-                    {authMode === 'signin' ? "Don't have an account? " : 'Already have an account? '}
-                    <button onClick={() => { setAuthMode(authMode === 'signin' ? 'signup' : 'signin'); clearError(); }} className="font-semibold underline" style={{ color: accentColor }}>
-                      {authMode === 'signin' ? 'Sign up' : 'Sign in'}
-                    </button>
-                  </div>
-
-                  <div className="relative flex items-center gap-3 pt-2">
-                    <div className="flex-1 h-px" style={{ background: 'rgba(255,255,255,0.08)' }} />
-                    <span className="text-xs uppercase tracking-widest" style={{ color: 'rgba(255,255,255,0.3)' }}>or</span>
-                    <div className="flex-1 h-px" style={{ background: 'rgba(255,255,255,0.08)' }} />
-                  </div>
-
-                    <button
-                    onClick={continueAsGuest}
-                    className="auth-neon-ghost-button auth-guest-button w-full py-3 rounded-2xl text-sm font-bold transition-all hover:scale-[1.02] active:scale-[0.98] flex items-center justify-center gap-2"
-                    style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.12)', color: 'rgba(255,255,255,0.85)' }}
-                  >
-                    Continue as Guest
-                  </button>
-                  <div className="auth-trust-row"><span className="auth-trust-lock"><Shield size={11} /></span><span>Private by design</span><i /> <span>Fast, focused, yours</span></div>
                 </motion.div>
               )}
 

@@ -21,6 +21,7 @@ import EthicalHackingQuiz from "@/components/EthicalHackingQuiz";
 import CircuitDoor from "@/components/CircuitDoor";
 import GitHubPanel from "@/components/GitHubPanel";
 import ProfilePanel from "@/components/ProfilePanel";
+import EnosxOnboardingDialog from "@/components/EnosxOnboardingDialog";
 import CEOProfilePanel from "@/components/CEOProfilePanel";
 import { GlobalLayout } from "@/components/GlobalLayout";
 import { useEnosxAI as useAI } from "@/hooks/useEnosxAI";
@@ -240,6 +241,7 @@ export default function ChatPage() {
   const [autoSpeak, setAutoSpeak] = useState(false);
   const [showGitHubPanel, setShowGitHubPanel] = useState(false);
   const [showProfilePanel, setShowProfilePanel] = useState(false);
+  const [showEnosxOnboarding, setShowEnosxOnboarding] = useState(false);
   const [showAdminConsole, setShowAdminConsole] = useState(false);
   const [showLeadCapture, setShowLeadCapture] = useState(false);
   const [showEnosxOnboarding, setShowEnosxOnboarding] = useState(false);
@@ -415,6 +417,11 @@ export default function ChatPage() {
 
   const handleSend = useCallback(
     async (text: string, aiMode?: AIMode, selectedConnectorIds?: string[]): Promise<string> => {
+      if (text.trim().toLowerCase() === "enosx") {
+        playSound("authOpen");
+        setShowEnosxOnboarding(true);
+        return "";
+      }
       // In-flight guard: ignore overlapping calls so a prompt is added exactly
       // once per user action.
       if (sendingRef.current) return "";
@@ -1189,6 +1196,10 @@ ${getAdminContext()}` : ""}`,
         onClose={() => setShowLeadCapture(false)}
         transcript={activeConversation?.messages.map((m) => `${m.role === "user" ? "User" : "Enosx AI"}: ${m.content}`).join("\n\n") || ""}
         conversationTitle={activeConversation?.title || ""}
+      />
+      <EnosxOnboardingDialog
+        isOpen={showEnosxOnboarding}
+        onClose={() => setShowEnosxOnboarding(false)}
       />
       <AdminConsoleDialog
         isOpen={showAdminConsole}

@@ -16,6 +16,7 @@ export interface UserProfile {
   wallpaper?: string;
   aiPersonality?: string;
   language?: string;
+  gender?: string;
   notifications?: boolean;
   compactMode?: boolean;
   createdAt?: string;

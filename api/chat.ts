@@ -97,15 +97,15 @@ const MODE_MODELS: Record<string, { text: string; vision: string }> = {
   // Defaults are overridable per deployment so model changes never require a code change.
   "ex-core": {
     text: process.env.NVIDIA_EX_CORE_MODEL || process.env.NVIDIA_MODEL || "openai/gpt-oss-20b",
-    vision: process.env.NVIDIA_EX_CORE_VISION_MODEL || process.env.NVIDIA_VISION_MODEL || "meta/llama-3.2-90b-vision-instruct",
+    vision: process.env.NVIDIA_EX_CORE_VISION_MODEL || process.env.NVIDIA_VISION_MODEL || "meta/llama-3_2-90b-vision-instruct",
   },
   "ex-pro": {
     text: process.env.NVIDIA_EX_PRO_MODEL || process.env.NVIDIA_MODEL || "openai/gpt-oss-20b",
-    vision: process.env.NVIDIA_EX_PRO_VISION_MODEL || process.env.NVIDIA_VISION_MODEL || "meta/llama-3.2-90b-vision-instruct",
+    vision: process.env.NVIDIA_EX_PRO_VISION_MODEL || process.env.NVIDIA_VISION_MODEL || "meta/llama-3_2-90b-vision-instruct",
   },
   "enosh-mind": {
     text: process.env.NVIDIA_ENOSH_MIND_MODEL || process.env.NVIDIA_MODEL || "openai/gpt-oss-20b",
-    vision: process.env.NVIDIA_ENOSH_MIND_VISION_MODEL || process.env.NVIDIA_VISION_MODEL || "meta/llama-3.2-90b-vision-instruct",
+    vision: process.env.NVIDIA_ENOSH_MIND_VISION_MODEL || process.env.NVIDIA_VISION_MODEL || "meta/llama-3_2-90b-vision-instruct",
   },
 };
 
@@ -195,10 +195,25 @@ You are running in ENOSH MIND (highest intelligence) mode. Operate as a rigorous
     const modeNote = modeNotes[aiMode] || modeNotes["ex-core"];
 
     const shapedMessages = shapeMessages(messages);
+    // NVIDIA requires the optional system message to be first and the remaining
+    // conversation to alternate between user and assistant. The client sends a
+    // system message containing app context, so merge all caller system content
+    // into our single leading system message instead of forwarding consecutive
+    // system messages to the provider.
+    const callerSystemContent = shapedMessages
+      .filter((message) => message.role === "system")
+      .map((message) => (typeof message.content === "string" ? message.content.trim() : ""))
+      .filter(Boolean)
+      .join("\n\n");
+    const conversationMessages = shapedMessages.filter((message) => message.role !== "system");
+    const systemContent = [
+      SYSTEM_PROMPT + modeNote,
+      ctxStr ? `GitHub repository context:\n${ctxStr}` : "",
+      callerSystemContent,
+    ].filter(Boolean).join("\n\n");
     const chatMessages = [
-      { role: "system", content: SYSTEM_PROMPT + modeNote },
-      ...(ctxStr ? [{ role: "system", content: `GitHub repository context:\n${ctxStr}` }] : []),
-      ...shapedMessages,
+      { role: "system", content: systemContent },
+      ...conversationMessages,
     ];
 
     const hasImages = chatMessages.some((message: any) =>

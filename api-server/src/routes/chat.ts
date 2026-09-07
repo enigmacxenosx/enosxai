@@ -5,15 +5,15 @@ const chatRouter = Router();
 const MODE_MODELS: Record<string, { text: string; vision: string }> = {
   "ex-core": {
     text: process.env.NVIDIA_EX_CORE_MODEL || process.env.NVIDIA_MODEL || "openai/gpt-oss-20b",
-    vision: process.env.NVIDIA_EX_CORE_VISION_MODEL || process.env.NVIDIA_VISION_MODEL || "meta/llama-3.2-90b-vision-instruct",
+    vision: process.env.NVIDIA_EX_CORE_VISION_MODEL || process.env.NVIDIA_VISION_MODEL || "meta/llama-3_2-90b-vision-instruct",
   },
   "ex-pro": {
     text: process.env.NVIDIA_EX_PRO_MODEL || process.env.NVIDIA_MODEL || "openai/gpt-oss-20b",
-    vision: process.env.NVIDIA_EX_PRO_VISION_MODEL || process.env.NVIDIA_VISION_MODEL || "meta/llama-3.2-90b-vision-instruct",
+    vision: process.env.NVIDIA_EX_PRO_VISION_MODEL || process.env.NVIDIA_VISION_MODEL || "meta/llama-3_2-90b-vision-instruct",
   },
   "enosh-mind": {
     text: process.env.NVIDIA_ENOSH_MIND_MODEL || process.env.NVIDIA_MODEL || "openai/gpt-oss-20b",
-    vision: process.env.NVIDIA_ENOSH_MIND_VISION_MODEL || process.env.NVIDIA_VISION_MODEL || "meta/llama-3.2-90b-vision-instruct",
+    vision: process.env.NVIDIA_ENOSH_MIND_VISION_MODEL || process.env.NVIDIA_VISION_MODEL || "meta/llama-3_2-90b-vision-instruct",
   },
 };
 
@@ -142,10 +142,23 @@ You are running in ENOSH MIND (highest intelligence) mode. Operate as a rigorous
     };
     const modeNote = modeNotes[aiMode] || modeNotes["ex-core"];
 
+    // NVIDIA requires the optional system message to be first and the remaining
+    // conversation to alternate between user and assistant. Merge client-provided
+    // system context into one leading system message before sending the request.
+    const callerSystemContent = formattedMessages
+      .filter((message) => message.role === "system")
+      .map((message) => (typeof message.content === "string" ? message.content.trim() : ""))
+      .filter(Boolean)
+      .join("\n\n");
+    const conversationMessages = formattedMessages.filter((message) => message.role !== "system");
+    const systemContent = [
+      SYSTEM_PROMPT + modeNote,
+      ctxStr ? `GitHub repository context:\n${ctxStr}` : "",
+      callerSystemContent,
+    ].filter(Boolean).join("\n\n");
     const finalMessages = [
-      { role: "system", content: SYSTEM_PROMPT + modeNote },
-      ...(ctxStr ? [{ role: "system", content: `GitHub repository context:\n${ctxStr}` }] : []),
-      ...formattedMessages
+      { role: "system", content: systemContent },
+      ...conversationMessages,
     ];
 
     const modeModels = MODE_MODELS[aiMode] || MODE_MODELS["ex-core"];

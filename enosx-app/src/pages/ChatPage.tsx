@@ -52,7 +52,6 @@ import { getSystemPrompt } from "@/lib/prompts";
 import { CONNECTOR_CATALOG } from "@/lib/connectorCatalog";
 import LeadCaptureDialog from "@/components/LeadCaptureDialog";
 import AdminConsoleDialog from "@/components/AdminConsoleDialog";
-import EnosxOnboardingDialog from "@/components/EnosxOnboardingDialog";
 import ChatSplitLayout from "@/components/ChatSplitLayout";
 import { getSplitEnabled, setSplitEnabled, onSplitPrefChange, notifySplitPrefChanged } from "@/lib/splitPref";
 import { WORKSPACE_DIRECTIVES } from "@/lib/workspaceDirectives";
@@ -241,7 +240,6 @@ export default function ChatPage() {
   const [autoSpeak, setAutoSpeak] = useState(false);
   const [showGitHubPanel, setShowGitHubPanel] = useState(false);
   const [showProfilePanel, setShowProfilePanel] = useState(false);
-  const [showEnosxOnboarding, setShowEnosxOnboarding] = useState(false);
   const [showAdminConsole, setShowAdminConsole] = useState(false);
   const [showLeadCapture, setShowLeadCapture] = useState(false);
   const [showEnosxOnboarding, setShowEnosxOnboarding] = useState(false);
@@ -826,10 +824,7 @@ ${getAdminContext()}` : ""}`,
       <GlobalLayout>
         <EnosxOnboardingDialog
           isOpen={showEnosxOnboarding}
-          user={user}
-          updateProfile={updateProfile}
           onClose={() => setShowEnosxOnboarding(false)}
-          onSaved={() => toast.success("Your ENOSX space is ready")}
         />
         <TVChatLayout
           conversations={conversations}
@@ -861,10 +856,7 @@ ${getAdminContext()}` : ""}`,
       <GlobalLayout>
         <EnosxOnboardingDialog
           isOpen={showEnosxOnboarding}
-          user={user}
-          updateProfile={updateProfile}
           onClose={() => setShowEnosxOnboarding(false)}
-          onSaved={() => toast.success("Your ENOSX space is ready")}
         />
         <PhoneChatLayout
           conversations={conversations}
@@ -1168,10 +1160,7 @@ ${getAdminContext()}` : ""}`,
       {/* Floating dialogs and overlays live outside the split so they always render above it */}
       <EnosxOnboardingDialog
         isOpen={showEnosxOnboarding}
-        user={user}
-        updateProfile={updateProfile}
         onClose={() => setShowEnosxOnboarding(false)}
-        onSaved={() => toast.success("Your ENOSX space is ready")}
       />
       <GodModeSecurityBanner
         isOpen={showGodModeWarning}

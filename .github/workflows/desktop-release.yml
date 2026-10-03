@@ -54,6 +54,10 @@ jobs:
       - name: Install JavaScript dependencies
         run: pnpm install --frozen-lockfile
 
+      - name: Install desktop shell dependencies
+        working-directory: desktop-shell
+        run: pnpm install --frozen-lockfile
+
       - name: Build and upload installer
         uses: tauri-apps/tauri-action@v0
         env:

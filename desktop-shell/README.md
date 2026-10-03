@@ -19,7 +19,7 @@ Use **Tauri 2** for the packaged desktop release. It offers a small native shell
 
 The web app and desktop app share the same frontend and backend. To build locally from the repository root, run `pnpm --dir desktop-shell install` followed by `pnpm --dir desktop-shell build:installer`. Tauri writes platform-specific bundles under `desktop-shell/src-tauri/target/release/bundle/`.
 
-To publish installers automatically, create and push a version tag such as `v0.1.0`. The `Build ENOSX AI installers` GitHub Actions workflow builds Windows `.msi` and `.exe`, macOS `.dmg`, and Linux `.AppImage` and `.deb` packages, then attaches them to a draft GitHub release for review before publication. The workflow can also be started manually from the Actions tab.
+To publish installers automatically, create and push a version tag such as `v0.1.0`. The `Build ENOSX AI installers` GitHub Actions workflow builds Windows `.msi` and `.exe`, macOS `.dmg`, and Linux `.AppImage` and `.deb` packages, then attaches them to a published GitHub release. The workflow can also be started manually from the Actions tab by entering an existing version tag.
 
 ## Automatic updates
 

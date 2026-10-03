@@ -23,7 +23,7 @@ jobs:
             args: "--bundles nsis,msi"
           - platform: macos-latest
             args: "--bundles dmg"
-          - platform: ubuntu-22.04
+          - platform: ubuntu-24.04
             args: "--bundles appimage,deb"
     runs-on: ${{ matrix.platform }}
     steps:
@@ -65,6 +65,6 @@ jobs:
             - Windows: `.msi` or `.exe`
             - macOS: `.dmg`
             - Linux: `.AppImage` or `.deb`
-          releaseDraft: true
+          releaseDraft: false
           prerelease: false
           args: ${{ matrix.args }}

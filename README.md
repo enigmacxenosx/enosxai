@@ -20,6 +20,7 @@ The platform combines a Vite and React frontend with Express and Vercel API serv
 | Path | Purpose |
 |---|---|
 | `enosx-app/` | Vite and React frontend |
+| `desktop-shell/` | Tauri desktop shell and native local-model bridge |
 | `api-server/` | Main Express API server |
 | `api/` | Vercel serverless functions |
 | `lib/` | Shared schemas, clients, and utilities |
@@ -39,6 +40,14 @@ pnpm dev
 ```
 
 See the [setup guide](docs/SETUP_GUIDE.md) for the full development and deployment workflow. For a production validation of ExLover Coach, run `pnpm --filter @enosx/exlover typecheck && pnpm --filter @enosx/exlover build`.
+
+## Download the desktop app
+
+Download the latest Windows, macOS, or Linux installer from [ENOSX AI GitHub Releases](https://github.com/enigmacxenosx/enosxai/releases/latest). Version tags (`v*`) trigger the desktop installer workflow; the release includes Windows `.msi`/`.exe`, macOS `.dmg`, and Linux `.AppImage`/`.deb` packages.
+
+## Use an offline model
+
+The desktop app can run chat through [Ollama](https://ollama.com/) on your own computer. Install Ollama, download a model once (for example, `ollama pull qwen3:4b`), then open **Settings → Offline models**, discover the installed model, and enable it. Once the model is downloaded, local chat works without internet. Model weights are not bundled with the installer; when local mode is enabled, ENOSX sends chat only to the local Ollama service and does not silently fall back to the cloud. Model downloads require internet the first time.
 
 ## Configuration
 

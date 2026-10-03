@@ -6,6 +6,7 @@
 
 import { useState, useCallback } from "react";
 import { Message } from "@/lib/types";
+import { chatWithLocalModel, isDesktopShell, readLocalModelSettings } from "@/lib/localModels";
 
 type ChatOptions = {
   aiMode?: string;
@@ -70,8 +71,26 @@ export function useEnosxAI() {
       setIsThinking(true);
       const requestController = new AbortController();
       const requestTimeout = window.setTimeout(() => requestController.abort(), 50_000);
+      let usingLocalModel = false;
 
       try {
+        const localSettings = readLocalModelSettings();
+        if (isDesktopShell() && localSettings.enabled) {
+          usingLocalModel = true;
+          if (!localSettings.model.trim()) {
+            throw new Error("Local chat is enabled, but no Ollama model is selected. Open Settings → Offline models to choose one.");
+          }
+          const answer = await chatWithLocalModel(
+            localSettings.baseUrl,
+            localSettings.model,
+            messages.map(({ role, content }) => ({ role, content })),
+          );
+          if (answer) onChunk(answer);
+          else onChunk("The local model returned an empty response. Please try again.");
+          onDone();
+          return;
+        }
+
         const sendRequest = async () => {
           let userId: string | undefined;
           try {
@@ -163,7 +182,7 @@ export function useEnosxAI() {
         onDone();
       } catch (err) {
         const errorMessage = err instanceof Error ? err.message : "Unknown error";
-        const friendlyError = getFriendlyErrorMessage(errorMessage);
+        const friendlyError = usingLocalModel ? `Local model error: ${errorMessage}` : getFriendlyErrorMessage(errorMessage);
         setError(friendlyError);
         console.error("[useEnosxAI] Error:", errorMessage);
 

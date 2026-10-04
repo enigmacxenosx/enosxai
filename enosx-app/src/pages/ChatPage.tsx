@@ -881,6 +881,7 @@ ${getAdminContext()}` : ""}`,
           onToggleImageMode={handleToggleImageMode}
           isFreeMode={isFreeMode}
           onFilesSelected={handleFilesSelected}
+          onSettingsClick={() => setShowProfilePanel(true)}
         />
       </GlobalLayout>
     );

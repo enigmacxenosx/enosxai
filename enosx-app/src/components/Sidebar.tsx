@@ -3,12 +3,13 @@
  * Clean command-center sidebar with focused navigation, function shortcuts, and conversation history.
  * - EX logo toggles sidebar expand/shrink
  * - New Chat uses notepad+pen icon
- * - Settings icon removed
+ * - Settings and reusable workflows actions are available in the navigation
  * - Profile icon pinned to bottom
  * - Library (Chat History) icon
  */
 
 import { motion, AnimatePresence } from "framer-motion";
+import { useState } from "react";
 import {
   Trash2,
   MessageSquare,
@@ -19,12 +20,15 @@ import {
   NotebookPen,
   BookOpen,
   Library,
+  Settings,
+  Sparkles,
 } from "lucide-react";
 import { Conversation } from "@/lib/types";
 import { useTheme } from "@/contexts/ThemeContext";
 import BrandMark from "./BrandMark";
 import { useWallpaper } from "@/contexts/WallpaperContext";
 import { useAuth } from "@/contexts/AuthContext";
+import ReusableFeaturesDialog from "./ReusableFeaturesDialog";
 
 interface SidebarProps {
   conversations: Conversation[];
@@ -38,6 +42,7 @@ interface SidebarProps {
   onGitHubClick?: () => void;
   onProfileClick?: () => void;
   onLibraryClick?: () => void;
+  onReusableFeatureClick?: () => void;
   onScreenGuiderClick?: () => void;
   isPro?: boolean;
   isMobileOpen?: boolean;
@@ -56,11 +61,13 @@ export default function Sidebar({
   onGitHubClick,
   onProfileClick,
   onLibraryClick,
+  onReusableFeatureClick,
   onScreenGuiderClick,
   isPro = false,
   isMobileOpen = false,
   onMobileClose,
 }: SidebarProps) {
+  const [showReusableFeatures, setShowReusableFeatures] = useState(false);
   const { config } = useTheme();
   const { settings } = useWallpaper();
   const { user, isAuthenticated } = useAuth();
@@ -91,6 +98,22 @@ export default function Sidebar({
       danger: false,
     },
     {
+      label: "Reusable Workflows",
+      description: "Copy repeatable AI workflows",
+      icon: Sparkles,
+      onClick: onReusableFeatureClick || (() => setShowReusableFeatures(true)),
+      accent: false,
+      danger: false,
+    },
+    {
+      label: "Settings",
+      description: "Account and workspace preferences",
+      icon: Settings,
+      onClick: onSettingsClick || (() => {}),
+      accent: false,
+      danger: false,
+    },
+    {
       label: "About ENOSX",
       description: "Vision, stack, and founder",
       icon: Info,
@@ -101,6 +124,7 @@ export default function Sidebar({
   ];
 
   const sidebarContent = (
+    <>
     <motion.aside
       initial={false}
       animate={{ width: isMobileOpen ? 280 : collapsed ? 64 : 280 }}
@@ -286,6 +310,8 @@ export default function Sidebar({
         </motion.button>
       </div>
     </motion.aside>
+    <ReusableFeaturesDialog open={showReusableFeatures} onClose={() => setShowReusableFeatures(false)} />
+    </>
   );
 
   if (isMobileOpen) {

@@ -31,6 +31,7 @@ interface PhoneChatLayoutProps {
   onToggleImageMode?: () => void;
   isFreeMode?: boolean;
   onFilesSelected?: (files: File[]) => void;
+  onSettingsClick?: () => void;
 }
 
 export default function PhoneChatLayout({
@@ -56,6 +57,7 @@ export default function PhoneChatLayout({
   onToggleImageMode,
   isFreeMode = false,
   onFilesSelected,
+  onSettingsClick,
 }: PhoneChatLayoutProps) {
   const { config } = useTheme();
 
@@ -146,6 +148,10 @@ export default function PhoneChatLayout({
                 collapsed={false}
                 isMobileOpen={true}
                 onMobileClose={() => setIsMobileSidebarOpen(false)}
+                onSettingsClick={() => {
+                  setIsMobileSidebarOpen(false);
+                  onSettingsClick?.();
+                }}
               />
             </motion.div>
           </>

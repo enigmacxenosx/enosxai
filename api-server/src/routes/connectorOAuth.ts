@@ -3,7 +3,6 @@ import { createHash, createHmac, randomBytes, timingSafeEqual } from "node:crypt
 
 const router = Router();
 type Connector = "github" | "vercel" | "shopify" | "email";
-const pkceVerifiers = new Map<string, string>();
 
 function origin(req: Request, envName: string) {
   return process.env[envName]?.replace(/\/$/, "") || `${req.protocol}://${req.get("host")}`;
@@ -21,9 +20,9 @@ function verify(value: string, connector: Connector) {
   const signature = value.slice(separator + 1);
   const expected = createHmac("sha256", secret()).update(raw).digest("base64url");
   if (signature.length !== expected.length || !timingSafeEqual(Buffer.from(signature), Buffer.from(expected))) return null;
-  const [nonce, timestamp, stateConnector, shop = ""] = raw.split(".");
+  const [nonce, timestamp, stateConnector, shop = "", verifier = ""] = raw.split(".");
   if (!nonce || stateConnector !== connector || !Number.isFinite(Number(timestamp)) || Date.now() - Number(timestamp) > 10 * 60 * 1000 || Date.now() < Number(timestamp)) return null;
-  return { shop };
+  return { shop, verifier };
 }
 function callbackPage(connector: Connector, payload: { account?: Record<string, unknown>; error?: string }) {
   const serialized = JSON.stringify({ connector, ...payload }).replace(/</g, "\\u003c");
@@ -45,12 +44,13 @@ router.get("/connectors/:connector/oauth/start", (req, res) => {
   if (!clientId || !clientSecret || !secret()) return res.status(503).json({ error: `${connector} OAuth is not configured on the server` });
   const shop = typeof req.query.shop === "string" ? req.query.shop.toLowerCase().replace(/^https?:\/\//, "").replace(/\/$/, "") : "";
   if (connector === "shopify" && !/^[a-z0-9][a-z0-9-]+\.myshopify\.com$/.test(shop)) return res.status(400).json({ error: "A valid Shopify shop domain is required" });
-  const state = sign(`${randomBytes(24).toString("base64url")}.${Date.now()}.${connector}.${shop}`);
+  const verifier = connector === "vercel" ? randomBytes(32).toString("base64url") : "";
+  const state = sign(`${randomBytes(24).toString("base64url")}.${Date.now()}.${connector}.${shop}.${verifier}`);
   const redirectUri = `${origin(req, connector === "github" ? "GITHUB_OAUTH_REDIRECT_ORIGIN" : connector === "vercel" ? "VERCEL_OAUTH_REDIRECT_ORIGIN" : connector === "shopify" ? "SHOPIFY_OAUTH_REDIRECT_ORIGIN" : "GOOGLE_OAUTH_REDIRECT_ORIGIN")}/api/connectors/${connector}/oauth/callback`;
   const params = new URLSearchParams({ client_id: clientId, redirect_uri: redirectUri, response_type: "code", state });
   let authorizationUrl = "";
   if (connector === "github") { params.set("scope", "repo read:user user:email"); authorizationUrl = "https://github.com/login/oauth/authorize?" + params; }
-  if (connector === "vercel") { params.set("scope", "openid email profile offline_access"); const verifier = randomBytes(32).toString("base64url"); pkceVerifiers.set(state, verifier); params.set("code_challenge", createHash("sha256").update(verifier).digest("base64url")); params.set("code_challenge_method", "S256"); authorizationUrl = "https://vercel.com/oauth/authorize?" + params; }
+  if (connector === "vercel") { params.set("scope", "openid email profile offline_access"); params.set("code_challenge", createHash("sha256").update(verifier).digest("base64url")); params.set("code_challenge_method", "S256"); authorizationUrl = "https://vercel.com/oauth/authorize?" + params; }
   if (connector === "shopify") { params.set("scope", process.env.SHOPIFY_OAUTH_SCOPES || "read_products"); authorizationUrl = `https://${shop}/admin/oauth/authorize?${params}`; }
   if (connector === "email") { params.set("scope", "openid email profile"); params.set("access_type", "offline"); params.set("prompt", "consent"); authorizationUrl = "https://accounts.google.com/o/oauth2/v2/auth?" + params; }
   res.setHeader("Cache-Control", "no-store"); return res.redirect(302, authorizationUrl);
@@ -69,10 +69,9 @@ router.get("/connectors/:connector/oauth/callback", async (req, res) => {
     const code = req.query.code;
     const redirectUri = `${origin(req, connector === "github" ? "GITHUB_OAUTH_REDIRECT_ORIGIN" : connector === "vercel" ? "VERCEL_OAUTH_REDIRECT_ORIGIN" : connector === "shopify" ? "SHOPIFY_OAUTH_REDIRECT_ORIGIN" : "GOOGLE_OAUTH_REDIRECT_ORIGIN")}/api/connectors/${connector}/oauth/callback`;
     const tokenUrl = connector === "github" ? "https://github.com/login/oauth/access_token" : connector === "vercel" ? "https://api.vercel.com/login/oauth/token" : connector === "shopify" ? `https://${verified.shop}/admin/oauth/access_token` : "https://oauth2.googleapis.com/token";
-    const tokenBody: Record<string, string> = { client_id: clientId!, client_secret: clientSecret!, code, redirect_uri: redirectUri, grant_type: "authorization_code" };
-    if (connector === "vercel") tokenBody.code_verifier = pkceVerifiers.get(state) || "";
-    pkceVerifiers.delete(state);
-    const tokenResponse = await fetch(tokenUrl, { method: "POST", headers: { Accept: "application/json", "Content-Type": "application/json" }, body: JSON.stringify(tokenBody) });
+    const tokenBody = new URLSearchParams({ client_id: clientId!, client_secret: clientSecret!, code, redirect_uri: redirectUri, grant_type: "authorization_code" });
+    if (connector === "vercel") tokenBody.set("code_verifier", verified.verifier);
+    const tokenResponse = await fetch(tokenUrl, { method: "POST", headers: { Accept: "application/json", "Content-Type": "application/x-www-form-urlencoded" }, body: tokenBody });
     const token = await tokenResponse.json() as { access_token?: string; refresh_token?: string };
     if (!tokenResponse.ok || !token.access_token) throw new Error("Token exchange failed");
     const profileUrl = connector === "github" ? "https://api.github.com/user" : connector === "vercel" ? "https://api.vercel.com/login/oauth/userinfo" : connector === "email" ? "https://openidconnect.googleapis.com/v1/userinfo" : `https://${verified.shop}/admin/api/2024-10/shop.json`;

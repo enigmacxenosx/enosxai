@@ -124,6 +124,41 @@ function removeActionBlocks(content: string) {
   return content.replace(ACTION_BLOCK, "").replace(/\n{3,}/g, "\n\n").trim();
 }
 
+async function loadGitHubConnectorContext(): Promise<string> {
+  try {
+    const accounts = JSON.parse(localStorage.getItem("enosx-github-accounts") || "[]");
+    const account = Array.isArray(accounts) ? accounts[0] : null;
+    if (!account?.token) return "GitHub is selected, but no GitHub account is connected.";
+
+    const repo = JSON.parse(localStorage.getItem("enosx-github-current-repo") || "null");
+    const headers = { Authorization: `Bearer ${account.token}`, Accept: "application/vnd.github+json" };
+    const profileResponse = await fetch("https://api.github.com/user", { headers, cache: "no-store" });
+    const profile = profileResponse.ok ? await profileResponse.json() : null;
+    if (!repo?.fullName) {
+      return `Connected GitHub account: ${profile?.login || account.username || "unknown"}. No repository is selected in the GitHub workspace.`;
+    }
+
+    const [repoResponse, readmeResponse] = await Promise.all([
+      fetch(`https://api.github.com/repos/${repo.fullName}`, { headers, cache: "no-store" }),
+      fetch(`https://api.github.com/repos/${repo.fullName}/readme?ref=${encodeURIComponent(repo.branch || repo.defaultBranch || "HEAD")}`, { headers, cache: "no-store" }),
+    ]);
+    const repository = repoResponse.ok ? await repoResponse.json() : repo;
+    const readme = readmeResponse.ok ? await readmeResponse.json() : null;
+    const readmeText = readme?.encoding === "base64" && readme.content
+      ? atob(String(readme.content).replace(/\n/g, ""))
+      : "";
+    return [
+      `Connected GitHub account: ${profile?.login || account.username || "unknown"}`,
+      `Selected repository: ${repository.full_name || repo.fullName}`,
+      `Default branch: ${repository.default_branch || repo.defaultBranch || repo.branch || "unknown"}`,
+      repository.description ? `Description: ${repository.description}` : "",
+      readmeText ? `README:\n${readmeText.slice(0, 12000)}` : "",
+    ].filter(Boolean).join("\n");
+  } catch {
+    return "GitHub was selected, but its repository context could not be loaded. Do not claim that GitHub content was inspected.";
+  }
+}
+
 function extractLiveCodePreview(content: string): { language: ScriptLanguage; name: string; content: string } | null {
   const matches = [...content.matchAll(/```([a-zA-Z0-9+#_-]*)\s*\n([\s\S]*?)(?:```|$)/g)];
   const latest = matches.at(-1);
@@ -556,7 +591,7 @@ export default function ChatPage() {
       // prompt may contribute runtime context.
       const githubSelected = (selectedConnectorIds ?? []).includes("github");
       const githubContext = githubSelected
-        ? await (window as any).__getGitHubContext?.()
+        ? await loadGitHubConnectorContext()
         : "";
       const connectorContext = selectedConnectorNames.length
         ? `### Selected Connectors\nThe user selected these connector services for this chat: ${selectedConnectorNames.join(", ")}. Treat them as requested context. Use a connector only when its capability is actually available to the runtime; if it is not connected, state that clearly instead of claiming an external action was completed.`

@@ -766,6 +766,8 @@
     animation: auth-shell-pulse 5s ease-in-out infinite;
   }
   .auth-neon-shell > * { position: relative; z-index: 1; }
+  .auth-onboarding-card { transition: transform 180ms ease-out; transform-style: preserve-3d; }
+  .auth-onboarding-preview-orb { position: absolute; right: 14%; top: 18%; width: 58px; height: 58px; border-radius: 999px; background: radial-gradient(circle at 30% 25%, rgba(255,255,255,.9), rgba(79,220,255,.75) 24%, rgba(92,52,255,.45) 62%, transparent 72%); filter: blur(.2px); box-shadow: 0 0 28px rgba(50,219,255,.42); animation: auth-orb-float-c 5.5s ease-in-out infinite; pointer-events: none; }
   .auth-live-stage { transform-style: preserve-3d; }
   .auth-form-layout { background: linear-gradient(155deg, rgba(29,32,48,0.96), rgba(7,8,16,0.98)); }
   .auth-hero-visual { position: relative; height: 158px; margin: -20px -18px 2px; overflow: hidden; border-bottom: 1px solid rgba(255,255,255,.12); background: radial-gradient(circle at 18% 80%, rgba(21,226,255,.36), transparent 34%), radial-gradient(circle at 82% 20%, rgba(244,75,255,.36), transparent 32%), linear-gradient(135deg, rgba(12,19,49,.98), rgba(20,7,49,.95)); box-shadow: inset 0 -35px 45px rgba(5,6,20,.35); }

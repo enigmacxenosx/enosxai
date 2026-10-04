@@ -28,8 +28,8 @@ interface MessageBubbleProps {
 // ── Image URL detection regex ───────────────────────────────────────────────────
 // Matches markdown image syntax: ![alt](url)
 // Also matches raw URLs that look like image URLs
-const IMAGE_URL_REGEX = /\!\[([^\]]*)\]\((https?:\/\/[^\s)]+\.(?:png|jpg|jpeg|gif|webp|svg)(?:\?[^\)]*)?)\)/gi;
-const RAW_IMAGE_URL_REGEX = /https?:\/\/[^\s)]+\.(?:png|jpg|jpeg|gif|webp|svg)(?:\?[^\)]*)?/gi;
+const IMAGE_URL_REGEX = /\!\[([^\]]*)\]\(((?:https?:\/\/|data:image\/)[^\s)]+)\)/gi;
+const RAW_IMAGE_URL_REGEX = /(?:https?:\/\/[^\s)]+\.(?:png|jpg|jpeg|gif|webp|svg)(?:\?[^\)]*)?|data:image\/[a-z0-9.+-]+;base64,[a-z0-9+/=]+)/gi;
 
 interface ParsedImage {
   url: string;

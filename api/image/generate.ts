@@ -1,12 +1,13 @@
 /**
  * ENOSX AI — /api/image/generate (Vercel Serverless Function)
- * Generates images through NVIDIA Visual Generative AI NIM using its
- * OpenAI-compatible image-generation endpoint. Credentials remain server-side.
+ * Generates images through OpenRouter's unified image API. Credentials remain
+ * server-side and the browser receives a self-contained data URL, so generated
+ * images continue to work after a chat is reloaded from localStorage.
  *
  * Environment variables (server-side only):
- *   - NVIDIA_API_KEY (required)
- *   - NVIDIA_IMAGE_MODEL (optional; defaults to qwen-image)
- *   - NVIDIA_API_BASE_URL (optional; defaults to https://integrate.api.nvidia.com/v1)
+ *   - OPENROUTER_API_KEY (required)
+ *   - OPENROUTER_IMAGE_MODEL (optional; defaults to bytedance-seed/seedream-4.5)
+ *   - OPENROUTER_API_BASE_URL (optional; defaults to https://openrouter.ai/api/v1)
  *
  * Request body (JSON):
  *   { prompt: string }
@@ -17,7 +18,7 @@
  */
 import type { VercelRequest, VercelResponse } from "@vercel/node";
 
-const DEFAULT_MODEL = "qwen-image";
+const DEFAULT_MODEL = "bytedance-seed/seedream-4.5";
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   res.setHeader("Access-Control-Allow-Origin", "*");
@@ -34,11 +35,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(405).json({ error: "Method not allowed", status: "METHOD_NOT_ALLOWED" });
   }
 
-  const apiKey = process.env.NVIDIA_API_KEY?.trim();
+  const apiKey = process.env.OPENROUTER_API_KEY?.trim();
   if (!apiKey) {
-    console.error("[IMAGE] NVIDIA_API_KEY is not configured.");
+    console.error("[IMAGE] OPENROUTER_API_KEY is not configured.");
     return res.status(503).json({
-      error: "NVIDIA_API_KEY is not configured on the server",
+      error: "OPENROUTER_API_KEY is not configured on the server",
       status: "CONFIGURATION_ERROR",
     });
   }
@@ -62,11 +63,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     });
   }
 
-  const baseUrl = (process.env.NVIDIA_API_BASE_URL || "https://integrate.api.nvidia.com/v1").replace(/\/$/, "");
-  const model = process.env.NVIDIA_IMAGE_MODEL?.trim() || DEFAULT_MODEL;
-  const imageUrl = `${baseUrl}/images/generations`;
+  const baseUrl = (process.env.OPENROUTER_API_BASE_URL || "https://openrouter.ai/api/v1").replace(/\/$/, "");
+  const model = process.env.OPENROUTER_IMAGE_MODEL?.trim() || DEFAULT_MODEL;
+  const imageUrl = `${baseUrl}/images`;
 
-  console.log("[IMAGE] Generating with NVIDIA model", model, "and prompt length", prompt.length);
+  console.log("[IMAGE] Generating with OpenRouter model", model, "and prompt length", prompt.length);
 
   try {
     const response = await fetch(imageUrl, {
@@ -74,32 +75,37 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       headers: {
         "Content-Type": "application/json",
         Authorization: `Bearer ${apiKey}`,
+        "HTTP-Referer": process.env.PUBLIC_APP_URL || "https://enosx.ai",
+        "X-Title": "ENOSX AI",
       },
       body: JSON.stringify({
         model,
         prompt,
         n: 1,
-        response_format: "b64_json",
+        output_format: "png",
       }),
     });
 
     if (!response.ok) {
       const errorText = await response.text().catch(() => "Unknown error");
-      console.error("[IMAGE] NVIDIA API error:", response.status, errorText);
+      console.error("[IMAGE] OpenRouter API error:", response.status, errorText);
       return res.status(response.status >= 500 ? 502 : response.status).json({
-        error: "NVIDIA image generation failed",
+        error: "OpenRouter image generation failed",
         status: "UPSTREAM_ERROR",
       });
     }
 
     const data = (await response.json().catch(() => null)) as any;
     const imageData = data?.data?.[0];
-    const url = imageData?.url || (imageData?.b64_json ? `data:image/png;base64,${imageData.b64_json}` : "");
+    const mediaType = typeof imageData?.media_type === "string" && imageData.media_type.startsWith("image/")
+      ? imageData.media_type
+      : "image/png";
+    const url = imageData?.url || (imageData?.b64_json ? `data:${mediaType};base64,${imageData.b64_json}` : "");
 
     if (!url || (!url.startsWith("http://") && !url.startsWith("https://") && !url.startsWith("data:image/"))) {
-      console.error("[IMAGE] NVIDIA response did not contain a supported image payload:", data);
+      console.error("[IMAGE] OpenRouter response did not contain a supported image payload:", data);
       return res.status(502).json({
-        error: "NVIDIA image generation returned no usable image",
+        error: "OpenRouter image generation returned no usable image",
         status: "GENERATION_FAILED",
       });
     }
@@ -107,11 +113,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(200).json({
       url,
       revised_prompt: imageData?.revised_prompt,
+      media_type: mediaType,
     });
   } catch (error) {
-    console.error("[IMAGE] NVIDIA request failed:", error);
+    console.error("[IMAGE] OpenRouter request failed:", error);
     return res.status(502).json({
-      error: "NVIDIA image generation service is unavailable",
+      error: "OpenRouter image generation service is unavailable",
       status: "UPSTREAM_ERROR",
     });
   }

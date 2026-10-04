@@ -20,13 +20,29 @@ export default function ImageDisplay({ src, alt = "Generated image", caption }: 
   const [isExpanded, setIsExpanded] = useState(false);
   const [isLoaded, setIsLoaded] = useState(false);
 
-  const handleDownload = () => {
-    const a = document.createElement("a");
-    a.href = src;
-    a.download = `enosx-image-${Date.now()}.png`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
+  const handleDownload = async () => {
+    try {
+      const response = await fetch(src);
+      if (!response.ok) throw new Error("Image download failed");
+      const blobUrl = URL.createObjectURL(await response.blob());
+      const a = document.createElement("a");
+      a.href = blobUrl;
+      a.download = `enosx-image-${Date.now()}.png`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(blobUrl);
+    } catch {
+      // Data URLs and providers that disallow CORS can still be opened directly.
+      const a = document.createElement("a");
+      a.href = src;
+      a.target = "_blank";
+      a.rel = "noreferrer";
+      a.download = `enosx-image-${Date.now()}.png`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+    }
   };
 
   return (

@@ -81,15 +81,39 @@ function trimMessageContent(content: unknown) {
   });
 }
 
+const IMAGE_URL_PATTERN = /(?:!\[[^\]]*\]\()?((?:https?:\/\/)[^\s)\]>]+?\.(?:png|jpe?g|gif|webp|svg|bmp|avif)(?:[?#][^\s)\]>]*)?)(?:\))?/gi;
+function extractImageUrls(text: string) {
+  const urls: string[] = [];
+  IMAGE_URL_PATTERN.lastIndex = 0;
+  let match: RegExpExecArray | null;
+  while ((match = IMAGE_URL_PATTERN.exec(text)) !== null && urls.length < 4) {
+    try {
+      const url = new URL(match[1]);
+      if ((url.protocol === "http:" || url.protocol === "https:") && !url.username && !url.password && !urls.includes(url.toString())) {
+        urls.push(url.toString());
+      }
+    } catch {
+      // Ignore malformed URLs and let the model receive the original text.
+    }
+  }
+  return urls;
+}
+
 function shapeMessages(messages: any[]) {
   const valid = messages
     .filter((message) => message && ["system", "user", "assistant"].includes(message.role))
     .map((message) => {
-      if (message.role !== "user" || !Array.isArray(message.attachments) || message.attachments.length === 0) {
+      if (message.role !== "user") {
         return { role: message.role, content: trimMessageContent(message.content) };
       }
-      const parts: any[] = [{ type: "text", text: typeof message.content === "string" ? message.content : "" }];
-      for (const attachment of message.attachments.slice(0, 10)) {
+      const text = typeof message.content === "string" ? message.content : "";
+      const attachments = Array.isArray(message.attachments) ? message.attachments : [];
+      const imageUrls = extractImageUrls(text);
+      if (attachments.length === 0 && imageUrls.length === 0) {
+        return { role: message.role, content: trimMessageContent(message.content) };
+      }
+      const parts: any[] = [{ type: "text", text }];
+      for (const attachment of attachments.slice(0, 10)) {
         const mime = String(attachment.mimeType || "").toLowerCase();
         const isImage = mime.startsWith("image/");
         const frames = Array.isArray(attachment.analysisFrames) ? attachment.analysisFrames : [];
@@ -101,6 +125,9 @@ function shapeMessages(messages: any[]) {
             parts.push({ type: "image_url", image_url: { url: frame } });
           }
         }
+      }
+      for (const url of imageUrls) {
+        parts.push({ type: "image_url", image_url: { url, detail: "auto" } });
       }
       return { role: message.role, content: parts };
     })

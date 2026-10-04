@@ -17,6 +17,24 @@ const MODE_MODELS: Record<string, { text: string; vision: string }> = {
   },
 };
 
+const IMAGE_URL_PATTERN = /(?:!\[[^\]]*\]\()?((?:https?:\/\/)[^\s)\]>]+?\.(?:png|jpe?g|gif|webp|svg|bmp|avif)(?:[?#][^\s)\]>]*)?)(?:\))?/gi;
+function extractImageUrls(text: string) {
+  const urls: string[] = [];
+  IMAGE_URL_PATTERN.lastIndex = 0;
+  let match: RegExpExecArray | null;
+  while ((match = IMAGE_URL_PATTERN.exec(text)) !== null && urls.length < 4) {
+    try {
+      const url = new URL(match[1]);
+      if ((url.protocol === "http:" || url.protocol === "https:") && !url.username && !url.password && !urls.includes(url.toString())) {
+        urls.push(url.toString());
+      }
+    } catch {
+      // Ignore malformed URLs and keep the original text.
+    }
+  }
+  return urls;
+}
+
 const SYSTEM_PROMPT = `You are enosx ai (EX), an advanced multimodal AI assistant developed by Enosx Technologies. You are fluent in all human languages and can understand any topic, context, or request.
 
 Your Identity:
@@ -87,6 +105,7 @@ chatRouter.post("/chat", async (req: Request, res: Response) => {
     // Check for images to decide which model to use.
     let hasImages = false;
     const formattedMessages = messages.map((m: any) => {
+      const messageText = typeof m.content === "string" ? m.content : "";
       if (Array.isArray(m.content)) {
         if (m.content.some((part: any) => part?.type === "image_url")) {
           hasImages = true;
@@ -109,7 +128,7 @@ chatRouter.post("/chat", async (req: Request, res: Response) => {
           return {
             role: m.role,
             content: [
-              { type: "text", text: m.content },
+              { type: "text", text: messageText },
               ...images.map((img: any) => ({
                 type: "image_url",
                 image_url: {
@@ -119,14 +138,29 @@ chatRouter.post("/chat", async (req: Request, res: Response) => {
               ...frames.slice(0, 4).map((frame: string) => ({
                 type: "image_url",
                 image_url: { url: frame },
-              }))
+              })),
+              ...extractImageUrls(messageText).map((url) => ({
+                type: "image_url",
+                image_url: { url, detail: "auto" },
+              })),
             ]
           };
         }
       }
+      const imageUrls = m.role === "user" ? extractImageUrls(messageText) : [];
+      if (imageUrls.length > 0) {
+        hasImages = true;
+        return {
+          role: m.role,
+          content: [
+            { type: "text", text: messageText },
+            ...imageUrls.map((url) => ({ type: "image_url", image_url: { url, detail: "auto" } })),
+          ],
+        };
+      }
       return {
         role: m.role,
-        content: m.content,
+        content: messageText,
       };
     });
 

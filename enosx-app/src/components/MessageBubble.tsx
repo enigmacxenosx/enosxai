@@ -54,6 +54,16 @@ function extractImagesFromText(text: string): ParsedImage[] {
     });
   }
 
+  RAW_IMAGE_URL_REGEX.lastIndex = 0;
+  while ((match = RAW_IMAGE_URL_REGEX.exec(text)) !== null) {
+    const insideMarkdown = images.some((image) => match!.index >= image.position && match!.index < image.position + image.length);
+    const url = match[0].replace(/[.,!?;:]+$/, "");
+    if (!insideMarkdown && !images.some((image) => image.url === url)) {
+      images.push({ url, alt: "Internet image", position: match.index, length: match[0].length });
+    }
+  }
+  images.sort((a, b) => a.position - b.position);
+
   return images;
 }
 
@@ -335,12 +345,12 @@ export default function MessageBubble({
                       {message.attachments.map((att) => <MediaAttachment key={att.id} attachment={att} />)}
                     </div>
                   )}
-                  <p
+                  <div
                     className="text-sm leading-relaxed"
                     style={{ color: config.text }}
                   >
-                    {message.content}
-                  </p>
+                    {renderContentWithImages(message.content, config.accent)}
+                  </div>
                 </div>
               ) : (
                 <div className="flex flex-col gap-3">

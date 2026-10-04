@@ -56,7 +56,7 @@ jobs:
 
       - name: Install desktop shell dependencies
         working-directory: desktop-shell
-        run: pnpm install --frozen-lockfile
+        run: pnpm install --frozen-lockfile --ignore-workspace
 
       - name: Build and upload installer
         uses: tauri-apps/tauri-action@v0

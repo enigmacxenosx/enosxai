@@ -84,7 +84,26 @@ function trimMessageContent(content: unknown) {
 function shapeMessages(messages: any[]) {
   const valid = messages
     .filter((message) => message && ["system", "user", "assistant"].includes(message.role))
-    .map((message) => ({ role: message.role, content: trimMessageContent(message.content) }))
+    .map((message) => {
+      if (message.role !== "user" || !Array.isArray(message.attachments) || message.attachments.length === 0) {
+        return { role: message.role, content: trimMessageContent(message.content) };
+      }
+      const parts: any[] = [{ type: "text", text: typeof message.content === "string" ? message.content : "" }];
+      for (const attachment of message.attachments.slice(0, 10)) {
+        const mime = String(attachment.mimeType || "").toLowerCase();
+        const isImage = mime.startsWith("image/");
+        const frames = Array.isArray(attachment.analysisFrames) ? attachment.analysisFrames : [];
+        if (isImage && typeof attachment.content === "string" && attachment.content.startsWith("data:image/")) {
+          parts.push({ type: "image_url", image_url: { url: attachment.content } });
+        }
+        for (const frame of frames.slice(0, 4)) {
+          if (typeof frame === "string" && frame.startsWith("data:image/")) {
+            parts.push({ type: "image_url", image_url: { url: frame } });
+          }
+        }
+      }
+      return { role: message.role, content: parts };
+    })
     .filter((message) => (typeof message.content === "string" ? message.content.trim().length > 0 : Array.isArray(message.content) && message.content.length > 0));
   if (valid.length <= MAX_HISTORY_MESSAGES) return valid;
   // Keep all caller-supplied system instructions, then the most recent turns.

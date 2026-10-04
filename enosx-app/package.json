@@ -17,7 +17,9 @@
     "clsx": "catalog:",
     "framer-motion": "catalog:",
     "lucide-react": "catalog:",
+    "mammoth": "^1.13.0",
     "nanoid": "^5.0.9",
+    "pdfjs-dist": "^6.3.289",
     "react": "catalog:",
     "react-dom": "catalog:",
     "simple-icons": "16.28.0",
@@ -27,7 +29,8 @@
     "workbox-core": "^7.4.1",
     "workbox-precaching": "^7.4.1",
     "workbox-window": "^7.4.1",
-    "wouter": "^3.6.0"
+    "wouter": "^3.6.0",
+    "xlsx": "^0.18.5"
   },
   "devDependencies": {
     "@radix-ui/react-accordion": "^1.2.12",

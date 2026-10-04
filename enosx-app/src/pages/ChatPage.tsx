@@ -35,6 +35,7 @@ import { useSystemActions } from "@/hooks/useSystemActions";
 import { useContextAwareMessages } from "@/hooks/useContextAwareMessages";
 import { useActiveWindow } from "@/contexts/WindowContext";
 import { useFileContext } from "@/hooks/useFileContext";
+import { analyzeFile } from "@/lib/fileAnalysis";
 import { useClipboardListener } from "@/hooks/useClipboardListener";
 import { useGodMode } from "@/hooks/useGodMode";
 import { useMemoryBank } from "@/hooks/useMemoryBank";
@@ -343,33 +344,22 @@ export default function ChatPage() {
         return;
       }
 
-      // ENOSX accepts any file type. Text is sent as readable context; binary files
-      // are kept as data URLs so images, music, video, and unknown formats can be
-      // previewed or downloaded in the conversation.
+      // Analyze media in the browser before sending: images go to NVIDIA vision,
+      // videos become representative frames, and common documents become text.
       const extension = file.name.split(".").pop()?.toLowerCase() || "";
-      const isText = file.type.startsWith("text/") || [
-        "txt", "md", "json", "js", "ts", "tsx", "jsx", "py", "java", "c", "cpp", "xml", "html", "css", "sql", "yaml", "yml", "csv"
-      ].includes(extension);
-      const maxSize = 25 * 1024 * 1024;
+      const isVideo = file.type.startsWith("video/") || ["mp4", "webm", "mov", "m4v", "avi", "mkv"].includes(extension);
+      const maxSize = isVideo ? 100 * 1024 * 1024 : 25 * 1024 * 1024;
       if (file.size > maxSize) {
         toast.error("File too large (maximum 25MB per file)");
         return;
       }
       try {
-        let content = "";
-        if (isText) {
-          content = await file.text();
-        } else {
-          content = await new Promise((resolve, reject) => {
-            const reader = new FileReader();
-            reader.onload = () => resolve(reader.result as string);
-            reader.onerror = reject;
-            reader.readAsDataURL(file);
-          });
-        }
-        loadFile(file, content);
+        const analyzed = await analyzeFile(file);
+        loadFile(file, analyzed.content, analyzed);
+        toast.success(`${file.name} is ready for ENOSX analysis`);
       } catch (error) {
-        toast.error("Failed to read file");
+        console.error("[ChatPage] File analysis failed", error);
+        toast.error(`Could not analyze ${file.name}. Try a smaller or supported file.`);
       }
     },
     [fileContext.files.length, loadFile]

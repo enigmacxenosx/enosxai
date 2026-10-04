@@ -384,7 +384,7 @@ export default function CommandBar({
 
               {/* Action buttons */}
               <div className="flex items-center gap-1.5 flex-shrink-0">
-                <input ref={fileInputRef} type="file" multiple className="hidden" onChange={handleFilePickerChange} />
+                <input ref={fileInputRef} type="file" multiple accept="image/*,video/*,.pdf,.docx,.xlsx,.xls,.txt,.md,.csv,.json,.js,.ts,.tsx,.jsx,.py,.html,.css,.xml,.yaml,.yml" className="hidden" onChange={handleFilePickerChange} />
                 {onFilesSelected && (
                   <motion.button
                     whileHover={{ scale: 1.08 }}

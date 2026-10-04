@@ -98,12 +98,13 @@ chatRouter.post("/chat", async (req: Request, res: Response) => {
       }
 
       if (m.attachments && Array.isArray(m.attachments)) {
-        const images = m.attachments.filter((a: any) => 
-          ["image/jpeg", "image/png", "image/gif", "image/webp"].includes(a.type?.toLowerCase()) || 
+        const images = m.attachments.filter((a: any) =>
+          String(a.mimeType || a.type || "").toLowerCase().startsWith("image/") ||
           a.name?.match(/\.(jpg|jpeg|png|gif|webp)$/i)
         );
-        
-        if (images.length > 0) {
+        const frames = m.attachments.flatMap((a: any) => Array.isArray(a.analysisFrames) ? a.analysisFrames : []);
+
+        if (images.length > 0 || frames.length > 0) {
           hasImages = true;
           return {
             role: m.role,
@@ -114,6 +115,10 @@ chatRouter.post("/chat", async (req: Request, res: Response) => {
                 image_url: {
                   url: img.content.startsWith("data:") ? img.content : `data:${img.type};base64,${img.content}`
                 }
+              })),
+              ...frames.slice(0, 4).map((frame: string) => ({
+                type: "image_url",
+                image_url: { url: frame },
               }))
             ]
           };

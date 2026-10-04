@@ -13,7 +13,7 @@ export function useFileContext() {
     isLoaded: false,
   });
 
-  const loadFile = useCallback((file: File, content: string) => {
+  const loadFile = useCallback((file: File, content: string, analysis?: { analysisContent?: string; analysisFrames?: string[] }) => {
     setFileContext((prev) => {
       if (prev.files.length >= 10) return prev;
 
@@ -25,6 +25,8 @@ export function useFileContext() {
         mimeType: file.type || undefined,
         size: file.size,
         content,
+        analysisContent: analysis?.analysisContent,
+        analysisFrames: analysis?.analysisFrames,
       };
 
       const newFiles = [...prev.files, newAttachment];
@@ -58,11 +60,11 @@ export function useFileContext() {
       if (isImage) {
         message += `\n- Image: ${file.name} (${file.mimeType || file.type}, ${sizeInKB}KB) [Image content is attached to the message]`;
       } else if (isPlayable) {
-        message += `\n- Playable media: ${file.name} (${file.mimeType || file.type}, ${sizeInKB}KB) [Media is attached for playback]`;
+        message += `\n- Media: ${file.name} (${file.mimeType || file.type}, ${sizeInKB}KB) [ENOSX sampled the media for analysis]${file.analysisContent ? `\n${file.analysisContent}` : ""}`;
       } else if (isText) {
         message += `\n- File: ${file.name} (${file.mimeType || file.type}, ${sizeInKB}KB)\n\`\`\`${file.type}\n${file.content}\n\`\`\``;
       } else {
-        message += `\n- File: ${file.name} (${file.mimeType || "unknown type"}, ${sizeInKB}KB) [Binary file attached; use the file preview or download action]`;
+        message += `\n- Document: ${file.name} (${file.mimeType || "unknown type"}, ${sizeInKB}KB)${file.analysisContent ? `\n${file.analysisContent}` : " [No extractable text was found]"}`;
       }
     });
 

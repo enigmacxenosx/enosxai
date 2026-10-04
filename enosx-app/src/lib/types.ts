@@ -5,6 +5,8 @@ export interface Attachment {
   size: number;
   content: string; // Data URL for binary files, text for text files
   mimeType?: string; // Original browser MIME type, when available
+  analysisContent?: string; // Browser-extracted document text or media description
+  analysisFrames?: string[]; // Representative video frames sent to the vision model
   url?: string;
 }
 

@@ -67,6 +67,19 @@ function extractImagesFromText(text: string): ParsedImage[] {
   return images;
 }
 
+/** Image links proposed by the assistant should be previews, not link-only actions. */
+function isImageUrl(value?: string): value is string {
+  if (!value) return false;
+  if (value.startsWith("data:image/")) return true;
+
+  try {
+    const url = new URL(value);
+    return /\.(?:png|jpe?g|gif|webp|svg|avif|bmp|ico)$/i.test(url.pathname);
+  } catch {
+    return false;
+  }
+}
+
 // Split text by image placeholders, rendering images between text segments
 function renderContentWithImages(text: string, accentColor: string) {
   const images = extractImagesFromText(text);
@@ -391,15 +404,23 @@ export default function MessageBubble({
                                 ? `Launch ${action.app || "app"}`
                                 : "Review interaction";
                         const Icon = isLink ? ExternalLink : readOnly ? (action.type === "extract_links" ? ListTree : FileSearch) : ShieldCheck;
+                        const imageUrl = isLink && action.url && isImageUrl(action.url) ? action.url : undefined;
                         return (
-                          <button
-                            key={`${action.type}-${actionIndex}`}
-                            onClick={() => void handleProposedAction(action)}
-                            className="flex min-h-11 items-center justify-between gap-3 rounded-lg border border-white/10 bg-black/20 px-3 py-2 text-left text-xs text-white/90 transition-colors hover:bg-white/10"
-                          >
-                            <span className="min-w-0 truncate">{label}{action.url ? ` · ${action.url}` : ""}</span>
-                            <Icon size={15} className="shrink-0 text-cyan-300" />
-                          </button>
+                          <div key={`${action.type}-${actionIndex}`} className="flex flex-col gap-2">
+                            {imageUrl && (
+                              <ImageDisplay
+                                src={imageUrl}
+                                alt="Image shared by ENOSX AI"
+                              />
+                            )}
+                            <button
+                              onClick={() => void handleProposedAction(action)}
+                              className="flex min-h-11 items-center justify-between gap-3 rounded-lg border border-white/10 bg-black/20 px-3 py-2 text-left text-xs text-white/90 transition-colors hover:bg-white/10"
+                            >
+                              <span className="min-w-0 truncate">{imageUrl ? "Open image in a new tab" : label}{action.url ? ` · ${action.url}` : ""}</span>
+                              <Icon size={15} className="shrink-0 text-cyan-300" />
+                            </button>
+                          </div>
                         );
                       })}
                       {actionStatus && <p className="text-[11px] leading-relaxed text-cyan-100/70">{actionStatus}</p>}

@@ -5,7 +5,8 @@
  * generated images remain downloadable after a chat is reloaded.
  *
  * Server-only environment variables:
- *   - NVIDIA_API_KEY (required)
+ *   - NVIDIA_IMAGE_API_KEY (required for image generation; falls back to NVIDIA_API_KEY)
+ *   - NVIDIA_API_KEY (legacy/shared fallback)
  *   - NVIDIA_IMAGE_ENDPOINT (required)
  *   - NVIDIA_IMAGE_MODEL (optional)
  *
@@ -77,7 +78,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(405).json({ error: "Method not allowed", status: "METHOD_NOT_ALLOWED" });
   }
 
-  const apiKey = process.env.NVIDIA_API_KEY?.trim();
+  const apiKey = (process.env.NVIDIA_IMAGE_API_KEY || process.env.NVIDIA_API_KEY)?.trim();
   const endpoint = process.env.NVIDIA_IMAGE_ENDPOINT?.trim();
   if (!apiKey || !endpoint) {
     console.error("[IMAGE] NVIDIA image credentials are not configured.");

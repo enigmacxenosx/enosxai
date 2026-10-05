@@ -13,6 +13,7 @@ import { Message } from "@/lib/types";
 import { useTheme } from "@/contexts/ThemeContext";
 import { useWallpaper } from "@/contexts/WallpaperContext";
 import ImageDisplay from "./ImageDisplay";
+import VideoDisplay from "./VideoDisplay";
 import MediaAttachment from "./MediaAttachment";
 
 interface MessageBubbleProps {
@@ -25,129 +26,123 @@ interface MessageBubbleProps {
   onExecuteProposedAction?: (action: NonNullable<Message["proposedActions"]>[number]) => void;
 }
 
-// ── Image URL detection regex ───────────────────────────────────────────────────
-// Matches markdown image syntax: ![alt](url)
-// Also matches raw URLs that look like image URLs
-const IMAGE_URL_REGEX = /\!\[([^\]]*)\]\(((?:https?:\/\/|data:image\/)[^\s)]+)\)/gi;
-const RAW_IMAGE_URL_REGEX = /(?:https?:\/\/[^\s)]+\.(?:png|jpg|jpeg|gif|webp|svg)(?:\?[^\)]*)?|data:image\/[a-z0-9.+-]+;base64,[a-z0-9+/=]+)/gi;
+// ── Safe internet media detection ──────────────────────────────────────────────
+// Markdown image/link URLs and direct public media URLs are rendered inline.
+const MARKDOWN_MEDIA_URL_REGEX = /(!?)\[([^\]]*)\]\(((?:https?:\/\/|data:image\/)[^\s)]+)\)/gi;
+const RAW_MEDIA_URL_REGEX = /(?:https?:\/\/[^\s<>"'\])}]+|data:image\/[a-z0-9.+-]+;base64,[a-z0-9+/=]+)/gi;
+const VIDEO_EXTENSIONS = new Set(["mp4", "m4v", "webm", "ogv", "mov"]);
+const IMAGE_EXTENSIONS = new Set(["jpg", "jpeg", "png", "gif", "webp", "svg", "bmp", "avif", "tif", "tiff"]);
+const IMAGE_HOSTS = new Set([
+  "images.unsplash.com", "i.imgur.com", "i.redd.it", "preview.redd.it",
+  "media.giphy.com", "images.giphy.com", "media.tenor.com", "images.pexels.com",
+  "cdn.pixabay.com", "lh3.googleusercontent.com", "pbs.twimg.com", "upload.wikimedia.org",
+  "raw.githubusercontent.com", "cdn.discordapp.com", "images.ctfassets.net",
+  "res.cloudinary.com", "images.prismic.io", "imagedelivery.net",
+]);
 
-interface ParsedImage {
-  url: string;
+type MediaKind = "image" | "video" | "embed";
+interface ParsedMedia {
+  type: MediaKind;
+  src: string;
+  openUrl: string;
   alt: string;
   position: number;
   length: number;
 }
 
-function extractImagesFromText(text: string): ParsedImage[] {
-  const images: ParsedImage[] = [];
+function isHostOrSubdomain(hostname: string, domain: string) {
+  return hostname === domain || hostname.endsWith("." + domain);
+}
+
+function resolveMediaUrl(value: string, explicitImage = false, explicitVideo = false): Pick<ParsedMedia, "type" | "src" | "openUrl"> | null {
+  if (/^data:image\//i.test(value)) return { type: "image", src: value, openUrl: value };
+
+  let url: URL;
+  try {
+    url = new URL(value);
+  } catch {
+    return null;
+  }
+  if ((url.protocol !== "https:" && url.protocol !== "http:") || url.username || url.password) return null;
+
+  const hostname = url.hostname.toLowerCase();
+  const openUrl = url.toString();
+  const youtubeHost = isHostOrSubdomain(hostname, "youtube.com") || isHostOrSubdomain(hostname, "youtube-nocookie.com") || hostname === "youtu.be";
+  if (youtubeHost) {
+    let videoId = "";
+    if (hostname === "youtu.be") {
+      videoId = url.pathname.split("/").filter(Boolean)[0] || "";
+    } else if (url.pathname === "/watch") {
+      videoId = url.searchParams.get("v") || "";
+    } else {
+      videoId = url.pathname.match(/^\/(?:embed|shorts|live)\/([a-zA-Z0-9_-]{11})(?:\/|$)/)?.[1] || "";
+    }
+    if (/^[a-zA-Z0-9_-]{11}$/.test(videoId)) {
+      return { type: "embed", src: "https://www.youtube-nocookie.com/embed/" + videoId, openUrl };
+    }
+  }
+
+  if (isHostOrSubdomain(hostname, "vimeo.com")) {
+    const videoId = url.pathname.match(/(?:^|\/)(?:video\/)?([0-9]{6,})(?:\/|$)/)?.[1];
+    if (videoId) return { type: "embed", src: "https://player.vimeo.com/video/" + videoId, openUrl };
+  }
+
+  const extension = url.pathname.match(/\.([a-z0-9]+)$/i)?.[1]?.toLowerCase() || "";
+  const contentHint = [url.searchParams.get("mime"), url.searchParams.get("type"), url.searchParams.get("format"), url.searchParams.get("fm")]
+    .filter(Boolean).join(" ").toLowerCase();
+  const hintedVideo = /video\//.test(contentHint) || /\b(mp4|m4v|webm|ogv|mov)\b/.test(contentHint);
+  if (VIDEO_EXTENSIONS.has(extension) || hintedVideo || explicitVideo) {
+    return { type: "video", src: openUrl, openUrl };
+  }
+
+  const hintedImage = /image\//.test(contentHint) || /\b(jpg|jpeg|png|gif|webp|svg|bmp|avif|tif|tiff)\b/.test(contentHint);
+  const isKnownImageHost = Array.from(IMAGE_HOSTS).some((domain) => isHostOrSubdomain(hostname, domain));
+  if (IMAGE_EXTENSIONS.has(extension) || hintedImage || isKnownImageHost || explicitImage) {
+    return { type: "image", src: openUrl, openUrl };
+  }
+  return null;
+}
+
+function isImageUrl(value?: string): value is string {
+  return Boolean(value && resolveMediaUrl(value)?.type === "image");
+}
+
+function extractMediaFromText(text: string): ParsedMedia[] {
+  const media: ParsedMedia[] = [];
+  const markdownRanges: Array<{ start: number; end: number }> = [];
   let match: RegExpExecArray | null;
 
-  // Reset regex lastIndex
-  IMAGE_URL_REGEX.lastIndex = 0;
-
-  while ((match = IMAGE_URL_REGEX.exec(text)) !== null) {
-    images.push({
-      url: match[2],
-      alt: match[1] || "Generated image",
-      position: match.index,
-      length: match[0].length,
-    });
-  }
-
-  RAW_IMAGE_URL_REGEX.lastIndex = 0;
-  while ((match = RAW_IMAGE_URL_REGEX.exec(text)) !== null) {
-    const insideMarkdown = images.some((image) => match!.index >= image.position && match!.index < image.position + image.length);
-    const url = match[0].replace(/[.,!?;:]+$/, "");
-    if (!insideMarkdown && !images.some((image) => image.url === url)) {
-      images.push({ url, alt: "Internet image", position: match.index, length: match[0].length });
-    }
-  }
-  images.sort((a, b) => a.position - b.position);
-
-  return images;
-}
-
-/** Image links proposed by the assistant should be previews, not link-only actions. */
-function isImageUrl(value?: string): value is string {
-  if (!value) return false;
-  if (value.startsWith("data:image/")) return true;
-
-  try {
-    const url = new URL(value);
-    return /\.(?:png|jpe?g|gif|webp|svg|avif|bmp|ico)$/i.test(url.pathname);
-  } catch {
-    return false;
-  }
-}
-
-// Split text by image placeholders, rendering images between text segments
-function renderContentWithImages(text: string, accentColor: string) {
-  const images = extractImagesFromText(text);
-
-  if (images.length === 0) {
-    // No images — render as normal markdown
-    return (
-      <div
-        className="prose-crimson text-sm"
-        dangerouslySetInnerHTML={{ __html: renderMarkdown(text) }}
-      />
-    );
-  }
-
-  // Split text into segments around images
-  const segments: Array<{ type: "text"; content: string } | { type: "image"; url: string; alt: string }> = [];
-  let lastEnd = 0;
-
-  for (const img of images) {
-    if (img.position > lastEnd) {
-      const textBefore = text.slice(lastEnd, img.position);
-      if (textBefore.trim()) {
-        segments.push({ type: "text", content: textBefore });
-      }
-    }
-    segments.push({ type: "image", url: img.url, alt: img.alt });
-    lastEnd = img.position + img.length;
-  }
-
-  // Remaining text after last image
-  if (lastEnd < text.length) {
-    const remaining = text.slice(lastEnd);
-    if (remaining.trim()) {
-      segments.push({ type: "text", content: remaining });
+  MARKDOWN_MEDIA_URL_REGEX.lastIndex = 0;
+  while ((match = MARKDOWN_MEDIA_URL_REGEX.exec(text)) !== null) {
+    markdownRanges.push({ start: match.index, end: match.index + match[0].length });
+    const alt = match[2] || "";
+    const resolved = resolveMediaUrl(match[3], match[1] === "!", /\b(video|watch|clip|movie)\b/i.test(alt));
+    if (resolved) {
+      media.push({ ...resolved, alt: alt || (resolved.type === "image" ? "Internet image" : "Internet video"), position: match.index, length: match[0].length });
     }
   }
 
-  // Render segments
-  return (
-    <div className="flex flex-col gap-2">
-      {segments.map((segment, i) => {
-        if (segment.type === "text") {
-          return (
-            <div
-              key={i}
-              className="prose-crimson text-sm"
-              dangerouslySetInnerHTML={{ __html: renderMarkdown(segment.content) }}
-            />
-          );
-        } else {
-          return (
-            <ImageDisplay
-              key={i}
-              src={segment.url}
-              alt={segment.alt}
-            />
-          );
-        }
-      })}
-    </div>
-  );
+  RAW_MEDIA_URL_REGEX.lastIndex = 0;
+  while ((match = RAW_MEDIA_URL_REGEX.exec(text)) !== null) {
+    if (markdownRanges.some((range) => match!.index >= range.start && match!.index < range.end)) continue;
+    const source = match[0].replace(/[.,!?;:]+$/, "");
+    const resolved = resolveMediaUrl(source);
+    if (resolved && !media.some((item) => item.position === match!.index)) {
+      media.push({ ...resolved, alt: resolved.type === "image" ? "Internet image" : "Internet video", position: match.index, length: source.length });
+    }
+  }
+
+  return media.sort((a, b) => a.position - b.position);
 }
 
-// Simple markdown renderer — handles bold, italic, code, headers, lists, links
+function escapeHtml(value: string): string {
+  return value.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/\"/g, "&quot;").replace(/'/g, "&#39;");
+}
+
 function renderMarkdown(text: string): string {
-  return text
-    .replace(/```([\s\S]*?)```/g, '<pre><code>$1</code></pre>')
-    .replace(/`([^`]+)`/g, '<code>$1</code>')
+  return escapeHtml(text)
+    .replace(/[\x60]{3}([\s\S]*?)[\x60]{3}/g, '<pre><code>$1</code></pre>')
+    .replace(/[\x60]([^\x60]+)[\x60]/g, '<code>$1</code>')
     .replace(/^### (.+)$/gm, '<h3>$1</h3>')
     .replace(/^## (.+)$/gm, '<h2>$1</h2>')
     .replace(/^# (.+)$/gm, '<h1>$1</h1>')
@@ -156,7 +151,43 @@ function renderMarkdown(text: string): string {
     .replace(/^[-*] (.+)$/gm, '<li>$1</li>')
     .replace(/(<li>[\s\S]*?<\/li>)/g, '<ul>$1</ul>')
     .replace(/\n\n/g, '</p><p>')
-    .replace(/^(?!<[hupol]|<pre|<code)(.+)$/gm, (m) => m.startsWith('<') ? m : `<p>${m}</p>`);
+    .replace(/^(?!<[hupol]|<pre|<code)(.+)$/gm, (match) => match.startsWith('<') ? match : '<p>' + match + '</p>');
+}
+
+function renderContentWithMedia(text: string, _accentColor: string) {
+  const media = extractMediaFromText(text);
+  if (media.length === 0) {
+    return <div className="prose-crimson text-sm" dangerouslySetInnerHTML={{ __html: renderMarkdown(text) }} />;
+  }
+
+  const segments: Array<{ type: "text"; content: string } | { type: "media"; item: ParsedMedia }> = [];
+  let lastEnd = 0;
+  for (const item of media) {
+    if (item.position > lastEnd) {
+      const before = text.slice(lastEnd, item.position);
+      if (before.trim()) segments.push({ type: "text", content: before });
+    }
+    segments.push({ type: "media", item });
+    lastEnd = item.position + item.length;
+  }
+  if (lastEnd < text.length) {
+    const remaining = text.slice(lastEnd);
+    if (remaining.trim()) segments.push({ type: "text", content: remaining });
+  }
+
+  return (
+    <div className="flex flex-col gap-2">
+      {segments.map((segment, index) => {
+        if (segment.type === "text") {
+          return <div key={index} className="prose-crimson text-sm" dangerouslySetInnerHTML={{ __html: renderMarkdown(segment.content) }} />;
+        }
+        if (segment.item.type === "image") {
+          return <ImageDisplay key={index} src={segment.item.src} alt={segment.item.alt} />;
+        }
+        return <VideoDisplay key={index} src={segment.item.src} openUrl={segment.item.openUrl} title={segment.item.alt} embedded={segment.item.type === "embed"} />;
+      })}
+    </div>
+  );
 }
 
 // Typing cursor component
@@ -372,7 +403,7 @@ export default function MessageBubble({
                     className="text-sm leading-relaxed"
                     style={{ color: config.text }}
                   >
-                    {renderContentWithImages(message.content, config.accent)}
+                    {renderContentWithMedia(message.content, config.accent)}
                   </div>
                 </div>
               ) : (
@@ -384,7 +415,7 @@ export default function MessageBubble({
                     </div>
                   )}
                   {/* Assistant content with inline image support */}
-                  {renderContentWithImages(message.content, config.accent)}
+                  {renderContentWithMedia(message.content, config.accent)}
                   {message.proposedActions && message.proposedActions.length > 0 && (
                     <div className="flex flex-col gap-2 rounded-xl border border-cyan-300/20 bg-cyan-400/[0.06] p-3">
                       <div className="flex items-center gap-2 text-xs font-semibold tracking-wide text-cyan-100">
@@ -404,6 +435,7 @@ export default function MessageBubble({
                                 ? `Launch ${action.app || "app"}`
                                 : "Review interaction";
                         const Icon = isLink ? ExternalLink : readOnly ? (action.type === "extract_links" ? ListTree : FileSearch) : ShieldCheck;
+                        const videoMedia = isLink && action.url ? resolveMediaUrl(action.url) : null;
                         const imageUrl = isLink && action.url && isImageUrl(action.url) ? action.url : undefined;
                         return (
                           <div key={`${action.type}-${actionIndex}`} className="flex flex-col gap-2">
@@ -413,11 +445,19 @@ export default function MessageBubble({
                                 alt="Image shared by ENOSX AI"
                               />
                             )}
+                            {videoMedia && videoMedia.type !== "image" && (
+                              <VideoDisplay
+                                src={videoMedia.src}
+                                openUrl={videoMedia.openUrl}
+                                title="Video shared by ENOSX AI"
+                                embedded={videoMedia.type === "embed"}
+                              />
+                            )}
                             <button
                               onClick={() => void handleProposedAction(action)}
                               className="flex min-h-11 items-center justify-between gap-3 rounded-lg border border-white/10 bg-black/20 px-3 py-2 text-left text-xs text-white/90 transition-colors hover:bg-white/10"
                             >
-                              <span className="min-w-0 truncate">{imageUrl ? "Open image in a new tab" : label}{action.url ? ` · ${action.url}` : ""}</span>
+                              <span className="min-w-0 truncate">{imageUrl ? "Open image in a new tab" : videoMedia ? "Open video in a new tab" : label}{action.url ? ` · ${action.url}` : ""}</span>
                               <Icon size={15} className="shrink-0 text-cyan-300" />
                             </button>
                           </div>

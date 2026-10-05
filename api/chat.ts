@@ -54,6 +54,11 @@ Current ENOSX AI product updates (September 2026):
 - Workspace mode supports proposed actions for opening supported applications, opening URLs, chaining actions, creating scripts, and running scripts. Python scripts run in the browser runtime; shell and batch scripts are simulations. Explain an action before proposing or running it, and never claim to have changed the user's real device unless the client confirms execution.
 - Treat the current repository implementation and verified runtime behavior as the source of truth. Do not claim unsupported features, background access, unrestricted operating-system control, or permanent memory.
 
+Online media formatting:
+- When a public image URL is supplied in the conversation or provided context, show it with Markdown image syntax in the form ![short description](https://...). Preserve the exact URL.
+- For a public video URL, preserve the exact URL and put it on its own line or use a concise Markdown link. Direct video files and supported YouTube or Vimeo links can render inline.
+- Never invent a media URL or claim to have searched the web when no search result or URL is available.
+
 System Actions & Command Chaining:
 You have the ability to open browser tabs and launch Windows applications. You can chain multiple actions together for complex workflows.
 
@@ -90,24 +95,48 @@ function trimMessageContent(content: unknown) {
   });
 }
 
-const IMAGE_URL_PATTERN = /(?:!\[[^\]]*\]\()?((?:https?:\/\/)[^\s)\]>]+?\.(?:png|jpe?g|gif|webp|svg|bmp|avif)(?:[?#][^\s)\]>]*)?)(?:\))?/gi;
+const MARKDOWN_IMAGE_URL_PATTERN = /!\[[^\]]*\]\((https?:\/\/[^)\s]+)\)/gi;
+const RAW_IMAGE_CANDIDATE_PATTERN = /https?:\/\/[^\s<>"')\]]+/gi;
+const IMAGE_FILE_EXTENSION_PATTERN = /\.(?:jpe?g|png|gif|webp|svg|bmp|avif|tiff?)$/i;
+const IMAGE_URL_HOSTS = new Set([
+  "images.unsplash.com", "i.imgur.com", "i.redd.it", "preview.redd.it",
+  "media.giphy.com", "images.giphy.com", "media.tenor.com", "images.pexels.com",
+  "cdn.pixabay.com", "lh3.googleusercontent.com", "pbs.twimg.com", "upload.wikimedia.org",
+  "raw.githubusercontent.com", "cdn.discordapp.com", "images.ctfassets.net",
+  "res.cloudinary.com", "images.prismic.io", "imagedelivery.net",
+]);
+
 function extractImageUrls(text: string) {
   const urls: string[] = [];
-  IMAGE_URL_PATTERN.lastIndex = 0;
-  let match: RegExpExecArray | null;
-  while ((match = IMAGE_URL_PATTERN.exec(text)) !== null && urls.length < 4) {
+  const addIfImage = (candidate: string, explicitMarkdownImage = false) => {
     try {
-      const url = new URL(match[1]);
-      if ((url.protocol === "http:" || url.protocol === "https:") && !url.username && !url.password && !urls.includes(url.toString())) {
-        urls.push(url.toString());
-      }
+      const url = new URL(candidate);
+      if ((url.protocol !== "http:" && url.protocol !== "https:") || url.username || url.password) return;
+      const hostname = url.hostname.toLowerCase();
+      const knownHost = Array.from(IMAGE_URL_HOSTS).some((domain) => hostname === domain || hostname.endsWith("." + domain));
+      const format = [url.searchParams.get("format"), url.searchParams.get("fm"), url.searchParams.get("type"), url.searchParams.get("mime")]
+        .filter(Boolean).join(" ");
+      const imageHint = /image\//i.test(format) || /\b(jpg|jpeg|png|gif|webp|svg|bmp|avif|tif|tiff)\b/i.test(format);
+      if (!explicitMarkdownImage && !IMAGE_FILE_EXTENSION_PATTERN.test(url.pathname) && !imageHint && !knownHost) return;
+      const normalized = url.toString();
+      if (!urls.includes(normalized) && urls.length < 4) urls.push(normalized);
     } catch {
-      // Ignore malformed URLs and let the model receive the original text.
+      // Ignore malformed URLs and keep the original text.
     }
+  };
+
+  MARKDOWN_IMAGE_URL_PATTERN.lastIndex = 0;
+  let match: RegExpExecArray | null;
+  while ((match = MARKDOWN_IMAGE_URL_PATTERN.exec(text)) !== null && urls.length < 4) {
+    addIfImage(match[1], true);
+  }
+
+  RAW_IMAGE_CANDIDATE_PATTERN.lastIndex = 0;
+  while ((match = RAW_IMAGE_CANDIDATE_PATTERN.exec(text)) !== null && urls.length < 4) {
+    addIfImage(match[0].replace(/[.,!?;:]+$/, ""));
   }
   return urls;
 }
-
 function shapeMessages(messages: any[]) {
   const valid = messages
     .filter((message) => message && ["system", "user", "assistant"].includes(message.role))

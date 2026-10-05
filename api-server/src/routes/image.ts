@@ -33,15 +33,20 @@ imageRouter.post("/image/generate", async (req: Request, res: Response) => {
     }
 
     const configuredEndpoint = process.env.NVIDIA_IMAGE_ENDPOINT?.trim();
-    const baseUrl = (process.env.NVIDIA_API_BASE_URL || "https://integrate.api.nvidia.com/v1").replace(/\/$/, "");
-    const endpoint = configuredEndpoint || `${baseUrl}/images/generations`;
-    const model = process.env.NVIDIA_IMAGE_MODEL?.trim();
+    const model = process.env.NVIDIA_IMAGE_MODEL?.trim() || "FLUX.1-schnell";
+    const configuredIsBuilderPage = configuredEndpoint?.includes("build.nvidia.com");
+    const endpoint = configuredIsBuilderPage || !configuredEndpoint
+      ? `https://ai.api.nvidia.com/v1/genai/black-forest-labs/flux.1-schnell`
+      : configuredEndpoint;
     const payload: Record<string, unknown> = {
       prompt: trimmedPrompt,
-      n: 1,
-      response_format: "b64_json",
+      height: 1024,
+      width: 1024,
+      seed: 0,
+      steps: 4,
+      samples: 1,
     };
-    if (model) payload.model = model;
+    if (!configuredIsBuilderPage && model) payload.model = model;
 
     const response = await fetch(endpoint, {
       method: "POST",
@@ -64,8 +69,9 @@ imageRouter.post("/image/generate", async (req: Request, res: Response) => {
     }
 
     const data = (await response.json().catch(() => null)) as any;
-    const imageData = data?.data?.[0];
-    const url = imageData?.url || (imageData?.b64_json ? `data:image/png;base64,${imageData.b64_json}` : "");
+    const imageData = data?.data?.[0] || data?.artifacts?.[0];
+    const base64 = imageData?.b64_json || imageData?.base64 || imageData?.base64_data;
+    const url = imageData?.url || (base64 ? `data:image/png;base64,${base64}` : "");
     if (!url) {
       res.status(502).json({
         error: "NVIDIA image generation returned no usable image",

@@ -374,7 +374,10 @@ export default function MessageBubble({
           }}
         >
           {isEmpty ? (
-            <ThinkingDots color={config.accent} />
+            <div className="flex flex-col gap-1">
+              <ThinkingDots color={config.accent} />
+              {message.reasoningStatus && <span className="pl-1 text-[10px] tracking-wide text-white/45">{message.reasoningStatus} · private reasoning stays hidden</span>}
+            </div>
           ) : (
             <div className="relative">
               {isUser ? (
@@ -401,6 +404,7 @@ export default function MessageBubble({
                     </div>
                   )}
                   {/* Assistant content with inline image support */}
+                  {message.reasoningStatus && isStreaming && <span className="text-[10px] tracking-wide text-white/45">{message.reasoningStatus}</span>}
                   {renderContentWithMedia(message.content, config.accent)}
                   {message.proposedActions && message.proposedActions.length > 0 && (
                     <div className="flex flex-col gap-2 rounded-xl border border-cyan-300/20 bg-cyan-400/[0.06] p-3">

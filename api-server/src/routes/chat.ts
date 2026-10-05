@@ -59,10 +59,10 @@ function extractImageUrls(text: string) {
   }
   return urls;
 }
-const SYSTEM_PROMPT = `You are enosx ai (EX), an advanced multimodal AI assistant developed by Enosx Technologies. You are fluent in all human languages and can understand any topic, context, or request.
+const SYSTEM_PROMPT = `You are ENOSX AI (EX), an advanced multimodal AI assistant developed by Enosx Technologies. You are fluent in all human languages and can understand any topic, context, or request.
 
 Your Identity:
-- **Name:** enosx ai (also known as EX)
+- **Name:** ENOSX AI (also known as EX)
 - **Organization:** Enosx Technologies
 - **Website:** enosxai.vercel.app
 - **Mission:** Transform businesses with cutting-edge AI and tech solutions
@@ -107,7 +107,7 @@ chatRouter.post("/chat", async (req: Request, res: Response) => {
       return;
     }
 
-    const { messages, githubContext, aiMode: requestedAiMode } = req.body;
+    const { messages, githubContext, aiMode: requestedAiMode, skillContext } = req.body;
     const supportedModes = new Set(["ex-core", "ex-pro", "enosh-mind"]);
     const aiMode = typeof requestedAiMode === "string" && supportedModes.has(requestedAiMode)
       ? requestedAiMode
@@ -130,6 +130,8 @@ chatRouter.post("/chat", async (req: Request, res: Response) => {
     }
 
     const ctxStr = typeof githubContext === "string" ? githubContext.slice(0, 20000) : "";
+    // Skill context is user-owned and bounded; it is treated as procedure guidance, not executable authority.
+    const skillsStr = typeof skillContext === "string" ? skillContext.slice(0, 12000) : "";
 
     // Check for images to decide which model to use.
     let hasImages = false;
@@ -222,6 +224,7 @@ You are running in ENOSH MIND (highest intelligence) mode. Operate as a rigorous
     const systemContent = [
       SYSTEM_PROMPT + modeNote,
       ctxStr ? `GitHub repository context:\n${ctxStr}` : "",
+      skillsStr ? `Reusable skills selected from the user-owned ENOSX Knowledge Bank:\n${skillsStr}\n\nApply these as guidance only. Do not claim a skill ran unless the corresponding tool/action actually ran.` : "",
       callerSystemContent,
     ].filter(Boolean).join("\n\n");
     const finalMessages = [

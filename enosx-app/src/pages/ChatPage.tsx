@@ -379,7 +379,7 @@ export default function ChatPage() {
   const { enrichMessageWithContext } = useContextAwareMessages();
   const { fileContext, getFileContextMessage, clearFiles, loadFile, removeFile } = useFileContext();
   const { getMemoryContext, addMemory } = useMemoryBank();
-  const { getKnowledgeContext, addEntry } = useKnowledgeBank();
+  const { getSkillContext, getKnowledgeContext, addEntry } = useKnowledgeBank();
   const { parseActions } = useSystemActions();
 
   const handleFileUpload = useCallback(
@@ -642,6 +642,7 @@ export default function ChatPage() {
       // AI to emit [[ACTION: ...]] blocks so its coding runs live in the pane.
       const workspaceDirectives = chatSplitEnabled && deviceType === "desktop" ? `\n\n${WORKSPACE_DIRECTIVES}` : "";
       const memoryContext = getMemoryContext(userMessage.content);
+      const skillContext = getSkillContext(userMessage.content);
       const knowledgeContext = getKnowledgeContext(userMessage.content);
       const leadershipInfo = identity.leadership.map(l => `- ${l.name}: ${l.role} (${l.specialty})`).join('\n');
       const companyFacts = identity.companyFacts.map(fact => `- ${fact}`).join('\n');
@@ -706,6 +707,9 @@ ${getAdminContext()}` : ""}`,
       enrichedMessages = enrichMessageWithContext(enrichedMessages, activeWindow);
 
       let streamedContent = "";
+      const updateReasoningStatus = (status: string) => {
+        setConversations((prev) => prev.map((c) => c.id === targetConvId ? { ...c, messages: c.messages.map((m) => m.id === assistantId ? { ...m, reasoningStatus: status, isStreaming: status !== "Answer ready" } : m) } : c));
+      };
       let pendingRenderChunk = "";
       let renderFrameQueued = false;
       const flushStreamToChat = () => {
@@ -812,7 +816,7 @@ ${getAdminContext()}` : ""}`,
                     ...conversation,
                     messages: conversation.messages.map((message) =>
                       message.id === assistantId
-                        ? { ...message, content: cleanContent, proposedActions: proposedActions.length ? proposedActions : undefined }
+                        ? { ...message, content: cleanContent, isStreaming: false, proposedActions: proposedActions.length ? proposedActions : undefined }
                         : message,
                     ),
                   }
@@ -829,7 +833,8 @@ ${getAdminContext()}` : ""}`,
             }
           }
         },
-        { githubContext, aiMode, attachments: userMessage.attachments }
+        { githubContext, aiMode, skillContext, attachments: userMessage.attachments },
+        updateReasoningStatus
       );
 
       return removeActionBlocks(streamedContent) || "ENOSX Core returned an empty response.";
@@ -838,7 +843,7 @@ ${getAdminContext()}` : ""}`,
         sendingRef.current = false;
       }
     },
-    [sendMessage, speak, autoSpeak, fileContext.isLoaded, getFileContextMessage, getMemoryContext, getKnowledgeContext, addMemory, addEntry, enrichMessageWithContext, activeWindow, clearFiles, parseActions, speechSettings.continuousConversation, scheduleListenAgain, createScript, updateScript, deleteScript]
+    [sendMessage, speak, autoSpeak, fileContext.isLoaded, getFileContextMessage, getMemoryContext, getSkillContext, getKnowledgeContext, addMemory, addEntry, enrichMessageWithContext, activeWindow, clearFiles, parseActions, speechSettings.continuousConversation, scheduleListenAgain, createScript, updateScript, deleteScript]
   );
 
   const createNewChat = useCallback(() => {

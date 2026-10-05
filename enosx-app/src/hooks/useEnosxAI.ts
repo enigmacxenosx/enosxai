@@ -11,6 +11,7 @@ import { chatWithLocalModel, isDesktopShell, readLocalModelSettings } from "@/li
 type ChatOptions = {
   aiMode?: string;
   githubContext?: string;
+  skillContext?: string;
   attachments?: Attachment[];
 };
 
@@ -65,11 +66,13 @@ export function useEnosxAI() {
       onChunk: (chunk: string) => void,
       onDone: () => void,
       options?: ChatOptions,
+      onReasoningStatus?: (status: string) => void,
     ) => {
       setIsLoading(true);
       setError(null);
       // Surface a friendly in-message indicator while the AI is processing.
       setIsThinking(true);
+      onReasoningStatus?.("Analyzing request");
       const requestController = new AbortController();
       const requestTimeout = window.setTimeout(() => requestController.abort(), 50_000);
       let usingLocalModel = false;
@@ -108,6 +111,7 @@ export function useEnosxAI() {
             body: JSON.stringify({
               messages,
               githubContext: options?.githubContext,
+              skillContext: options?.skillContext,
               aiMode: options?.aiMode,
               attachments: options?.attachments,
               userId,
@@ -130,6 +134,8 @@ export function useEnosxAI() {
         let buffer = "";
         let sawContent = false;
         let streamError: string | null = null;
+        let sawReasoning = false;
+        let sawAnswer = false;
 
         const processEvent = (event: string) => {
           for (const line of event.split("\n")) {
@@ -140,7 +146,7 @@ export function useEnosxAI() {
 
             try {
               const parsed = JSON.parse(data) as {
-                choices?: Array<{ delta?: { content?: string } }>;
+                choices?: Array<{ delta?: { content?: string; reasoning_content?: string; reasoning?: string } }>;
                 error?: { message?: string };
               };
 
@@ -149,9 +155,19 @@ export function useEnosxAI() {
                 continue;
               }
 
-              const content = parsed.choices?.[0]?.delta?.content;
+              const delta = parsed.choices?.[0]?.delta;
+              const reasoning = delta?.reasoning_content || delta?.reasoning;
+              if (reasoning && !sawReasoning) {
+                sawReasoning = true;
+                onReasoningStatus?.("Analyzing request");
+              }
+              const content = delta?.content;
               if (content) {
                 sawContent = true;
+                if (!sawAnswer) {
+                  sawAnswer = true;
+                  onReasoningStatus?.("Drafting answer");
+                }
                 onChunk(content);
               }
             } catch {
@@ -172,6 +188,8 @@ export function useEnosxAI() {
 
         buffer += decoder.decode();
         if (buffer.trim()) processEvent(buffer);
+
+        onReasoningStatus?.(sawContent ? "Answer ready" : "Preparing response");
 
         if (streamError) {
           throw new Error(streamError);

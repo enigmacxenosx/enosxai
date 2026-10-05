@@ -317,20 +317,30 @@ export default function MessageBubble({
         damping: 30,
         delay: Math.min(index * 0.04, 0.3),
       }}
-      className={`flex gap-3 ${isUser ? "flex-row-reverse" : "flex-row"}`}
+      className={`flex min-w-0 gap-3 ${isUser ? "flex-row-reverse" : "flex-row"}`}
     >
       {/* Bubble */}
-      <div className={`flex flex-col gap-1 max-w-[90%] ${isUser ? "items-end" : "items-start"}`}>
+      <div className={`flex min-w-0 max-w-[90%] flex-col gap-1 ${isUser ? "items-end" : "items-start"}`}>
         <motion.div
           whileHover={{ scale: 1.005 }}
           transition={{ type: "spring", stiffness: 400, damping: 30 }}
           className={`relative transition-all duration-300 ${!isUser && (isEmpty || isStreaming) ? 'rainbow-glow' : ''}`}
           style={{
-            background: "transparent",
-            border: "none",
-            boxShadow: "none",
-            backdropFilter: "none",
-            WebkitBackdropFilter: "none",
+            background: isUser
+              ? `linear-gradient(135deg, rgba(${config.accentRgb}, 0.2), rgba(${config.accentRgb}, 0.1))`
+              : "rgba(16, 18, 28, 0.78)",
+            border: isUser
+              ? `1px solid rgba(${config.accentRgb}, 0.4)`
+              : "1px solid rgba(255, 255, 255, 0.14)",
+            borderRadius: isUser ? "18px 5px 18px 18px" : "5px 18px 18px 18px",
+            boxShadow: isUser
+              ? `0 8px 24px rgba(${config.accentRgb}, 0.12)`
+              : "0 8px 24px rgba(0, 0, 0, 0.22)",
+            padding: isEmpty ? "8px 12px" : "12px 14px",
+            maxWidth: "100%",
+            overflowWrap: "anywhere",
+            backdropFilter: "blur(12px)",
+            WebkitBackdropFilter: "blur(12px)",
           }}
         >
           {isEmpty ? (

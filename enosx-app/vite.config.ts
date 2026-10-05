@@ -24,11 +24,11 @@ if (process.env.NODE_ENV !== "production" && process.env.REPL_ID !== undefined) 
     // eslint-disable-next-line @typescript-eslint/no-require-imports
     const { cartographer } = require("@replit/vite-plugin-cartographer");
     // eslint-disable-next-line @typescript-eslint/no-require-imports
-    const { devBanner } = require("@replit/vite-plugin-dev-banner");
+    // const { devBanner } = require("@replit/vite-plugin-dev-banner");
     replitPlugins = [
       runtimeErrorOverlay(),
       cartographer({ root: projectRoot }),
-      devBanner(),
+      // devBanner(),
     ];
   } catch {
     // Replit plugins not available outside Replit

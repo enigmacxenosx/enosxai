@@ -439,6 +439,9 @@
     color: #e8e8e8;
     line-height: 1.65;
     font-size: 14px;
+    max-width: 100%;
+    overflow-wrap: anywhere;
+    word-break: break-word;
   }
   .prose-crimson h1,
   .prose-crimson h2,

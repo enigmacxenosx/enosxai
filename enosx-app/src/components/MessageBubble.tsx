@@ -1,7 +1,7 @@
 /*
  * ENOSX AI — MessageBubble
  * Animated message bubbles with streaming text, markdown, voice playback,
- * and inline image/video previews for public URLs and attachments.
+ * and inline image display for both user attachments and AI-generated images.
  * Features: fade-in spring, streaming cursor, copy, speak, glassmorphism,
  * document download, image lightbox.
  */
@@ -101,6 +101,10 @@ function resolveMediaUrl(value: string, explicitImage = false, explicitVideo = f
     return { type: "image", src: openUrl, openUrl };
   }
   return null;
+}
+
+function isImageUrl(value?: string): value is string {
+  return Boolean(value && resolveMediaUrl(value)?.type === "image");
 }
 
 function extractMediaFromText(text: string): ParsedMedia[] {
@@ -357,20 +361,30 @@ export default function MessageBubble({
         damping: 30,
         delay: Math.min(index * 0.04, 0.3),
       }}
-      className={`flex gap-3 ${isUser ? "flex-row-reverse" : "flex-row"}`}
+      className={`flex min-w-0 gap-3 ${isUser ? "flex-row-reverse" : "flex-row"}`}
     >
       {/* Bubble */}
-      <div className={`flex flex-col gap-1 max-w-[90%] ${isUser ? "items-end" : "items-start"}`}>
+      <div className={`flex min-w-0 max-w-[90%] flex-col gap-1 ${isUser ? "items-end" : "items-start"}`}>
         <motion.div
           whileHover={{ scale: 1.005 }}
           transition={{ type: "spring", stiffness: 400, damping: 30 }}
           className={`relative transition-all duration-300 ${!isUser && (isEmpty || isStreaming) ? 'rainbow-glow' : ''}`}
           style={{
-            background: "transparent",
-            border: "none",
-            boxShadow: "none",
-            backdropFilter: "none",
-            WebkitBackdropFilter: "none",
+            background: isUser
+              ? `linear-gradient(135deg, rgba(${config.accentRgb}, 0.2), rgba(${config.accentRgb}, 0.1))`
+              : "rgba(16, 18, 28, 0.78)",
+            border: isUser
+              ? `1px solid rgba(${config.accentRgb}, 0.4)`
+              : "1px solid rgba(255, 255, 255, 0.14)",
+            borderRadius: isUser ? "18px 5px 18px 18px" : "5px 18px 18px 18px",
+            boxShadow: isUser
+              ? `0 8px 24px rgba(${config.accentRgb}, 0.12)`
+              : "0 8px 24px rgba(0, 0, 0, 0.22)",
+            padding: isEmpty ? "8px 12px" : "12px 14px",
+            maxWidth: "100%",
+            overflowWrap: "anywhere",
+            backdropFilter: "blur(12px)",
+            WebkitBackdropFilter: "blur(12px)",
           }}
         >
           {isEmpty ? (
@@ -421,15 +435,32 @@ export default function MessageBubble({
                                 ? `Launch ${action.app || "app"}`
                                 : "Review interaction";
                         const Icon = isLink ? ExternalLink : readOnly ? (action.type === "extract_links" ? ListTree : FileSearch) : ShieldCheck;
+                        const videoMedia = isLink && action.url ? resolveMediaUrl(action.url) : null;
+                        const imageUrl = isLink && action.url && isImageUrl(action.url) ? action.url : undefined;
                         return (
-                          <button
-                            key={`${action.type}-${actionIndex}`}
-                            onClick={() => void handleProposedAction(action)}
-                            className="flex min-h-11 items-center justify-between gap-3 rounded-lg border border-white/10 bg-black/20 px-3 py-2 text-left text-xs text-white/90 transition-colors hover:bg-white/10"
-                          >
-                            <span className="min-w-0 truncate">{label}{action.url ? ` · ${action.url}` : ""}</span>
-                            <Icon size={15} className="shrink-0 text-cyan-300" />
-                          </button>
+                          <div key={`${action.type}-${actionIndex}`} className="flex flex-col gap-2">
+                            {imageUrl && (
+                              <ImageDisplay
+                                src={imageUrl}
+                                alt="Image shared by ENOSX AI"
+                              />
+                            )}
+                            {videoMedia && videoMedia.type !== "image" && (
+                              <VideoDisplay
+                                src={videoMedia.src}
+                                openUrl={videoMedia.openUrl}
+                                title="Video shared by ENOSX AI"
+                                embedded={videoMedia.type === "embed"}
+                              />
+                            )}
+                            <button
+                              onClick={() => void handleProposedAction(action)}
+                              className="flex min-h-11 items-center justify-between gap-3 rounded-lg border border-white/10 bg-black/20 px-3 py-2 text-left text-xs text-white/90 transition-colors hover:bg-white/10"
+                            >
+                              <span className="min-w-0 truncate">{imageUrl ? "Open image in a new tab" : videoMedia ? "Open video in a new tab" : label}{action.url ? ` · ${action.url}` : ""}</span>
+                              <Icon size={15} className="shrink-0 text-cyan-300" />
+                            </button>
+                          </div>
                         );
                       })}
                       {actionStatus && <p className="text-[11px] leading-relaxed text-cyan-100/70">{actionStatus}</p>}

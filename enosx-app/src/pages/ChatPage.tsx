@@ -11,6 +11,7 @@ import { toast } from "sonner";
 import Sidebar from "@/components/Sidebar";
 import MessageBubble from "@/components/MessageBubble";
 import CommandBar, { type AIMode } from "@/components/CommandBar";
+import AppAwareSuggestions from "@/components/AppAwareSuggestions";
 import WelcomeScreen from "@/components/WelcomeScreen";
 import ConversationSearchDialog from "@/components/ConversationSearchDialog";
 import FileDropZone from "@/components/FileDropZone";
@@ -806,7 +807,7 @@ ${getAdminContext()}` : ""}`,
             }
           }
         },
-        { githubContext, aiMode }
+        { githubContext, aiMode, attachments: userMessage.attachments }
       );
 
       return removeActionBlocks(streamedContent) || "ENOSX Core returned an empty response.";
@@ -1188,6 +1189,8 @@ ${getAdminContext()}` : ""}`,
               onRemove={removeFile}
               onClear={clearFiles}
             />
+
+            <AppAwareSuggestions onSuggestionClick={(suggestion) => void handleSendTracked(suggestion, activeMode)} />
 
             <CommandBar
               onSend={handleSendTracked}

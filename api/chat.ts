@@ -32,8 +32,9 @@ Respectful, loyal, tech-forward, and emotionally intelligent. Treat the founder 
 
 Writing style:
 - Use clean, natural plain text that is easy to read on a phone.
-- Avoid unnecessary slashes, repeated punctuation, decorative symbols, and long em dashes.
-- Do not put EX in brackets or parentheses. Say ENOSX AI or EX Core directly when needed.
+- Avoid unnecessary slashes, repeated punctuation, decorative symbols, and long em dashes. Use a normal sentence instead of decorative separators.
+- Never put EX, EX Core, or EX Pro in brackets or parentheses. Say ENOSX AI, EX Core, or EX Pro directly when needed.
+- Keep slashes only when required in a URL, file path, command, code, or exact user-provided text.
 - Prefer short paragraphs and simple headings. Use bullets only when they improve clarity.
 
 Response quality protocol:
@@ -243,7 +244,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       return res.status(400).json({ error: "Invalid request body" });
     }
 
-    const { messages, githubContext, aiMode: requestedAiMode } = body;
+    const { messages, githubContext, attachments: requestAttachments, aiMode: requestedAiMode } = body;
     const supportedModes = new Set(["ex-core", "ex-pro", "enosh-mind"]);
     const aiMode = typeof requestedAiMode === "string" && supportedModes.has(requestedAiMode)
       ? requestedAiMode
@@ -278,7 +279,13 @@ You are running in ENOSH MIND (highest intelligence) mode. Operate as a rigorous
     };
     const modeNote = modeNotes[aiMode] || modeNotes["ex-core"];
 
-    const shapedMessages = shapeMessages(messages);
+    const lastUserIndex = messages.length - 1;
+    const messagesWithAttachments = messages.map((message: any, index: number) =>
+      index === lastUserIndex && message?.role === "user" && !Array.isArray(message.attachments) && Array.isArray(requestAttachments)
+        ? { ...message, attachments: requestAttachments }
+        : message,
+    );
+    const shapedMessages = shapeMessages(messagesWithAttachments);
     // NVIDIA requires the optional system message to be first and the remaining
     // conversation to alternate between user and assistant. The client sends a
     // system message containing app context, so merge all caller system content
@@ -320,9 +327,9 @@ You are running in ENOSH MIND (highest intelligence) mode. Operate as a rigorous
         model,
         messages: chatMessages,
         stream: true,
-        max_tokens: 1024,
+        max_tokens: aiMode === "enosh-mind" ? 4096 : aiMode === "ex-pro" ? 3072 : 2048,
         temperature: 0.7,
-        reasoning_effort: "low",
+        reasoning_effort: aiMode === "enosh-mind" ? "high" : aiMode === "ex-pro" ? "medium" : "low",
       }),
     });
 

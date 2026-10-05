@@ -5,12 +5,13 @@
  */
 
 import { useState, useCallback } from "react";
-import { Message } from "@/lib/types";
+import { Attachment, Message } from "@/lib/types";
 import { chatWithLocalModel, isDesktopShell, readLocalModelSettings } from "@/lib/localModels";
 
 type ChatOptions = {
   aiMode?: string;
   githubContext?: string;
+  attachments?: Attachment[];
 };
 
 type ApiErrorPayload = {
@@ -108,6 +109,7 @@ export function useEnosxAI() {
               messages,
               githubContext: options?.githubContext,
               aiMode: options?.aiMode,
+              attachments: options?.attachments,
               userId,
             }),
           });

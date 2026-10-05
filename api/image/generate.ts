@@ -28,6 +28,7 @@ const DEFAULT_PROMPT =
 const DEFAULT_WIDTH = 512;
 const DEFAULT_HEIGHT = 512;
 const MAX_PROMPT_LENGTH = 4000;
+const MAX_IMAGE_LENGTH = 8_000_000;
 
 function asBoundedNumber(value: unknown, fallback: number, min: number, max: number) {
   const number = typeof value === "number" ? value : Number(value);
@@ -107,21 +108,39 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   const image = typeof body.image === "string" ? body.image.trim() : "";
   const model = process.env.NVIDIA_IMAGE_MODEL?.trim();
+  const requiresInputImage = /nvpcb|image-edit/i.test(model || "");
+  if (requiresInputImage && !image) {
+    return res.status(400).json({
+      error: "An input PCB image is required for the configured NVIDIA image-edit model",
+      status: "MISSING_IMAGE",
+    });
+  }
+  if (image) {
+    const isDataUrl = /^data:image\/(png|jpe?g|webp);base64,[a-z0-9+/=\s]+$/i.test(image);
+    const isRawBase64 = /^[a-z0-9+/=\s]+$/i.test(image);
+    if ((!isDataUrl && !isRawBase64) || image.length > MAX_IMAGE_LENGTH) {
+      return res.status(400).json({
+        error: "image must be a PNG, JPEG, or WebP base64 data URL under 8MB",
+        status: "INVALID_IMAGE",
+      });
+    }
+  }
+  const imagePayload = image && image.startsWith("data:image/") ? image : image ? `data:image/png;base64,${image}` : "";
   const payload: Record<string, unknown> = {
     prompt,
-    mode: typeof body.mode === "string" && body.mode.trim() ? body.mode.trim() : image ? "img2img" : "text2img",
+    mode: typeof body.mode === "string" && body.mode.trim() ? body.mode.trim() : imagePayload ? "img2img" : "text2img",
     width: asBoundedNumber(body.width, DEFAULT_WIDTH, 64, 2048),
     height: asBoundedNumber(body.height, DEFAULT_HEIGHT, 64, 2048),
     cfg_scale: asBoundedNumber(body.cfg_scale, 7, 0, 20),
     steps: asBoundedNumber(body.steps, 30, 1, 150),
   };
   if (model) payload.model = model;
-  if (image) payload.image = image;
+  if (imagePayload) payload.image = imagePayload;
   if (body.seed !== undefined) payload.seed = asBoundedNumber(body.seed, 0, 0, 2_147_483_647);
 
   console.log("[IMAGE] Generating with NVIDIA image endpoint", {
     model: model || "endpoint-default",
-    hasInputImage: Boolean(image),
+    hasInputImage: Boolean(imagePayload),
     promptLength: prompt.length,
   });
 

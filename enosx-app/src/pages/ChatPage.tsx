@@ -517,6 +517,10 @@ export default function ChatPage() {
       if (fileContext.isLoaded) {
         messageContent += getFileContextMessage();
       }
+      const pcbImageInput = fileContext.files.find((file) => {
+        const extension = file.type.toLowerCase();
+        return file.mimeType?.startsWith("image/") || ["jpg", "jpeg", "png", "webp"].includes(extension);
+      })?.content;
 
       const userMessage: Message = {
         id: nanoid(),
@@ -563,7 +567,7 @@ export default function ChatPage() {
           )
         );
 
-        const imgResult = await generateImage(text);
+        const imgResult = await generateImage(text, pcbImageInput);
         if (imgResult && imgResult.url) {
           const imageMarkdown = imgResult.revised_prompt
             ? `Here's the image I generated for you:\n\n![Generated Image](${imgResult.url})\n\n*Prompt: ${imgResult.revised_prompt}*`

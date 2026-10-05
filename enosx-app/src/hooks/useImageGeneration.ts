@@ -15,7 +15,7 @@ export function useImageGeneration() {
   const [error, setError] = useState<string | null>(null);
 
   const generateImage = useCallback(
-    async (prompt: string): Promise<ImageGenerationResult | null> => {
+    async (prompt: string, image?: string): Promise<ImageGenerationResult | null> => {
       setIsGenerating(true);
       setError(null);
 
@@ -25,7 +25,7 @@ export function useImageGeneration() {
           headers: {
             "Content-Type": "application/json",
           },
-          body: JSON.stringify({ prompt }),
+          body: JSON.stringify({ prompt, ...(image ? { image, mode: "img2img" } : {}) }),
         });
 
         if (!response.ok) {
@@ -35,6 +35,9 @@ export function useImageGeneration() {
             if (errData?.error) message = errData.error;
             if (errData?.status === "CONFIGURATION_ERROR") {
               message = "NVIDIA image generation is not configured on the server.";
+            }
+            if (errData?.status === "MISSING_IMAGE") {
+              message = "Attach a PCB image before using NVIDIA image generation.";
             }
           } catch {
             /* use default message */

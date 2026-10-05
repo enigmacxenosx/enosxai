@@ -74,7 +74,7 @@ globalThis.fetch = async (url, init) => {
 
 console.log("[test] NVIDIA happy path returns a downloadable data URL");
 let res = makeRes();
-await handler(makeReq("POST", { prompt: "a PCB component" }), res);
+await handler(makeReq("POST", { prompt: "a PCB component", image: "iVBORw0KGgoAAAANSUhEUgAAAAEAAAAB" }), res);
 assert(res._status === 200, "returns 200");
 assert(res._json.url.startsWith("data:image/png;base64,"), "returns a self-contained PNG data URL");
 assert(res._json.revised_prompt === "translated PCB image", "returns revised prompt");
@@ -82,6 +82,13 @@ assert(capturedRequest.url === process.env.NVIDIA_IMAGE_ENDPOINT, "uses configur
 assert(capturedRequest.init.headers.Authorization === "Bearer test-nvidia-key", "keeps NVIDIA auth server-side");
 assert(capturedRequest.payload.model === "qwen-image-edit-nvpcb-ovsl2sl", "sends configured NVIDIA model");
 assert(capturedRequest.payload.prompt === "a PCB component", "sends prompt");
+assert(capturedRequest.payload.image.startsWith("data:image/png;base64,"), "normalizes raw base64 to a PNG data URL");
+
+console.log("[test] PCB model rejects a request without an input image");
+res = makeRes();
+await handler(makeReq("POST", { prompt: "a PCB component" }), res);
+assert(res._status === 400, "returns 400 without PCB image");
+assert(res._json.status === "MISSING_IMAGE", "returns structured missing-image error");
 
 console.log("[test] NVIDIA image-edit request preserves input image");
 res = makeRes();

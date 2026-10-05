@@ -1,5 +1,5 @@
 use serde::{Deserialize, Serialize};
-use std::{path::Path, process::{Child, Command, Stdio}, sync::Mutex};
+use std::{net::TcpStream, path::Path, process::{Child, Command, Stdio}, sync::Mutex, thread, time::Duration};
 use tauri::{
   menu::{Menu, MenuItem},
   tray::{MouseButton, MouseButtonState, TrayIconBuilder, TrayIconEvent},
@@ -116,7 +116,31 @@ fn start_local_server(
     *state.port.lock().map_err(|_| "Local port state is unavailable".to_string())? = port;
   }
 
-  Ok(current_status(&state, "Offline GGUF model server started".to_string()))
+  let port = *state.port.lock().map_err(|_| "Local port state is unavailable".to_string())?;
+  let mut ready = false;
+  for _ in 0..60 {
+    if TcpStream::connect(("127.0.0.1", port)).is_ok() {
+      ready = true;
+      break;
+    }
+    if let Some(child) = state.child.lock().map_err(|_| "Local server state is unavailable".to_string())?.as_mut() {
+      if child.try_wait().map_err(|error| error.to_string())?.is_some() {
+        break;
+      }
+    }
+    thread::sleep(Duration::from_millis(500));
+  }
+
+  if !ready {
+    let mut child_guard = state.child.lock().map_err(|_| "Local server state is unavailable".to_string())?;
+    if let Some(mut child) = child_guard.take() {
+      let _ = child.kill();
+      let _ = child.wait();
+    }
+    return Err("llama-server did not become ready. Check the model file, RAM/GPU capacity, and llama.cpp installation.".to_string());
+  }
+
+  Ok(current_status(&state, "Offline GGUF model server is ready".to_string()))
 }
 
 #[tauri::command]

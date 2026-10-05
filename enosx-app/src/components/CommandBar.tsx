@@ -10,7 +10,7 @@
 
 import { useState, useRef, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { ArrowUp, Mic, MicOff, Square, Loader2, ChevronDown, Paperclip } from "lucide-react";
+import { ArrowUp, Mic, MicOff, Square, Loader2, ChevronDown, Paperclip, ListChecks, Languages, Code2, Sparkles } from "lucide-react";
 import { VoiceState } from "@/lib/types";
 import { useTheme } from "@/contexts/ThemeContext";
 import { useWallpaper } from "@/contexts/WallpaperContext";
@@ -55,7 +55,12 @@ export const AI_MODES: AIModeOption[] = [
   },
 ];
 
-const QUICK_SUGGESTIONS = ["Explain simply", "Add examples", "Make a plan"];
+const PROMPT_RECIPES = [
+  { label: "Summarize", icon: ListChecks, suffix: "Summarize this with the key points, decisions, risks, and next steps." },
+  { label: "Translate", icon: Languages, suffix: "Translate this accurately into [target language] and preserve the tone and formatting." },
+  { label: "Code review", icon: Code2, suffix: "Review this code for correctness, security, maintainability, and performance. Suggest a corrected version." },
+  { label: "Make a plan", icon: Sparkles, suffix: "Turn this into a practical step-by-step plan with assumptions, dependencies, and a clear definition of done." },
+];
 
 interface CommandBarProps {
   onSend: (text: string, aiMode?: AIMode, selectedConnectorIds?: string[]) => void;
@@ -237,9 +242,9 @@ export default function CommandBar({
                   >
                     Try
                   </motion.span>
-                  {QUICK_SUGGESTIONS.map((suggestion, index) => (
+                  {PROMPT_RECIPES.map(({ label, icon: Icon, suffix }, index) => (
                     <motion.button
-                      key={suggestion}
+                      key={label}
                       type="button"
                       initial={{ opacity: 0, x: -3 }}
                       animate={{ opacity: 1, x: 0 }}
@@ -250,14 +255,15 @@ export default function CommandBar({
                       }}
                       whileHover={{ y: -1 }}
                       whileTap={{ scale: 0.97, y: 0 }}
-                      onClick={() => setValue((current) => `${current.trimEnd()}\n\n${suggestion}`)}
+                      onClick={() => setValue((current) => `${current.trimEnd()}\n\n${suffix}`)}
                       className="shrink-0 rounded-full border px-2.5 py-1 text-[10px] leading-none text-white/60 transition-[color,background-color,border-color,transform] duration-150 hover:text-white/90"
                       style={{
                         borderColor: `rgba(${config.accentRgb}, 0.2)`,
                         background: `rgba(${config.accentRgb}, 0.06)`,
                       }}
                     >
-                      {suggestion}
+                      <Icon size={11} aria-hidden="true" />
+                      {label}
                     </motion.button>
                   ))}
                 </motion.div>

@@ -261,25 +261,26 @@ export default function ChatPage() {
   // Persist conversations to localStorage and Neon
   useEffect(() => {
     localStorage.setItem("enosx_chats", JSON.stringify(conversations));
-    
-    // Sync to backend if authenticated
-    if (isAuthenticated && user?.id) {
-      const syncHistory = async () => {
+
+    // Streamed replies update this state many times per second. Wait until the
+    // response settles before syncing, otherwise every token can start another
+    // full conversation write and compete with the AI request.
+    if (!isAuthenticated || !user?.id) return;
+    const syncTimer = window.setTimeout(() => {
+      void (async () => {
         try {
-          // Sync all conversations (debounced or on change)
-          for (const conv of conversations) {
-            await fetch('/api/history', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ userId: user.id, chat: conv }),
-            });
-          }
+          await Promise.all(conversations.map((conv) => fetch('/api/history', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ userId: user.id, chat: conv }),
+          })));
         } catch (err) {
           console.error("Failed to sync history to Neon:", err);
         }
-      };
-      syncHistory();
-    }
+      })();
+    }, 800);
+
+    return () => window.clearTimeout(syncTimer);
   }, [conversations, isAuthenticated, user?.id]);
 
   // Load history from Neon on mount if authenticated
@@ -705,10 +706,37 @@ ${getAdminContext()}` : ""}`,
       enrichedMessages = enrichMessageWithContext(enrichedMessages, activeWindow);
 
       let streamedContent = "";
+      let pendingRenderChunk = "";
+      let renderFrameQueued = false;
+      const flushStreamToChat = () => {
+        renderFrameQueued = false;
+        if (!pendingRenderChunk) return;
+        const chunk = pendingRenderChunk;
+        pendingRenderChunk = "";
+        setConversations((prev) =>
+          prev.map((c) =>
+            c.id === targetConvId
+              ? {
+                  ...c,
+                  messages: c.messages.map((m) =>
+                    m.id === assistantId ? { ...m, content: m.content + chunk } : m
+                  ),
+                }
+              : c
+          )
+        );
+      };
+      const queueStreamRender = () => {
+        if (renderFrameQueued) return;
+        renderFrameQueued = true;
+        window.requestAnimationFrame(flushStreamToChat);
+      };
       await sendMessage(
         enrichedMessages,
         (chunk) => {
           streamedContent += chunk;
+          pendingRenderChunk += chunk;
+          queueStreamRender();
 
           const livePreview = extractLiveCodePreview(streamedContent);
           if (livePreview) {
@@ -734,20 +762,10 @@ ${getAdminContext()}` : ""}`,
             }
           }
 
-          setConversations((prev) =>
-            prev.map((c) =>
-              c.id === targetConvId
-                ? {
-                    ...c,
-                    messages: c.messages.map((m) =>
-                      m.id === assistantId ? { ...m, content: m.content + chunk } : m
-                    ),
-                  }
-                : c
-            )
-          );
         },
         () => {
+          // Apply the final buffered chunk before cleaning the streamed reply.
+          flushStreamToChat();
           const proposedActions = parseActions(streamedContent) as AssistantAction[];
           const cleanContent = removeActionBlocks(streamedContent);
           // Workspace mode: execute the AI's actions automatically in the computer pane.

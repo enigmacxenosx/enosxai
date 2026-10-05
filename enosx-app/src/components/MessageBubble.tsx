@@ -1,8 +1,8 @@
 /*
  * ENOSX AI — MessageBubble
- * Animated message bubbles with streaming text, markdown, voice playback,
+ * Unboxed animated messages with streaming text, markdown, voice playback,
  * and inline image display for both user attachments and AI-generated images.
- * Features: fade-in spring, streaming cursor, copy, speak, glassmorphism,
+ * Features: fade-in spring, streaming cursor, copy, speak,
  * document download, image lightbox.
  */
 
@@ -363,28 +363,15 @@ export default function MessageBubble({
       }}
       className={`flex min-w-0 gap-3 ${isUser ? "flex-row-reverse" : "flex-row"}`}
     >
-      {/* Bubble */}
+      {/* Unboxed message content. Alignment is retained without enclosing chats or media in a panel. */}
       <div className={`flex min-w-0 max-w-[90%] flex-col gap-1 ${isUser ? "items-end" : "items-start"}`}>
         <motion.div
-          whileHover={{ scale: 1.005 }}
           transition={{ type: "spring", stiffness: 400, damping: 30 }}
-          className={`relative transition-all duration-300 ${!isUser && (isEmpty || isStreaming) ? 'rainbow-glow' : ''}`}
+          className={`relative w-full transition-all duration-300 ${!isUser && (isEmpty || isStreaming) ? 'rainbow-glow' : ''}`}
           style={{
-            background: isUser
-              ? `linear-gradient(135deg, rgba(${config.accentRgb}, 0.2), rgba(${config.accentRgb}, 0.1))`
-              : "rgba(16, 18, 28, 0.78)",
-            border: isUser
-              ? `1px solid rgba(${config.accentRgb}, 0.4)`
-              : "1px solid rgba(255, 255, 255, 0.14)",
-            borderRadius: isUser ? "18px 5px 18px 18px" : "5px 18px 18px 18px",
-            boxShadow: isUser
-              ? `0 8px 24px rgba(${config.accentRgb}, 0.12)`
-              : "0 8px 24px rgba(0, 0, 0, 0.22)",
-            padding: isEmpty ? "8px 12px" : "12px 14px",
+            padding: isEmpty ? "4px 0" : "0",
             maxWidth: "100%",
             overflowWrap: "anywhere",
-            backdropFilter: "blur(12px)",
-            WebkitBackdropFilter: "blur(12px)",
           }}
         >
           {isEmpty ? (

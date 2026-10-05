@@ -88,7 +88,7 @@ export default function ImageDisplay({ src, alt = "Generated image", caption, wa
 
   return (
     <>
-      <div className="relative group rounded-xl overflow-hidden my-2" style={{ maxWidth: 420 }}>
+      <div className="relative group my-3" style={{ maxWidth: 640 }}>
         {/* Loading shimmer */}
         {!isLoaded && (
           <div
@@ -105,8 +105,8 @@ export default function ImageDisplay({ src, alt = "Generated image", caption, wa
           src={src}
           alt={alt}
           onLoad={() => setIsLoaded(true)}
-          className={`w-full max-h-[350px] object-contain rounded-xl border transition-all duration-300 cursor-pointer
-            ${isLoaded ? "border-white/10 hover:border-white/20" : "opacity-0"}
+          className={`w-full max-h-[420px] object-contain transition-all duration-300 cursor-pointer
+            ${isLoaded ? "opacity-100" : "opacity-0"}
           `}
           onClick={() => setIsExpanded(true)}
         />

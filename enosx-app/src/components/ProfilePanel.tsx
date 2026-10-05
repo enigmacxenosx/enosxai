@@ -16,7 +16,7 @@ import {
   X, User, Mail, Lock, Eye, EyeOff, LogOut, Settings,
   Bell, Globe, Palette, Sparkles, Check, ChevronRight, ChevronLeft,
   Camera, Edit3, Loader2, AlertCircle, CheckCircle2,
-  Monitor, Shield, Image, Sun, Moon, Zap, Layers, Mic, ShieldAlert,
+  Monitor, Shield, Image, Sun, Moon, Zap, Layers, Mic, ShieldAlert, Cpu,
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useTheme, THEMES, type Theme } from '../contexts/ThemeContext';
@@ -25,8 +25,9 @@ import VoiceSettingsPanel from './VoiceSettingsPanel';
 import BrandMark from './BrandMark';
 import { useVoice } from '../hooks/useVoice';
 import { useSoundEffects } from '../hooks/useSoundEffects';
+import LocalModelsPanel from './LocalModelsPanel';
 
-type View = 'auth' | 'profile' | 'preferences' | 'appearance' | 'privacy' | 'voice';
+type View = 'auth' | 'profile' | 'preferences' | 'appearance' | 'privacy' | 'voice' | 'models';
 
 interface ProfilePanelProps {
   isOpen: boolean;
@@ -290,26 +291,29 @@ export default function ProfilePanel({ isOpen, onClose, onOpenAdminConsole, onOp
             {/* Header */}
             {view !== 'auth' && <div className="flex items-center justify-between px-5 py-4 flex-shrink-0" style={{ borderBottom: `1px solid rgba(255,255,255,0.06)` }}>
               <div className="flex items-center gap-3">
-                {(view === 'appearance' || view === 'privacy' || view === 'voice') && (
-                  <button onClick={() => setView('preferences')} className="w-7 h-7 rounded-lg flex items-center justify-center hover:bg-white/10 transition-all" style={{ color: 'rgba(255,255,255,0.5)' }}>
+                {(view === 'appearance' || view === 'privacy' || view === 'voice' || view === 'models') && (
+                  <button onClick={() => setView(view === 'models' && !isAuthenticated ? 'auth' : 'preferences')} className="w-7 h-7 rounded-lg flex items-center justify-center hover:bg-white/10 transition-all" style={{ color: 'rgba(255,255,255,0.5)' }}>
                     <ChevronLeft size={14} />
                   </button>
                 )}
                 <div className="w-8 h-8 rounded-xl flex items-center justify-center" style={{ background: `rgba(${accentRgb},0.15)` }}>
-                  {view === 'appearance' ? <Palette size={15} style={{ color: accentColor }} />
+                  {view === 'models' ? <Cpu size={15} style={{ color: accentColor }} />
+                    : view === 'appearance' ? <Palette size={15} style={{ color: accentColor }} />
                     : view === 'privacy' ? <Shield size={15} style={{ color: accentColor }} />
                     : view === 'voice' ? <Mic size={15} style={{ color: accentColor }} />
                     : <User size={15} style={{ color: accentColor }} />}
                 </div>
                 <div>
                   <div className="text-sm font-bold" style={{ color: 'rgba(255,255,255,0.9)' }}>
-                    {view === 'appearance' ? 'Appearance & Theme'
+                    {view === 'models' ? 'Offline models'
+                      : view === 'appearance' ? 'Appearance & Theme'
                       : view === 'privacy' ? 'Privacy & Security'
                       : view === 'voice' ? 'Voice Assistant'
                       : user?.displayName ?? 'Profile'}
                   </div>
                   <div className="text-xs" style={{ color: 'rgba(255,255,255,0.3)' }}>
-                    {view === 'appearance' ? 'Colors, fonts, and wallpaper'
+                    {view === 'models' ? 'Private chat on this device'
+                      : view === 'appearance' ? 'Colors, fonts, and wallpaper'
                       : view === 'privacy' ? 'Data and account security'
                       : view === 'voice' ? 'Speech, speed, and hands-free mode'
                       : isAuthenticated ? user?.email : 'ENOSX Assistant'}
@@ -438,6 +442,10 @@ export default function ProfilePanel({ isOpen, onClose, onOpenAdminConsole, onOp
                           {showPassword ? <EyeOff size={14} /> : <Eye size={14} />}
                         </button>
                       </div>
+                    </div>
+                    <div className="auth-slide-guest-row">
+                      <button type="button" onClick={continueAsGuest} className="auth-slide-guest">Continue as guest</button>
+                      <button type="button" onClick={() => setView('models')} className="auth-slide-link mt-2">Set up offline models</button>
                     </div>
                   </div>
 
@@ -638,6 +646,19 @@ export default function ProfilePanel({ isOpen, onClose, onOpenAdminConsole, onOp
                       <ChevronRight size={14} style={{ color: 'rgba(255,255,255,0.3)' }} />
                     </button>
 
+                    <button onClick={() => setView('models')}
+                      className="w-full flex items-center gap-3 px-3 py-3 rounded-xl cursor-pointer transition-all hover:bg-white/10"
+                      style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.07)' }}>
+                      <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: `rgba(${accentRgb},0.1)` }}>
+                        <Cpu size={14} style={{ color: accentColor }} />
+                      </div>
+                      <div className="flex-1 text-left">
+                        <div className="text-sm font-medium" style={{ color: 'rgba(255,255,255,0.85)' }}>Offline models</div>
+                        <div className="text-xs" style={{ color: 'rgba(255,255,255,0.35)' }}>Choose a local Ollama model</div>
+                      </div>
+                      <ChevronRight size={14} style={{ color: 'rgba(255,255,255,0.3)' }} />
+                    </button>
+
                     <button onClick={() => setView('voice')}
                       className="w-full flex items-center gap-3 px-3 py-3 rounded-xl cursor-pointer transition-all hover:bg-white/10"
                       style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.07)' }}>
@@ -683,6 +704,9 @@ export default function ProfilePanel({ isOpen, onClose, onOpenAdminConsole, onOp
                   </div>
                 </div>
               )}
+
+              {/* ── LOCAL MODELS VIEW ── */}
+              {view === 'models' && <LocalModelsPanel accentColor={accentColor} accentRgb={accentRgb} />}
 
               {/* ── VOICE VIEW ── */}
               {view === 'voice' && (

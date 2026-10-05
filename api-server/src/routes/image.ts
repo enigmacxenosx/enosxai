@@ -23,29 +23,34 @@ imageRouter.post("/image/generate", async (req: Request, res: Response) => {
       return;
     }
 
-    const apiKey = process.env.NVIDIA_API_KEY?.trim();
+    const apiKey = (process.env.NVIDIA_IMAGE_API_KEY || process.env.NVIDIA_API_KEY)?.trim();
     if (!apiKey) {
       res.status(503).json({
-        error: "NVIDIA_API_KEY is not configured on the API server",
+        error: "NVIDIA_IMAGE_API_KEY or NVIDIA_API_KEY is not configured on the API server",
         status: "CONFIGURATION_ERROR",
       });
       return;
     }
 
+    const configuredEndpoint = process.env.NVIDIA_IMAGE_ENDPOINT?.trim();
     const baseUrl = (process.env.NVIDIA_API_BASE_URL || "https://integrate.api.nvidia.com/v1").replace(/\/$/, "");
-    const model = process.env.NVIDIA_IMAGE_MODEL?.trim() || "qwen-image";
-    const response = await fetch(`${baseUrl}/images/generations`, {
+    const endpoint = configuredEndpoint || `${baseUrl}/images/generations`;
+    const model = process.env.NVIDIA_IMAGE_MODEL?.trim();
+    const payload: Record<string, unknown> = {
+      prompt: trimmedPrompt,
+      n: 1,
+      response_format: "b64_json",
+    };
+    if (model) payload.model = model;
+
+    const response = await fetch(endpoint, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
         Authorization: `Bearer ${apiKey}`,
+        Accept: "application/json",
       },
-      body: JSON.stringify({
-        model,
-        prompt: trimmedPrompt,
-        n: 1,
-        response_format: "b64_json",
-      }),
+      body: JSON.stringify(payload),
     });
 
     if (!response.ok) {

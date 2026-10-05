@@ -54,6 +54,7 @@ interface UseGitHubState {
 
 const STORAGE_KEY = 'enosx-github-accounts';
 const CURRENT_REPO_KEY = 'enosx-github-current-repo';
+const ACTIVE_ACCOUNT_KEY = 'enosx-github-active-account';
 function loadCurrentRepo(): GitHubRepo | null {
   try { const raw = localStorage.getItem(CURRENT_REPO_KEY); return raw ? JSON.parse(raw) : null; } catch { return null; }
 }
@@ -75,9 +76,11 @@ function saveAccounts(accounts: GitHubAccount[]) {
 export function useGitHub() {
   const [state, setState] = useState<UseGitHubState>(() => {
     const accounts = loadAccounts();
+    const activeId = localStorage.getItem(ACTIVE_ACCOUNT_KEY);
+    const activeAccount = accounts.find(account => account.id === activeId) ?? accounts[0] ?? null;
     return {
       accounts,
-      activeAccount: accounts[0] ?? null,
+      activeAccount,
       repos: [],
       currentRepo: loadCurrentRepo(),
       branches: [],
@@ -117,6 +120,7 @@ export function useGitHub() {
       setState(prev => {
         const updated = [...prev.accounts.filter(a => a.id !== newAccount.id), newAccount];
         saveAccounts(updated);
+        localStorage.setItem(ACTIVE_ACCOUNT_KEY, newAccount.id);
         return { ...prev, accounts: updated, activeAccount: newAccount, isLoading: false };
       });
       return true;
@@ -165,6 +169,7 @@ export function useGitHub() {
     setState(prev => {
       const updated = prev.accounts.filter(a => a.id !== id);
       saveAccounts(updated);
+      localStorage.setItem(ACTIVE_ACCOUNT_KEY, updated[0]?.id || '');
       return { ...prev, accounts: updated, activeAccount: updated[0] ?? null, repos: [], currentRepo: null };
     });
   }, []);
@@ -173,6 +178,7 @@ export function useGitHub() {
     setState(prev => {
       const account = prev.accounts.find(a => a.id === id);
       if (!account) return prev;
+      localStorage.setItem(ACTIVE_ACCOUNT_KEY, account.id);
       return { ...prev, activeAccount: account, repos: [], currentRepo: null, files: [], currentFile: null };
     });
   }, []);
@@ -192,7 +198,11 @@ export function useGitHub() {
           Accept: 'application/vnd.github+json',
         },
       });
-      if (!res.ok) throw new Error('Failed to fetch repositories');
+      if (!res.ok) {
+        let detail = '';
+        try { detail = (await res.json()).message || ''; } catch {}
+        throw new Error(`Failed to fetch repositories (${res.status})${detail ? `: ${detail}` : ''}`);
+      }
       const data = await res.json();
       const repos: GitHubRepo[] = data.map((r: any) => ({
         name: r.name,

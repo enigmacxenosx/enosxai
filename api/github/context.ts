@@ -5,9 +5,7 @@
 import type { VercelRequest, VercelResponse } from "@vercel/node";
 
 const GITHUB_API_URL = "https://api.github.com";
-const GITHUB_REPOS = ["enosxtechnologies/enosxassistant"];
-
-export default async function handler(_req: VercelRequest, res: VercelResponse) {
+export default async function handler(req: VercelRequest, res: VercelResponse) {
   const githubToken = process.env.GITHUB_TOKEN || process.env.GH_TOKEN;
   const headers: Record<string, string> = {
     Accept: "application/vnd.github+json",
@@ -16,8 +14,20 @@ export default async function handler(_req: VercelRequest, res: VercelResponse) 
   if (githubToken) headers.Authorization = `Bearer ${githubToken}`;
 
   try {
+    const requestedRepo = typeof req.query.repo === "string" ? req.query.repo.trim() : "";
+    let repoNames = requestedRepo ? [requestedRepo] : [];
+    if (!repoNames.length && githubToken) {
+      const reposResponse = await fetch(`${GITHUB_API_URL}/user/repos?per_page=100&sort=updated`, { headers });
+      if (reposResponse.ok) {
+        const repos = await reposResponse.json() as Array<{ full_name?: string }>;
+        repoNames = repos.map((repo) => repo.full_name).filter((name): name is string => Boolean(name));
+      }
+    }
+    if (!repoNames.length) {
+      return res.status(400).json({ error: "Pass ?repo=owner/name or configure GITHUB_TOKEN to discover repositories." });
+    }
     const repoContexts = await Promise.all(
-      GITHUB_REPOS.map(async (repoName) => {
+      repoNames.map(async (repoName) => {
         const [owner, repo] = repoName.split("/");
         const repoResp = await fetch(`${GITHUB_API_URL}/repos/${owner}/${repo}`, { headers });
         if (!repoResp.ok) {

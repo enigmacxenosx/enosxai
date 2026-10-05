@@ -125,38 +125,81 @@ function removeActionBlocks(content: string) {
   return content.replace(ACTION_BLOCK, "").replace(/\n{3,}/g, "\n\n").trim();
 }
 
+function decodeGitHubContent(content: unknown, encoding: unknown): string {
+  if (encoding !== "base64" || typeof content !== "string") return "";
+  try {
+    const bytes = Uint8Array.from(atob(content.replace(/\s/g, "")), char => char.charCodeAt(0));
+    return new TextDecoder().decode(bytes);
+  } catch {
+    return "";
+  }
+}
+
 async function loadGitHubConnectorContext(): Promise<string> {
   try {
     const accounts = JSON.parse(localStorage.getItem("enosx-github-accounts") || "[]");
-    const account = Array.isArray(accounts) ? accounts[0] : null;
+    const activeId = localStorage.getItem("enosx-github-active-account");
+    const account = (Array.isArray(accounts) ? accounts : []).find((item: any) => item.id === activeId) || accounts[0];
     if (!account?.token) return "GitHub is selected, but no GitHub account is connected.";
 
+    const headers = {
+      Authorization: `Bearer ${account.token}`,
+      Accept: "application/vnd.github+json",
+      "X-GitHub-Api-Version": "2022-11-28",
+    };
     const repo = JSON.parse(localStorage.getItem("enosx-github-current-repo") || "null");
-    const headers = { Authorization: `Bearer ${account.token}`, Accept: "application/vnd.github+json" };
-    const profileResponse = await fetch("https://api.github.com/user", { headers, cache: "no-store" });
-    const profile = profileResponse.ok ? await profileResponse.json() : null;
     if (!repo?.fullName) {
-      return `Connected GitHub account: ${profile?.login || account.username || "unknown"}. No repository is selected in the GitHub workspace.`;
+      const reposResponse = await fetch("https://api.github.com/user/repos?per_page=100&sort=updated", { headers, cache: "no-store" });
+      if (!reposResponse.ok) throw new Error(`GitHub repository list failed (${reposResponse.status})`);
+      const repos = await reposResponse.json();
+      const names = Array.isArray(repos) ? repos.map((item: any) => item.full_name).filter(Boolean) : [];
+      return [
+        `Connected GitHub account: ${account.username || "unknown"}`,
+        "No repository is selected in the GitHub workspace.",
+        names.length ? `Available repositories:\n${names.join("\n")}` : "No repositories were returned by GitHub.",
+        "Ask the user to select a repository in the GitHub workspace before inspecting code.",
+      ].join("\n");
     }
 
-    const [repoResponse, readmeResponse] = await Promise.all([
-      fetch(`https://api.github.com/repos/${repo.fullName}`, { headers, cache: "no-store" }),
-      fetch(`https://api.github.com/repos/${repo.fullName}/readme?ref=${encodeURIComponent(repo.branch || repo.defaultBranch || "HEAD")}`, { headers, cache: "no-store" }),
+    const branch = repo.branch || repo.defaultBranch || "HEAD";
+    const repoPath = repo.fullName.split("/").map(encodeURIComponent).join("/");
+    const [repoResponse, treeResponse] = await Promise.all([
+      fetch(`https://api.github.com/repos/${repoPath}`, { headers, cache: "no-store" }),
+      fetch(`https://api.github.com/repos/${repoPath}/git/trees/${encodeURIComponent(branch)}?recursive=1`, { headers, cache: "no-store" }),
     ]);
-    const repository = repoResponse.ok ? await repoResponse.json() : repo;
-    const readme = readmeResponse.ok ? await readmeResponse.json() : null;
-    const readmeText = readme?.encoding === "base64" && readme.content
-      ? atob(String(readme.content).replace(/\n/g, ""))
-      : "";
+    if (!repoResponse.ok) throw new Error(`Repository ${repo.fullName} could not be read (${repoResponse.status})`);
+    if (!treeResponse.ok) throw new Error(`Repository tree could not be read (${treeResponse.status})`);
+    const repository = await repoResponse.json();
+    const treeData = await treeResponse.json();
+    const tree = Array.isArray(treeData.tree) ? treeData.tree : [];
+    const sourceCandidates = tree
+      .filter((item: any) => item.type === "blob" && typeof item.path === "string")
+      .filter((item: any) => !/(^|\/)(node_modules|vendor|dist|build|\.git)(\/|$)/.test(item.path))
+      .filter((item: any) => /\.(tsx?|jsx?|py|go|rs|java|kt|rb|php|cs|cpp|c|h|css|scss|html|vue|svelte|sql|md|json|ya?ml|toml)$/i.test(item.path))
+      .filter((item: any) => !/(^|\/)(package-lock\.json|pnpm-lock\.yaml|yarn\.lock|composer\.lock)$/i.test(item.path))
+      .sort((a: any, b: any) => (a.path === "README.md" ? -1 : b.path === "README.md" ? 1 : a.path.length - b.path.length))
+      .slice(0, 18);
+
+    const fileResults = await Promise.all(sourceCandidates.map(async (item: any) => {
+      const response = await fetch(`https://api.github.com/repos/${repoPath}/contents/${item.path.split("/").map(encodeURIComponent).join("/")}?ref=${encodeURIComponent(branch)}`, { headers, cache: "no-store" });
+      if (!response.ok) return null;
+      const data = await response.json();
+      const content = decodeGitHubContent(data.content, data.encoding);
+      return content ? `FILE: ${item.path}\n${content.slice(0, 8000)}` : null;
+    }));
+
     return [
-      `Connected GitHub account: ${profile?.login || account.username || "unknown"}`,
+      `Connected GitHub account: ${account.username || "unknown"}`,
       `Selected repository: ${repository.full_name || repo.fullName}`,
-      `Default branch: ${repository.default_branch || repo.defaultBranch || repo.branch || "unknown"}`,
+      `Branch: ${branch}`,
       repository.description ? `Description: ${repository.description}` : "",
-      readmeText ? `README:\n${readmeText.slice(0, 12000)}` : "",
-    ].filter(Boolean).join("\n");
-  } catch {
-    return "GitHub was selected, but its repository context could not be loaded. Do not claim that GitHub content was inspected.";
+      `Repository tree (${tree.length} entries):\n${tree.slice(0, 260).map((item: any) => item.path).join("\n")}`,
+      fileResults.filter(Boolean).join("\n\n---\n\n"),
+      "Use the repository tree and file contents above as verified live GitHub context. If a requested file is not present, say that it was not loaded rather than guessing.",
+    ].filter(Boolean).join("\n\n").slice(0, 90000);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "unknown GitHub error";
+    return `GitHub was selected, but its repository context could not be loaded: ${message}. Do not claim that GitHub content was inspected.`;
   }
 }
 

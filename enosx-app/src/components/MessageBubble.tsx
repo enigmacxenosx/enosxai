@@ -182,7 +182,7 @@ function renderContentWithMedia(text: string, _accentColor: string) {
           return <div key={index} className="prose-crimson text-sm" dangerouslySetInnerHTML={{ __html: renderMarkdown(segment.content) }} />;
         }
         if (segment.item.type === "image") {
-          return <ImageDisplay key={index} src={segment.item.src} alt={segment.item.alt} />;
+          return <ImageDisplay key={index} src={segment.item.src} alt={segment.item.alt} watermark={/^generated image$/i.test(segment.item.alt)} />;
         }
         return <VideoDisplay key={index} src={segment.item.src} openUrl={segment.item.openUrl} title={segment.item.alt} embedded={segment.item.type === "embed"} />;
       })}

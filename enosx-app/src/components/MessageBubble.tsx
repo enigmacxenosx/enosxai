@@ -8,13 +8,14 @@
 
 import { useState, useEffect, useRef } from "react";
 import { motion } from "framer-motion";
-import { Copy, Volume2, VolumeX, Check, Download, ExternalLink, FileSearch, ListTree, ShieldCheck } from "lucide-react";
+import { Copy, Volume2, VolumeX, Check, Download, ExternalLink, FileSearch, ListTree, ShieldCheck, FileText, FileSpreadsheet } from "lucide-react";
 import { Message } from "@/lib/types";
 import { useTheme } from "@/contexts/ThemeContext";
 import { useWallpaper } from "@/contexts/WallpaperContext";
 import ImageDisplay from "./ImageDisplay";
 import VideoDisplay from "./VideoDisplay";
 import MediaAttachment from "./MediaAttachment";
+import { downloadDocument } from "@/lib/documentExport";
 
 interface MessageBubbleProps {
   message: Message;
@@ -272,6 +273,7 @@ export default function MessageBubble({
   const { settings: wallpaperSettings } = useWallpaper();
   const [copied, setCopied] = useState(false);
   const [actionStatus, setActionStatus] = useState<string | null>(null);
+  const [exportMenuOpen, setExportMenuOpen] = useState(false);
   const isUser = message.role === "user";
   const isStreaming = message.isStreaming;
   const isEmpty = !message.content?.trim() && isStreaming;
@@ -285,27 +287,24 @@ export default function MessageBubble({
     setTimeout(() => setCopied(false), 2000);
   };
 
-  const handleDownload = (format: 'md' | 'pdf' = 'md') => {
-    if (format === 'md') {
-      const blob = new Blob([message.content], { type: "text/markdown" });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `enosx-doc-${new Date().getTime()}.md`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
-    } else if (format === 'pdf') {
-      // @ts-ignore
-      const { jsPDF } = window.jspdf;
-      const doc = new jsPDF();
-      
-      // Basic PDF generation logic
-      const splitText = doc.splitTextToSize(message.content.replace(/[*#`]/g, ''), 180);
-      doc.setFontSize(12);
-      doc.text(splitText, 15, 20);
-      doc.save(`enosx-doc-${new Date().getTime()}.pdf`);
+  const handleDownload = async (format: 'md' | 'pdf' | 'docx' | 'xlsx') => {
+    try {
+      if (format === 'md') {
+        const blob = new Blob([message.content], { type: "text/markdown" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = `enosx-doc-${new Date().getTime()}.md`;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        URL.revokeObjectURL(url);
+      } else {
+        await downloadDocument(format, message.content, `enosx-ai-${message.role}-response`);
+      }
+      setExportMenuOpen(false);
+    } catch (error) {
+      setActionStatus(error instanceof Error ? error.message : "Document export failed.");
     }
   };
 
@@ -509,20 +508,31 @@ export default function MessageBubble({
                   {isSpeaking ? <VolumeX size={12} /> : <Volume2 size={12} />}
                 </motion.button>
 
-                <motion.button
-                  whileHover={{ scale: 1.1 }}
-                  whileTap={{ scale: 0.9 }}
-                  onClick={() => handleDownload('md')}
-                  className="w-7 h-7 rounded-lg flex items-center justify-center transition-all duration-150"
-                  style={{
-                    background: "rgba(255,255,255,0.04)",
-                    border: "1px solid rgba(255,255,255,0.07)",
-                    color: config.textMuted,
-                  }}
-                  title="Download as Markdown"
-                >
-                  <Download size={12} />
-                </motion.button>
+                <div className="relative">
+                  <motion.button
+                    whileHover={{ scale: 1.1 }}
+                    whileTap={{ scale: 0.9 }}
+                    onClick={() => setExportMenuOpen((open) => !open)}
+                    className="w-7 h-7 rounded-lg flex items-center justify-center transition-all duration-150"
+                    style={{
+                      background: exportMenuOpen ? `rgba(${config.accentRgb}, 0.14)` : "rgba(255,255,255,0.04)",
+                      border: exportMenuOpen ? `1px solid rgba(${config.accentRgb}, 0.35)` : "1px solid rgba(255,255,255,0.07)",
+                      color: exportMenuOpen ? config.accent : config.textMuted,
+                    }}
+                    title="Export as PDF, Word, Excel, or Markdown"
+                    aria-label="Export response"
+                  >
+                    <Download size={12} />
+                  </motion.button>
+                  {exportMenuOpen && (
+                    <div className="absolute bottom-9 left-0 z-20 flex min-w-36 flex-col gap-1 rounded-xl border border-white/10 bg-[#11131b]/95 p-1.5 shadow-2xl backdrop-blur-xl">
+                      <button type="button" onClick={() => void handleDownload("pdf")} className="flex items-center gap-2 rounded-lg px-2.5 py-2 text-left text-[11px] text-white/75 hover:bg-white/10"><FileText size={13} className="text-red-300" /> PDF document</button>
+                      <button type="button" onClick={() => void handleDownload("docx")} className="flex items-center gap-2 rounded-lg px-2.5 py-2 text-left text-[11px] text-white/75 hover:bg-white/10"><FileText size={13} className="text-blue-300" /> Word document</button>
+                      <button type="button" onClick={() => void handleDownload("xlsx")} className="flex items-center gap-2 rounded-lg px-2.5 py-2 text-left text-[11px] text-white/75 hover:bg-white/10"><FileSpreadsheet size={13} className="text-emerald-300" /> Excel workbook</button>
+                      <button type="button" onClick={() => void handleDownload("md")} className="flex items-center gap-2 rounded-lg px-2.5 py-2 text-left text-[11px] text-white/75 hover:bg-white/10"><Download size={13} className="text-white/45" /> Markdown file</button>
+                    </div>
+                  )}
+                </div>
               </>
             )}
 

@@ -68,9 +68,11 @@ When a user message begins with [GOD MODE COMMAND], switch to advanced operator 
 
 chatRouter.post("/chat", async (req: Request, res: Response) => {
   try {
+    const provider = (process.env.AI_PROVIDER || "nvidia").trim().toLowerCase();
+    const isLocal = provider === "local" || provider === "offline";
     const apiKey = process.env.NVIDIA_API_KEY?.trim();
 
-    if (!apiKey) {
+    if (!isLocal && !apiKey) {
       res.status(503).json({
         error: "NVIDIA_API_KEY is not configured on the API server",
         status: "CONFIGURATION_ERROR",
@@ -203,15 +205,17 @@ You are running in ENOSH MIND (highest intelligence) mode. Operate as a rigorous
     const modeModels = MODE_MODELS[aiMode] || MODE_MODELS["ex-core"];
     const model = hasImages ? modeModels.vision : modeModels.text;
 
-    const nvidiaApiUrl = `${(process.env.NVIDIA_API_BASE_URL || "https://integrate.api.nvidia.com/v1").replace(/\/$/, "")}/chat/completions`;
-    const response = await fetch(nvidiaApiUrl, {
+    const localBaseUrl = (process.env.LOCAL_LLM_BASE_URL || "http://127.0.0.1:8090/v1").replace(/\/$/, "");
+    const apiBaseUrl = isLocal
+      ? localBaseUrl
+      : (process.env.NVIDIA_API_BASE_URL || "https://integrate.api.nvidia.com/v1").replace(/\/$/, "");
+    const response = await fetch(`${apiBaseUrl}/chat/completions`, {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${apiKey}`,
-      },
+      headers: isLocal
+        ? { "Content-Type": "application/json" }
+        : { "Content-Type": "application/json", Authorization: `Bearer ${apiKey}` },
       body: JSON.stringify({
-        model,
+        model: isLocal ? (process.env.LOCAL_LLM_MODEL || "local-gguf") : model,
         messages: finalMessages,
         stream: true,
         max_tokens: 1024,

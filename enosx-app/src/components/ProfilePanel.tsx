@@ -361,11 +361,14 @@ export default function ProfilePanel({ isOpen, onClose, onOpenAdminConsole, onOp
                 >
                   <div className="auth-hero-visual" aria-hidden="true">
                     <div className="auth-hero-grid" />
-                    <div className="auth-hero-orb auth-hero-orb-a" />
-                    <div className="auth-hero-orb auth-hero-orb-b" />
-                    <div className="auth-hero-orb auth-hero-orb-c" />
-                    <div className="auth-hero-orbit auth-hero-orbit-one" />
-                    <div className="auth-hero-orbit auth-hero-orbit-two" />
+                    <div className="auth-tech-circuit auth-tech-circuit-left" />
+                    <div className="auth-tech-circuit auth-tech-circuit-right" />
+                    <div className="auth-tech-core"><span className="auth-tech-core-ring" /><span className="auth-tech-core-ring auth-tech-core-ring-two" /><b>EX</b></div>
+                    <div className="auth-tech-node auth-tech-node-one" />
+                    <div className="auth-tech-node auth-tech-node-two" />
+                    <div className="auth-tech-node auth-tech-node-three" />
+                    <div className="auth-tech-label auth-tech-label-one">NEURAL LINK // 01</div>
+                    <div className="auth-tech-label auth-tech-label-two">CORE ONLINE</div>
                     <div className="auth-hero-meta"><span>ENOSX / AI WORKSPACE</span><b>01</b></div>
                     <BrandMark size={48} className="auth-hero-brand" animate />
                     <div className="auth-hero-copy"><strong>Intelligence, in focus.</strong><span>Build a better flow.</span></div>
@@ -373,9 +376,9 @@ export default function ProfilePanel({ isOpen, onClose, onOpenAdminConsole, onOp
                   <span className="auth-particle auth-particle-one" />
                   <span className="auth-particle auth-particle-two" />
                   <span className="auth-particle auth-particle-three" />
-                  <span className="auth-blob auth-blob-cyan" />
-                  <span className="auth-blob auth-blob-pink" />
-                  <span className="auth-blob auth-blob-blue" />
+                  <span className="auth-data-stream auth-data-stream-one" />
+                  <span className="auth-data-stream auth-data-stream-two" />
+                  <span className="auth-data-stream auth-data-stream-three" />
                   <div className="auth-energy-core" aria-hidden="true"><span /></div>
                   <div className="text-center space-y-2 pb-2">
                     <div className="auth-login-kicker"><span className="auth-kicker-dot" /> ENOSX AI <span className="auth-kicker-line" /></div>

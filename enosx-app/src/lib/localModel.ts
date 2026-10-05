@@ -10,6 +10,24 @@ export interface LocalModelStatus {
 }
 
 export const isTauriDesktop = () => "__TAURI_INTERNALS__" in window;
+const SAVED_MODEL_PATH_KEY = "enosx.localModelPath";
+
+export function getSavedLocalModelPath() {
+  return window.localStorage.getItem(SAVED_MODEL_PATH_KEY);
+}
+
+export function saveLocalModelPath(modelPath: string) {
+  window.localStorage.setItem(SAVED_MODEL_PATH_KEY, modelPath);
+}
+
+export function startSavedLocalModel(modelPath: string) {
+  return invoke<LocalModelStatus>("start_local_server", {
+    modelPath,
+    port: 8090,
+    contextLength: 8192,
+    gpuLayers: 999,
+  });
+}
 
 export async function chooseAndStartLocalModel(): Promise<LocalModelStatus> {
   if (!isTauriDesktop()) {
@@ -26,12 +44,8 @@ export async function chooseAndStartLocalModel(): Promise<LocalModelStatus> {
     throw new Error("Model selection cancelled.");
   }
 
-  return invoke<LocalModelStatus>("start_local_server", {
-    modelPath: selected,
-    port: 8090,
-    contextLength: 8192,
-    gpuLayers: 999,
-  });
+  saveLocalModelPath(selected);
+  return startSavedLocalModel(selected);
 }
 
 export function stopLocalModel() {

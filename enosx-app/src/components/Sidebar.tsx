@@ -30,7 +30,7 @@ import BrandMark from "./BrandMark";
 import { useWallpaper } from "@/contexts/WallpaperContext";
 import { useAuth } from "@/contexts/AuthContext";
 import ReusableFeaturesDialog from "./ReusableFeaturesDialog";
-import { chooseAndStartLocalModel, getLocalModelStatus, isTauriDesktop, stopLocalModel } from "@/lib/localModel";
+import { chooseAndStartLocalModel, getLocalModelStatus, getSavedLocalModelPath, isTauriDesktop, startSavedLocalModel, stopLocalModel } from "@/lib/localModel";
 
 interface SidebarProps {
   conversations: Conversation[];
@@ -106,6 +106,19 @@ export default function Sidebar({
       void getLocalModelStatus().then((status) => {
         setLocalModelRunning(status.running);
         setLocalModelName(status.modelPath?.split(/[\\/]/).pop() ?? null);
+        if (!status.running) {
+          const savedPath = getSavedLocalModelPath();
+          if (savedPath) {
+            setLocalModelBusy(true);
+            void startSavedLocalModel(savedPath).then((started) => {
+              setLocalModelRunning(started.running);
+              setLocalModelName(started.modelPath?.split(/[\\/]/).pop() ?? "Local model");
+            }).catch(() => {
+              // Keep startup quiet when llama-server is unavailable; the sidebar
+              // remains available so the user can choose another GGUF file.
+            }).finally(() => setLocalModelBusy(false));
+          }
+        }
       }).catch(() => undefined);
     }
   }, []);

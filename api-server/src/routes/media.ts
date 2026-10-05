@@ -178,14 +178,15 @@ router.delete("/media/playlists/:id/items/:mediaId", async (req: Request, res: R
 router.get("/media/:id/content", async (req: Request, res: Response) => {
   const userId = String(req.query.userId || "").trim();
   if (!userId) { res.status(400).json({ message: "User ID required" }); return; }
+  const mediaId = String(req.params.id);
   const expires = Number(req.query.expires);
   const token = String(req.query.token || "");
-  if (!hasValidMediaToken(req.params.id, userId, expires, token)) {
+  if (!hasValidMediaToken(mediaId, userId, expires, token)) {
     res.status(401).json({ message: "Signed media URL is missing or expired" });
     return;
   }
   try {
-    const rows = await queryNeon("SELECT name, mime_type, content FROM enosx_media_assets WHERE id = $1 AND user_id = $2", [req.params.id, userId]);
+    const rows = await queryNeon("SELECT name, mime_type, content FROM enosx_media_assets WHERE id = $1 AND user_id = $2", [mediaId, userId]);
     if (!rows[0]) { res.status(404).json({ message: "Media not found" }); return; }
     const match = String(rows[0].content).match(/^data:[^;,]+;base64,(.*)$/is);
     if (!match) { res.status(422).json({ message: "Stored media is invalid" }); return; }

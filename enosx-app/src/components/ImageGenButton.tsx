@@ -39,7 +39,8 @@ export default function ImageGenButton({
         cursor: isGenerating ? "not-allowed" : "pointer",
         opacity: isGenerating ? 0.5 : 1,
       }}
-      title={isGenerating ? "Generating image..." : isActive ? "Image mode OFF" : "Image mode ON — next message will generate an image"}
+      title={isGenerating ? "Generating image..." : isActive ? "Image mode OFF" : "Image mode ON — attach an image, then send an edit prompt"}
+      aria-label={isGenerating ? "Generating image" : isActive ? "Disable image edit mode" : "Enable image edit mode"}
     >
       {isGenerating ? (
         <Loader2 size={16} className="animate-spin" />

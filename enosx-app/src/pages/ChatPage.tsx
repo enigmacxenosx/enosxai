@@ -523,6 +523,14 @@ export default function ChatPage() {
         return file.mimeType?.startsWith("image/") || ["jpg", "jpeg", "png", "webp"].includes(extension);
       })?.content;
 
+      // The production NVIDIA model is an image-edit model (NVPCB), not a
+      // text-to-image model. Catch this locally so the prompt is not added to
+      // the conversation and the user does not lose the files they selected.
+      if (isImageModeRef.current && !pcbImageInput) {
+        toast.error("Attach a PNG, JPEG, or WebP image before generating with NVIDIA image mode.");
+        return "Image generation needs an attached image.";
+      }
+
       const userMessage: Message = {
         id: nanoid(),
         role: "user",

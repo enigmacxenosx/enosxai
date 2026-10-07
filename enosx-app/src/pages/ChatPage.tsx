@@ -59,7 +59,7 @@ import { getSplitEnabled, setSplitEnabled, onSplitPrefChange, notifySplitPrefCha
 import { WORKSPACE_DIRECTIVES } from "@/lib/workspaceDirectives";
 import { useCommandChain, type SystemAction } from "@/hooks/useCommandChain";
 import { ComputerWorkspaceProvider, useComputerWorkspace } from "@/contexts/ComputerWorkspaceContext";
-import { Bell, BellRing, ChevronDown, Copy, Download, Menu, Share2 } from "lucide-react";
+import { ChevronDown, Copy, Download, Menu, Share2 } from "lucide-react";
 import { buildWhatsAppHandoff, copyTranscript, downloadTranscript } from "@/lib/shareConversation";
 import { useScriptRuntime, type ScriptLanguage } from "@/hooks/useScriptRuntime";
 import {
@@ -474,6 +474,17 @@ export default function ChatPage() {
       toast.error("Notifications are blocked. Enable them in your browser site settings.");
     }
   }, []);
+  // Browsers require a user gesture for permission prompts. Ask automatically
+  // after the first interaction, while keeping the explicit control in the
+  // Sidebar menu for users who dismiss or revisit the prompt.
+  useEffect(() => {
+    if (notificationPermission !== "default" || typeof window === "undefined") return;
+    const enableAfterInteraction = () => {
+      void handleEnableNotifications();
+    };
+    window.addEventListener("pointerdown", enableAfterInteraction, { once: true });
+    return () => window.removeEventListener("pointerdown", enableAfterInteraction);
+  }, [notificationPermission, handleEnableNotifications]);
 
   const handleSend = useCallback(
     async (text: string, aiMode?: AIMode, selectedConnectorIds?: string[]): Promise<string> => {
@@ -1068,6 +1079,8 @@ ${getAdminContext()}` : ""}`,
           onProfileClick={() => setShowProfilePanel(true)}
           onLibraryClick={() => conversationSearch.open()}
           onScreenGuiderClick={toggleScreenGuider}
+          onNotificationsClick={() => void handleEnableNotifications()}
+          notificationsEnabled={notificationPermission === "granted"}
         />
       )}
 
@@ -1092,6 +1105,8 @@ ${getAdminContext()}` : ""}`,
           }}
           onLibraryClick={() => { setIsMobileSidebarOpen(false); conversationSearch.open(); }}
           onScreenGuiderClick={() => { setIsMobileSidebarOpen(false); toggleScreenGuider(); }}
+          onNotificationsClick={() => void handleEnableNotifications()}
+          notificationsEnabled={notificationPermission === "granted"}
         />
       )}
 
@@ -1121,16 +1136,6 @@ ${getAdminContext()}` : ""}`,
               <button type="button" onClick={() => handleDownloadConversation("md")} disabled={!activeConversation?.messages.length} title="Download Markdown" aria-label="Download Markdown" className="rounded-full border border-white/10 p-2 text-white/65 transition hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-30"><Download size={14} /></button>
               <button type="button" onClick={handleWhatsAppConversation} disabled={!activeConversation?.messages.length} title="Hand off to WhatsApp support" aria-label="Hand off to WhatsApp support" className="rounded-full border border-emerald-300/20 p-2 text-emerald-200/75 transition hover:bg-emerald-300/10 disabled:cursor-not-allowed disabled:opacity-30"><span className="text-[11px] font-bold">WA</span></button>
             </div>
-            <button
-              type="button"
-              onClick={() => void handleEnableNotifications()}
-              title={notificationPermission === "granted" ? "ENOSX notifications are enabled" : "Enable ENOSX notifications"}
-              className="flex items-center gap-1.5 rounded-full border px-3 py-1 text-[11px] font-semibold transition hover:bg-white/10"
-              style={{ borderColor: notificationPermission === "granted" ? "rgba(52,211,153,0.35)" : "rgba(255,255,255,0.12)", color: notificationPermission === "granted" ? "#6ee7b7" : "rgba(255,255,255,0.78)" }}
-            >
-              {notificationPermission === "granted" ? <BellRing size={12} /> : <Bell size={12} />}
-              {notificationPermission === "granted" ? "Alerts On" : "Enable Alerts"}
-            </button>
             {screenGuiderActive && (
               <motion.div 
                 initial={{ opacity: 0, scale: 0.8 }}

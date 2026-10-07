@@ -22,6 +22,8 @@ import {
   Library,
   Settings,
   Sparkles,
+  Bell,
+  BellRing,
 } from "lucide-react";
 import { Conversation } from "@/lib/types";
 import { useTheme } from "@/contexts/ThemeContext";
@@ -44,6 +46,8 @@ interface SidebarProps {
   onLibraryClick?: () => void;
   onReusableFeatureClick?: () => void;
   onScreenGuiderClick?: () => void;
+  onNotificationsClick?: () => void;
+  notificationsEnabled?: boolean;
   isPro?: boolean;
   isMobileOpen?: boolean;
   onMobileClose?: () => void;
@@ -63,6 +67,8 @@ export default function Sidebar({
   onLibraryClick,
   onReusableFeatureClick,
   onScreenGuiderClick,
+  onNotificationsClick,
+  notificationsEnabled = false,
   isPro = false,
   isMobileOpen = false,
   onMobileClose,
@@ -111,6 +117,14 @@ export default function Sidebar({
       icon: Settings,
       onClick: onSettingsClick || (() => {}),
       accent: false,
+      danger: false,
+    },
+    {
+      label: notificationsEnabled ? "Notifications On" : "Notifications",
+      description: notificationsEnabled ? "System alerts + EX sound" : "Enable system-bar alerts",
+      icon: notificationsEnabled ? BellRing : Bell,
+      onClick: onNotificationsClick || (() => {}),
+      accent: notificationsEnabled,
       danger: false,
     },
     {

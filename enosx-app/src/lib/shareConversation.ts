@@ -34,6 +34,16 @@ export function formatTranscript(conversation: Conversation): string {
   return `${header}${lines}`;
 }
 
+export function formatMarkdownTranscript(conversation: Conversation): string {
+  const lines = [`# ${conversation.title || "New Chat"}`, "", `- Started: ${new Date(conversation.createdAt).toLocaleString()}`, `- Messages: ${conversation.messages.length}`, ""];
+  conversation.messages.forEach((message) => {
+    const who = message.role === "user" ? "You" : "ENOSX AI";
+    const timestamp = new Date(message.timestamp).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+    lines.push(`## ${who} · ${timestamp}`, "", message.content || "(message in progress)", "");
+  });
+  return lines.join("\n");
+}
+
 function stripMarkdownForWhatsApp(text: string): string {
   return text
     .replace(/!\[.*?\]\((.*?)\)/g, "$1")
@@ -67,7 +77,7 @@ export function buildEmailHandoff(conversation: Conversation): string {
 }
 
 export function downloadTranscript(conversation: Conversation, format: "txt" | "md" = "txt") {
-  const content = format === "md" ? formatTranscript(conversation) : formatTranscript(conversation);
+  const content = format === "md" ? formatMarkdownTranscript(conversation) : formatTranscript(conversation);
   const mime = format === "md" ? "text/markdown" : "text/plain";
   const blob = new Blob([content], { type: `${mime};charset=utf-8` });
   const url = URL.createObjectURL(blob);

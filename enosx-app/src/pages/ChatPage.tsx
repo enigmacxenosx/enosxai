@@ -59,7 +59,8 @@ import { getSplitEnabled, setSplitEnabled, onSplitPrefChange, notifySplitPrefCha
 import { WORKSPACE_DIRECTIVES } from "@/lib/workspaceDirectives";
 import { useCommandChain, type SystemAction } from "@/hooks/useCommandChain";
 import { ComputerWorkspaceProvider, useComputerWorkspace } from "@/contexts/ComputerWorkspaceContext";
-import { Bell, BellRing, ChevronDown, Menu } from "lucide-react";
+import { Bell, BellRing, ChevronDown, Copy, Download, Menu, Share2 } from "lucide-react";
+import { buildWhatsAppHandoff, copyTranscript, downloadTranscript } from "@/lib/shareConversation";
 import { useScriptRuntime, type ScriptLanguage } from "@/hooks/useScriptRuntime";
 import {
   getNotificationPermission,
@@ -914,6 +915,35 @@ ${getAdminContext()}` : ""}`,
 
   const activeConversation = conversations.find((c) => c.id === activeId);
   const messages = activeConversation?.messages || [];
+  const handleShareConversation = useCallback(async () => {
+    if (!activeConversation || activeConversation.messages.length === 0) return;
+    const text = activeConversation.messages.map((message) => `${message.role === "user" ? "You" : "ENOSX AI"}: ${message.content}`).join("\n\n");
+    try {
+      if (navigator.share) {
+        await navigator.share({ title: activeConversation.title || "ENOSX AI conversation", text });
+        toast.success("Conversation shared");
+      } else if (await copyTranscript(activeConversation)) {
+        toast.success("Conversation copied to your clipboard");
+      }
+    } catch (error) {
+      if (error instanceof DOMException && error.name === "AbortError") return;
+      toast.error("Could not share this conversation");
+    }
+  }, [activeConversation]);
+  const handleCopyConversation = useCallback(async () => {
+    if (!activeConversation || activeConversation.messages.length === 0) return;
+    const copied = await copyTranscript(activeConversation);
+    toast[copied ? "success" : "error"](copied ? "Conversation copied to your clipboard" : "Could not copy this conversation");
+  }, [activeConversation]);
+  const handleDownloadConversation = useCallback((format: "txt" | "md") => {
+    if (!activeConversation || activeConversation.messages.length === 0) return;
+    downloadTranscript(activeConversation, format);
+    toast.success(`Conversation downloaded as ${format.toUpperCase()}`);
+  }, [activeConversation]);
+  const handleWhatsAppConversation = useCallback(() => {
+    if (!activeConversation || activeConversation.messages.length === 0) return;
+    window.open(buildWhatsAppHandoff(activeConversation), "_blank", "noopener,noreferrer");
+  }, [activeConversation]);
 
   // Keep workspace hooks unconditional: phone and TV layouts return early, so
   // every render must execute the same hooks in the same order.
@@ -1109,6 +1139,12 @@ ${getAdminContext()}` : ""}`,
           </div>
 
           <div className="flex items-center gap-3">
+            <div className="hidden items-center gap-1 sm:flex" aria-label="Conversation actions">
+              <button type="button" onClick={() => void handleShareConversation()} disabled={!activeConversation?.messages.length} title="Share conversation" aria-label="Share conversation" className="rounded-full border border-white/10 p-2 text-white/65 transition hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-30"><Share2 size={14} /></button>
+              <button type="button" onClick={() => void handleCopyConversation()} disabled={!activeConversation?.messages.length} title="Copy conversation" aria-label="Copy conversation" className="rounded-full border border-white/10 p-2 text-white/65 transition hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-30"><Copy size={14} /></button>
+              <button type="button" onClick={() => handleDownloadConversation("md")} disabled={!activeConversation?.messages.length} title="Download Markdown" aria-label="Download Markdown" className="rounded-full border border-white/10 p-2 text-white/65 transition hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-30"><Download size={14} /></button>
+              <button type="button" onClick={handleWhatsAppConversation} disabled={!activeConversation?.messages.length} title="Hand off to WhatsApp support" aria-label="Hand off to WhatsApp support" className="rounded-full border border-emerald-300/20 p-2 text-emerald-200/75 transition hover:bg-emerald-300/10 disabled:cursor-not-allowed disabled:opacity-30"><span className="text-[11px] font-bold">WA</span></button>
+            </div>
             <button
               type="button"
               onClick={() => void handleEnableNotifications()}

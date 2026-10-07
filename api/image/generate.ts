@@ -266,8 +266,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       });
     }
 
-    const imagePayload = extractImagePayload(data);
-    if (!imagePayload) {
+    const generatedImage = extractImagePayload(data);
+    if (!generatedImage) {
       console.error("[IMAGE] NVIDIA response did not contain a supported image payload:", responseText.slice(0, 1000));
       return res.status(502).json({
         error: "NVIDIA image generation returned no usable image",
@@ -275,7 +275,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       });
     }
 
-    const watermarkedUrl = await applyEnosxWatermark(imagePayload.url);
+    const watermarkedUrl = await applyEnosxWatermark(generatedImage.url);
     return res.status(200).json({
       url: watermarkedUrl,
       revised_prompt: data?.revised_prompt || data?.data?.[0]?.revised_prompt,

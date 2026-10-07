@@ -2,7 +2,8 @@
  * ENOSX AI — /api/image/generate (Vercel Serverless Function)
  * Generates images through the configured NVIDIA image endpoint. Credentials
  * remain server-side and the browser receives a self-contained data URL so
- * generated images remain downloadable after a chat is reloaded.
+ * generated images remain downloadable after a chat is reloaded. The NVIDIA
+ * OpenAI-compatible `/v1/images/generations` route supports Qwen Image.
  *
  * Server-only environment variables:
  *   - NVIDIA_IMAGE_API_KEY (required for image generation; falls back to NVIDIA_API_KEY)
@@ -14,9 +15,8 @@
  *   { prompt: string, image?: string, mode?: string, width?: number,
  *     height?: number, cfg_scale?: number, steps?: number, seed?: number }
  *
- * `image` may be a data URL or base64-encoded RGB image. NVIDIA's PCB model
- * requires an input image; a text-only request is supported only when the
- * configured NVIDIA endpoint supports text-to-image generation.
+ * `image` may be a data URL or base64-encoded RGB image for compatible edit
+ * endpoints. Qwen Image's hosted generation endpoint accepts text prompts only.
  *
  * Response:
  *   { url: string, revised_prompt?: string, media_type: string } — 200
@@ -24,11 +24,10 @@
  */
 import type { VercelRequest, VercelResponse } from "@vercel/node";
 
-const DEFAULT_PROMPT =
-  "Render this PCB component crop in the style of an NVPCB raked-solder-light photograph: dark reddish board with bright orange-red and blue specular highlights on the solder pads, photorealistic textures.";
+const DEFAULT_PROMPT = "Create a polished image based on the supplied prompt.";
 const DEFAULT_WIDTH = 512;
 const DEFAULT_HEIGHT = 512;
-const MAX_PROMPT_LENGTH = 4000;
+const MAX_PROMPT_LENGTH = 800;
 const MAX_IMAGE_LENGTH = 8_000_000;
 
 function asBoundedNumber(value: unknown, fallback: number, min: number, max: number) {
@@ -109,7 +108,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   const image = typeof body.image === "string" ? body.image.trim() : "";
   const model = process.env.NVIDIA_IMAGE_MODEL?.trim();
+  const usesOpenAiImageApi = /\/v1\/images\/generations\/?$/i.test(endpoint);
   const requiresInputImage = /nvpcb|image-edit/i.test(model || "");
+  if (usesOpenAiImageApi && image) {
+    return res.status(400).json({
+      error: "The configured Qwen Image generation endpoint accepts text prompts only; remove the attached image and try again",
+      status: "IMAGE_INPUT_NOT_SUPPORTED",
+    });
+  }
   if (requiresInputImage && !image) {
     return res.status(400).json({
       error: "An input PCB image is required for the configured NVIDIA image-edit model",
@@ -127,17 +133,31 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
   }
   const imagePayload = image && image.startsWith("data:image/") ? image : image ? `data:image/png;base64,${image}` : "";
-  const payload: Record<string, unknown> = {
-    prompt,
-    mode: typeof body.mode === "string" && body.mode.trim() ? body.mode.trim() : imagePayload ? "img2img" : "text2img",
-    width: asBoundedNumber(body.width, DEFAULT_WIDTH, 64, 2048),
-    height: asBoundedNumber(body.height, DEFAULT_HEIGHT, 64, 2048),
-    cfg_scale: asBoundedNumber(body.cfg_scale, 7, 0, 20),
-    steps: asBoundedNumber(body.steps, 30, 1, 150),
-  };
-  if (model) payload.model = model;
-  if (imagePayload) payload.image = imagePayload;
+  const payload: Record<string, unknown> = usesOpenAiImageApi
+    ? {
+        model: model || "qwen-image",
+        prompt,
+        n: 1,
+        response_format: "b64_json",
+        cfg_scale: asBoundedNumber(body.cfg_scale, 4, 1.01, 20),
+        steps: asBoundedNumber(body.steps, 30, 5, 100),
+      }
+    : {
+        prompt,
+        mode: typeof body.mode === "string" && body.mode.trim() ? body.mode.trim() : imagePayload ? "img2img" : "text2img",
+        width: asBoundedNumber(body.width, DEFAULT_WIDTH, 64, 2048),
+        height: asBoundedNumber(body.height, DEFAULT_HEIGHT, 64, 2048),
+        cfg_scale: asBoundedNumber(body.cfg_scale, 7, 0, 20),
+        steps: asBoundedNumber(body.steps, 30, 1, 150),
+      };
+  if (usesOpenAiImageApi && (body.width !== undefined || body.height !== undefined)) {
+    const width = asBoundedNumber(body.width, DEFAULT_WIDTH, 512, 1664);
+    const height = asBoundedNumber(body.height, DEFAULT_HEIGHT, 512, 1664);
+    payload.size = `${width}x${height}`;
+  }
   if (body.seed !== undefined) payload.seed = asBoundedNumber(body.seed, 0, 0, 2_147_483_647);
+  if (!usesOpenAiImageApi && model) payload.model = model;
+  if (!usesOpenAiImageApi && imagePayload) payload.image = imagePayload;
 
   console.log("[IMAGE] Generating with NVIDIA image endpoint", {
     model: model || "endpoint-default",

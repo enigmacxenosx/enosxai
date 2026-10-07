@@ -66,6 +66,9 @@ const originalFetch = globalThis.fetch;
 let capturedRequest;
 globalThis.fetch = async (url, init) => {
   capturedRequest = { url, init, payload: JSON.parse(init.body) };
+  if (String(url).endsWith("/v1/images/generations")) {
+    return new Response(JSON.stringify({ data: [{ b64_json: "cWdlbi1pbWFnZQ==" }] }), { status: 200 });
+  }
   return new Response(JSON.stringify({
     images: ["iVBORw0KGgoAAAANSUhEUgAAAAEAAAAB"],
     revised_prompt: "translated PCB image",
@@ -96,6 +99,24 @@ await handler(makeReq("POST", { prompt: "translate the style", image: "data:imag
 assert(res._status === 200, "image-edit returns 200");
 assert(capturedRequest.payload.image === "data:image/png;base64,abc", "sends input image");
 assert(capturedRequest.payload.mode === "img2img", "selects image-edit mode");
+
+console.log("[test] Qwen Image supports prompt-only text-to-image requests");
+process.env.NVIDIA_IMAGE_ENDPOINT = "https://integrate.api.nvidia.com/v1/images/generations";
+process.env.NVIDIA_IMAGE_MODEL = "qwen-image";
+res = makeRes();
+await handler(makeReq("POST", { prompt: "a tree at sunset" }), res);
+assert(res._status === 200, "Qwen Image returns 200 without an input image");
+assert(res._json.url.startsWith("data:image/png;base64,"), "Qwen image base64 response becomes a data URL");
+assert(capturedRequest.payload.model === "qwen-image", "sends the Qwen Image model identifier");
+assert(capturedRequest.payload.n === 1, "requests one image");
+assert(capturedRequest.payload.response_format === "b64_json", "requests base64 image output");
+assert(capturedRequest.payload.mode === undefined && capturedRequest.payload.width === undefined, "omits fields unsupported by the OpenAI-compatible endpoint");
+
+console.log("[test] Qwen Image rejects attached source images with a helpful error");
+res = makeRes();
+await handler(makeReq("POST", { prompt: "a tree at sunset", image: "data:image/png;base64,abc" }), res);
+assert(res._status === 400, "rejects image input before calling NVIDIA");
+assert(res._json.status === "IMAGE_INPUT_NOT_SUPPORTED", "returns a structured unsupported-image status");
 
 console.log("[test] NVIDIA missing configuration returns 503");
 delete process.env.NVIDIA_IMAGE_ENDPOINT;

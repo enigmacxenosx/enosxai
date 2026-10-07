@@ -524,12 +524,12 @@ export default function ChatPage() {
         return file.mimeType?.startsWith("image/") || ["jpg", "jpeg", "png", "webp"].includes(extension);
       })?.content;
 
-      // The production NVIDIA model is an image-edit model (NVPCB), not a
-      // text-to-image model. Catch this locally so the prompt is not added to
-      // the conversation and the user does not lose the files they selected.
-      if (isImageModeRef.current && !pcbImageInput) {
-        toast.error("Attach a PNG, JPEG, or WebP image before generating with NVIDIA image mode.");
-        return "Image generation needs an attached image.";
+      // Qwen Image is text-to-image. Its hosted NVIDIA generation endpoint does
+      // not accept an input image, so fail locally rather than sending an
+      // unsupported attachment and losing the user's selected file.
+      if (isImageModeRef.current && pcbImageInput) {
+        toast.error("Qwen Image generates from text prompts and does not accept an attached source image.");
+        return "Remove the attached image to generate with Qwen Image.";
       }
 
       const userMessage: Message = {

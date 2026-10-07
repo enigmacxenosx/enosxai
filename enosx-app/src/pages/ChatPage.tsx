@@ -88,6 +88,11 @@ const generateTitle = (firstMessage: string): string => {
   return words.join(" ") + (firstMessage.split(/\s+/).length > 6 ? "..." : "");
 };
 
+function isImageGenerationRequest(text: string): boolean {
+  return /\b(?:generate|create|make|draw|paint|render|illustrate)\b.{0,100}\b(?:image|picture|illustration|artwork|logo|icon|avatar)\b/i.test(text)
+    || /\b(?:image|picture|illustration|artwork|logo|icon|avatar)\b.{0,80}\b(?:of|showing|with)\b/i.test(text);
+}
+
 function normalizeConversation(raw: any): Conversation | null {
   if (!raw || typeof raw.id !== "string") return null;
   const now = new Date();
@@ -429,9 +434,6 @@ export default function ChatPage() {
   const [screenGuiderActive, setScreenGuiderActive] = useState(false);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(true);
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
-  const [isImageMode, setIsImageMode] = useState(false);
-  const isImageModeRef = useRef(false);
-  useEffect(() => { isImageModeRef.current = isImageMode; }, [isImageMode]);
   const { isCompactMode } = useCompactMode();
   const isMobile = useIsMobile();
   const deviceType = useDeviceType();
@@ -473,17 +475,6 @@ export default function ChatPage() {
     }
   }, []);
 
-  const handleToggleImageMode = useCallback(() => {
-    setIsImageMode((prev) => {
-      if (prev) {
-        toast.info("Image mode disabled");
-      } else {
-        toast.success("Image mode enabled — your next message will generate an image");
-      }
-      return !prev;
-    });
-  }, []);
-
   const handleSend = useCallback(
     async (text: string, aiMode?: AIMode, selectedConnectorIds?: string[]): Promise<string> => {
       if (text.trim().toLowerCase() === "enosx") {
@@ -519,18 +510,7 @@ export default function ChatPage() {
       if (fileContext.isLoaded) {
         messageContent += getFileContextMessage();
       }
-      const pcbImageInput = fileContext.files.find((file) => {
-        const extension = file.type.toLowerCase();
-        return file.mimeType?.startsWith("image/") || ["jpg", "jpeg", "png", "webp"].includes(extension);
-      })?.content;
-
-      // Qwen Image is text-to-image. Its hosted NVIDIA generation endpoint does
-      // not accept an input image, so fail locally rather than sending an
-      // unsupported attachment and losing the user's selected file.
-      if (isImageModeRef.current && pcbImageInput) {
-        toast.error("Qwen Image generates from text prompts and does not accept an attached source image.");
-        return "Remove the attached image to generate with Qwen Image.";
-      }
+      const shouldGenerateImage = isImageGenerationRequest(text);
 
       const userMessage: Message = {
         id: nanoid(),
@@ -562,8 +542,7 @@ export default function ChatPage() {
       };
 
       // ── Image generation mode ────────────────────────────────────────────────
-      if (isImageModeRef.current) {
-        setIsImageMode(false);
+      if (shouldGenerateImage) {
         // Show generating state
         setConversations((prev) =>
           prev.map((c) =>
@@ -577,7 +556,8 @@ export default function ChatPage() {
           )
         );
 
-        const imgResult = await generateImage(text, pcbImageInput);
+        // Qwen Image is text-to-image; do not forward unsupported attachments.
+        const imgResult = await generateImage(text);
         if (imgResult && imgResult.url) {
           const imageMarkdown = imgResult.revised_prompt
             ? `Here's the image I generated for you:\n\n![Generated Image](${imgResult.url})\n\n*Prompt: ${imgResult.revised_prompt}*`
@@ -602,7 +582,7 @@ export default function ChatPage() {
                 ? {
                     ...c,
                     messages: c.messages.map((m) =>
-                      m.id === assistantId ? { ...m, content: "Sorry, I couldn't generate that image. Please try again later." } : m
+                      m.id === assistantId ? { ...m, content: imgResult?.error ? `Image generation failed: ${imgResult.error}` : "Sorry, I couldn't generate that image. Please try again later." } : m
                     ),
                   }
                 : c
@@ -976,8 +956,6 @@ ${getAdminContext()}` : ""}`,
           speak={speak}
           stopSpeaking={handleStopSpeak}
           messagesEndRef={messagesEndRef as React.RefObject<HTMLDivElement>}
-          isImageMode={isImageMode}
-          onToggleImageMode={handleToggleImageMode}
           isFreeMode={isFreeMode}
           onFilesSelected={handleFilesSelected}
         />
@@ -1011,8 +989,6 @@ ${getAdminContext()}` : ""}`,
           isMobileSidebarOpen={isMobileSidebarOpen}
           setIsMobileSidebarOpen={setIsMobileSidebarOpen}
           messagesEndRef={messagesEndRef as React.RefObject<HTMLDivElement>}
-          isImageMode={isImageMode}
-          onToggleImageMode={handleToggleImageMode}
           isFreeMode={isFreeMode}
           onFilesSelected={handleFilesSelected}
           onSettingsClick={() => setShowProfilePanel(true)}
@@ -1272,8 +1248,6 @@ ${getAdminContext()}` : ""}`,
               onStopSpeaking={handleStopSpeak}
               voiceState={voiceState}
               transcript={transcript}
-              isImageMode={isImageMode}
-              onToggleImageMode={handleToggleImageMode}
               isFreeMode={isFreeMode}
               onFilesSelected={handleFilesSelected}
             />

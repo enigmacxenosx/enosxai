@@ -27,8 +27,6 @@ interface PhoneChatLayoutProps {
   isMobileSidebarOpen: boolean;
   setIsMobileSidebarOpen: (open: boolean) => void;
   messagesEndRef: React.RefObject<HTMLDivElement>;
-  isImageMode?: boolean;
-  onToggleImageMode?: () => void;
   isFreeMode?: boolean;
   onFilesSelected?: (files: File[]) => void;
   onSettingsClick?: () => void;
@@ -53,8 +51,6 @@ export default function PhoneChatLayout({
   isMobileSidebarOpen,
   setIsMobileSidebarOpen,
   messagesEndRef,
-  isImageMode = false,
-  onToggleImageMode,
   isFreeMode = false,
   onFilesSelected,
   onSettingsClick,
@@ -116,8 +112,6 @@ export default function PhoneChatLayout({
           onStartVoice={startListening}
           onStopVoice={stopListening}
           onStopSpeaking={stopSpeaking}
-          isImageMode={isImageMode}
-          onToggleImageMode={onToggleImageMode}
           isFreeMode={isFreeMode}
           onFilesSelected={onFilesSelected}
         />

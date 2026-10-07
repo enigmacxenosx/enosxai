@@ -40,24 +40,32 @@ function extractImagePayload(data: any) {
   const candidates = [
     data?.image,
     data?.images?.[0],
-    data?.data?.[0]?.url,
-    data?.data?.[0]?.b64_json,
-    data?.data?.[0]?.image,
-    data?.artifacts?.[0]?.base64,
+    data?.data?.[0],
+    data?.artifacts?.[0],
     data?.output?.images?.[0],
+    data?.output?.[0],
     data?.result?.image,
+    data?.result?.images?.[0],
   ];
 
-  for (const candidate of candidates) {
+  for (const rawCandidate of candidates) {
+    const candidate = typeof rawCandidate === "string"
+      ? rawCandidate
+      : rawCandidate && typeof rawCandidate === "object"
+        ? rawCandidate.url || rawCandidate.image_url || rawCandidate.b64_json || rawCandidate.base64 || rawCandidate.image || rawCandidate.data
+        : null;
     if (typeof candidate !== "string" || candidate.length === 0) continue;
     if (candidate.startsWith("http://") || candidate.startsWith("https://")) {
-      return { url: candidate, mediaType: "image/png" };
+      return { url: candidate, mediaType: rawCandidate?.mime_type || rawCandidate?.media_type || "image/png" };
     }
     if (candidate.startsWith("data:image/")) {
       const mediaType = candidate.slice(5, candidate.indexOf(";"));
       return { url: candidate, mediaType: mediaType || "image/png" };
     }
-    return { url: `data:image/png;base64,${candidate}`, mediaType: "image/png" };
+    const mediaType = rawCandidate && typeof rawCandidate === "object"
+      ? rawCandidate.mime_type || rawCandidate.media_type || "image/png"
+      : "image/png";
+    return { url: `data:${mediaType};base64,${candidate}`, mediaType };
   }
 
   return null;

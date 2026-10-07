@@ -22,8 +22,6 @@ interface TVChatLayoutProps {
   speak: (text: string) => void;
   stopSpeaking: () => void;
   messagesEndRef: React.RefObject<HTMLDivElement>;
-  isImageMode?: boolean;
-  onToggleImageMode?: () => void;
   isFreeMode?: boolean;
   onFilesSelected?: (files: File[]) => void;
 }
@@ -44,8 +42,6 @@ export default function TVChatLayout({
   speak,
   stopSpeaking,
   messagesEndRef,
-  isImageMode = false,
-  onToggleImageMode,
   isFreeMode = false,
   onFilesSelected,
 }: TVChatLayoutProps) {
@@ -170,8 +166,6 @@ export default function TVChatLayout({
           onStartVoice={startListening}
           onStopVoice={stopListening}
           onStopSpeaking={stopSpeaking}
-          isImageMode={isImageMode}
-          onToggleImageMode={onToggleImageMode}
           isFreeMode={isFreeMode}
           onFilesSelected={onFilesSelected}
         />

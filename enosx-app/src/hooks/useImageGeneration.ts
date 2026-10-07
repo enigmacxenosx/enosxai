@@ -2,8 +2,9 @@ import { useState, useCallback } from "react";
 import { toast } from "sonner";
 
 interface ImageGenerationResult {
-  url: string;
+  url?: string;
   revised_prompt?: string;
+  error?: string;
 }
 
 /**
@@ -46,13 +47,14 @@ export function useImageGeneration() {
           if (response.status !== 503) {
             toast.error(message);
           }
-          return null;
+          return { error: message };
         }
 
         const data = (await response.json()) as ImageGenerationResult;
         if (!data?.url) {
-          setError("NVIDIA image generation returned no image.");
-          return null;
+          const message = "NVIDIA image generation returned no image.";
+          setError(message);
+          return { error: message };
         }
 
         return {
@@ -64,7 +66,7 @@ export function useImageGeneration() {
           err instanceof Error ? err.message : "NVIDIA image generation failed.";
         setError(message);
         toast.error(message);
-        return null;
+        return { error: message };
       } finally {
         setIsGenerating(false);
       }

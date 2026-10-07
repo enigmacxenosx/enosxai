@@ -4,9 +4,9 @@
  * Supports URLs and base64 data URLs with a lightbox preview.
  */
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, Download, Maximize2 } from "lucide-react";
+import { X, Download, Maximize2, ImageOff, ExternalLink } from "lucide-react";
 import { useTheme } from "@/contexts/ThemeContext";
 
 interface ImageDisplayProps {
@@ -21,6 +21,12 @@ export default function ImageDisplay({ src, alt = "Generated image", caption, wa
   const { config } = useTheme();
   const [isExpanded, setIsExpanded] = useState(false);
   const [isLoaded, setIsLoaded] = useState(false);
+  const [hasError, setHasError] = useState(false);
+
+  useEffect(() => {
+    setIsLoaded(false);
+    setHasError(false);
+  }, [src]);
 
   const downloadSource = async (): Promise<string> => {
     if (!watermark) return src;
@@ -90,7 +96,7 @@ export default function ImageDisplay({ src, alt = "Generated image", caption, wa
     <>
       <div className="relative group my-3" style={{ maxWidth: 640 }}>
         {/* Loading shimmer */}
-        {!isLoaded && (
+        {!isLoaded && !hasError && (
           <div
             className="absolute inset-0 animate-pulse"
             style={{
@@ -101,15 +107,46 @@ export default function ImageDisplay({ src, alt = "Generated image", caption, wa
           />
         )}
 
-        <img
-          src={src}
-          alt={alt}
-          onLoad={() => setIsLoaded(true)}
-          className={`w-full max-h-[420px] object-contain transition-all duration-300 cursor-pointer
-            ${isLoaded ? "opacity-100" : "opacity-0"}
-          `}
-          onClick={() => setIsExpanded(true)}
-        />
+        {!hasError && (
+          <img
+            src={src}
+            alt={alt}
+            onLoad={() => setIsLoaded(true)}
+            onError={() => { setIsLoaded(false); setHasError(true); }}
+            className={`w-full max-h-[420px] object-contain transition-all duration-300 cursor-pointer
+              ${isLoaded ? "opacity-100" : "opacity-0"}
+            `}
+            onClick={() => setIsExpanded(true)}
+          />
+        )}
+
+        {hasError && (
+          <div
+            role="status"
+            className="flex min-h-24 max-w-[420px] items-center gap-3 rounded-xl border px-4 py-3 text-sm"
+            style={{
+              color: config.text,
+              background: "rgba(0,0,0,0.24)",
+              borderColor: "rgba(255,255,255,0.12)",
+            }}
+          >
+            <ImageOff size={18} className="shrink-0 opacity-60" aria-hidden="true" />
+            <div className="min-w-0">
+              <p className="font-medium">Image unavailable</p>
+              <p className="mt-0.5 text-xs opacity-60">The source may have expired or been removed.</p>
+              {/^https?:\/\//i.test(src) && (
+                <a
+                  href={src}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="mt-2 inline-flex items-center gap-1 text-xs underline underline-offset-2 opacity-80 hover:opacity-100"
+                >
+                  Open original image <ExternalLink size={12} aria-hidden="true" />
+                </a>
+              )}
+            </div>
+          </div>
+        )}
 
         {watermark && isLoaded && (
           <img

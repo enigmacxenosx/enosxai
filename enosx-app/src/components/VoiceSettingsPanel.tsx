@@ -60,6 +60,26 @@ function SliderRow({
 export default function VoiceSettingsPanel({ settings, onUpdate }: VoiceSettingsPanelProps) {
   return (
     <div className="flex flex-col">
+      <div className="flex items-center gap-3 px-4 py-2.5">
+        <span className="w-7 h-7 rounded-md bg-white/5 flex items-center justify-center text-white/60 shrink-0">
+          <Volume2 size={14} />
+        </span>
+        <div className="flex-1 min-w-0">
+          <p className="text-xs text-white/70">Speech voice</p>
+          <p className="text-[11px] text-white/40 leading-relaxed mt-0.5">
+            Choose Magpie or the Chatterbox male voice.
+          </p>
+        </div>
+        <select
+          aria-label="Speech voice"
+          value={settings.voiceProvider}
+          onChange={(event) => onUpdate({ voiceProvider: event.target.value as SpeechSettings["voiceProvider"] })}
+          className="max-w-[150px] rounded-md border border-white/10 bg-slate-900 px-2 py-1.5 text-xs text-white"
+        >
+          <option value="magpie">Magpie — Aria</option>
+          <option value="chatterbox">Chatterbox — Male</option>
+        </select>
+      </div>
       <SliderRow
         icon={<Volume2 size={14} />}
         label="Speech speed"

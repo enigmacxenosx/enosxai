@@ -8,6 +8,7 @@ const VOICE_SERVICE_URL = "/api/voice";
 export interface SpeechSettings {
   rate: number;
   pitch: number;
+  voiceProvider: "magpie" | "chatterbox";
   /** Auto re-listen after the assistant finishes speaking. */
   continuousConversation: boolean;
   /** Start listening when the wake phrase is heard while the app is open. */
@@ -17,6 +18,7 @@ export interface SpeechSettings {
 const DEFAULT_SPEECH_SETTINGS: SpeechSettings = {
   rate: 1,
   pitch: 1,
+  voiceProvider: "magpie",
   continuousConversation: false,
   wakePhrase: false,
 };
@@ -31,6 +33,7 @@ export function loadSpeechSettings(): SpeechSettings {
       return {
         rate: Math.min(2, Math.max(0.5, Number(parsed.rate) || 1)),
         pitch: Math.min(2, Math.max(0, Number(parsed.pitch) || 1)),
+        voiceProvider: parsed.voiceProvider === "chatterbox" ? "chatterbox" : "magpie",
         continuousConversation: Boolean(parsed.continuousConversation),
         wakePhrase: Boolean(parsed.wakePhrase),
       };
@@ -142,6 +145,7 @@ export function useVoice() {
   const [settings, setSettings] = useState<SpeechSettings>(() => loadSpeechSettings());
   const recognitionRef = useRef<ISpeechRecognition | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  const speechRequestIdRef = useRef(0);
   const languageRef = useRef("en-US");
   const settingsRef = useRef<SpeechSettings>(settings);
   const onFinalResultRef = useRef<((text: string) => void) | undefined>(undefined);
@@ -176,6 +180,7 @@ export function useVoice() {
   }, []);
 
   const stopSpeaking = useCallback(() => {
+    speechRequestIdRef.current += 1;
     releaseAudio();
     if (typeof window !== "undefined" && "speechSynthesis" in window) {
       window.speechSynthesis.cancel();
@@ -358,6 +363,9 @@ export function useVoice() {
       if (!cleanText) return;
 
       stopSpeaking();
+      const requestId = speechRequestIdRef.current;
+      const provider = settingsRef.current.voiceProvider;
+      const chunks = splitIntoSpeechChunks(cleanText, 220);
 
       const speakWithBrowser = () => {
         if (typeof window === "undefined" || !("speechSynthesis" in window)) {
@@ -382,37 +390,55 @@ export function useVoice() {
 
       try {
         setVoiceState("speaking");
-        const response = await fetch(VOICE_SERVICE_URL, {
-          method: "POST",
-          headers: { "Content-Type": "application/json", Accept: "audio/wav" },
-          body: JSON.stringify({ text: cleanText }),
-        });
-        if (!response.ok) {
-          const detail = await response.json().catch(() => ({}));
-          throw new Error(detail.error || `Voice service failed with ${response.status}`);
-        }
-        const audioBlob = await response.blob();
-        if (!audioBlob.size) throw new Error("Voice service returned empty audio.");
-        const objectUrl = URL.createObjectURL(
-          audioBlob.type ? audioBlob : new Blob([audioBlob], { type: "audio/wav" })
-        );
-        const audio = new Audio(objectUrl);
-        audio.preload = "auto";
-        audioRef.current = audio;
-        audio.onended = () => {
-          if (audioRef.current !== audio) return;
-          releaseAudio();
-          setVoiceState("idle");
-          scheduleListenAgain(onFinalResultRef.current ?? (() => {}));
+        const playChunk = async (index: number) => {
+          if (requestId !== speechRequestIdRef.current) return;
+          if (index >= chunks.length) {
+            setVoiceState("idle");
+            scheduleListenAgain(onFinalResultRef.current ?? (() => {}));
+            return;
+          }
+
+          const response = await fetch(VOICE_SERVICE_URL, {
+            method: "POST",
+            headers: { "Content-Type": "application/json", Accept: "audio/wav" },
+            body: JSON.stringify({ text: chunks[index], provider }),
+          });
+          if (!response.ok) {
+            const detail = await response.json().catch(() => ({}));
+            throw new Error(detail.error || `Voice service failed with ${response.status}`);
+          }
+          const audioBlob = await response.blob();
+          if (!audioBlob.size) throw new Error("Voice service returned empty audio.");
+          if (requestId !== speechRequestIdRef.current) return;
+
+          const objectUrl = URL.createObjectURL(
+            audioBlob.type ? audioBlob : new Blob([audioBlob], { type: "audio/wav" })
+          );
+          const audio = new Audio(objectUrl);
+          audio.preload = "auto";
+          audioRef.current = audio;
+          audio.onended = () => {
+            if (audioRef.current !== audio || requestId !== speechRequestIdRef.current) return;
+            releaseAudio();
+            void playChunk(index + 1).catch((error) => {
+              if (requestId !== speechRequestIdRef.current) return;
+              console.error("ENOSX voice service failed", error);
+              setVoiceState("idle");
+              toast.error("The selected ENOSX voice could not finish speaking this response.");
+            });
+          };
+          audio.onerror = () => {
+            if (audioRef.current !== audio) return;
+            releaseAudio();
+            setVoiceState("idle");
+            toast.error("The ENOSX voice service could not play this response.");
+          };
+          await audio.play();
         };
-        audio.onerror = () => {
-          if (audioRef.current !== audio) return;
-          releaseAudio();
-          setVoiceState("idle");
-          toast.error("The ENOSX voice service could not play this response.");
-        };
-        await audio.play();
+
+        await playChunk(0);
       } catch (error) {
+        if (requestId !== speechRequestIdRef.current) return;
         console.error("ENOSX voice service failed", error);
         releaseAudio();
         try {

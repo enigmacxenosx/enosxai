@@ -27,7 +27,11 @@ The packaged desktop app adds an **ENOSX AI icon to the Windows notification are
 
 The desktop shell can chat with local models managed by [Ollama](https://ollama.com/). Install Ollama, pull a model once (for example, `ollama pull qwen3:4b`), then open **Settings → Offline models** and choose the installed model. Model weights are intentionally not included in the app installer, so users select and download a model separately. After that initial download, local chat works offline. In local mode the app calls Ollama through a native bridge restricted to loopback addresses; it does not fall back to the hosted chat API.
 
-To publish installers automatically, create and push a version tag such as `v0.1.0`. The `Build ENOSX AI installers` GitHub Actions workflow builds Windows `.msi` and `.exe`, macOS `.dmg`, and Linux `.AppImage` and `.deb` packages, then attaches them to a published GitHub release. The workflow can also be started manually from the Actions tab by entering an existing version tag.
+To publish installers automatically, create and push a version tag such as `v0.1.10`. The `Build ENOSX AI installers` GitHub Actions workflow builds Windows `.msi` and `.exe`, macOS `.dmg`, and Linux `.AppImage` and `.deb` packages, then attaches them to a published GitHub release. The workflow can also be started manually from the Actions tab by entering an existing version tag.
+
+## Current branded release
+
+The current branded desktop release is **v0.1.10**; see [`docs/releases/v0.1.10.md`](../docs/releases/v0.1.10.md) for the release notes.
 
 ## Automatic updates
 

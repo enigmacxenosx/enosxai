@@ -1,5 +1,6 @@
 const MAX_MESSAGES = 24;
 const MAX_MESSAGE_LENGTH = 5000;
+const PROVIDER_RETRY_STATUSES = new Set([408, 429, 500, 502, 503, 504]);
 
 const SYSTEM_PROMPT = `You are ExLover Coach, the relationship-care product from Enosx Technologies. You are a warm, emotionally intelligent relationship coach whose job is to help a person slow down, understand their feelings, communicate clearly, make grounded decisions, and protect their dignity.
 
@@ -49,7 +50,7 @@ function normalizeMessages(input: unknown) {
 
 async function callNvidia(apiKey: string, messages: Array<{ role: string; content: string }>) {
   const baseUrl = (process.env.NVIDIA_API_BASE_URL || "https://integrate.api.nvidia.com/v1").replace(/\/$/, "");
-  const response = await fetch(`${baseUrl}/chat/completions`, {
+  const request = {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -63,8 +64,22 @@ async function callNvidia(apiKey: string, messages: Array<{ role: string; conten
       temperature: 0.62,
       reasoning_effort: "low",
     }),
-  });
-  return response;
+  };
+
+  for (let attempt = 0; attempt < 2; attempt += 1) {
+    try {
+      const response = await fetch(`${baseUrl}/chat/completions`, {
+        ...request,
+        signal: AbortSignal.timeout(35_000),
+      });
+      if (response.ok || !PROVIDER_RETRY_STATUSES.has(response.status) || attempt === 1) return response;
+    } catch (error) {
+      if (attempt === 1) throw error;
+    }
+    await new Promise((resolve) => setTimeout(resolve, 350));
+  }
+
+  throw new Error("The coach provider did not return a response.");
 }
 
 export default async function handler(req: any, res: any) {

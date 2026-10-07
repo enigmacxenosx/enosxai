@@ -83,6 +83,29 @@ When a user message begins with [GOD MODE COMMAND], switch to advanced operator 
 
 const MAX_HISTORY_MESSAGES = 28;
 const MAX_MESSAGE_CHARS = 20_000;
+const PROVIDER_RETRY_STATUSES = new Set([408, 429, 500, 502, 503, 504]);
+
+async function fetchNvidiaWithRetry(url: string, apiKey: string, body: unknown) {
+  for (let attempt = 0; attempt < 2; attempt += 1) {
+    try {
+      const response = await fetch(url, {
+        method: "POST",
+        signal: AbortSignal.timeout(45_000),
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${apiKey}`,
+        },
+        body: JSON.stringify(body),
+      });
+      if (response.ok || !PROVIDER_RETRY_STATUSES.has(response.status) || attempt === 1) return response;
+    } catch (error) {
+      if (attempt === 1) throw error;
+    }
+    await new Promise((resolve) => setTimeout(resolve, 400));
+  }
+
+  throw new Error("The AI provider did not return a response.");
+}
 
 function trimMessageContent(content: unknown) {
   if (typeof content === "string") return content.slice(0, MAX_MESSAGE_CHARS);
@@ -316,21 +339,13 @@ You are running in ENOSH MIND (highest intelligence) mode. Operate as a rigorous
 
     console.log("[API] Sending request to NVIDIA API with", chatMessages.length, "messages and model", model);
 
-    const nvidiaResponse = await fetch(nvidiaApiUrl, {
-      method: "POST",
-      signal: AbortSignal.timeout(45_000),
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${apiKey}`,
-      },
-      body: JSON.stringify({
-        model,
-        messages: chatMessages,
-        stream: true,
-        max_tokens: aiMode === "enosh-mind" ? 4096 : aiMode === "ex-pro" ? 3072 : 2048,
-        temperature: 0.7,
-        reasoning_effort: aiMode === "enosh-mind" ? "high" : aiMode === "ex-pro" ? "medium" : "low",
-      }),
+    const nvidiaResponse = await fetchNvidiaWithRetry(nvidiaApiUrl, apiKey, {
+      model,
+      messages: chatMessages,
+      stream: true,
+      max_tokens: aiMode === "enosh-mind" ? 4096 : aiMode === "ex-pro" ? 3072 : 2048,
+      temperature: 0.7,
+      reasoning_effort: aiMode === "enosh-mind" ? "high" : aiMode === "ex-pro" ? "medium" : "low",
     });
 
     console.log("[API] NVIDIA API response status:", nvidiaResponse.status);
@@ -338,10 +353,10 @@ You are running in ENOSH MIND (highest intelligence) mode. Operate as a rigorous
     if (!nvidiaResponse.ok) {
       const errorText = await nvidiaResponse.text().catch(() => "Unknown error");
       console.error("[API] NVIDIA API error:", nvidiaResponse.status, errorText);
-      return sendMockResponse(
-        res,
-        `I'm having trouble reaching the AI service (${nvidiaResponse.status}). Please try again in a moment.`
-      );
+      return res.status(503).json({
+        error: "The AI service is temporarily unavailable. Please try again in a moment.",
+        code: "PROVIDER_UNAVAILABLE",
+      });
     }
 
     if (nvidiaResponse.body) {
@@ -369,13 +384,13 @@ You are running in ENOSH MIND (highest intelligence) mode. Operate as a rigorous
       responseData = await nvidiaResponse.json();
     } catch (parseError) {
       console.error("[API] Invalid JSON response from NVIDIA API:", parseError);
-      return sendMockResponse(res, "The AI service returned an invalid response. Please try again.");
+      return res.status(502).json({ error: "The AI service returned an invalid response. Please try again.", code: "INVALID_PROVIDER_RESPONSE" });
     }
 
     const content = responseData?.choices?.[0]?.message?.content;
     if (typeof content !== "string" || content.length === 0) {
       console.error("[API] NVIDIA API response did not contain assistant content:", responseData);
-      return sendMockResponse(res, "No response received from the AI service. Please try again.");
+      return res.status(502).json({ error: "No response received from the AI service. Please try again.", code: "EMPTY_PROVIDER_RESPONSE" });
     }
 
     return sendMockResponse(res, content);
@@ -384,9 +399,9 @@ You are running in ENOSH MIND (highest intelligence) mode. Operate as a rigorous
     const msg = err instanceof Error ? err.message : "Unknown error";
     
     // Send a helpful message instead of crashing
-    return sendMockResponse(
-      res,
-      `An unexpected error occurred: ${msg}. Please try again or contact support if the problem persists.`
-    );
+    return res.status(503).json({
+      error: "The AI service is temporarily unavailable. Please try again shortly.",
+      code: "AI_REQUEST_FAILED",
+    });
   }
 }

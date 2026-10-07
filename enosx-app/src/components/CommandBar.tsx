@@ -210,7 +210,7 @@ export default function CommandBar({
                 ? { duration: 1.5, repeat: Infinity, ease: "easeInOut" }
                 : { duration: 0.3 }
             }
-            className={`flex flex-col gap-1.5 rounded-2xl px-4 py-2 transition-all duration-300 ${isListening ? 'shadow-[0_0_20px_rgba(0,242,255,0.2)]' : ''} rainbow-glow rainbow-glow-border`}
+            className={`phone-command-shell flex flex-col gap-1.5 rounded-2xl px-4 py-2 transition-all duration-300 ${isListening ? 'shadow-[0_0_20px_rgba(0,242,255,0.2)]' : ''} rainbow-glow rainbow-glow-border`}
             style={{
               background: `rgba(12,12,16,${wallpaperSettings.panelOpacity})`,
               backdropFilter: `blur(${wallpaperSettings.blurAmount}px)`,
@@ -275,6 +275,7 @@ export default function CommandBar({
             <div className="flex items-center gap-2">
               <div className="relative" ref={modeRef}>
                 <motion.button
+                  type="button"
                   whileHover={{ scale: 1.03 }}
                   whileTap={{ scale: 0.97 }}
                   onClick={() => setModeOpen((o) => !o)}
@@ -323,6 +324,7 @@ export default function CommandBar({
                   >
                     {AI_MODES.map((mode) => (
                       <motion.button
+                        type="button"
                         key={mode.id}
                         whileHover={{ scale: 1.05 }}
                         whileTap={{ scale: 0.95 }}
@@ -405,7 +407,7 @@ export default function CommandBar({
                     whileTap={{ scale: 0.92 }}
                     type="button"
                     onClick={() => fileInputRef.current?.click()}
-                    className="w-9 h-9 rounded-xl flex items-center justify-center transition-all duration-200"
+                    className="min-h-11 min-w-11 w-11 h-11 rounded-xl flex items-center justify-center transition-all duration-200 touch-manipulation"
                     style={{ background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.08)", color: config.textMuted }}
                     title="Attach any file"
                     aria-label="Attach any file"
@@ -417,10 +419,11 @@ export default function CommandBar({
                 {/* Voice button */}
                 {isVoiceSupported && (
                   <motion.button
+                    type="button"
                     whileHover={{ scale: 1.08 }}
                     whileTap={{ scale: 0.92 }}
                     onClick={handleVoiceClick}
-                    className="relative w-9 h-9 rounded-xl flex items-center justify-center transition-all duration-200"
+                    className="relative min-h-11 min-w-11 w-11 h-11 rounded-xl flex items-center justify-center transition-all duration-200 touch-manipulation"
                     style={
                       isListening || isSpeaking
                         ? {
@@ -456,11 +459,12 @@ export default function CommandBar({
 
                 {/* Send button — upward arrow */}
                 <motion.button
+                  type="button"
                   whileHover={canSend ? { scale: 1.08 } : {}}
                   whileTap={canSend ? { scale: 0.92 } : {}}
                   onClick={handleSend}
                   disabled={!canSend}
-                  className="w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-200"
+                  className="min-h-11 min-w-11 w-11 h-11 rounded-full flex items-center justify-center transition-all duration-200 touch-manipulation"
                   style={
                     canSend
                       ? {

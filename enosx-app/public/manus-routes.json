@@ -1,0 +1,10 @@
+{
+  "routes": [
+    { "path": "/", "title": "ENOSX AI" },
+    { "path": "/about", "title": "About ENOSX" },
+    { "path": "/computer", "title": "Computer" },
+    { "path": "/knowledge-bank", "title": "Knowledge Bank" },
+    { "path": "/media", "title": "Media Library" },
+    { "path": "/workspace", "title": "Workspace" }
+  ]
+}

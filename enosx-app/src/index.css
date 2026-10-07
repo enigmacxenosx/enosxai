@@ -627,6 +627,49 @@
   .rainbow-thinking-dot {
     animation: rainbow-thinking-dot 4s ease-in-out infinite !important;
   }
+
+  /* Phone composer: keep the dock in normal flow so the visual viewport and
+     on-screen keyboard do not cover the controls. */
+  .phone-composer-dock,
+  .phone-composer-dock button,
+  .phone-composer-dock textarea {
+    touch-action: manipulation;
+  }
+
+  @media (max-width: 767px) {
+    .phone-composer-dock > div {
+      padding-left: 0;
+      padding-right: 0;
+      padding-bottom: 0;
+    }
+
+    .phone-composer-dock .phone-command-shell {
+      max-width: none;
+      border-radius: 24px;
+      padding: 10px 12px 12px;
+      background: rgba(14, 15, 22, 0.96) !important;
+      box-shadow: 0 10px 36px rgba(0, 0, 0, 0.38), inset 0 1px 0 rgba(255,255,255,0.08);
+    }
+
+    .phone-composer-dock .phone-command-shell > div:last-child {
+      gap: 8px;
+    }
+
+    .phone-composer-dock textarea {
+      min-height: 44px !important;
+      max-height: 132px !important;
+      font-size: 16px !important;
+      line-height: 1.35 !important;
+    }
+
+    .phone-composer-dock textarea::placeholder {
+      color: rgba(255,255,255,0.42);
+    }
+
+    .phone-composer-dock button {
+      -webkit-tap-highlight-color: transparent;
+    }
+  }
 }
 
 

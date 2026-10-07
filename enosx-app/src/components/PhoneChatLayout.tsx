@@ -1,6 +1,6 @@
 import React from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Menu, Plus, Send } from "lucide-react";
+import { Menu, Plus } from "lucide-react";
 import Sidebar from "./Sidebar";
 import MessageBubble from "./MessageBubble";
 import CommandBar, { type AIMode } from "./CommandBar";
@@ -65,25 +65,27 @@ export default function PhoneChatLayout({
     <div className="flex flex-col h-full w-full relative bg-black overflow-hidden">
       {/* Mobile Header */}
       <header className="h-14 flex items-center justify-between px-4 border-b border-white/10 z-20 bg-black/50 backdrop-blur-md">
-        <button 
+        <button
+          type="button"
           onClick={() => setIsMobileSidebarOpen(true)}
-          className="p-2 -ml-2 text-white/70 hover:text-white transition-colors"
+          className="min-h-11 min-w-11 p-2 -ml-2 text-white/70 hover:text-white transition-colors touch-manipulation"
         >
           <Menu size={24} />
         </button>
         <div className="text-sm font-bold tracking-tighter text-white/90">
           ENOSX <span className="text-cyan-400">AI</span>
         </div>
-        <button 
+        <button
+          type="button"
           onClick={createNewChat}
-          className="p-2 -mr-2 text-white/70 hover:text-white transition-colors"
+          className="min-h-11 min-w-11 p-2 -mr-2 text-white/70 hover:text-white transition-colors touch-manipulation"
         >
           <Plus size={24} />
         </button>
       </header>
 
       {/* Main Content Area */}
-      <main className="flex-1 overflow-y-auto relative z-10 px-4 py-4 scrollbar-hide">
+      <main className="flex-1 min-h-0 overflow-y-auto relative z-10 px-4 py-4 scrollbar-hide">
         {messages.length === 0 ? (
           <WelcomeScreen onSuggestion={(p: string) => handleSend(p)} />
         ) : (
@@ -104,7 +106,7 @@ export default function PhoneChatLayout({
       </main>
 
       {/* Mobile Command Bar */}
-      <div className="fixed bottom-0 left-0 right-0 z-30 px-4 pb-2 pt-3 bg-gradient-to-t from-black via-black/80 to-transparent">
+      <div className="phone-composer-dock relative z-30 shrink-0 border-t border-white/10 bg-black/80 px-3 pb-[calc(0.5rem+env(safe-area-inset-bottom))] pt-2 backdrop-blur-xl">
         <CommandBar
           onSend={handleSend}
           isLoading={isLoading}

@@ -23,6 +23,7 @@
  *   { error: string, status: string } — 4xx/5xx
  */
 import type { VercelRequest, VercelResponse } from "@vercel/node";
+import sharp from "sharp";
 
 const DEFAULT_PROMPT = "Create a polished image based on the supplied prompt.";
 const DEFAULT_WIDTH = 512;
@@ -60,6 +61,36 @@ function extractImagePayload(data: any) {
   }
 
   return null;
+}
+
+async function applyEnosxWatermark(imageUrl: string) {
+  let input: Buffer;
+  if (imageUrl.startsWith("data:image/")) {
+    const comma = imageUrl.indexOf(",");
+    if (comma < 0) throw new Error("Invalid generated image data URL");
+    input = Buffer.from(imageUrl.slice(comma + 1), "base64");
+  } else {
+    const response = await fetch(imageUrl);
+    if (!response.ok) throw new Error(`Generated image download failed with ${response.status}`);
+    input = Buffer.from(await response.arrayBuffer());
+  }
+
+  const source = sharp(input);
+  const metadata = await source.metadata();
+  const width = metadata.width || DEFAULT_WIDTH;
+  const height = metadata.height || DEFAULT_HEIGHT;
+  const fontSize = Math.max(18, Math.round(Math.min(width, height) * 0.035));
+  const paddingX = Math.max(14, Math.round(fontSize * 0.65));
+  const paddingY = Math.max(10, Math.round(fontSize * 0.45));
+  const textWidth = Math.round(fontSize * 5.7);
+  const boxWidth = textWidth + paddingX * 2;
+  const boxHeight = fontSize + paddingY * 2;
+  const margin = Math.max(14, Math.round(Math.min(width, height) * 0.03));
+  const x = width - boxWidth - margin;
+  const y = height - boxHeight - margin;
+  const watermark = Buffer.from(`<svg width="${width}" height="${height}" xmlns="http://www.w3.org/2000/svg"><rect x="${x}" y="${y}" width="${boxWidth}" height="${boxHeight}" rx="${Math.round(boxHeight * 0.25)}" fill="#05070c" fill-opacity="0.62"/><text x="${x + paddingX}" y="${y + paddingY + fontSize * 0.78}" fill="#ffffff" fill-opacity="0.9" font-family="Arial,Helvetica,sans-serif" font-size="${fontSize}" font-weight="700" letter-spacing="${Math.max(0.5, fontSize * 0.04)}">ENOSX AI</text></svg>`);
+  const output = await source.composite([{ input: watermark }]).png().toBuffer();
+  return `data:image/png;base64,${output.toString("base64")}`;
 }
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
@@ -166,7 +197,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   });
 
   try {
-    const response = await fetch(endpoint, {
+    let response = await fetch(endpoint, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -176,7 +207,41 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       body: JSON.stringify(payload),
     });
 
-    const responseText = await response.text();
+    let responseText = await response.text();
+    // NVIDIA Visual GenAI NIM exposes OpenAI-compatible image editing at
+    // /v1/images/edits. Older configuration used /v1/infer, which now returns
+    // a plain 404. Retry on the same host with the official route and schema.
+    if (response.status === 404) {
+      try {
+        const legacyUrl = new URL(endpoint);
+        if (legacyUrl.pathname.endsWith("/v1/infer")) {
+          legacyUrl.pathname = legacyUrl.pathname.replace(/\/v1\/infer$/, "/v1/images/edits");
+          const nimPayload = {
+            prompt,
+            image: imagePayload,
+            model,
+            cfg_scale: asBoundedNumber(body.cfg_scale, 4, 1.01, 20),
+            steps: asBoundedNumber(body.steps, 30, 5, 100),
+            response_format: "b64_json",
+            n: 1,
+            size: `${asBoundedNumber(body.width, DEFAULT_WIDTH, 64, 2048)}x${asBoundedNumber(body.height, DEFAULT_HEIGHT, 64, 2048)}`,
+            ...(body.seed !== undefined ? { seed: asBoundedNumber(body.seed, 0, 0, 4_294_967_295) } : {}),
+          };
+          response = await fetch(legacyUrl, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${apiKey}`,
+              Accept: "application/json",
+            },
+            body: JSON.stringify(nimPayload),
+          });
+          responseText = await response.text();
+        }
+      } catch (retryError) {
+        console.error("[IMAGE] NVIDIA NIM endpoint retry failed:", retryError);
+      }
+    }
     const data = (() => {
       try {
         return JSON.parse(responseText);
@@ -202,10 +267,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       });
     }
 
+    const watermarkedUrl = await applyEnosxWatermark(imagePayload.url);
     return res.status(200).json({
-      url: imagePayload.url,
+      url: watermarkedUrl,
       revised_prompt: data?.revised_prompt || data?.data?.[0]?.revised_prompt,
-      media_type: imagePayload.mediaType,
+      media_type: "image/png",
+      watermarked: true,
     });
   } catch (error) {
     console.error("[IMAGE] NVIDIA request failed:", error);

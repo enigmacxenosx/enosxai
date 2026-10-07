@@ -4,6 +4,7 @@
  */
 import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
+import { writeFileSync, unlinkSync } from "node:fs";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const esbuild = await import("esbuild");
@@ -14,10 +15,13 @@ const compiled = esbuild.buildSync({
   format: "esm",
   platform: "node",
   target: "node24",
-  external: ["@vercel/node"],
+  external: ["@vercel/node", "sharp"],
 });
 const code = new TextDecoder().decode(compiled.outputFiles[0].contents);
-const mod = await import(`data:text/javascript;base64,${Buffer.from(code).toString("base64")}`);
+const compiledPath = join(__dirname, ".tmp-image-handler.mjs");
+writeFileSync(compiledPath, code);
+const mod = await import(`${compiledPath}?test=${Date.now()}`);
+unlinkSync(compiledPath);
 const handler = mod.default;
 
 let assertions = 0;
@@ -70,17 +74,19 @@ globalThis.fetch = async (url, init) => {
     return new Response(JSON.stringify({ data: [{ b64_json: "cWdlbi1pbWFnZQ==" }] }), { status: 200 });
   }
   return new Response(JSON.stringify({
-    images: ["iVBORw0KGgoAAAANSUhEUgAAAAEAAAAB"],
+    images: ["iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII="],
     revised_prompt: "translated PCB image",
   }), { status: 200 });
 };
 
 console.log("[test] NVIDIA happy path returns a downloadable data URL");
 let res = makeRes();
-await handler(makeReq("POST", { prompt: "a PCB component", image: "iVBORw0KGgoAAAANSUhEUgAAAAEAAAAB" }), res);
+await handler(makeReq("POST", { prompt: "a PCB component", image: "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=" }), res);
 assert(res._status === 200, "returns 200");
 assert(res._json.url.startsWith("data:image/png;base64,"), "returns a self-contained PNG data URL");
 assert(res._json.revised_prompt === "translated PCB image", "returns revised prompt");
+assert(res._json.watermarked === true, "marks the response as watermarked");
+assert(res._json.url.startsWith("data:image/png;base64,"), "returns the watermarked PNG");
 assert(capturedRequest.url === process.env.NVIDIA_IMAGE_ENDPOINT, "uses configured NVIDIA endpoint");
 assert(capturedRequest.init.headers.Authorization === "Bearer test-nvidia-key", "keeps NVIDIA auth server-side");
 assert(capturedRequest.payload.model === "qwen-image-edit-nvpcb-ovsl2sl", "sends configured NVIDIA model");

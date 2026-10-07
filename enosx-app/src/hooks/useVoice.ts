@@ -82,7 +82,7 @@ function cleanSpeechText(text: string) {
     .trim();
 }
 
-function splitIntoSpeechChunks(text: string, maximumLength = 220) {
+function splitIntoSpeechChunks(text: string, maximumLength = 100) {
   const sentences = text.match(/[^.!?]+[.!?]+|[^.!?]+$/g) ?? [text];
   const chunks: string[] = [];
   let currentChunk = "";
@@ -365,39 +365,11 @@ export function useVoice() {
       stopSpeaking();
       const requestId = speechRequestIdRef.current;
       const provider = settingsRef.current.voiceProvider;
-      const chunks = splitIntoSpeechChunks(cleanText, 220);
-
-      const speakWithBrowser = () => {
-        if (typeof window === "undefined" || !("speechSynthesis" in window)) {
-          throw new Error("Speech synthesis is not supported in this browser.");
-        }
-
-        const utterance = new SpeechSynthesisUtterance(cleanText);
-        utterance.lang = languageRef.current;
-        utterance.rate = settingsRef.current.rate;
-        utterance.pitch = settingsRef.current.pitch;
-        utterance.onend = () => {
-          setVoiceState("idle");
-          scheduleListenAgain(onFinalResultRef.current ?? (() => {}));
-        };
-        utterance.onerror = () => {
-          setVoiceState("idle");
-          toast.error("The ENOSX voice could not be played by this browser.");
-        };
-        setVoiceState("speaking");
-        window.speechSynthesis.speak(utterance);
-      };
+      const chunks = splitIntoSpeechChunks(cleanText);
 
       try {
         setVoiceState("speaking");
-        const playChunk = async (index: number) => {
-          if (requestId !== speechRequestIdRef.current) return;
-          if (index >= chunks.length) {
-            setVoiceState("idle");
-            scheduleListenAgain(onFinalResultRef.current ?? (() => {}));
-            return;
-          }
-
+        const fetchChunk = async (index: number) => {
           const response = await fetch(VOICE_SERVICE_URL, {
             method: "POST",
             headers: { "Content-Type": "application/json", Accept: "audio/wav" },
@@ -409,7 +381,32 @@ export function useVoice() {
           }
           const audioBlob = await response.blob();
           if (!audioBlob.size) throw new Error("Voice service returned empty audio.");
+          return audioBlob;
+        };
+
+        let prefetchedChunk: Promise<{ audioBlob?: Blob; error?: unknown }> | null = null;
+        const playChunk = async (index: number) => {
           if (requestId !== speechRequestIdRef.current) return;
+          if (index >= chunks.length) {
+            setVoiceState("idle");
+            scheduleListenAgain(onFinalResultRef.current ?? (() => {}));
+            return;
+          }
+
+          const result = prefetchedChunk
+            ? await prefetchedChunk
+            : { audioBlob: await fetchChunk(index) };
+          prefetchedChunk = null;
+          if (result.error) throw result.error;
+          const audioBlob = result.audioBlob!;
+          if (requestId !== speechRequestIdRef.current) return;
+
+          if (index + 1 < chunks.length) {
+            prefetchedChunk = fetchChunk(index + 1).then(
+              (blob) => ({ audioBlob: blob }),
+              (error) => ({ error })
+            );
+          }
 
           const objectUrl = URL.createObjectURL(
             audioBlob.type ? audioBlob : new Blob([audioBlob], { type: "audio/wav" })
@@ -441,14 +438,8 @@ export function useVoice() {
         if (requestId !== speechRequestIdRef.current) return;
         console.error("ENOSX voice service failed", error);
         releaseAudio();
-        try {
-          // Keep voice available when server TTS is unavailable or delayed audio autoplay is rejected.
-          speakWithBrowser();
-        } catch (fallbackError) {
-          console.error("Browser speech fallback failed", fallbackError);
-          setVoiceState("idle");
-          toast.error("ENOSX voice is unavailable. Check your browser audio settings.");
-        }
+        setVoiceState("idle");
+        toast.error(error instanceof Error ? error.message : "NVIDIA voice is unavailable. Please try again.");
       }
     },
     [releaseAudio, scheduleListenAgain, stopSpeaking]

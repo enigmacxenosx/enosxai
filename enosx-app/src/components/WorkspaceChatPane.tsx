@@ -238,9 +238,7 @@ Current System Status: ONLINE`,
               />
             ))}
             {isLoading && (
-              <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="flex items-center gap-2 pl-12 text-xs italic" style={{ color: config.accent }}>
-                ENOSX is thinking<span className="thinking-pulse">...</span>
-              </motion.div>
+              <span className="sr-only" role="status">Assistant is responding.</span>
             )}
             {error && (
               <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="rounded-xl border border-amber-400/20 bg-amber-500/10 p-3 text-xs text-amber-100">

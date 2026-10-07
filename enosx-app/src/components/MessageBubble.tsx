@@ -203,42 +203,6 @@ function StreamingCursor({ color }: { color: string }) {
   );
 }
 
-// ENOSX is thinking... indicator
-function ThinkingDots({ color }: { color: string }) {
-  return (
-    <div className="flex items-center gap-2 py-1">
-      {[0, 1, 2].map((i) => (
-        <motion.div
-          key={i}
-          animate={{
-            scale: [0.6, 1, 0.6],
-            opacity: [0.4, 1, 0.4],
-          }}
-          transition={{
-            duration: 1.2,
-            repeat: Infinity,
-            delay: i * 0.2,
-            ease: "easeInOut",
-          }}
-          className="w-1.5 h-1.5 rounded-full rainbow-thinking-dot"
-          style={{
-            background: color,
-            animation: "rainbow-thinking-dot 4s ease-in-out infinite",
-          }}
-        />
-      ))}
-      <motion.span
-        className="text-xs italic tracking-wide"
-        style={{ color }}
-        animate={{ opacity: [0.4, 0.9, 0.4] }}
-        transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
-      >
-        ENOSX is thinking<span className="thinking-pulse">...</span>
-      </motion.span>
-    </div>
-  );
-}
-
 // Image generation loading state for assistant
 function ImageGeneratingIndicator({ accent }: { accent: string }) {
   return (
@@ -378,10 +342,7 @@ export default function MessageBubble({
           }}
         >
           {isEmpty ? (
-            <div className="flex flex-col gap-1">
-              <ThinkingDots color={config.accent} />
-              {message.reasoningStatus && <span className="pl-1 text-[10px] tracking-wide text-white/45">{message.reasoningStatus} · private reasoning stays hidden</span>}
-            </div>
+            <span className="sr-only" role="status">Assistant response is being prepared.</span>
           ) : (
             <div className="relative">
               {isUser ? (
@@ -408,7 +369,6 @@ export default function MessageBubble({
                     </div>
                   )}
                   {/* Assistant content with inline image support */}
-                  {message.reasoningStatus && isStreaming && <span className="text-[10px] tracking-wide text-white/45">{message.reasoningStatus}</span>}
                   {renderContentWithMedia(message.content, config.accent)}
                   {message.proposedActions && message.proposedActions.length > 0 && (
                     <div className="flex flex-col gap-2 rounded-xl border border-cyan-300/20 bg-cyan-400/[0.06] p-3">

@@ -70,6 +70,24 @@ export default function VoiceSettingsPanel({ settings, onUpdate }: VoiceSettings
         display={settings.rate.toFixed(1)}
         onChange={(rate) => onUpdate({ rate })}
       />
+      <div className="flex items-center gap-3 px-4 py-2.5">
+        <span className="w-7 h-7 rounded-md bg-white/5 flex items-center justify-center text-white/60 shrink-0">
+          <Volume2 size={14} />
+        </span>
+        <div className="flex-1 min-w-0">
+          <label htmlFor="speech-provider" className="text-xs text-white/70">Speech engine</label>
+          <p className="text-[11px] text-white/40 leading-relaxed mt-0.5">Choose Magpie multilingual or Chatterbox male voice.</p>
+        </div>
+        <select
+          id="speech-provider"
+          value={settings.provider}
+          onChange={(event) => onUpdate({ provider: event.target.value as SpeechSettings["provider"] })}
+          className="max-w-[48%] rounded-lg px-2 py-1.5 text-xs text-white bg-black/30 border border-white/10"
+        >
+          <option value="magpie">Magpie multilingual</option>
+          <option value="chatterbox">Chatterbox male</option>
+        </select>
+      </div>
       <SliderRow
         icon={<Waves size={14} />}
         label="Voice pitch"

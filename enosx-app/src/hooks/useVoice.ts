@@ -5,9 +5,12 @@ import { VoiceState } from "@/lib/types";
 const VOICE_SERVICE_URL = "/api/voice";
 
 /** Voice settings stored in localStorage (enosx_voice_settings). */
+export type SpeechProvider = "magpie" | "chatterbox";
+
 export interface SpeechSettings {
   rate: number;
   pitch: number;
+  provider: SpeechProvider;
   /** Auto re-listen after the assistant finishes speaking. */
   continuousConversation: boolean;
   /** Start listening when the wake phrase is heard while the app is open. */
@@ -17,6 +20,7 @@ export interface SpeechSettings {
 const DEFAULT_SPEECH_SETTINGS: SpeechSettings = {
   rate: 1,
   pitch: 1,
+  provider: "magpie",
   continuousConversation: false,
   wakePhrase: false,
 };
@@ -31,6 +35,7 @@ export function loadSpeechSettings(): SpeechSettings {
       return {
         rate: Math.min(2, Math.max(0.5, Number(parsed.rate) || 1)),
         pitch: Math.min(2, Math.max(0, Number(parsed.pitch) || 1)),
+        provider: parsed.provider === "chatterbox" ? "chatterbox" : "magpie",
         continuousConversation: Boolean(parsed.continuousConversation),
         wakePhrase: Boolean(parsed.wakePhrase),
       };
@@ -385,7 +390,7 @@ export function useVoice() {
         const response = await fetch(VOICE_SERVICE_URL, {
           method: "POST",
           headers: { "Content-Type": "application/json", Accept: "audio/wav" },
-          body: JSON.stringify({ text: cleanText }),
+          body: JSON.stringify({ text: cleanText, provider: settingsRef.current.provider }),
         });
         if (!response.ok) {
           const detail = await response.json().catch(() => ({}));

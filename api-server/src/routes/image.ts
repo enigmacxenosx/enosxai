@@ -23,29 +23,39 @@ imageRouter.post("/image/generate", async (req: Request, res: Response) => {
       return;
     }
 
-    const apiKey = process.env.NVIDIA_API_KEY?.trim();
+    const apiKey = (process.env.NVIDIA_IMAGE_API_KEY || process.env.NVIDIA_API_KEY)?.trim();
     if (!apiKey) {
       res.status(503).json({
-        error: "NVIDIA_API_KEY is not configured on the API server",
+        error: "NVIDIA_IMAGE_API_KEY or NVIDIA_API_KEY is not configured on the API server",
         status: "CONFIGURATION_ERROR",
       });
       return;
     }
 
-    const baseUrl = (process.env.NVIDIA_API_BASE_URL || "https://integrate.api.nvidia.com/v1").replace(/\/$/, "");
-    const model = process.env.NVIDIA_IMAGE_MODEL?.trim() || "qwen-image";
-    const response = await fetch(`${baseUrl}/images/generations`, {
+    const configuredEndpoint = process.env.NVIDIA_IMAGE_ENDPOINT?.trim();
+    const model = process.env.NVIDIA_IMAGE_MODEL?.trim() || "FLUX.1-schnell";
+    const configuredIsBuilderPage = configuredEndpoint?.includes("build.nvidia.com");
+    const endpoint = configuredIsBuilderPage || !configuredEndpoint
+      ? `https://ai.api.nvidia.com/v1/genai/black-forest-labs/flux.1-schnell`
+      : configuredEndpoint;
+    const payload: Record<string, unknown> = {
+      prompt: trimmedPrompt,
+      height: 1024,
+      width: 1024,
+      seed: 0,
+      steps: 4,
+      samples: 1,
+    };
+    if (!configuredIsBuilderPage && model) payload.model = model;
+
+    const response = await fetch(endpoint, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
         Authorization: `Bearer ${apiKey}`,
+        Accept: "application/json",
       },
-      body: JSON.stringify({
-        model,
-        prompt: trimmedPrompt,
-        n: 1,
-        response_format: "b64_json",
-      }),
+      body: JSON.stringify(payload),
     });
 
     if (!response.ok) {
@@ -59,8 +69,9 @@ imageRouter.post("/image/generate", async (req: Request, res: Response) => {
     }
 
     const data = (await response.json().catch(() => null)) as any;
-    const imageData = data?.data?.[0];
-    const url = imageData?.url || (imageData?.b64_json ? `data:image/png;base64,${imageData.b64_json}` : "");
+    const imageData = data?.data?.[0] || data?.artifacts?.[0];
+    const base64 = imageData?.b64_json || imageData?.base64 || imageData?.base64_data;
+    const url = imageData?.url || (base64 ? `data:image/png;base64,${base64}` : "");
     if (!url) {
       res.status(502).json({
         error: "NVIDIA image generation returned no usable image",

@@ -89,8 +89,8 @@ const generateTitle = (firstMessage: string): string => {
 };
 
 function isImageGenerationRequest(text: string): boolean {
-  return /\b(?:generate|create|make|draw|paint|render|illustrate)\b.{0,100}\b(?:image|picture|illustration|artwork|logo|icon|avatar)\b/i.test(text)
-    || /\b(?:image|picture|illustration|artwork|logo|icon|avatar)\b.{0,80}\b(?:of|showing|with)\b/i.test(text);
+  return /\b(?:generate|create|make|draw|paint|render|illustrate|design)\b.{0,120}\b(?:image|picture|illustration|artwork|logo|icon|avatar)\b/i.test(text)
+    || /\b(?:show|give|send|display)\b.{0,80}\b(?:an?\s+)?(?:image|picture|illustration|artwork|logo|icon|avatar)\b/i.test(text);
 }
 
 function normalizeConversation(raw: any): Conversation | null {
@@ -349,7 +349,7 @@ export default function ChatPage() {
   }, []);
 
   const { sendMessage, isLoading: isChatLoading, isThinking, error: chatError, isFreeMode } = useAI();
-  const { generateImage, isGenerating, error: imageError } = useImageGeneration();
+  const { generateImage, isGenerating, error: imageError, clearError: clearImageError } = useImageGeneration();
   const { createScript, updateScript, deleteScript } = useScriptRuntime();
   const [notificationPermission, setNotificationPermission] = useState<NotificationPermission | "unsupported">(() => getNotificationPermission());
   const liveDraftIdRef = useRef<string | null>(null);
@@ -505,6 +505,9 @@ export default function ChatPage() {
         return "";
       }
       if (aiMode) setActiveMode(aiMode);
+      // Do not keep showing an old image-generation failure after the user
+      // starts a normal chat request.
+      clearImageError();
       let convId = activeIdRef.current;
 
       if (!convId) {

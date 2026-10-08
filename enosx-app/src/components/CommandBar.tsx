@@ -205,7 +205,7 @@ export default function CommandBar({
                 ? { duration: 1.5, repeat: Infinity, ease: "easeInOut" }
                 : { duration: 0.3 }
             }
-            className={`phone-command-shell flex flex-col gap-1 rounded-2xl px-3.5 py-1.5 transition-all duration-300 ${isListening ? 'shadow-[0_0_20px_rgba(0,242,255,0.2)]' : ''} rainbow-glow rainbow-glow-border`}
+            className={`phone-command-shell flex flex-col gap-0.5 rounded-2xl px-3 py-1 transition-all duration-300 ${isListening ? 'shadow-[0_0_20px_rgba(0,242,255,0.2)]' : ''} rainbow-glow rainbow-glow-border`}
             style={{
               background: `rgba(12,12,16,${wallpaperSettings.panelOpacity})`,
               backdropFilter: `blur(${wallpaperSettings.blurAmount}px)`,
@@ -380,8 +380,8 @@ export default function CommandBar({
                   color: config.text,
                   caretColor: config.accent,
                   maxHeight: 144,
-                  minHeight: 36,
-                  paddingTop: "7px",
+                  minHeight: 32,
+                  paddingTop: "5px",
                   fontFamily: "'Eurostile', sans-serif",
                 }}
               />
@@ -395,7 +395,7 @@ export default function CommandBar({
                     whileTap={{ scale: 0.92 }}
                     type="button"
                     onClick={() => fileInputRef.current?.click()}
-                    className="min-h-9 min-w-9 w-9 h-9 rounded-xl flex items-center justify-center transition-all duration-200 touch-manipulation"
+                    className="min-h-8 min-w-8 w-8 h-8 rounded-xl flex items-center justify-center transition-all duration-200 touch-manipulation"
                     style={{ background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.08)", color: config.textMuted }}
                     title="Attach any file"
                     aria-label="Attach any file"
@@ -411,7 +411,7 @@ export default function CommandBar({
                     whileHover={{ scale: 1.08 }}
                     whileTap={{ scale: 0.92 }}
                     onClick={handleVoiceClick}
-                    className="relative min-h-9 min-w-9 w-9 h-9 rounded-xl flex items-center justify-center transition-all duration-200 touch-manipulation"
+                    className="relative min-h-8 min-w-8 w-8 h-8 rounded-xl flex items-center justify-center transition-all duration-200 touch-manipulation"
                     style={
                       isListening || isSpeaking
                         ? {
@@ -452,7 +452,7 @@ export default function CommandBar({
                   whileTap={canSend ? { scale: 0.92 } : {}}
                   onClick={handleSend}
                   disabled={!canSend}
-                  className="min-h-9 min-w-9 w-9 h-9 rounded-full flex items-center justify-center transition-all duration-200 touch-manipulation"
+                  className="min-h-8 min-w-8 w-8 h-8 rounded-full flex items-center justify-center transition-all duration-200 touch-manipulation"
                   style={
                     canSend
                       ? {

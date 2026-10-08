@@ -14,6 +14,7 @@ interface ImageGenerationResult {
 export function useImageGeneration() {
   const [isGenerating, setIsGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const clearError = useCallback(() => setError(null), []);
 
   const generateImage = useCallback(
     async (prompt: string, image?: string): Promise<ImageGenerationResult | null> => {
@@ -74,5 +75,5 @@ export function useImageGeneration() {
     []
   );
 
-  return { generateImage, isGenerating, error };
+  return { generateImage, isGenerating, error, clearError };
 }

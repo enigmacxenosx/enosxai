@@ -662,6 +662,13 @@
       line-height: 1.35 !important;
     }
 
+    .phone-composer-dock button {
+      min-width: 40px !important;
+      min-height: 40px !important;
+      width: 40px !important;
+      height: 40px !important;
+    }
+
     .phone-composer-dock textarea::placeholder {
       color: rgba(255,255,255,0.42);
     }

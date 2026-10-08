@@ -646,7 +646,7 @@
     .phone-composer-dock .phone-command-shell {
       max-width: none;
       border-radius: 24px;
-      padding: 10px 12px 12px;
+      padding: 8px 10px 10px;
       background: rgba(14, 15, 22, 0.96) !important;
       box-shadow: 0 10px 36px rgba(0, 0, 0, 0.38), inset 0 1px 0 rgba(255,255,255,0.08);
     }
@@ -656,7 +656,7 @@
     }
 
     .phone-composer-dock textarea {
-      min-height: 44px !important;
+      min-height: 40px !important;
       max-height: 132px !important;
       font-size: 16px !important;
       line-height: 1.35 !important;

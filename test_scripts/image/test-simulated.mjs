@@ -23,6 +23,7 @@ writeFileSync(compiledPath, code);
 const mod = await import(`${compiledPath}?test=${Date.now()}`);
 unlinkSync(compiledPath);
 const handler = mod.default;
+const ONE_PIXEL_PNG = "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=";
 
 let assertions = 0;
 function assert(condition, label) {
@@ -71,17 +72,20 @@ let capturedRequest;
 globalThis.fetch = async (url, init) => {
   capturedRequest = { url, init, payload: JSON.parse(init.body) };
   if (String(url).endsWith("/v1/images/generations")) {
-    return new Response(JSON.stringify({ data: [{ b64_json: "cWdlbi1pbWFnZQ==" }] }), { status: 200 });
+    return new Response("404 page not found", { status: 404 });
+  }
+  if (String(url) === "https://ai.api.nvidia.com/v1/genai/black-forest-labs/flux.1-dev") {
+    return new Response(JSON.stringify({ artifacts: [{ base64: ONE_PIXEL_PNG }] }), { status: 200 });
   }
   return new Response(JSON.stringify({
-    images: ["iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII="],
+    images: [ONE_PIXEL_PNG],
     revised_prompt: "translated PCB image",
   }), { status: 200 });
 };
 
 console.log("[test] NVIDIA happy path returns a downloadable data URL");
 let res = makeRes();
-await handler(makeReq("POST", { prompt: "a PCB component", image: "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=" }), res);
+await handler(makeReq("POST", { prompt: "a PCB component", image: ONE_PIXEL_PNG }), res);
 assert(res._status === 200, "returns 200");
 assert(res._json.url.startsWith("data:image/png;base64,"), "returns a self-contained PNG data URL");
 assert(res._json.revised_prompt === "translated PCB image", "returns revised prompt");
@@ -113,10 +117,9 @@ res = makeRes();
 await handler(makeReq("POST", { prompt: "a tree at sunset" }), res);
 assert(res._status === 200, "Qwen Image returns 200 without an input image");
 assert(res._json.url.startsWith("data:image/png;base64,"), "Qwen image base64 response becomes a data URL");
-assert(capturedRequest.payload.model === "qwen-image", "sends the Qwen Image model identifier");
-assert(capturedRequest.payload.n === 1, "requests one image");
-assert(capturedRequest.payload.response_format === "b64_json", "requests base64 image output");
-assert(capturedRequest.payload.mode === undefined && capturedRequest.payload.width === undefined, "omits fields unsupported by the OpenAI-compatible endpoint");
+assert(capturedRequest.url === "https://ai.api.nvidia.com/v1/genai/black-forest-labs/flux.1-dev", "falls back from the retired Qwen route to hosted Flux");
+assert(capturedRequest.payload.mode === "base", "sends the hosted Flux base mode");
+assert(capturedRequest.payload.width === 1024 && capturedRequest.payload.height === 1024, "sends supported Flux dimensions");
 
 console.log("[test] Qwen Image rejects attached source images with a helpful error");
 res = makeRes();

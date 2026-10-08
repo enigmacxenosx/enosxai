@@ -30,6 +30,7 @@ const DEFAULT_WIDTH = 512;
 const DEFAULT_HEIGHT = 512;
 const MAX_PROMPT_LENGTH = 800;
 const MAX_IMAGE_LENGTH = 8_000_000;
+const NVIDIA_HOSTED_FLUX_ENDPOINT = "https://ai.api.nvidia.com/v1/genai/black-forest-labs/flux.1-dev";
 
 function asBoundedNumber(value: unknown, fallback: number, min: number, max: number) {
   const number = typeof value === "number" ? value : Number(value);
@@ -243,6 +244,31 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
               Accept: "application/json",
             },
             body: JSON.stringify(nimPayload),
+          });
+          responseText = await response.text();
+        }
+        // NVIDIA's hosted Qwen Image route was retired while the model remains
+        // downloadable. Keep existing deployments working by falling back to
+        // NVIDIA's currently hosted Flux endpoint for text-to-image requests.
+        if (response.status === 404 && usesOpenAiImageApi && !image) {
+          const fluxPayload = {
+            prompt,
+            mode: "base",
+            width: asBoundedNumber(body.width, 1024, 512, 1024),
+            height: asBoundedNumber(body.height, 1024, 512, 1024),
+            cfg_scale: asBoundedNumber(body.cfg_scale, 7, 0, 20),
+            steps: asBoundedNumber(body.steps, 30, 1, 100),
+            ...(body.seed !== undefined ? { seed: asBoundedNumber(body.seed, 0, 0, 2_147_483_647) } : {}),
+          };
+          console.warn("[IMAGE] Configured NVIDIA hosted image route returned 404; retrying with hosted Flux.");
+          response = await fetch(NVIDIA_HOSTED_FLUX_ENDPOINT, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${apiKey}`,
+              Accept: "application/json",
+            },
+            body: JSON.stringify(fluxPayload),
           });
           responseText = await response.text();
         }

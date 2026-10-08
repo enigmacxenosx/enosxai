@@ -9,6 +9,7 @@
 import { useState, useEffect, useRef } from "react";
 import { motion } from "framer-motion";
 import { Copy, Volume2, VolumeX, Check, Download, ExternalLink, FileSearch, ListTree, ShieldCheck, FileText, FileSpreadsheet } from "lucide-react";
+import { Streamdown } from "streamdown";
 import { Message } from "@/lib/types";
 import { useTheme } from "@/contexts/ThemeContext";
 import { useWallpaper } from "@/contexts/WallpaperContext";
@@ -136,29 +137,18 @@ function extractMediaFromText(text: string): ParsedMedia[] {
   return media.sort((a, b) => a.position - b.position);
 }
 
-function escapeHtml(value: string): string {
-  return value.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/\"/g, "&quot;").replace(/'/g, "&#39;");
+function renderMarkdown(text: string, isStreaming = false) {
+  return (
+    <Streamdown className="prose-crimson text-sm" mode={isStreaming ? "streaming" : "static"} isAnimating={isStreaming}>
+      {text}
+    </Streamdown>
+  );
 }
 
-function renderMarkdown(text: string): string {
-  return escapeHtml(text)
-    .replace(/[\x60]{3}([\s\S]*?)[\x60]{3}/g, '<pre><code>$1</code></pre>')
-    .replace(/[\x60]([^\x60]+)[\x60]/g, '<code>$1</code>')
-    .replace(/^### (.+)$/gm, '<h3>$1</h3>')
-    .replace(/^## (.+)$/gm, '<h2>$1</h2>')
-    .replace(/^# (.+)$/gm, '<h1>$1</h1>')
-    .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
-    .replace(/\*(.+?)\*/g, '<em>$1</em>')
-    .replace(/^[-*] (.+)$/gm, '<li>$1</li>')
-    .replace(/(<li>[\s\S]*?<\/li>)/g, '<ul>$1</ul>')
-    .replace(/\n\n/g, '</p><p>')
-    .replace(/^(?!<[hupol]|<pre|<code)(.+)$/gm, (match) => match.startsWith('<') ? match : '<p>' + match + '</p>');
-}
-
-function renderContentWithMedia(text: string, _accentColor: string) {
+function renderContentWithMedia(text: string, _accentColor: string, isStreaming = false) {
   const media = extractMediaFromText(text);
   if (media.length === 0) {
-    return <div className="prose-crimson text-sm" dangerouslySetInnerHTML={{ __html: renderMarkdown(text) }} />;
+    return renderMarkdown(text, isStreaming);
   }
 
   const segments: Array<{ type: "text"; content: string } | { type: "media"; item: ParsedMedia }> = [];
@@ -180,7 +170,7 @@ function renderContentWithMedia(text: string, _accentColor: string) {
     <div className="flex flex-col gap-2">
       {segments.map((segment, index) => {
         if (segment.type === "text") {
-          return <div key={index} className="prose-crimson text-sm" dangerouslySetInnerHTML={{ __html: renderMarkdown(segment.content) }} />;
+          return <div key={index}>{renderMarkdown(segment.content, isStreaming)}</div>;
         }
         if (segment.item.type === "image") {
           return <ImageDisplay key={index} src={segment.item.src} alt={segment.item.alt} watermark={/^generated image$/i.test(segment.item.alt)} />;
@@ -369,7 +359,7 @@ export default function MessageBubble({
                     </div>
                   )}
                   {/* Assistant content with inline image support */}
-                  {renderContentWithMedia(message.content, config.accent)}
+                  {renderContentWithMedia(message.content, config.accent, isStreaming)}
                   {message.proposedActions && message.proposedActions.length > 0 && (
                     <div className="flex flex-col gap-2 rounded-xl border border-cyan-300/20 bg-cyan-400/[0.06] p-3">
                       <div className="flex items-center gap-2 text-xs font-semibold tracking-wide text-cyan-100">

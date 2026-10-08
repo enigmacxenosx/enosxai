@@ -47,6 +47,10 @@ function extractImagePayload(data: any) {
     data?.output?.[0],
     data?.result?.image,
     data?.result?.images?.[0],
+    data?.result?.artifacts?.[0],
+    data?.response?.artifacts?.[0],
+    data?.data?.artifacts?.[0],
+    data?.artifact,
   ];
 
   for (const rawCandidate of candidates) {

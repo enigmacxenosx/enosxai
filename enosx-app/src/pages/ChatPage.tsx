@@ -93,6 +93,10 @@ function isImageGenerationRequest(text: string): boolean {
     || /\b(?:show|give|send|display)\b.{0,80}\b(?:an?\s+)?(?:image|picture|illustration|artwork|logo|icon|avatar)\b/i.test(text);
 }
 
+function isImageEditRequest(text: string): boolean {
+  return /\b(?:edit|modify|transform|restyle|retouch|recolor|recolour|replace|remove|add|change|enhance|improve|reimagine|adjust|crop|upscale|make)\b/i.test(text);
+}
+
 function normalizeConversation(raw: any): Conversation | null {
   if (!raw || typeof raw.id !== "string") return null;
   const now = new Date();
@@ -524,7 +528,11 @@ export default function ChatPage() {
       if (fileContext.isLoaded) {
         messageContent += getFileContextMessage();
       }
-      const shouldGenerateImage = isImageGenerationRequest(text);
+      const inputImage = fileContext.files.find((file) =>
+        (file.mimeType?.toLowerCase().startsWith("image/") || /^(?:png|jpe?g|webp)$/i.test(file.type))
+        && file.content.startsWith("data:image/")
+      )?.content;
+      const shouldGenerateImage = isImageGenerationRequest(text) || Boolean(inputImage && isImageEditRequest(text));
 
       const userMessage: Message = {
         id: nanoid(),
@@ -570,8 +578,8 @@ export default function ChatPage() {
           )
         );
 
-        // Qwen Image is text-to-image; do not forward unsupported attachments.
-        const imgResult = await generateImage(text);
+        // FLUX Kontext accepts a prompt alone or a prompt plus one optional input image.
+        const imgResult = await generateImage(text, inputImage);
         if (imgResult && imgResult.url) {
           const imageMarkdown = imgResult.revised_prompt
             ? `Here's the image I generated for you:\n\n![Generated Image](${imgResult.url})\n\n*Prompt: ${imgResult.revised_prompt}*`

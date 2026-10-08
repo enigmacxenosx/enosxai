@@ -2,8 +2,8 @@
  * ENOSX AI — /api/image/generate (Vercel Serverless Function)
  * Generates images through the configured NVIDIA image endpoint. Credentials
  * remain server-side and the browser receives a self-contained data URL so
- * generated images remain downloadable after a chat is reloaded. The NVIDIA
- * OpenAI-compatible `/v1/images/generations` route supports Qwen Image.
+ * generated images remain downloadable after a chat is reloaded. The hosted
+ * FLUX.1 Kontext route supports text-to-image and optional input-image editing.
  *
  * Server-only environment variables:
  *   - NVIDIA_IMAGE_API_KEY (required for image generation; falls back to NVIDIA_API_KEY)
@@ -16,7 +16,7 @@
  *     height?: number, cfg_scale?: number, steps?: number, seed?: number }
  *
  * `image` may be a data URL or base64-encoded RGB image for compatible edit
- * endpoints. Qwen Image's hosted generation endpoint accepts text prompts only.
+ * endpoints. FLUX.1 Kontext accepts an optional PNG, JPEG, or WebP image.
  *
  * Response:
  *   { url: string, revised_prompt?: string, media_type: string } — 200
@@ -153,6 +153,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const image = typeof body.image === "string" ? body.image.trim() : "";
   const model = process.env.NVIDIA_IMAGE_MODEL?.trim();
   const usesOpenAiImageApi = /\/v1\/images\/generations\/?$/i.test(endpoint);
+  const usesFluxKontextApi = /\/v1\/genai\/black-forest-labs\/flux\.1-kontext-dev\/?$/i.test(endpoint);
   const requiresInputImage = /nvpcb|image-edit/i.test(model || "");
   if (usesOpenAiImageApi && image) {
     return res.status(400).json({
@@ -177,7 +178,16 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
   }
   const imagePayload = image && image.startsWith("data:image/") ? image : image ? `data:image/png;base64,${image}` : "";
-  const payload: Record<string, unknown> = usesOpenAiImageApi
+  const payload: Record<string, unknown> = usesFluxKontextApi
+    ? {
+        prompt,
+        aspect_ratio: imagePayload ? "match_input_image" : "1:1",
+        steps: asBoundedNumber(body.steps, 30, 1, 100),
+        cfg_scale: asBoundedNumber(body.cfg_scale, 3.5, 0, 20),
+        ...(imagePayload ? { image: imagePayload } : {}),
+        ...(body.seed !== undefined ? { seed: asBoundedNumber(body.seed, 0, 0, 2_147_483_647) } : {}),
+      }
+    : usesOpenAiImageApi
     ? {
         model: model || "qwen-image",
         prompt,
@@ -200,8 +210,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     payload.size = `${width}x${height}`;
   }
   if (body.seed !== undefined) payload.seed = asBoundedNumber(body.seed, 0, 0, 2_147_483_647);
-  if (!usesOpenAiImageApi && model) payload.model = model;
-  if (!usesOpenAiImageApi && imagePayload) payload.image = imagePayload;
+  if (!usesOpenAiImageApi && !usesFluxKontextApi && model) payload.model = model;
+  if (!usesOpenAiImageApi && !usesFluxKontextApi && imagePayload) payload.image = imagePayload;
 
   console.log("[IMAGE] Generating with NVIDIA image endpoint", {
     model: model || "endpoint-default",

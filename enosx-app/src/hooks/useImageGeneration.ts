@@ -39,7 +39,7 @@ export function useImageGeneration() {
               message = "NVIDIA image generation is not configured on the server.";
             }
             if (errData?.status === "MISSING_IMAGE") {
-              message = "Attach a PCB image before using NVIDIA image generation.";
+              message = "Attach an image before using this image-edit model.";
             }
           } catch {
             /* use default message */

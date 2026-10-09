@@ -5,6 +5,9 @@
   "outputDirectory": "enosx-app/dist/public",
   "buildCommand": "pnpm run build",
   "functions": {
+    "api/image/generate.ts": {
+      "maxDuration": 120
+    },
     "api/**/*.ts": {
       "maxDuration": 60
     }

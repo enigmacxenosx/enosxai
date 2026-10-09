@@ -3,7 +3,8 @@
  * Generates images through the configured NVIDIA image endpoint. Credentials
  * remain server-side and the browser receives a self-contained data URL so
  * generated images remain downloadable after a chat is reloaded. The hosted
- * FLUX.1 Kontext route supports text-to-image and optional input-image editing.
+ * FLUX.2 Klein handles prompt-only generation; uploaded-image edits use the
+ * configured FLUX.1 Kontext route.
  *
  * Server-only environment variables:
  *   - NVIDIA_IMAGE_API_KEY (required for image generation; falls back to NVIDIA_API_KEY)
@@ -16,7 +17,7 @@
  *     height?: number, cfg_scale?: number, steps?: number, seed?: number }
  *
  * `image` may be a data URL or base64-encoded RGB image for compatible edit
- * endpoints. FLUX.1 Kontext accepts an optional PNG, JPEG, or WebP image.
+ * endpoints. FLUX.1 Kontext requires an input PNG, JPEG, or WebP image.
  *
  * Response:
  *   { url: string, revised_prompt?: string, media_type: string } — 200
@@ -30,11 +31,25 @@ const DEFAULT_WIDTH = 512;
 const DEFAULT_HEIGHT = 512;
 const MAX_PROMPT_LENGTH = 800;
 const MAX_IMAGE_LENGTH = 8_000_000;
-const NVIDIA_HOSTED_FLUX_ENDPOINT = "https://ai.api.nvidia.com/v1/genai/black-forest-labs/flux.1-dev";
+const NVIDIA_HOSTED_FLUX2_ENDPOINT = "https://ai.api.nvidia.com/v1/genai/black-forest-labs/flux.2-klein-4b";
 
 function asBoundedNumber(value: unknown, fallback: number, min: number, max: number) {
   const number = typeof value === "number" ? value : Number(value);
   return Number.isFinite(number) ? Math.min(max, Math.max(min, number)) : fallback;
+}
+
+function createFlux2Payload(prompt: string, body: any, imagePayload: string) {
+  return {
+    prompt,
+    mode: imagePayload ? "Image Editing" : "Image Generation",
+    height: 1024,
+    width: 1024,
+    cfg_scale: 0,
+    image: imagePayload || null,
+    samples: 1,
+    seed: asBoundedNumber(body.seed, 0, 0, 2_147_483_647),
+    steps: asBoundedNumber(body.steps, 4, 1, 4),
+  };
 }
 
 function extractImagePayload(data: any) {
@@ -154,6 +169,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const model = process.env.NVIDIA_IMAGE_MODEL?.trim();
   const usesOpenAiImageApi = /\/v1\/images\/generations\/?$/i.test(endpoint);
   const usesFluxKontextApi = /\/v1\/genai\/black-forest-labs\/flux\.1-kontext-dev\/?$/i.test(endpoint);
+  const usesFlux2KleinEndpoint = /\/v1\/genai\/black-forest-labs\/flux\.2-klein-4b\/?$/i.test(endpoint);
+  const usesFlux2KleinApi = usesFlux2KleinEndpoint || (usesFluxKontextApi && !image);
+  const requestEndpoint = usesFluxKontextApi && !image ? NVIDIA_HOSTED_FLUX2_ENDPOINT : endpoint;
   const requiresInputImage = /nvpcb|image-edit/i.test(model || "");
   if (usesOpenAiImageApi && image) {
     return res.status(400).json({
@@ -178,7 +196,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
   }
   const imagePayload = image && image.startsWith("data:image/") ? image : image ? `data:image/png;base64,${image}` : "";
-  const payload: Record<string, unknown> = usesFluxKontextApi
+  const payload: Record<string, unknown> = usesFlux2KleinApi
+    ? createFlux2Payload(prompt, body, imagePayload)
+    : usesFluxKontextApi
     ? {
         prompt,
         aspect_ratio: imagePayload ? "match_input_image" : "1:1",
@@ -210,17 +230,17 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     payload.size = `${width}x${height}`;
   }
   if (body.seed !== undefined) payload.seed = asBoundedNumber(body.seed, 0, 0, 2_147_483_647);
-  if (!usesOpenAiImageApi && !usesFluxKontextApi && model) payload.model = model;
-  if (!usesOpenAiImageApi && !usesFluxKontextApi && imagePayload) payload.image = imagePayload;
+  if (!usesOpenAiImageApi && !usesFluxKontextApi && !usesFlux2KleinApi && model) payload.model = model;
+  if (!usesOpenAiImageApi && !usesFluxKontextApi && !usesFlux2KleinApi && imagePayload) payload.image = imagePayload;
 
   console.log("[IMAGE] Generating with NVIDIA image endpoint", {
-    model: model || "endpoint-default",
+    model: usesFlux2KleinApi ? "black-forest-labs/flux.2-klein-4b" : model || "endpoint-default",
     hasInputImage: Boolean(imagePayload),
     promptLength: prompt.length,
   });
 
   try {
-    let response = await fetch(endpoint, {
+    let response = await fetch(requestEndpoint, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -265,24 +285,16 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         // downloadable. Keep existing deployments working by falling back to
         // NVIDIA's currently hosted Flux endpoint for text-to-image requests.
         if (response.status === 404 && usesOpenAiImageApi && !image) {
-          const fluxPayload = {
-            prompt,
-            mode: "base",
-            width: asBoundedNumber(body.width, 1024, 512, 1024),
-            height: asBoundedNumber(body.height, 1024, 512, 1024),
-            cfg_scale: asBoundedNumber(body.cfg_scale, 7, 0, 20),
-            steps: asBoundedNumber(body.steps, 30, 1, 100),
-            ...(body.seed !== undefined ? { seed: asBoundedNumber(body.seed, 0, 0, 2_147_483_647) } : {}),
-          };
-          console.warn("[IMAGE] Configured NVIDIA hosted image route returned 404; retrying with hosted Flux.");
-          response = await fetch(NVIDIA_HOSTED_FLUX_ENDPOINT, {
+          const flux2Payload = createFlux2Payload(prompt, body, "");
+          console.warn("[IMAGE] Configured NVIDIA hosted image route returned 404; retrying with FLUX.2 Klein 4B.");
+          response = await fetch(NVIDIA_HOSTED_FLUX2_ENDPOINT, {
             method: "POST",
             headers: {
               "Content-Type": "application/json",
               Authorization: `Bearer ${apiKey}`,
               Accept: "application/json",
             },
-            body: JSON.stringify(fluxPayload),
+            body: JSON.stringify(flux2Payload),
           });
           responseText = await response.text();
         }

@@ -74,7 +74,7 @@ globalThis.fetch = async (url, init) => {
   if (String(url).endsWith("/v1/images/generations")) {
     return new Response("404 page not found", { status: 404 });
   }
-  if (String(url) === "https://ai.api.nvidia.com/v1/genai/black-forest-labs/flux.1-dev") {
+  if (String(url) === "https://ai.api.nvidia.com/v1/genai/black-forest-labs/flux.2-klein-4b") {
     return new Response(JSON.stringify({ artifacts: [{ base64: ONE_PIXEL_PNG }] }), { status: 200 });
   }
   return new Response(JSON.stringify({
@@ -117,9 +117,11 @@ res = makeRes();
 await handler(makeReq("POST", { prompt: "a tree at sunset" }), res);
 assert(res._status === 200, "Qwen Image returns 200 without an input image");
 assert(res._json.url.startsWith("data:image/png;base64,"), "Qwen image base64 response becomes a data URL");
-assert(capturedRequest.url === "https://ai.api.nvidia.com/v1/genai/black-forest-labs/flux.1-dev", "falls back from the retired Qwen route to hosted Flux");
-assert(capturedRequest.payload.mode === "base", "sends the hosted Flux base mode");
-assert(capturedRequest.payload.width === 1024 && capturedRequest.payload.height === 1024, "sends supported Flux dimensions");
+assert(capturedRequest.url === "https://ai.api.nvidia.com/v1/genai/black-forest-labs/flux.2-klein-4b", "falls back from the retired Qwen route to hosted FLUX.2 Klein");
+assert(!("mode" in capturedRequest.payload), "omits unsupported FLUX.2 mode field");
+assert(capturedRequest.payload.cfg_scale === 1, "sends a supported FLUX.2 guidance scale");
+assert(capturedRequest.payload.width === 1024 && capturedRequest.payload.height === 1024, "sends supported FLUX.2 dimensions");
+assert(capturedRequest.payload.steps === 4 && capturedRequest.payload.image === null, "sends a text-to-image FLUX.2 request");
 
 console.log("[test] Qwen Image rejects attached source images with a helpful error");
 res = makeRes();

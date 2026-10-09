@@ -41,10 +41,9 @@ function asBoundedNumber(value: unknown, fallback: number, min: number, max: num
 function createFlux2Payload(prompt: string, body: any, imagePayload: string) {
   return {
     prompt,
-    mode: imagePayload ? "Image Editing" : "Image Generation",
     height: 1024,
     width: 1024,
-    cfg_scale: 0,
+    cfg_scale: 1,
     image: imagePayload || null,
     samples: 1,
     seed: asBoundedNumber(body.seed, 0, 0, 2_147_483_647),

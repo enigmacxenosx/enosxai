@@ -1,343 +1,41 @@
-# ENOSX AI Assistant - Setup Guide
+# ENOSX AI Setup Guide
 
-## Overview
+This guide reflects the workspace manifests and current configuration files reviewed on 15 October 2026. It is a development guide, not proof that production deployment is configured or working.
 
-The ENOSX AI Assistant is a multi-service application consisting of:
+## Requirements
 
-1. **Frontend Service** (`artifacts/enosx-assistant`): React + Vite web application
-2. **API Service** (`artifacts/api-server`): Express.js backend for AI chat
+- Node.js 20 or newer, subject to the versions supported by the current workspace dependencies.
+- pnpm, preferably enabled through Corepack.
+- Firebase project settings for signed-in web accounts. Server-side features may also require database and model-provider configuration.
 
-Both services must be running simultaneously for the application to function properly.
+## Install
 
-## Prerequisites
+From the repository root, install the workspace dependencies with **pnpm install**. Use the pnpm workspace; do not use npm or Yarn lockfiles.
 
-- Node.js 24+
-- pnpm package manager
-- OpenRouter API key (from https://openrouter.ai/keys)
-- GitHub token (optional, for repository context features)
+## Configure local environment
 
-## Environment Variables
+Copy the variable names from **enosx-app/.env.example** into a local environment file for the frontend, and set only the values required for the feature being tested. The example includes Firebase web-app settings, optional API configuration, NVIDIA server credentials, and error-report configuration. Never commit filled-in environment files or put a provider secret in a VITE_ variable.
 
-### Required
+The Express API server reads its environment from the process/hosting environment. For local API-server routes, configure the needed server-only values such as PORT, DATABASE_URL, and NVIDIA_API_KEY in the shell or a local secret manager. Do not assume that a frontend .env.local file is loaded by the Express server.
 
-| Variable | Service | Value | Example |
-|----------|---------|-------|---------|
-| `OPENROUTER_API_KEY` | API Server | Your OpenRouter API key | `sk-or-v1-...` |
-| `PORT` | Frontend | Frontend port | `18426` (Replit) or `3000` (local) |
-| `BASE_PATH` | Frontend | URL base path | `/` |
-| `API_PORT` | Frontend | API server port | `8080` |
-| `PORT` | API Server | API server port | `8080` |
+## Run the web app and API server
 
-### Optional
+Run the API server in one terminal from the repository root:
 
-| Variable | Service | Value | Example |
-|----------|---------|-------|---------|
-| `GITHUB_TOKEN` | API Server | GitHub API token | `ghp_...` |
-| `GH_TOKEN` | API Server | GitHub CLI token (fallback) | `ghu_...` |
+    PORT=8080 pnpm --filter @workspace/api-server dev
 
-## Local Development Setup
+Run the Vite app in a second terminal:
 
-### Step 1: Install Dependencies
+    pnpm --filter @workspace/enosx-app dev
 
-```bash
-cd enosxassistant
-pnpm install
-```
+The Vite configuration defaults to port 5173 and proxies /api requests to localhost:8080. If you change either port, update the server environment and proxy configuration together. The API server requires PORT to be set.
 
-### Step 2: Set Environment Variables
+## Build and type-check
 
-Create a `.env.local` file in the project root:
+From the repository root, **pnpm run build** runs the root type-check and recursive workspace builds. The workspace does not define a root pnpm dev script; use the two package-specific commands above.
 
-```bash
-# Frontend
-export PORT=3000
-export BASE_PATH=/
-export API_PORT=8080
+## Data and safety notes for developers
 
-# API Server
-export OPENROUTER_API_KEY=your_openrouter_api_key_here
-export GITHUB_TOKEN=your_github_token_here  # optional
-```
+The frontend has Firebase Auth/Firestore code and local guest storage. The repository also contains a separate Express API server with Neon-backed history/auth routes and Vercel serverless functions under api/. They are separate service paths; verify which path the current app and deployment use before changing data-retention or privacy documentation. Do not deploy an unauthenticated data route or treat a client-supplied user ID as proof of identity.
 
-### Step 3: Start the API Server
-
-Open a terminal and run:
-
-```bash
-export PORT=8080
-export OPENROUTER_API_KEY=your_openrouter_api_key_here
-cd artifacts/api-server
-pnpm run dev
-```
-
-You should see:
-```
-Server listening { port: 8080 }
-```
-
-### Step 4: Start the Frontend Service
-
-Open another terminal and run:
-
-```bash
-export PORT=3000
-export API_PORT=8080
-export BASE_PATH=/
-cd artifacts/enosx-assistant
-pnpm run dev
-```
-
-The frontend will be available at `http://localhost:3000`
-
-## Replit Deployment
-
-### Automatic Setup
-
-When deploying to Replit, the `.replit-artifact` configurations handle most setup automatically:
-
-1. **Frontend Artifact** (`artifacts/enosx-assistant/.replit-artifact/artifact.toml`):
-   - Runs on port 18426
-   - Proxies `/api/*` requests to `http://localhost:8080`
-   - Sets `PORT=18426`, `BASE_PATH=/`, `API_PORT=8080`
-
-2. **API Artifact** (`artifacts/api-server/.replit-artifact/artifact.toml`):
-   - Runs on port 8080
-   - Handles `/api/*` routes
-   - Sets `PORT=8080`
-
-### Required Secrets
-
-Add these to your Replit Secrets:
-
-1. `OPENROUTER_API_KEY`: Your OpenRouter API key
-2. `GITHUB_TOKEN`: (Optional) Your GitHub API token
-
-## Troubleshooting
-
-### "AI is not responding"
-
-**Possible Causes:**
-
-1. **API Server not running**
-   - Check that the API server is running on port 8080
-   - Verify with: `curl http://localhost:8080/api/healthz`
-
-2. **OPENROUTER_API_KEY not set**
-   - Verify the environment variable is set on the API server: `test -n "$OPENROUTER_API_KEY" && echo configured`
-   - Check Replit Secrets tab if deploying to Replit
-
-3. **API_PORT mismatch**
-   - Ensure frontend's `API_PORT` matches the API server's `PORT`
-   - Frontend should proxy to: `http://localhost:${API_PORT}`
-
-4. **Network connectivity**
-   - Ensure the frontend can reach the API server
-   - Check browser console for network errors
-   - Verify CORS is enabled (it is by default)
-
-### "OPENROUTER_API_KEY environment variable is not set"
-
-- This error appears when the API server receives a chat request but `OPENROUTER_API_KEY` is not configured
-- Set the environment variable and restart the API server
-
-### "No response body from OpenRouter"
-
-- The OpenRouter API returned an error
-- Check that the OpenRouter key is valid
-- Verify that the selected model is available and your account has the required credits
-- Check OpenRouter status at https://status.openrouter.ai
-
-## Architecture Diagram
-
-```
-┌─────────────────────────────────────────────────────────────┐
-│                     Browser (User)                          │
-└────────────────────────┬────────────────────────────────────┘
-                         │
-                         │ HTTP/WebSocket
-                         │
-┌────────────────────────▼────────────────────────────────────┐
-│              Frontend Service (Vite + React)                │
-│              Port: 18426 (Replit) / 3000 (Local)           │
-│                                                             │
-│  ┌──────────────────────────────────────────────────────┐  │
-│  │  Vite Proxy: /api/* → http://localhost:8080         │  │
-│  └──────────────────────────────────────────────────────┘  │
-└────────────────────────┬────────────────────────────────────┘
-                         │
-                         │ HTTP (Proxied)
-                         │
-┌────────────────────────▼────────────────────────────────────┐
-│              API Service (Express.js)                       │
-│              Port: 8080                                     │
-│                                                             │
-│  Routes:                                                    │
-│  - POST /api/chat          → OpenRouter API                      │
-│  - GET /api/github/context → GitHub API                    │
-│  - GET /api/healthz        → Health check                  │
-└────────────────────────┬────────────────────────────────────┘
-                         │
-        ┌────────────────┼────────────────┐
-        │                │                │
-        ▼                ▼                ▼
-    OpenRouter API  GitHub API       (Other APIs)
-```
-
-## API Endpoints
-
-### Chat Endpoint
-
-**POST** `/api/chat`
-
-Request:
-```json
-{
-  "messages": [
-    { "role": "user", "content": "Hello, how are you?" }
-  ],
-  "githubContext": "optional repository context"
-}
-```
-
-Response: Server-Sent Events (SSE) stream with OpenRouter API response
-
-### GitHub Context Endpoint
-
-**GET** `/api/github/context`
-
-Response:
-```json
-{
-  "repos": [...],
-  "context": "formatted repository information"
-}
-```
-
-### Health Check Endpoint
-
-**GET** `/api/healthz`
-
-Response:
-```json
-{
-  "status": "ok"
-}
-```
-
-## Development Tips
-
-### Hot Reload
-
-Both services support hot reload during development:
-
-- **Frontend**: Vite automatically reloads on file changes
-- **API Server**: Run with `pnpm run dev` which rebuilds and restarts on changes
-
-### Debugging
-
-**Frontend Debugging:**
-- Open browser DevTools (F12)
-- Check Network tab for API requests
-- Check Console for JavaScript errors
-
-**API Server Debugging:**
-- Check terminal output for server logs
-- Look for error messages in the API response
-
-### Testing the API Directly
-
-```bash
-# Test health endpoint
-curl http://localhost:8080/api/healthz
-
-# Test chat endpoint
-curl -X POST http://localhost:8080/api/chat \
-  -H "Content-Type: application/json" \
-  -d '{
-    "messages": [
-      { "role": "user", "content": "Hello" }
-    ]
-  }'
-```
-
-## Performance Optimization
-
-### Frontend
-
-- Uses code splitting with lazy loading
-- Optimized images (WebP format)
-- CSS-in-JS with Tailwind for minimal bundle size
-
-### API Server
-
-- Streams responses from OpenRouter for real-time updates
-- Caches repository context to reduce GitHub API calls
-- Efficient message serialization
-
-## Security Considerations
-
-1. **API Key Protection**
-   - Never commit `OPENROUTER_API_KEY` to version control
-   - Use environment variables or Replit Secrets
-   - Rotate keys periodically
-
-2. **CORS**
-   - API server has CORS enabled for all origins (can be restricted)
-   - Frontend proxies requests through Vite in development
-
-3. **Rate Limiting**
-   - OpenRouter and individual models have rate limits and credit requirements
-   - Implement client-side debouncing for rapid requests
-
-## Deployment
-
-### Replit
-
-The application is configured for Replit deployment:
-
-1. Push code to GitHub
-2. Import repository to Replit
-3. Add `OPENROUTER_API_KEY` to Secrets
-4. Click "Run" to start both services
-
-### Docker
-
-To containerize the application:
-
-```dockerfile
-FROM node:24-alpine
-
-WORKDIR /app
-
-COPY . .
-
-RUN pnpm install
-
-ENV PORT=8080
-ENV OPENROUTER_API_KEY=your_key_here
-
-CMD ["pnpm", "run", "dev"]
-```
-
-### Other Platforms
-
-The application can be deployed to any platform that supports Node.js. Ensure:
-
-1. Both services are started
-2. Environment variables are set
-3. Ports 18426 (frontend) and 8080 (API) are accessible
-4. Network connectivity between services is available
-
-## Support
-
-For issues or questions:
-
-1. Check this guide's Troubleshooting section
-2. Review error messages in browser console and server logs
-3. Check OpenRouter status and documentation
-4. Open an issue on GitHub
-
-## Version History
-
-- **v1.0.0** (Current): Multi-service architecture with separate frontend and API
-- **v0.x.x** (Legacy): Single-process architecture (deprecated)
+For desktop packaging, see **desktop-shell/README.md** and the platform-specific signing guide. For OAuth scopes and callback setup, see **docs/OAUTH_CONNECTOR_CONFIGURATION.md**.

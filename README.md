@@ -187,7 +187,9 @@ See [Deployment & Security Guide](docs/DEPLOYMENT.md) for detailed security prac
 
 ## 📄 License
 
-**Proprietary** — © 2024–2026 Enosx Technologies. All rights reserved.
+**Proprietary** — Copyright © 2026 Enosx Technologies. All rights reserved. No public license grant is intended for Enosx Technologies-owned material. See [LICENSE](LICENSE). Third-party components remain subject to their own terms; the license audit is still incomplete.
+
+Privacy and Terms drafts are in [docs/legal](docs/legal/). They are not effective or ready to publish until reviewed by qualified counsel.
 
 ---
 
@@ -196,6 +198,10 @@ See [Deployment & Security Guide](docs/DEPLOYMENT.md) for detailed security prac
 - 📖 [Setup Guide](docs/SETUP_GUIDE.md)
 - 🚀 [Deployment Guide](docs/DEPLOYMENT.md)
 - 🏗️ [Architecture Documentation](docs/)
+- 🔐 [Security Policy](SECURITY.md)
+- ⚖️ [Privacy Notice draft](docs/legal/PRIVACY_POLICY.md)
+- 📜 [Terms of Service draft](docs/legal/TERMS_OF_SERVICE.md)
+- 🧾 [Third-party license audit status](docs/legal/THIRD_PARTY_LICENSE_AUDIT.md)
 - 🐛 [GitHub Issues](https://github.com/enigmacxenosx/enosxai/issues)
 
 ---

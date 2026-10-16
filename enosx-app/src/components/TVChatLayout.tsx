@@ -50,6 +50,7 @@ export default function TVChatLayout({
   audioStream = null,
 }: TVChatLayoutProps) {
   const { config } = useTheme();
+  const latestAssistantMessageIndex = messages.reduce((latest, message, messageIndex) => message.role === "assistant" ? messageIndex : latest, -1);
   const containerRef = useRef<HTMLDivElement>(null);
 
   // Auto-focus logic for TV remote navigation could be added here
@@ -123,6 +124,8 @@ export default function TVChatLayout({
                   onSpeak={speak}
                   onStopSpeak={stopSpeaking}
                   isSpeaking={voiceState === "speaking"}
+                  onFollowUp={(prompt) => handleSend(prompt)}
+                  isLatestAssistant={idx === latestAssistantMessageIndex}
                 />
               ))}
               <div ref={messagesEndRef} />

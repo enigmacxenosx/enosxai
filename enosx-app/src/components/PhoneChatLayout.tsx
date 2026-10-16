@@ -60,6 +60,7 @@ export default function PhoneChatLayout({
   onSettingsClick,
 }: PhoneChatLayoutProps) {
   const { config } = useTheme();
+  const latestAssistantMessageIndex = messages.reduce((latest, message, messageIndex) => message.role === "assistant" ? messageIndex : latest, -1);
 
   return (
     <div className="flex flex-col h-full w-full relative bg-black overflow-hidden">
@@ -98,6 +99,8 @@ export default function PhoneChatLayout({
                 onSpeak={speak}
                 onStopSpeak={stopSpeaking}
                 isSpeaking={voiceState === "speaking"}
+                onFollowUp={(prompt) => handleSend(prompt)}
+                isLatestAssistant={idx === latestAssistantMessageIndex}
               />
             ))}
             <div ref={messagesEndRef} />

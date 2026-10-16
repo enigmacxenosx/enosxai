@@ -191,7 +191,7 @@ export default function Sidebar({
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
               onClick={item.onClick}
-              className={`neon-dashboard-nav w-full flex items-center ${collapsed ? 'justify-center' : 'justify-start px-4'} py-2.5 rounded-lg transition-all duration-200 gap-3`}
+              className={`neon-dashboard-nav w-full flex items-center ${collapsed ? 'justify-center' : 'justify-start px-3'} py-2 rounded-lg transition-all duration-200 gap-2`}
               style={{
                 background: item.accent
                   ? `linear-gradient(135deg, rgba(${config.accentRgb}, 0.18), rgba(${config.accentRgb}, 0.07))`
@@ -207,7 +207,7 @@ export default function Sidebar({
               }}
               title={collapsed ? item.label : undefined}
             >
-              <Icon size={14} className="flex-shrink-0" />
+              <Icon size={13} className="flex-shrink-0" />
               {!collapsed && (
                 <div className="flex flex-col items-start overflow-hidden flex-1">
                   <div className="flex items-center justify-between w-full">

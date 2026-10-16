@@ -168,7 +168,7 @@ export default function CommandBar({
   }, []);
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === "Enter" && !e.shiftKey) {
+    if (e.key === "Enter" && !e.shiftKey && !e.nativeEvent.isComposing && e.keyCode !== 229) {
       e.preventDefault();
       handleSend();
     }
@@ -222,7 +222,7 @@ export default function CommandBar({
                 ? { duration: 1.5, repeat: Infinity, ease: "easeInOut" }
                 : { duration: 0.3 }
             }
-            className={`phone-command-shell flex flex-col gap-0.5 rounded-2xl px-3 py-1 transition-all duration-300 ${isListening ? 'shadow-[0_0_20px_rgba(0,242,255,0.2)]' : ''} rainbow-glow rainbow-glow-border`}
+            className={`phone-command-shell flex flex-col gap-0.5 rounded-xl px-2 py-0.5 transition-all duration-300 ${isListening ? 'shadow-[0_0_20px_rgba(0,242,255,0.2)]' : ''} rainbow-glow rainbow-glow-border`}
             style={{
               background: `rgba(12,12,16,${wallpaperSettings.panelOpacity})`,
               backdropFilter: `blur(${wallpaperSettings.blurAmount}px)`,
@@ -284,14 +284,14 @@ export default function CommandBar({
             </AnimatePresence>
 
             {/* AI Mode selector — single compact tab with dropdown */}
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1.5">
               <div className="relative" ref={modeRef}>
                 <motion.button
                   type="button"
                   whileHover={{ scale: 1.03 }}
                   whileTap={{ scale: 0.97 }}
                   onClick={() => setModeOpen((o) => !o)}
-                  className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg font-semibold text-[11px] whitespace-nowrap transition-all"
+                  className="flex items-center gap-1 px-2 py-0.5 rounded-md font-semibold text-[10px] whitespace-nowrap transition-all"
                   style={{
                     background: currentMode.bgColor,
                     border: `1.5px solid ${currentMode.color}`,

@@ -34,6 +34,7 @@ import {
 interface ConnectorLogoProps {
   name: string;
   accent: string;
+  size?: "xs" | "sm" | "md";
 }
 
 const LOGO_SLUG_OVERRIDES: Record<string, string> = {
@@ -114,13 +115,15 @@ function getInitials(name: string) {
   return name.slice(0, 2).toUpperCase();
 }
 
-export default function ConnectorLogo({ name, accent }: ConnectorLogoProps) {
+export default function ConnectorLogo({ name, accent, size = "md" }: ConnectorLogoProps) {
   const slug = toLogoSlug(name);
+  const sizeClass = size === "xs" ? "size-5 rounded-md text-[8px]" : size === "sm" ? "size-6 rounded-md text-[9px]" : "size-7 rounded-lg text-[10px]";
+  const iconClass = size === "xs" ? "size-3" : size === "sm" ? "size-3.5" : "size-4";
   const icon = LOCAL_LOGOS[slug];
 
   return (
     <span
-      className="w-7 h-7 rounded-lg flex items-center justify-center text-[10px] font-bold shrink-0 overflow-hidden"
+      className={`${sizeClass} flex items-center justify-center font-bold shrink-0 overflow-hidden`}
       style={{
         background: `${accent}18`,
         border: `1px solid ${accent}38`,
@@ -132,7 +135,7 @@ export default function ConnectorLogo({ name, accent }: ConnectorLogoProps) {
       {icon ? (
         <svg
           viewBox="0 0 24 24"
-          className="w-4 h-4"
+          className={iconClass}
           fill="currentColor"
           role="img"
           aria-label={`${name} logo`}

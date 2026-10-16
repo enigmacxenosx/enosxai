@@ -70,6 +70,9 @@ export default function ConnectorPicker({
   }, [kindFilter, query]);
 
   const selectedCount = selectedConnectorIds.length;
+  const selectedConnectors = selectedConnectorIds
+    .map((id) => CONNECTOR_CATALOG.find((connector) => connector.id === id))
+    .filter((connector): connector is (typeof CONNECTOR_CATALOG)[number] => Boolean(connector));
   const githubConnected = accounts.length > 0;
   const isConnected = (id: string) => id === "github" ? githubConnected : connectedIds.includes(id);
 
@@ -104,7 +107,7 @@ export default function ConnectorPicker({
         onClick={() => setOpen((current) => !current)}
         aria-expanded={open}
         aria-haspopup="dialog"
-        className="group flex items-center gap-1.5 rounded-xl px-3 py-1.5 font-semibold text-xs whitespace-nowrap transition-all"
+        className="group flex items-center gap-1 rounded-lg px-1.5 py-1 font-semibold text-xs whitespace-nowrap transition-all"
         style={{
           background:
             selectedCount > 0
@@ -120,21 +123,13 @@ export default function ConnectorPicker({
               ? `0 0 18px rgba(${config.accentRgb}, 0.22), inset 0 1px 0 rgba(255,255,255,0.12)`
               : "inset 0 1px 0 rgba(255,255,255,0.08)",
         }}
-        title="Choose connectors for this chat"
+        title={selectedConnectors.length ? selectedConnectors.map((connector) => connector.name).join(", ") : "Choose connectors for this chat"}
+        aria-label={selectedConnectors.length ? `Selected connectors: ${selectedConnectors.map((connector) => connector.name).join(", ")}` : "Choose connectors for this chat"}
       >
-        <Cable size={13} />
-        Connectors
-        {selectedCount > 0 && (
-          <span
-            className="min-w-4 h-4 px-1 rounded-full flex items-center justify-center text-[10px]"
-            style={{
-              background: `rgba(${config.accentRgb}, 0.25)`,
-              color: config.accent,
-            }}
-          >
-            {selectedCount}
-          </span>
-        )}
+        {selectedConnectors.length ? selectedConnectors.slice(0, 3).map((connector) => (
+          <ConnectorLogo key={connector.id} name={connector.name} accent={kindColor(connector.kind)} size="sm" />
+        )) : <Cable size={13} aria-hidden="true" />}
+        {selectedConnectors.length > 3 && <span className="px-0.5 text-[10px] text-white/55">+{selectedConnectors.length - 3}</span>}
       </motion.button>
 
       <AnimatePresence>
@@ -314,7 +309,7 @@ export default function ConnectorPicker({
                           type="button"
                           onClick={(event) => handleConnectorConnect(connector.id, event)}
                           disabled={isGitHubLoading || connectingId === connector.id}
-                          className="inline-flex items-center gap-1 rounded-lg border px-2 py-1 text-[10px] font-semibold transition-all hover:bg-white/[0.1] disabled:opacity-50"
+                          className="inline-flex size-7 items-center justify-center rounded-lg border text-[10px] font-semibold transition-all hover:bg-white/[0.1] disabled:opacity-50"
                           style={{
                             color: isConnected(connector.id) ? "#4ade80" : config.accent,
                             borderColor: isConnected(connector.id)
@@ -326,8 +321,7 @@ export default function ConnectorPicker({
                           }}
                           title={isConnected(connector.id) ? `Connect another ${connector.name} account` : `Connect ${connector.name} with OAuth`}
                         >
-                          {(isGitHubLoading && connector.id === "github") || connectingId === connector.id ? <Loader2 size={11} className="animate-spin" /> : null}
-                          {isConnected(connector.id) ? "Connected" : "Connect"}
+                          {(isGitHubLoading && connector.id === "github") || connectingId === connector.id ? <Loader2 size={11} className="animate-spin" /> : <ConnectorLogo name={connector.name} accent={isConnected(connector.id) ? "#4ade80" : config.accent} size="xs" />}
                         </button>
                       )}
                       <span

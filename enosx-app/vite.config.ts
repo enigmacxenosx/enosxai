@@ -10,7 +10,7 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const srcDir = path.resolve(__dirname, "src");
 const projectRoot = __dirname;
 
-const port = Number(process.env.PORT || 5173);
+const port = Number(process.env.PORT || 3000);
 const basePath = process.env.BASE_PATH || "/";
 
 // Replit-specific plugins are only loaded when running inside Replit

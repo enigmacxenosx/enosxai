@@ -8,7 +8,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import { motion } from "framer-motion";
-import { Copy, Volume2, VolumeX, Check, Download, ExternalLink, FileSearch, ListTree, ShieldCheck, FileText, FileSpreadsheet } from "lucide-react";
+import { Copy, Volume2, VolumeX, Check, Download, ExternalLink, FileSearch, ListTree, ShieldCheck, FileText, FileSpreadsheet, Sparkles, ChevronDown } from "lucide-react";
 import { Streamdown } from "streamdown";
 import { Message } from "@/lib/types";
 import { useTheme } from "@/contexts/ThemeContext";
@@ -26,7 +26,30 @@ interface MessageBubbleProps {
   isSpeaking: boolean;
   /** Optional handler for proposed actions (e.g. workspace mode runs open_url in-pane). */
   onExecuteProposedAction?: (action: NonNullable<Message["proposedActions"]>[number]) => void;
+  /** Sends a user-selected follow-up prompt through the existing chat flow. */
+  onFollowUp?: (prompt: string) => void;
+  /** Follow-up controls are shown only under the newest assistant response. */
+  isLatestAssistant?: boolean;
 }
+
+const FOLLOW_UP_ACTIONS = [
+  {
+    "label": "Go deeper",
+    "prompt": "Go deeper on the main point in your last answer. Explain its implications and one important nuance."
+  },
+  {
+    "label": "Show an example",
+    "prompt": "Give me a concrete example of how to apply the idea in your last answer."
+  },
+  {
+    "label": "Check a counterpoint",
+    "prompt": "Challenge your last answer: identify the strongest caveat or alternative, and what evidence would change the conclusion."
+  },
+  {
+    "label": "Make it actionable",
+    "prompt": "Turn your last answer into three practical next steps and identify the best first action."
+  }
+];
 
 // ── Safe internet media detection ──────────────────────────────────────────────
 // Markdown image/link URLs and direct public media URLs are rendered inline.
@@ -222,12 +245,15 @@ export default function MessageBubble({
   onStopSpeak,
   isSpeaking,
   onExecuteProposedAction,
+  onFollowUp,
+  isLatestAssistant = false,
 }: MessageBubbleProps) {
   const { config } = useTheme();
   const { settings: wallpaperSettings } = useWallpaper();
   const [copied, setCopied] = useState(false);
   const [actionStatus, setActionStatus] = useState<string | null>(null);
   const [exportMenuOpen, setExportMenuOpen] = useState(false);
+  const [showFollowUps, setShowFollowUps] = useState(false);
   const isUser = message.role === "user";
   const isStreaming = message.isStreaming;
   const isEmpty = !message.content?.trim() && isStreaming;
@@ -500,6 +526,36 @@ export default function MessageBubble({
               })}
             </span>
           </motion.div>
+        )}
+        {!isUser && isLatestAssistant && onFollowUp && !isStreaming && message.content.trim() && (
+          <div className="mt-2 w-full max-w-full">
+            <button
+              type="button"
+              onClick={() => setShowFollowUps((open) => !open)}
+              aria-expanded={showFollowUps}
+              aria-controls="follow-up-actions"
+              className="inline-flex min-h-9 items-center gap-2 rounded-full border border-cyan-300/20 bg-cyan-400/[0.05] px-3 text-[11px] font-medium text-cyan-100/80 transition hover:border-cyan-200/40 hover:bg-cyan-400/[0.1] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/60"
+            >
+              <Sparkles size={13} aria-hidden="true" />
+              <span>Explore this answer</span>
+              <ChevronDown size={13} aria-hidden="true" className={"transition-transform " + (showFollowUps ? "rotate-180" : "")} />
+            </button>
+            {showFollowUps && (
+              <div id="follow-up-actions" role="group" aria-label="Follow-up prompts" className="mt-2 flex flex-wrap items-center gap-2">
+                <span className="mr-1 text-[10px] text-white/45">Pick a direction:</span>
+                {FOLLOW_UP_ACTIONS.map((action) => (
+                  <button
+                    key={action.label}
+                    type="button"
+                    onClick={() => { onFollowUp(action.prompt); setShowFollowUps(false); }}
+                    className="min-h-9 rounded-full border border-white/10 bg-white/[0.035] px-3 text-[11px] text-white/75 transition hover:border-cyan-200/30 hover:bg-cyan-400/[0.08] hover:text-cyan-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/60"
+                  >
+                    {action.label}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
         )}
       </div>
     </motion.div>

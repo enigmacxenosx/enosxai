@@ -907,6 +907,7 @@ ${getAdminContext()}` : ""}`,
 
   const activeConversation = conversations.find((c) => c.id === activeId);
   const messages = activeConversation?.messages || [];
+  const latestAssistantMessageIndex = messages.reduce((latest, message, messageIndex) => message.role === "assistant" ? messageIndex : latest, -1);
   const handleShareConversation = useCallback(async () => {
     if (!activeConversation || activeConversation.messages.length === 0) return;
     const text = activeConversation.messages.map((message) => `${message.role === "user" ? "You" : "ENOSX AI"}: ${message.content}`).join("\n\n");
@@ -1121,6 +1122,8 @@ ${getAdminContext()}` : ""}`,
                     onSpeak={() => speak(msg.content)}
                     isSpeaking={speakingMessageId === msg.id}
                     onStopSpeak={handleStopSpeak}
+                    onFollowUp={(prompt) => void handleSendTracked(prompt, activeMode)}
+                    isLatestAssistant={idx === latestAssistantMessageIndex}
                   />
                 ))}
                 {isLoading && (

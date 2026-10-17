@@ -44,5 +44,5 @@ The company should apply appropriate safeguards and update this notice when proc
 
 ## Contact
 
-Enosx Technologies (Kenya; exact legal form and address to confirm)  
+Enosx Technologies (Kenya; exact legal form and address to confirm)
 Email: enosxtech@gmail.com

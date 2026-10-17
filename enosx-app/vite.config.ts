@@ -74,7 +74,10 @@ export default defineConfig({
       },
       injectManifest: {
         maximumFileSizeToCacheInBytes: 10 * 1024 * 1024, // 10MB
-        globPatterns: ['**/*.{js,css,html,ico,png,svg,webp}']
+        // Only precache the launch shell. Optional routes and their large
+        // language/diagram bundles stay on-demand instead of making the
+        // first PWA install download the entire 55MB build.
+        globPatterns: ['**/*.html', '**/*.css', '**/assets/index-*.js', '**/favicon*', '**/manifest.webmanifest']
       }
     }),
     ...replitPlugins,

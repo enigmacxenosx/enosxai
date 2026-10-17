@@ -22,6 +22,7 @@ import {
   Library,
   Settings,
   Sparkles,
+  Presentation,
 } from "lucide-react";
 import { Conversation } from "@/lib/types";
 import { useTheme } from "@/contexts/ThemeContext";
@@ -94,6 +95,14 @@ export default function Sidebar({
       description: "Your files, folders, and playlists",
       icon: Library,
       onClick: () => { window.location.href = "/media-library"; },
+      accent: false,
+      danger: false,
+    },
+    {
+      label: "Visual Story Studio",
+      description: "Bring data to life with motion",
+      icon: Presentation,
+      onClick: () => { window.location.href = "/visual-story"; },
       accent: false,
       danger: false,
     },

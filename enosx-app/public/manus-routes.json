@@ -5,6 +5,7 @@
     { "path": "/computer", "title": "Computer" },
     { "path": "/knowledge-bank", "title": "Knowledge Bank" },
     { "path": "/media", "title": "Media Library" },
+    { "path": "/visual-story", "title": "Visual Story Studio" },
     { "path": "/workspace", "title": "Workspace" }
   ]
 }

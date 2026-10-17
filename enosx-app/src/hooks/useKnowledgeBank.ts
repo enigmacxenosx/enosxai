@@ -23,6 +23,13 @@ export function useKnowledgeBank() {
   const importEntries = useCallback((incoming: KnowledgeEntry[]) => { const valid = incoming.filter((entry) => entry && entry.title && entry.content).map((entry) => hydrate({ ...entry, id: entry.id || makeId(), tags: Array.isArray(entry.tags) ? entry.tags : [], source: entry.source || "GOD MODE import", kind: entry.kind || "document", createdAt: entry.createdAt || new Date().toISOString(), updatedAt: new Date().toISOString() })); commit([...valid, ...loadEntries()]); return valid.length; }, [commit]);
   const exportEntries = useCallback(() => JSON.stringify(loadEntries(), null, 2), []);
   const search = useCallback((query: string) => { const current = loadEntries(); const terms = normalize(query).split(/\s+/).filter(Boolean); if (!terms.length) return current; const queryVector = createLocalVector(query); return current.map((entry) => { const haystack = normalize(entryText(entry)); const lexical = terms.reduce((score, term) => score + (haystack.includes(term) ? 1 : 0), 0) / terms.length; const semantic = cosineSimilarity(queryVector, entry.vector || createLocalVector(entryText(entry))); return { entry, score: semantic * 0.7 + lexical * 0.3 }; }).filter((result) => result.score > 0.08).sort((left, right) => right.score - left.score).map((result) => result.entry); }, []);
+  const getSkillContext = useCallback((query = "") => {
+    const relevant = search(query).filter((entry) => entry.kind === "skill").slice(0, 6);
+    if (!relevant.length) return "";
+    return relevant.map((entry) => `SKILL: ${entry.title}
+${entry.content}
+Tags: ${entry.tags.join(", ") || "none"}`).join("\n\n---\n\n");
+  }, [search]);
   const getKnowledgeContext = useCallback((query = "") => {
     const relevant = search(query).slice(0, 12);
     if (!relevant.length) return "";
@@ -38,6 +45,6 @@ export function useKnowledgeBank() {
   }, [search]);
   const rebuildIndex = useCallback(() => commit(loadEntries().map((entry) => ({ ...entry, vector: createLocalVector(entryText(entry)), updatedAt: new Date().toISOString() }))), [commit]);
   const stats = useMemo(() => { const current = entries; return { total: current.length, words: current.reduce((sum, entry) => sum + entry.content.split(/\s+/).filter(Boolean).length, 0), kinds: new Set(current.map((entry) => entry.kind)).size, indexed: current.filter((entry) => entry.vector?.length === VECTOR_DIMENSIONS).length }; }, [entries]);
-  return { entries, addEntry, removeEntry, clearAll, importEntries, exportEntries, search, getKnowledgeContext, rebuildIndex, stats };
+  return { entries, addEntry, removeEntry, clearAll, importEntries, exportEntries, search, getSkillContext, getKnowledgeContext, rebuildIndex, stats };
 }
 export async function readKnowledgeFile(file: File) { return { title: file.name.replace(/\.[^.]+$/, ""), content: await file.text(), source: file.name, kind: "document" as KnowledgeKind, tags: ["uploaded"] }; }

@@ -8,8 +8,8 @@ export default function SplashPage({ onComplete }: { onComplete: () => void }) {
   useEffect(() => {
     const timer = setTimeout(() => {
       setIsExiting(true);
-      setTimeout(onComplete, 1000); // Wait for exit animation
-    }, 3500);
+      setTimeout(onComplete, 450); // Keep the exit transition brief so startup is responsive
+    }, 1200);
     return () => clearTimeout(timer);
   }, [onComplete]);
 
@@ -84,7 +84,7 @@ export default function SplashPage({ onComplete }: { onComplete: () => void }) {
         <motion.div
           initial={{ width: "0%" }}
           animate={{ width: "100%" }}
-          transition={{ duration: 3.5, ease: "easeInOut" }}
+          transition={{ duration: 1.2, ease: "easeInOut" }}
           className="h-full bg-cyan-400 shadow-[0_0_10px_rgba(0,242,255,0.8)]"
         />
       </div>

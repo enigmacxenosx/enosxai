@@ -23,6 +23,7 @@ export default function ImageGenButton({
 
   return (
     <motion.button
+      type="button"
       whileHover={{ scale: 1.05 }}
       whileTap={{ scale: 0.95 }}
       onClick={onToggle}
@@ -39,7 +40,8 @@ export default function ImageGenButton({
         cursor: isGenerating ? "not-allowed" : "pointer",
         opacity: isGenerating ? 0.5 : 1,
       }}
-      title={isGenerating ? "Generating image..." : isActive ? "Image mode OFF" : "Image mode ON — next message will generate an image"}
+      title={isGenerating ? "Generating image..." : isActive ? "Image mode ON — send a text prompt" : "Enable image generation — write a prompt"}
+      aria-label={isGenerating ? "Generating image" : isActive ? "Disable image generation mode" : "Enable image generation mode"}
     >
       {isGenerating ? (
         <Loader2 size={16} className="animate-spin" />

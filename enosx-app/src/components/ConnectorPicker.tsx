@@ -104,7 +104,7 @@ export default function ConnectorPicker({
         onClick={() => setOpen((current) => !current)}
         aria-expanded={open}
         aria-haspopup="dialog"
-        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-semibold text-xs whitespace-nowrap transition-all"
+        className="group flex items-center gap-1.5 rounded-xl px-3 py-1.5 font-semibold text-xs whitespace-nowrap transition-all"
         style={{
           background:
             selectedCount > 0
@@ -117,8 +117,8 @@ export default function ConnectorPicker({
           color: selectedCount > 0 ? config.accent : config.textMuted,
           boxShadow:
             selectedCount > 0
-              ? `0 0 10px rgba(${config.accentRgb}, 0.18)`
-              : "none",
+              ? `0 0 18px rgba(${config.accentRgb}, 0.22), inset 0 1px 0 rgba(255,255,255,0.12)`
+              : "inset 0 1px 0 rgba(255,255,255,0.08)",
         }}
         title="Choose connectors for this chat"
       >
@@ -149,21 +149,38 @@ export default function ConnectorPicker({
             className="absolute bottom-full left-0 mb-2 z-[60] overflow-hidden rounded-2xl"
             style={{
               width: "min(420px, calc(100vw - 32px))",
-              background: "rgba(12,12,18,0.98)",
-              border: "1px solid rgba(255,255,255,0.12)",
-              backdropFilter: "blur(18px)",
-              WebkitBackdropFilter: "blur(18px)",
-              boxShadow: "0 18px 50px rgba(0,0,0,0.58)",
+              background: "linear-gradient(145deg, rgba(24,24,34,0.98), rgba(10,10,16,0.98))",
+              border: `1px solid rgba(${config.accentRgb}, 0.26)`,
+              backdropFilter: "blur(22px) saturate(140%)",
+              WebkitBackdropFilter: "blur(22px) saturate(140%)",
+              boxShadow: `0 22px 60px rgba(0,0,0,0.68), 0 0 0 1px rgba(255,255,255,0.04), 0 0 32px rgba(${config.accentRgb}, 0.12)`,
             }}
           >
-            <div className="px-4 pt-4 pb-3 border-b border-white/[0.08]">
+            <div
+              className="h-0.5 w-full"
+              style={{
+                background: `linear-gradient(90deg, transparent, ${config.accent}, transparent)`,
+                boxShadow: `0 0 14px rgba(${config.accentRgb}, 0.5)`,
+              }}
+            />
+            <div className="px-4 pt-3.5 pb-3 border-b border-white/[0.08]">
               <div className="flex items-start justify-between gap-3">
                 <div>
                   <div
                     className="flex items-center gap-2 text-sm font-semibold"
                     style={{ color: config.text }}
                   >
-                    <Cable size={15} style={{ color: config.accent }} />
+                    <span
+                      className="flex h-7 w-7 items-center justify-center rounded-lg"
+                      style={{
+                        color: config.accent,
+                        background: `rgba(${config.accentRgb}, 0.12)`,
+                        border: `1px solid rgba(${config.accentRgb}, 0.22)`,
+                        boxShadow: `0 0 14px rgba(${config.accentRgb}, 0.14)`,
+                      }}
+                    >
+                      <Cable size={15} />
+                    </span>
                     Connectors
                     <span className="text-[10px] font-medium text-white/40">
                       {CONNECTOR_CATALOG.length} available
@@ -185,10 +202,10 @@ export default function ConnectorPicker({
               </div>
 
               <div
-                className="mt-3 flex items-center gap-2 rounded-xl px-3 py-2"
+                className="mt-3 flex items-center gap-2 rounded-xl px-3 py-2 transition-colors focus-within:ring-1"
                 style={{
-                  background: "rgba(255,255,255,0.055)",
-                  border: "1px solid rgba(255,255,255,0.08)",
+                  background: "rgba(0,0,0,0.22)",
+                  border: `1px solid rgba(${config.accentRgb}, 0.16)`,
                 }}
               >
                 <Search size={14} className="shrink-0 text-white/40" />
@@ -224,7 +241,7 @@ export default function ConnectorPicker({
                       type="button"
                       key={filter}
                       onClick={() => setKindFilter(filter)}
-                      className="px-2.5 py-1 rounded-md text-[10px] font-semibold whitespace-nowrap transition-colors"
+                      className="rounded-lg px-2.5 py-1 text-[10px] font-semibold whitespace-nowrap transition-all hover:border-white/20 hover:text-white"
                       style={{
                         background: active
                           ? `rgba(${config.accentRgb}, 0.17)`
@@ -233,6 +250,9 @@ export default function ConnectorPicker({
                           ? `1px solid rgba(${config.accentRgb}, 0.38)`
                           : "1px solid rgba(255,255,255,0.07)",
                         color: active ? config.accent : "rgba(255,255,255,0.5)",
+                        boxShadow: active
+                          ? `0 0 12px rgba(${config.accentRgb}, 0.14), inset 0 1px 0 rgba(255,255,255,0.08)`
+                          : "inset 0 1px 0 rgba(255,255,255,0.04)",
                       }}
                     >
                       {filter}
@@ -267,11 +287,14 @@ export default function ConnectorPicker({
                         setQuery("");
                         setKindFilter("All");
                       }}
-                      className="w-full flex items-center gap-3 rounded-xl px-3 py-2 text-left transition-colors hover:bg-white/[0.06]"
+                      className="w-full flex items-center gap-3 rounded-xl px-3 py-2 text-left transition-all hover:translate-x-0.5 hover:bg-white/[0.07]"
                       style={{
-                        background: selected
-                          ? "rgba(255,255,255,0.075)"
+                          background: selected
+                          ? `linear-gradient(90deg, rgba(${config.accentRgb}, 0.14), rgba(255,255,255,0.045))`
                           : "transparent",
+                        border: selected
+                          ? `1px solid rgba(${config.accentRgb}, 0.18)`
+                          : "1px solid transparent",
                       }}
                     >
                       <ConnectorLogo name={connector.name} accent={accent} />
@@ -291,8 +314,16 @@ export default function ConnectorPicker({
                           type="button"
                           onClick={(event) => handleConnectorConnect(connector.id, event)}
                           disabled={isGitHubLoading || connectingId === connector.id}
-                          className="inline-flex items-center gap-1 rounded-md px-2 py-1 text-[10px] font-semibold transition-colors hover:bg-white/[0.08] disabled:opacity-50"
-                          style={{ color: isConnected(connector.id) ? "#4ade80" : config.accent }}
+                          className="inline-flex items-center gap-1 rounded-lg border px-2 py-1 text-[10px] font-semibold transition-all hover:bg-white/[0.1] disabled:opacity-50"
+                          style={{
+                            color: isConnected(connector.id) ? "#4ade80" : config.accent,
+                            borderColor: isConnected(connector.id)
+                              ? "rgba(74,222,128,0.22)"
+                              : `rgba(${config.accentRgb}, 0.2)`,
+                            background: isConnected(connector.id)
+                              ? "rgba(74,222,128,0.08)"
+                              : `rgba(${config.accentRgb}, 0.06)`,
+                          }}
                           title={isConnected(connector.id) ? `Connect another ${connector.name} account` : `Connect ${connector.name} with OAuth`}
                         >
                           {(isGitHubLoading && connector.id === "github") || connectingId === connector.id ? <Loader2 size={11} className="animate-spin" /> : null}

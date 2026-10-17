@@ -147,7 +147,7 @@ export interface WallpaperSettings {
 }
 
 const DEFAULT_SETTINGS: WallpaperSettings = {
-  activePresetId: "enosx-neon-city",
+  activePresetId: "none",
   customUrl: "",
   blurAmount: 10,
   panelOpacity: 0.75,

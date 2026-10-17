@@ -5,6 +5,9 @@
   "outputDirectory": "enosx-app/dist/public",
   "buildCommand": "pnpm run build",
   "functions": {
+    "api/image/generate.ts": {
+      "maxDuration": 120
+    },
     "api/**/*.ts": {
       "maxDuration": 60
     }
@@ -12,6 +15,24 @@
   "headers": [
     {
       "source": "/(.*)",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=0, s-maxage=60, stale-while-revalidate=86400"
+        }
+      ]
+    },
+    {
+      "source": "/assets/(.*)",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=31536000, immutable"
+        }
+      ]
+    },
+    {
+      "source": "/api/(.*)",
       "headers": [
         {
           "key": "Cache-Control",

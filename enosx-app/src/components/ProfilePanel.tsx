@@ -16,7 +16,7 @@ import {
   X, User, Mail, Lock, Eye, EyeOff, LogOut, Settings,
   Bell, Globe, Palette, Sparkles, Check, ChevronRight, ChevronLeft,
   Camera, Edit3, Loader2, AlertCircle, CheckCircle2,
-  Monitor, Shield, Image, Sun, Moon, Zap, Layers, Mic, ShieldAlert,
+  Monitor, Shield, Image, Sun, Moon, Zap, Layers, Mic, ShieldAlert, Cpu,
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useTheme, THEMES, type Theme } from '../contexts/ThemeContext';
@@ -25,14 +25,18 @@ import VoiceSettingsPanel from './VoiceSettingsPanel';
 import BrandMark from './BrandMark';
 import { useVoice } from '../hooks/useVoice';
 import { useSoundEffects } from '../hooks/useSoundEffects';
+import LocalModelsPanel from './LocalModelsPanel';
+import { ENOSX_LANGUAGES } from '../lib/languageDictionary';
 
-type View = 'auth' | 'profile' | 'preferences' | 'appearance' | 'privacy' | 'voice';
+type View = 'auth' | 'profile' | 'preferences' | 'appearance' | 'privacy' | 'voice' | 'models';
 
 interface ProfilePanelProps {
   isOpen: boolean;
   onClose: () => void;
   onOpenAdminConsole?: () => void;
   onOpenLeadCapture?: () => void;
+  onEnableNotifications?: () => void | Promise<void>;
+  notificationPermission?: NotificationPermission | "unsupported";
 }
 
 type AuthMode = 'signin' | 'signup';
@@ -44,11 +48,7 @@ const PERSONALITIES = [
   { id: 'casual', label: 'Casual', icon: '😊', desc: 'Friendly, relaxed, conversational' },
 ];
 
-const LANGUAGES = [
-  'English', 'Spanish', 'French', 'German', 'Japanese',
-  'Chinese', 'Arabic', 'Portuguese', 'Russian', 'Korean',
-  'Italian', 'Hindi',
-];
+const LANGUAGES = ENOSX_LANGUAGES;
 
 // 4 featured wallpapers for quick selection
 const FEATURED_WALLPAPERS = [
@@ -78,7 +78,7 @@ const FEATURED_WALLPAPERS = [
   },
 ];
 
-export default function ProfilePanel({ isOpen, onClose, onOpenAdminConsole, onOpenLeadCapture }: ProfilePanelProps) {
+export default function ProfilePanel({ isOpen, onClose, onOpenAdminConsole, onOpenLeadCapture, onEnableNotifications, notificationPermission = "default" }: ProfilePanelProps) {
   const { settings: speechSettings, updateSettings: updateSpeechSettings } = useVoice();
   const { play: playSound } = useSoundEffects();
   const { config, theme, setTheme } = useTheme();
@@ -290,29 +290,32 @@ export default function ProfilePanel({ isOpen, onClose, onOpenAdminConsole, onOp
             {/* Header */}
             {view !== 'auth' && <div className="flex items-center justify-between px-5 py-4 flex-shrink-0" style={{ borderBottom: `1px solid rgba(255,255,255,0.06)` }}>
               <div className="flex items-center gap-3">
-                {(view === 'appearance' || view === 'privacy' || view === 'voice') && (
-                  <button onClick={() => setView('preferences')} className="w-7 h-7 rounded-lg flex items-center justify-center hover:bg-white/10 transition-all" style={{ color: 'rgba(255,255,255,0.5)' }}>
+                {(view === 'appearance' || view === 'privacy' || view === 'voice' || view === 'models') && (
+                  <button onClick={() => setView(view === 'models' && !isAuthenticated ? 'auth' : 'preferences')} className="w-7 h-7 rounded-lg flex items-center justify-center hover:bg-white/10 transition-all" style={{ color: 'rgba(255,255,255,0.5)' }}>
                     <ChevronLeft size={14} />
                   </button>
                 )}
                 <div className="w-8 h-8 rounded-xl flex items-center justify-center" style={{ background: `rgba(${accentRgb},0.15)` }}>
-                  {view === 'appearance' ? <Palette size={15} style={{ color: accentColor }} />
+                  {view === 'models' ? <Cpu size={15} style={{ color: accentColor }} />
+                    : view === 'appearance' ? <Palette size={15} style={{ color: accentColor }} />
                     : view === 'privacy' ? <Shield size={15} style={{ color: accentColor }} />
                     : view === 'voice' ? <Mic size={15} style={{ color: accentColor }} />
                     : <User size={15} style={{ color: accentColor }} />}
                 </div>
                 <div>
                   <div className="text-sm font-bold" style={{ color: 'rgba(255,255,255,0.9)' }}>
-                    {view === 'appearance' ? 'Appearance & Theme'
+                    {view === 'models' ? 'Offline models'
+                      : view === 'appearance' ? 'Appearance & Theme'
                       : view === 'privacy' ? 'Privacy & Security'
                       : view === 'voice' ? 'Voice Assistant'
                       : user?.displayName ?? 'Profile'}
                   </div>
                   <div className="text-xs" style={{ color: 'rgba(255,255,255,0.3)' }}>
-                    {view === 'appearance' ? 'Colors, fonts, and wallpaper'
+                    {view === 'models' ? 'Private chat on this device'
+                      : view === 'appearance' ? 'Colors, fonts, and wallpaper'
                       : view === 'privacy' ? 'Data and account security'
                       : view === 'voice' ? 'Speech, speed, and hands-free mode'
-                      : isAuthenticated ? user?.email : 'ENOSX Assistant'}
+                      : isAuthenticated ? user?.email : 'Enosx'}
                   </div>
                 </div>
               </div>
@@ -438,6 +441,10 @@ export default function ProfilePanel({ isOpen, onClose, onOpenAdminConsole, onOp
                           {showPassword ? <EyeOff size={14} /> : <Eye size={14} />}
                         </button>
                       </div>
+                    </div>
+                    <div className="auth-slide-guest-row">
+                      <button type="button" onClick={continueAsGuest} className="auth-slide-guest">Continue as guest</button>
+                      <button type="button" onClick={() => setView('models')} className="auth-slide-link mt-2">Set up offline models</button>
                     </div>
                   </div>
 
@@ -567,7 +574,25 @@ export default function ProfilePanel({ isOpen, onClose, onOpenAdminConsole, onOp
 	                    ))}
 	                  </div>
 
-	                  {/* Save */}
+	                  {/* System notification permission now lives in Settings, not the sidebar. */}
+                  <div className="flex items-center justify-between gap-3 px-3 py-3 rounded-xl" style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.07)' }}>
+                    <div className="flex items-center gap-2 min-w-0">
+                      <Bell size={16} style={{ color: accentColor, flexShrink: 0 }} />
+                      <div className="min-w-0">
+                        <div className="text-sm font-semibold" style={{ color: 'rgba(255,255,255,0.9)' }}>System notifications</div>
+                        <div className="text-xs" style={{ color: 'rgba(255,255,255,0.55)' }}>
+                          {notificationPermission === 'granted' ? 'Enabled in this browser' : notificationPermission === 'denied' ? 'Allow notifications in browser site settings' : notificationPermission === 'unsupported' ? 'Not supported here' : 'Allow ENOSX alerts'}
+                        </div>
+                      </div>
+                    </div>
+                    {notificationPermission !== 'granted' && notificationPermission !== 'unsupported' && notificationPermission !== 'denied' && (
+                      <button type="button" onClick={() => void onEnableNotifications?.()} className="shrink-0 rounded-lg px-3 py-2 text-xs font-semibold" style={{ background: `rgba(${accentRgb},0.18)`, border: `1px solid rgba(${accentRgb},0.3)`, color: accentColor }}>
+                        Enable
+                      </button>
+                    )}
+                  </div>
+
+                  {/* Save */}
                   <button onClick={handleSaveProfile} disabled={saveStatus === 'saving'}
                     className="w-full py-3 rounded-2xl text-sm font-bold transition-all flex items-center justify-center gap-2"
                     style={{ background: saveStatus === 'saved' ? 'rgba(34,197,94,0.2)' : saveStatus === 'error' ? 'rgba(220,20,60,0.2)' : `rgba(${accentRgb},0.18)`, border: saveStatus === 'saved' ? '1px solid rgba(34,197,94,0.4)' : saveStatus === 'error' ? '1px solid rgba(220,20,60,0.4)' : `1px solid rgba(${accentRgb},0.35)`, color: saveStatus === 'saved' ? '#4ade80' : saveStatus === 'error' ? '#ff6b8a' : accentColor }}>
@@ -638,6 +663,19 @@ export default function ProfilePanel({ isOpen, onClose, onOpenAdminConsole, onOp
                       <ChevronRight size={14} style={{ color: 'rgba(255,255,255,0.3)' }} />
                     </button>
 
+                    <button onClick={() => setView('models')}
+                      className="w-full flex items-center gap-3 px-3 py-3 rounded-xl cursor-pointer transition-all hover:bg-white/10"
+                      style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.07)' }}>
+                      <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: `rgba(${accentRgb},0.1)` }}>
+                        <Cpu size={14} style={{ color: accentColor }} />
+                      </div>
+                      <div className="flex-1 text-left">
+                        <div className="text-sm font-medium" style={{ color: 'rgba(255,255,255,0.85)' }}>Offline models</div>
+                        <div className="text-xs" style={{ color: 'rgba(255,255,255,0.35)' }}>Choose a local Ollama model</div>
+                      </div>
+                      <ChevronRight size={14} style={{ color: 'rgba(255,255,255,0.3)' }} />
+                    </button>
+
                     <button onClick={() => setView('voice')}
                       className="w-full flex items-center gap-3 px-3 py-3 rounded-xl cursor-pointer transition-all hover:bg-white/10"
                       style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.07)' }}>
@@ -683,6 +721,9 @@ export default function ProfilePanel({ isOpen, onClose, onOpenAdminConsole, onOp
                   </div>
                 </div>
               )}
+
+              {/* ── LOCAL MODELS VIEW ── */}
+              {view === 'models' && <LocalModelsPanel accentColor={accentColor} accentRgb={accentRgb} />}
 
               {/* ── VOICE VIEW ── */}
               {view === 'voice' && (

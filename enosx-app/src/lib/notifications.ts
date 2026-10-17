@@ -27,27 +27,32 @@ export function playEnosxExSound() {
   try {
     const AudioContextClass = window.AudioContext;
     const context = new AudioContextClass();
-    const gain = context.createGain();
-    gain.gain.setValueAtTime(0.0001, context.currentTime);
-    gain.gain.exponentialRampToValueAtTime(0.08, context.currentTime + 0.015);
-    gain.gain.exponentialRampToValueAtTime(0.0001, context.currentTime + 0.32);
-    gain.connect(context.destination);
-
-    const first = context.createOscillator();
-    first.type = "sine";
-    first.frequency.setValueAtTime(659.25, context.currentTime);
-    first.connect(gain);
-    first.start(context.currentTime);
-    first.stop(context.currentTime + 0.14);
-
-    const second = context.createOscillator();
-    second.type = "triangle";
-    second.frequency.setValueAtTime(1046.5, context.currentTime + 0.12);
-    second.connect(gain);
-    second.start(context.currentTime + 0.12);
-    second.stop(context.currentTime + 0.32);
-
-    window.setTimeout(() => void context.close(), 500);
+    const play = () => {
+      const now = context.currentTime;
+      const gain = context.createGain();
+      gain.gain.setValueAtTime(0.0001, now);
+      gain.gain.exponentialRampToValueAtTime(0.08, now + 0.015);
+      gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.32);
+      gain.connect(context.destination);
+      const first = context.createOscillator();
+      first.type = "sine";
+      first.frequency.setValueAtTime(659.25, now);
+      first.connect(gain);
+      first.start(now);
+      first.stop(now + 0.14);
+      const second = context.createOscillator();
+      second.type = "triangle";
+      second.frequency.setValueAtTime(1046.5, now + 0.12);
+      second.connect(gain);
+      second.start(now + 0.12);
+      second.stop(now + 0.32);
+      window.setTimeout(() => void context.close(), 500);
+    };
+    if (context.state === "suspended") {
+      void context.resume().then(play).catch(() => void context.close());
+    } else {
+      play();
+    }
   } catch {
     // Audio is an enhancement; notification delivery must still succeed.
   }

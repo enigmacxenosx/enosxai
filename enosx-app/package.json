@@ -7,7 +7,8 @@
     "dev": "vite dev",
     "build": "vite build",
     "preview": "vite preview",
-    "typecheck": "tsc -p tsconfig.json --noEmit"
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test:e2e": "playwright test"
   },
   "dependencies": {
     "@tauri-apps/api": "^2.11.1",
@@ -16,6 +17,8 @@
     "@tauri-apps/plugin-updater": "^2.9.0",
     "class-variance-authority": "catalog:",
     "clsx": "catalog:",
+    "docx": "^9.8.1",
+    "firebase": "^13.0.0",
     "framer-motion": "catalog:",
     "lucide-react": "catalog:",
     "mammoth": "^1.13.0",
@@ -34,6 +37,7 @@
     "xlsx": "^0.18.5"
   },
   "devDependencies": {
+    "@playwright/test": "^1.64.0",
     "@radix-ui/react-accordion": "^1.2.12",
     "@radix-ui/react-alert-dialog": "^1.1.15",
     "@radix-ui/react-aspect-ratio": "^1.1.8",

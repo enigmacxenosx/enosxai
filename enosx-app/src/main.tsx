@@ -1,8 +1,11 @@
 import { createRoot } from "react-dom/client";
 import App from "./App";
 import "./index.css";
+import { installGlobalErrorReporting } from "./lib/errorReporting";
 // @ts-ignore - virtual module handled by vite-plugin-pwa
 import { registerSW } from 'virtual:pwa-register';
+
+installGlobalErrorReporting();
 
 // Register service worker for PWA
 const updateSW = registerSW({

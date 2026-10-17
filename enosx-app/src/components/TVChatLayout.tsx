@@ -1,7 +1,7 @@
 import React, { useEffect, useRef } from "react";
 import { motion } from "framer-motion";
 import { Mic, History, Plus, Settings, Volume2 } from "lucide-react";
-import { Conversation, Message, VoiceState } from "@/lib/types";
+import { Conversation, Message, VoiceState, type Attachment } from "@/lib/types";
 import { useTheme } from "@/contexts/ThemeContext";
 import MessageBubble from "./MessageBubble";
 import CommandBar, { type AIMode } from "./CommandBar";
@@ -22,10 +22,10 @@ interface TVChatLayoutProps {
   speak: (text: string) => void;
   stopSpeaking: () => void;
   messagesEndRef: React.RefObject<HTMLDivElement>;
-  isImageMode?: boolean;
-  onToggleImageMode?: () => void;
   isFreeMode?: boolean;
   onFilesSelected?: (files: File[]) => void;
+  attachments?: Attachment[];
+  audioStream?: MediaStream | null;
 }
 
 export default function TVChatLayout({
@@ -44,10 +44,10 @@ export default function TVChatLayout({
   speak,
   stopSpeaking,
   messagesEndRef,
-  isImageMode = false,
-  onToggleImageMode,
   isFreeMode = false,
   onFilesSelected,
+  attachments = [],
+  audioStream = null,
 }: TVChatLayoutProps) {
   const { config } = useTheme();
   const containerRef = useRef<HTMLDivElement>(null);
@@ -170,10 +170,10 @@ export default function TVChatLayout({
           onStartVoice={startListening}
           onStopVoice={stopListening}
           onStopSpeaking={stopSpeaking}
-          isImageMode={isImageMode}
-          onToggleImageMode={onToggleImageMode}
           isFreeMode={isFreeMode}
           onFilesSelected={onFilesSelected}
+          attachments={attachments}
+          audioStream={audioStream}
         />
       </div>
     </div>

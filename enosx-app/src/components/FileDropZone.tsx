@@ -10,6 +10,7 @@ import { Upload, Image as ImageIcon, FileText } from "lucide-react";
 import { useTheme } from "@/contexts/ThemeContext";
 import { useTactileSounds } from "@/hooks/useTactileSounds";
 import { toast } from "sonner";
+import { showError } from "@/lib/errorReporting";
 
 interface FileDropZoneProps {
   onFileSelected: (file: File) => void;
@@ -52,7 +53,7 @@ export default function FileDropZone({ onFileSelected, isActive = true, currentF
       if (files.length > 0) {
         const remainingSlots = 10 - currentFileCount;
         if (remainingSlots <= 0) {
-          toast.error("Maximum 10 files allowed");
+          showError("Maximum 10 files allowed");
           return;
         }
         

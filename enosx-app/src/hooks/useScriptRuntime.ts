@@ -7,7 +7,7 @@
  * - Batch (.bat)   → sandboxed Windows-terminal simulation (realistic cmd.exe-style output)
  *
  * This module uses a singleton shared store (like useBrowser) so the Terminal
- * window in the computer pane and the chat pane share script state and output.
+ * code preview and action tools share script state and output.
  */
 import { useCallback, useEffect, useRef, useState } from "react";
 

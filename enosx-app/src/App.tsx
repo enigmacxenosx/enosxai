@@ -13,10 +13,9 @@ import { Suspense, lazy, useState } from "react";
 // Lazy load route components to enable code-splitting
 const ChatPage = lazy(() => import("./pages/ChatPage"));
 const AboutPage = lazy(() => import("./pages/AboutPage"));
-const ComputerPage = lazy(() => import("./pages/ComputerPage"));
-const WorkspacePage = lazy(() => import("./pages/WorkspacePage"));
 const KnowledgeBankPage = lazy(() => import("./pages/KnowledgeBankPage"));
 const MediaLibraryPage = lazy(() => import("./pages/MediaLibraryPage"));
+const VisualStoryPage = lazy(() => import("./pages/VisualStoryPage"));
 const SplashPage = lazy(() => import("./components/SplashPage"));
 
 // Loading fallback component
@@ -44,10 +43,9 @@ function Router() {
     <Suspense fallback={<LoadingFallback />}>
       <Switch>
         <Route path={"/"} component={ChatPage} />
-        <Route path={"/computer"} component={ComputerPage} />
-        <Route path={"/workspace"} component={WorkspacePage} />
         <Route path={"/knowledge-bank"} component={KnowledgeBankPage} />
         <Route path={"/media-library"} component={MediaLibraryPage} />
+        <Route path={"/visual-story"} component={VisualStoryPage} />
         <Route path={"/about"} component={AboutPage} />
         <Route path={"/404"} component={NotFound} />
         <Route component={NotFound} />
@@ -68,6 +66,8 @@ function App() {
                   <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, "")}>
                     <Toaster
                       theme="dark"
+                      position="top-right"
+                      visibleToasts={4}
                       toastOptions={{
                         style: {
                           background: "rgba(18,18,24,0.95)",

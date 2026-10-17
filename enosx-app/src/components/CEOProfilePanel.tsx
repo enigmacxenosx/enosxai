@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { CheckCircle2, Crown, KeyRound, LockKeyhole, Save, Shield, UserRound, X } from "lucide-react";
 import { toast } from "sonner";
+import { showError } from "@/lib/errorReporting";
 import { useAuth } from "@/contexts/AuthContext";
 
 interface CEOProfilePanelProps { isOpen: boolean; onClose: () => void; }
@@ -34,7 +35,7 @@ export default function CEOProfilePanel({ isOpen, onClose }: CEOProfilePanelProp
         if (!cancelled) { setNotes(data.profile?.notes || ""); setStatus("ready"); }
       } catch (error) {
         sessionStorage.removeItem("enosx-ceo-session");
-        if (!cancelled) { setToken(""); setStatus("error"); toast.error(error instanceof Error ? error.message : "CEO authorization failed"); }
+        if (!cancelled) { setToken(""); setStatus("error"); showError(error instanceof Error ? error.message : "CEO authorization failed"); }
       }
     };
     load();
@@ -44,7 +45,7 @@ export default function CEOProfilePanel({ isOpen, onClose }: CEOProfilePanelProp
   const saveNotes = async () => {
     if (!token || status !== "ready") return;
     const response = await fetch(`${API_BASE}/auth/ceo/profile`, { method: "PUT", headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` }, body: JSON.stringify({ notes }) });
-    if (!response.ok) { toast.error("CEO profile save denied"); return; }
+    if (!response.ok) { showError("CEO profile save denied"); return; }
     toast.success("CEO profile notes saved securely");
   };
 

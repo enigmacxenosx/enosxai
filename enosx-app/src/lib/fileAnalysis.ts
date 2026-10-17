@@ -6,7 +6,7 @@ import pdfWorker from "pdfjs-dist/build/pdf.worker.mjs?url";
 GlobalWorkerOptions.workerSrc = pdfWorker;
 
 const MAX_TEXT_CHARS = 120_000;
-const MAX_IMAGE_BYTES = 1_500_000;
+const MAX_IMAGE_BYTES = 200_000;
 const MAX_VIDEO_FRAMES = 4;
 
 function extension(name: string) {
@@ -38,18 +38,20 @@ async function readDataUrl(file: Blob) {
 
 async function compressImage(file: Blob, mime = "image/jpeg") {
   const source = await createImageBitmap(file);
-  const scale = Math.min(1, 1600 / Math.max(source.width, source.height));
+  let scale = Math.min(1, 1280 / Math.max(source.width, source.height));
   const canvas = document.createElement("canvas");
-  canvas.width = Math.max(1, Math.round(source.width * scale));
-  canvas.height = Math.max(1, Math.round(source.height * scale));
-  canvas.getContext("2d")?.drawImage(source, 0, 0, canvas.width, canvas.height);
-  source.close();
   let quality = 0.82;
-  let data = canvas.toDataURL(mime, quality);
-  while (data.length > MAX_IMAGE_BYTES * 1.4 && quality > 0.45) {
-    quality -= 0.1;
+  let data = "";
+  for (let attempt = 0; attempt < 10; attempt += 1) {
+    canvas.width = Math.max(1, Math.round(source.width * scale));
+    canvas.height = Math.max(1, Math.round(source.height * scale));
+    canvas.getContext("2d")?.drawImage(source, 0, 0, canvas.width, canvas.height);
     data = canvas.toDataURL(mime, quality);
+    if (data.length <= MAX_IMAGE_BYTES * 1.4) break;
+    if (quality > 0.5) quality = Math.max(0.5, quality - 0.12);
+    else { scale *= 0.8; quality = 0.72; }
   }
+  source.close();
   return data;
 }
 

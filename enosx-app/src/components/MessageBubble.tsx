@@ -1,19 +1,22 @@
 /*
  * ENOSX AI — MessageBubble
- * Animated message bubbles with streaming text, markdown, voice playback,
+ * Unboxed animated messages with streaming text, markdown, voice playback,
  * and inline image display for both user attachments and AI-generated images.
- * Features: fade-in spring, streaming cursor, copy, speak, glassmorphism,
+ * Features: fade-in spring, streaming cursor, copy, speak,
  * document download, image lightbox.
  */
 
 import { useState, useEffect, useRef } from "react";
 import { motion } from "framer-motion";
-import { Copy, Volume2, VolumeX, Check, Download, ExternalLink, FileSearch, ListTree, ShieldCheck } from "lucide-react";
+import { Copy, Volume2, VolumeX, Check, Download, ExternalLink, FileSearch, ListTree, ShieldCheck, FileText, FileSpreadsheet } from "lucide-react";
+import { Streamdown } from "streamdown";
 import { Message } from "@/lib/types";
 import { useTheme } from "@/contexts/ThemeContext";
 import { useWallpaper } from "@/contexts/WallpaperContext";
 import ImageDisplay from "./ImageDisplay";
-import MediaAttachment from "./MediaAttachment";
+import VideoDisplay from "./VideoDisplay";
+import MediaAttachmentList from "./MediaAttachmentList";
+import { downloadDocument } from "@/lib/documentExport";
 
 interface MessageBubbleProps {
   message: Message;
@@ -25,138 +28,157 @@ interface MessageBubbleProps {
   onExecuteProposedAction?: (action: NonNullable<Message["proposedActions"]>[number]) => void;
 }
 
-// ── Image URL detection regex ───────────────────────────────────────────────────
-// Matches markdown image syntax: ![alt](url)
-// Also matches raw URLs that look like image URLs
-const IMAGE_URL_REGEX = /\!\[([^\]]*)\]\(((?:https?:\/\/|data:image\/)[^\s)]+)\)/gi;
-const RAW_IMAGE_URL_REGEX = /(?:https?:\/\/[^\s)]+\.(?:png|jpg|jpeg|gif|webp|svg)(?:\?[^\)]*)?|data:image\/[a-z0-9.+-]+;base64,[a-z0-9+/=]+)/gi;
+// ── Safe internet media detection ──────────────────────────────────────────────
+// Markdown image/link URLs and direct public media URLs are rendered inline.
+const MARKDOWN_MEDIA_URL_REGEX = /(!?)\[([^\]]*)\]\(((?:https?:\/\/|data:image\/)[^\s)]+)\)/gi;
+const RAW_MEDIA_URL_REGEX = /(?:https?:\/\/[^\s<>"'\])}]+|data:image\/[a-z0-9.+-]+;base64,[a-z0-9+/=]+)/gi;
+const VIDEO_EXTENSIONS = new Set(["mp4", "m4v", "webm", "ogv", "mov"]);
+const IMAGE_EXTENSIONS = new Set(["jpg", "jpeg", "png", "gif", "webp", "svg", "bmp", "avif", "tif", "tiff"]);
+const IMAGE_HOSTS = new Set([
+  "images.unsplash.com", "i.imgur.com", "i.redd.it", "preview.redd.it",
+  "media.giphy.com", "images.giphy.com", "media.tenor.com", "images.pexels.com",
+  "cdn.pixabay.com", "lh3.googleusercontent.com", "pbs.twimg.com", "upload.wikimedia.org",
+  "raw.githubusercontent.com", "cdn.discordapp.com", "images.ctfassets.net",
+  "res.cloudinary.com", "images.prismic.io", "imagedelivery.net",
+]);
 
-interface ParsedImage {
-  url: string;
+type MediaKind = "image" | "video" | "embed";
+interface ParsedMedia {
+  type: MediaKind;
+  src: string;
+  openUrl: string;
   alt: string;
   position: number;
   length: number;
 }
 
-function extractImagesFromText(text: string): ParsedImage[] {
-  const images: ParsedImage[] = [];
+function isHostOrSubdomain(hostname: string, domain: string) {
+  return hostname === domain || hostname.endsWith("." + domain);
+}
+
+function resolveMediaUrl(value: string, explicitImage = false, explicitVideo = false): Pick<ParsedMedia, "type" | "src" | "openUrl"> | null {
+  if (/^data:image\//i.test(value)) return { type: "image", src: value, openUrl: value };
+
+  let url: URL;
+  try {
+    url = new URL(value);
+  } catch {
+    return null;
+  }
+  if ((url.protocol !== "https:" && url.protocol !== "http:") || url.username || url.password) return null;
+
+  const hostname = url.hostname.toLowerCase();
+  const openUrl = url.toString();
+  const youtubeHost = isHostOrSubdomain(hostname, "youtube.com") || isHostOrSubdomain(hostname, "youtube-nocookie.com") || hostname === "youtu.be";
+  if (youtubeHost) {
+    let videoId = "";
+    if (hostname === "youtu.be") {
+      videoId = url.pathname.split("/").filter(Boolean)[0] || "";
+    } else if (url.pathname === "/watch") {
+      videoId = url.searchParams.get("v") || "";
+    } else {
+      videoId = url.pathname.match(/^\/(?:embed|shorts|live)\/([a-zA-Z0-9_-]{11})(?:\/|$)/)?.[1] || "";
+    }
+    if (/^[a-zA-Z0-9_-]{11}$/.test(videoId)) {
+      return { type: "embed", src: "https://www.youtube-nocookie.com/embed/" + videoId, openUrl };
+    }
+  }
+
+  if (isHostOrSubdomain(hostname, "vimeo.com")) {
+    const videoId = url.pathname.match(/(?:^|\/)(?:video\/)?([0-9]{6,})(?:\/|$)/)?.[1];
+    if (videoId) return { type: "embed", src: "https://player.vimeo.com/video/" + videoId, openUrl };
+  }
+
+  const extension = url.pathname.match(/\.([a-z0-9]+)$/i)?.[1]?.toLowerCase() || "";
+  const contentHint = [url.searchParams.get("mime"), url.searchParams.get("type"), url.searchParams.get("format"), url.searchParams.get("fm")]
+    .filter(Boolean).join(" ").toLowerCase();
+  const hintedVideo = /video\//.test(contentHint) || /\b(mp4|m4v|webm|ogv|mov)\b/.test(contentHint);
+  if (VIDEO_EXTENSIONS.has(extension) || hintedVideo || explicitVideo) {
+    return { type: "video", src: openUrl, openUrl };
+  }
+
+  const hintedImage = /image\//.test(contentHint) || /\b(jpg|jpeg|png|gif|webp|svg|bmp|avif|tif|tiff)\b/.test(contentHint);
+  const isKnownImageHost = Array.from(IMAGE_HOSTS).some((domain) => isHostOrSubdomain(hostname, domain));
+  if (IMAGE_EXTENSIONS.has(extension) || hintedImage || isKnownImageHost || explicitImage) {
+    return { type: "image", src: openUrl, openUrl };
+  }
+  return null;
+}
+
+function isImageUrl(value?: string): value is string {
+  return Boolean(value && resolveMediaUrl(value)?.type === "image");
+}
+
+function extractMediaFromText(text: string): ParsedMedia[] {
+  const media: ParsedMedia[] = [];
+  const markdownRanges: Array<{ start: number; end: number }> = [];
   let match: RegExpExecArray | null;
 
-  // Reset regex lastIndex
-  IMAGE_URL_REGEX.lastIndex = 0;
-
-  while ((match = IMAGE_URL_REGEX.exec(text)) !== null) {
-    images.push({
-      url: match[2],
-      alt: match[1] || "Generated image",
-      position: match.index,
-      length: match[0].length,
-    });
-  }
-
-  RAW_IMAGE_URL_REGEX.lastIndex = 0;
-  while ((match = RAW_IMAGE_URL_REGEX.exec(text)) !== null) {
-    const insideMarkdown = images.some((image) => match!.index >= image.position && match!.index < image.position + image.length);
-    const url = match[0].replace(/[.,!?;:]+$/, "");
-    if (!insideMarkdown && !images.some((image) => image.url === url)) {
-      images.push({ url, alt: "Internet image", position: match.index, length: match[0].length });
+  MARKDOWN_MEDIA_URL_REGEX.lastIndex = 0;
+  while ((match = MARKDOWN_MEDIA_URL_REGEX.exec(text)) !== null) {
+    markdownRanges.push({ start: match.index, end: match.index + match[0].length });
+    const alt = match[2] || "";
+    const resolved = resolveMediaUrl(match[3], match[1] === "!", /\b(video|watch|clip|movie)\b/i.test(alt));
+    if (resolved) {
+      media.push({ ...resolved, alt: alt || (resolved.type === "image" ? "Internet image" : "Internet video"), position: match.index, length: match[0].length });
     }
   }
-  images.sort((a, b) => a.position - b.position);
 
-  return images;
+  RAW_MEDIA_URL_REGEX.lastIndex = 0;
+  while ((match = RAW_MEDIA_URL_REGEX.exec(text)) !== null) {
+    if (markdownRanges.some((range) => match!.index >= range.start && match!.index < range.end)) continue;
+    const source = match[0].replace(/[.,!?;:]+$/, "");
+    const resolved = resolveMediaUrl(source);
+    if (resolved && !media.some((item) => item.position === match!.index)) {
+      media.push({ ...resolved, alt: resolved.type === "image" ? "Internet image" : "Internet video", position: match.index, length: source.length });
+    }
+  }
+
+  return media.sort((a, b) => a.position - b.position);
 }
 
-/** Image links proposed by the assistant should be previews, not link-only actions. */
-function isImageUrl(value?: string): value is string {
-  if (!value) return false;
-  if (value.startsWith("data:image/")) return true;
-
-  try {
-    const url = new URL(value);
-    return /\.(?:png|jpe?g|gif|webp|svg|avif|bmp|ico)$/i.test(url.pathname);
-  } catch {
-    return false;
-  }
-}
-
-// Split text by image placeholders, rendering images between text segments
-function renderContentWithImages(text: string, accentColor: string) {
-  const images = extractImagesFromText(text);
-
-  if (images.length === 0) {
-    // No images — render as normal markdown
-    return (
-      <div
-        className="prose-crimson text-sm"
-        dangerouslySetInnerHTML={{ __html: renderMarkdown(text) }}
-      />
-    );
-  }
-
-  // Split text into segments around images
-  const segments: Array<{ type: "text"; content: string } | { type: "image"; url: string; alt: string }> = [];
-  let lastEnd = 0;
-
-  for (const img of images) {
-    if (img.position > lastEnd) {
-      const textBefore = text.slice(lastEnd, img.position);
-      if (textBefore.trim()) {
-        segments.push({ type: "text", content: textBefore });
-      }
-    }
-    segments.push({ type: "image", url: img.url, alt: img.alt });
-    lastEnd = img.position + img.length;
-  }
-
-  // Remaining text after last image
-  if (lastEnd < text.length) {
-    const remaining = text.slice(lastEnd);
-    if (remaining.trim()) {
-      segments.push({ type: "text", content: remaining });
-    }
-  }
-
-  // Render segments
+function renderMarkdown(text: string, isStreaming = false) {
   return (
-    <div className="flex flex-col gap-2">
-      {segments.map((segment, i) => {
-        if (segment.type === "text") {
-          return (
-            <div
-              key={i}
-              className="prose-crimson text-sm"
-              dangerouslySetInnerHTML={{ __html: renderMarkdown(segment.content) }}
-            />
-          );
-        } else {
-          return (
-            <ImageDisplay
-              key={i}
-              src={segment.url}
-              alt={segment.alt}
-            />
-          );
-        }
-      })}
-    </div>
+    <Streamdown className="prose-crimson" mode={isStreaming ? "streaming" : "static"} isAnimating={isStreaming}>
+      {text}
+    </Streamdown>
   );
 }
 
-// Simple markdown renderer — handles bold, italic, code, headers, lists, links
-function renderMarkdown(text: string): string {
-  return text
-    .replace(/```([\s\S]*?)```/g, '<pre><code>$1</code></pre>')
-    .replace(/`([^`]+)`/g, '<code>$1</code>')
-    .replace(/^### (.+)$/gm, '<h3>$1</h3>')
-    .replace(/^## (.+)$/gm, '<h2>$1</h2>')
-    .replace(/^# (.+)$/gm, '<h1>$1</h1>')
-    .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
-    .replace(/\*(.+?)\*/g, '<em>$1</em>')
-    .replace(/^[-*] (.+)$/gm, '<li>$1</li>')
-    .replace(/(<li>[\s\S]*?<\/li>)/g, '<ul>$1</ul>')
-    .replace(/\n\n/g, '</p><p>')
-    .replace(/^(?!<[hupol]|<pre|<code)(.+)$/gm, (m) => m.startsWith('<') ? m : `<p>${m}</p>`);
+function renderContentWithMedia(text: string, _accentColor: string, isStreaming = false) {
+  const media = extractMediaFromText(text);
+  if (media.length === 0) {
+    return renderMarkdown(text, isStreaming);
+  }
+
+  const segments: Array<{ type: "text"; content: string } | { type: "media"; item: ParsedMedia }> = [];
+  let lastEnd = 0;
+  for (const item of media) {
+    if (item.position > lastEnd) {
+      const before = text.slice(lastEnd, item.position);
+      if (before.trim()) segments.push({ type: "text", content: before });
+    }
+    segments.push({ type: "media", item });
+    lastEnd = item.position + item.length;
+  }
+  if (lastEnd < text.length) {
+    const remaining = text.slice(lastEnd);
+    if (remaining.trim()) segments.push({ type: "text", content: remaining });
+  }
+
+  return (
+    <div className="flex flex-col gap-2">
+      {segments.map((segment, index) => {
+        if (segment.type === "text") {
+          return <div key={index}>{renderMarkdown(segment.content, isStreaming)}</div>;
+        }
+        if (segment.item.type === "image") {
+          return <ImageDisplay key={index} src={segment.item.src} alt={segment.item.alt} watermark={/^generated image$/i.test(segment.item.alt)} />;
+        }
+        return <VideoDisplay key={index} src={segment.item.src} openUrl={segment.item.openUrl} title={segment.item.alt} embedded={segment.item.type === "embed"} />;
+      })}
+    </div>
+  );
 }
 
 // Typing cursor component
@@ -168,42 +190,6 @@ function StreamingCursor({ color }: { color: string }) {
       className="inline-block w-0.5 h-4 ml-0.5 align-middle rounded-full"
       style={{ background: color, verticalAlign: "middle" }}
     />
-  );
-}
-
-// ENOSX is thinking... indicator
-function ThinkingDots({ color }: { color: string }) {
-  return (
-    <div className="flex items-center gap-2 py-1">
-      {[0, 1, 2].map((i) => (
-        <motion.div
-          key={i}
-          animate={{
-            scale: [0.6, 1, 0.6],
-            opacity: [0.4, 1, 0.4],
-          }}
-          transition={{
-            duration: 1.2,
-            repeat: Infinity,
-            delay: i * 0.2,
-            ease: "easeInOut",
-          }}
-          className="w-1.5 h-1.5 rounded-full rainbow-thinking-dot"
-          style={{
-            background: color,
-            animation: "rainbow-thinking-dot 4s ease-in-out infinite",
-          }}
-        />
-      ))}
-      <motion.span
-        className="text-xs italic tracking-wide"
-        style={{ color }}
-        animate={{ opacity: [0.4, 0.9, 0.4] }}
-        transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
-      >
-        ENOSX is thinking<span className="thinking-pulse">...</span>
-      </motion.span>
-    </div>
   );
 }
 
@@ -241,6 +227,7 @@ export default function MessageBubble({
   const { settings: wallpaperSettings } = useWallpaper();
   const [copied, setCopied] = useState(false);
   const [actionStatus, setActionStatus] = useState<string | null>(null);
+  const [exportMenuOpen, setExportMenuOpen] = useState(false);
   const isUser = message.role === "user";
   const isStreaming = message.isStreaming;
   const isEmpty = !message.content?.trim() && isStreaming;
@@ -254,27 +241,24 @@ export default function MessageBubble({
     setTimeout(() => setCopied(false), 2000);
   };
 
-  const handleDownload = (format: 'md' | 'pdf' = 'md') => {
-    if (format === 'md') {
-      const blob = new Blob([message.content], { type: "text/markdown" });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `enosx-doc-${new Date().getTime()}.md`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
-    } else if (format === 'pdf') {
-      // @ts-ignore
-      const { jsPDF } = window.jspdf;
-      const doc = new jsPDF();
-      
-      // Basic PDF generation logic
-      const splitText = doc.splitTextToSize(message.content.replace(/[*#`]/g, ''), 180);
-      doc.setFontSize(12);
-      doc.text(splitText, 15, 20);
-      doc.save(`enosx-doc-${new Date().getTime()}.pdf`);
+  const handleDownload = async (format: 'md' | 'pdf' | 'docx' | 'xlsx') => {
+    try {
+      if (format === 'md') {
+        const blob = new Blob([message.content], { type: "text/markdown" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = `enosx-doc-${new Date().getTime()}.md`;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        URL.revokeObjectURL(url);
+      } else {
+        await downloadDocument(format, message.content, `enosx-ai-${message.role}-response`);
+      }
+      setExportMenuOpen(false);
+    } catch (error) {
+      setActionStatus(error instanceof Error ? error.message : "Document export failed.");
     }
   };
 
@@ -332,59 +316,46 @@ export default function MessageBubble({
       }}
       className={`flex min-w-0 gap-3 ${isUser ? "flex-row-reverse" : "flex-row"}`}
     >
-      {/* Bubble */}
+      {/* Flat message surface: media and text are not nested inside chat bubbles. */}
       <div className={`flex min-w-0 max-w-[90%] flex-col gap-1 ${isUser ? "items-end" : "items-start"}`}>
         <motion.div
-          whileHover={{ scale: 1.005 }}
           transition={{ type: "spring", stiffness: 400, damping: 30 }}
-          className={`relative transition-all duration-300 ${!isUser && (isEmpty || isStreaming) ? 'rainbow-glow' : ''}`}
+          className={`relative w-full transition-all duration-300 ${!isUser && (isEmpty || isStreaming) ? 'rainbow-glow' : ''}`}
           style={{
-            background: isUser
-              ? `linear-gradient(135deg, rgba(${config.accentRgb}, 0.2), rgba(${config.accentRgb}, 0.1))`
-              : "rgba(16, 18, 28, 0.78)",
-            border: isUser
-              ? `1px solid rgba(${config.accentRgb}, 0.4)`
-              : "1px solid rgba(255, 255, 255, 0.14)",
-            borderRadius: isUser ? "18px 5px 18px 18px" : "5px 18px 18px 18px",
-            boxShadow: isUser
-              ? `0 8px 24px rgba(${config.accentRgb}, 0.12)`
-              : "0 8px 24px rgba(0, 0, 0, 0.22)",
-            padding: isEmpty ? "8px 12px" : "12px 14px",
+            background: "transparent",
+            border: "0",
+            borderRadius: 0,
+            boxShadow: "none",
+            padding: isEmpty ? "4px 0" : "0",
             maxWidth: "100%",
             overflowWrap: "anywhere",
-            backdropFilter: "blur(12px)",
-            WebkitBackdropFilter: "blur(12px)",
           }}
         >
           {isEmpty ? (
-            <ThinkingDots color={config.accent} />
+            <span className="sr-only" role="status">Assistant response is being prepared.</span>
           ) : (
             <div className="relative">
               {isUser ? (
                 <div className="flex flex-col gap-3">
-                  {/* User attachments — preview images, music, video, or downloadable files */}
+                  {/* User attachments — images are grouped into one browsable collection */}
                   {message.attachments && message.attachments.length > 0 && (
-                    <div className="flex flex-wrap gap-2 mb-1">
-                      {message.attachments.map((att) => <MediaAttachment key={att.id} attachment={att} />)}
-                    </div>
+                    <MediaAttachmentList attachments={message.attachments} />
                   )}
                   <div
-                    className="text-sm leading-relaxed"
+                    className="text-base leading-relaxed"
                     style={{ color: config.text }}
                   >
-                    {renderContentWithImages(message.content, config.accent)}
+                    {renderContentWithMedia(message.content, config.accent)}
                   </div>
                 </div>
               ) : (
                 <div className="flex flex-col gap-3">
                   {/* Assistant media attachments */}
                   {message.attachments && message.attachments.length > 0 && (
-                    <div className="flex flex-wrap gap-2 mb-1">
-                      {message.attachments.map((att) => <MediaAttachment key={att.id} attachment={att} />)}
-                    </div>
+                    <MediaAttachmentList attachments={message.attachments} />
                   )}
                   {/* Assistant content with inline image support */}
-                  {renderContentWithImages(message.content, config.accent)}
+                  {renderContentWithMedia(message.content, config.accent, isStreaming)}
                   {message.proposedActions && message.proposedActions.length > 0 && (
                     <div className="flex flex-col gap-2 rounded-xl border border-cyan-300/20 bg-cyan-400/[0.06] p-3">
                       <div className="flex items-center gap-2 text-xs font-semibold tracking-wide text-cyan-100">
@@ -404,6 +375,7 @@ export default function MessageBubble({
                                 ? `Launch ${action.app || "app"}`
                                 : "Review interaction";
                         const Icon = isLink ? ExternalLink : readOnly ? (action.type === "extract_links" ? ListTree : FileSearch) : ShieldCheck;
+                        const videoMedia = isLink && action.url ? resolveMediaUrl(action.url) : null;
                         const imageUrl = isLink && action.url && isImageUrl(action.url) ? action.url : undefined;
                         return (
                           <div key={`${action.type}-${actionIndex}`} className="flex flex-col gap-2">
@@ -413,11 +385,19 @@ export default function MessageBubble({
                                 alt="Image shared by ENOSX AI"
                               />
                             )}
+                            {videoMedia && videoMedia.type !== "image" && (
+                              <VideoDisplay
+                                src={videoMedia.src}
+                                openUrl={videoMedia.openUrl}
+                                title="Video shared by ENOSX AI"
+                                embedded={videoMedia.type === "embed"}
+                              />
+                            )}
                             <button
                               onClick={() => void handleProposedAction(action)}
                               className="flex min-h-11 items-center justify-between gap-3 rounded-lg border border-white/10 bg-black/20 px-3 py-2 text-left text-xs text-white/90 transition-colors hover:bg-white/10"
                             >
-                              <span className="min-w-0 truncate">{imageUrl ? "Open image in a new tab" : label}{action.url ? ` · ${action.url}` : ""}</span>
+                              <span className="min-w-0 truncate">{imageUrl ? "Open image in a new tab" : videoMedia ? "Open video in a new tab" : label}{action.url ? ` · ${action.url}` : ""}</span>
                               <Icon size={15} className="shrink-0 text-cyan-300" />
                             </button>
                           </div>
@@ -482,20 +462,31 @@ export default function MessageBubble({
                   {isSpeaking ? <VolumeX size={12} /> : <Volume2 size={12} />}
                 </motion.button>
 
-                <motion.button
-                  whileHover={{ scale: 1.1 }}
-                  whileTap={{ scale: 0.9 }}
-                  onClick={() => handleDownload('md')}
-                  className="w-7 h-7 rounded-lg flex items-center justify-center transition-all duration-150"
-                  style={{
-                    background: "rgba(255,255,255,0.04)",
-                    border: "1px solid rgba(255,255,255,0.07)",
-                    color: config.textMuted,
-                  }}
-                  title="Download as Markdown"
-                >
-                  <Download size={12} />
-                </motion.button>
+                <div className="relative">
+                  <motion.button
+                    whileHover={{ scale: 1.1 }}
+                    whileTap={{ scale: 0.9 }}
+                    onClick={() => setExportMenuOpen((open) => !open)}
+                    className="w-7 h-7 rounded-lg flex items-center justify-center transition-all duration-150"
+                    style={{
+                      background: exportMenuOpen ? `rgba(${config.accentRgb}, 0.14)` : "rgba(255,255,255,0.04)",
+                      border: exportMenuOpen ? `1px solid rgba(${config.accentRgb}, 0.35)` : "1px solid rgba(255,255,255,0.07)",
+                      color: exportMenuOpen ? config.accent : config.textMuted,
+                    }}
+                    title="Export as PDF, Word, Excel, or Markdown"
+                    aria-label="Export response"
+                  >
+                    <Download size={12} />
+                  </motion.button>
+                  {exportMenuOpen && (
+                    <div className="absolute bottom-9 left-0 z-20 flex min-w-36 flex-col gap-1 rounded-xl border border-white/10 bg-[#11131b]/95 p-1.5 shadow-2xl backdrop-blur-xl">
+                      <button type="button" onClick={() => void handleDownload("pdf")} className="flex items-center gap-2 rounded-lg px-2.5 py-2 text-left text-[11px] text-white/75 hover:bg-white/10"><FileText size={13} className="text-red-300" /> PDF document</button>
+                      <button type="button" onClick={() => void handleDownload("docx")} className="flex items-center gap-2 rounded-lg px-2.5 py-2 text-left text-[11px] text-white/75 hover:bg-white/10"><FileText size={13} className="text-blue-300" /> Word document</button>
+                      <button type="button" onClick={() => void handleDownload("xlsx")} className="flex items-center gap-2 rounded-lg px-2.5 py-2 text-left text-[11px] text-white/75 hover:bg-white/10"><FileSpreadsheet size={13} className="text-emerald-300" /> Excel workbook</button>
+                      <button type="button" onClick={() => void handleDownload("md")} className="flex items-center gap-2 rounded-lg px-2.5 py-2 text-left text-[11px] text-white/75 hover:bg-white/10"><Download size={13} className="text-white/45" /> Markdown file</button>
+                    </div>
+                  )}
+                </div>
               </>
             )}
 

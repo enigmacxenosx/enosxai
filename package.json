@@ -17,6 +17,7 @@
     "typescript": "~5.9.3"
   },
   "dependencies": {
-    "@neondatabase/serverless": "^1.1.0"
+    "@neondatabase/serverless": "^1.1.0",
+    "sharp": "^0.35.5"
   }
 }

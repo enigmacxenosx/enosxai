@@ -6,7 +6,8 @@
 
 import { motion, useScroll, useTransform } from "framer-motion";
 import { useRef } from "react";
-import { Zap, Cpu, Palette, Mail, ArrowRight, ArrowLeft, Bot } from "lucide-react";
+import { Zap, Cpu, Palette, Mail, ArrowRight, ArrowLeft, Bot, Users } from "lucide-react";
+import { LEADERSHIP } from "@/const";
 
 const BG_URL =
   "https://d2xsxph8kpxj0f.cloudfront.net/310519663581012760/3KsVJNzTNHX32FLQf9aZCC/enosx-bg-mesh-dMF6AjTJ234cK4z3d5pivU.webp";
@@ -265,13 +266,13 @@ export default function AboutPage() {
                     backgroundClip: "text",
                   }}
                 >
-                  Enosh
+                  {LEADERSHIP[0].name}
                 </h3>
                 <p
                   className="text-sm"
                   style={{ color: "rgba(255, 215, 0, 0.7)" }}
                 >
-                  Founder & Visionary
+                  {LEADERSHIP[0].role}
                 </p>
               </div>
             </div>
@@ -287,6 +288,56 @@ export default function AboutPage() {
             </p>
           </div>
         </motion.div>
+
+        {/* Team Section */}
+        <motion.section
+          initial={{ opacity: 0, y: 40 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.8 }}
+          viewport={{ once: true, margin: "-100px" }}
+          className="mb-32"
+          aria-labelledby="team-heading"
+        >
+          <div className="mb-8 flex items-center gap-3">
+            <Users className="text-[#00F2FF]" size={25} aria-hidden="true" />
+            <div>
+              <h2 id="team-heading" className="text-4xl font-bold text-white">The Team</h2>
+              <p className="mt-2 text-sm text-white/55">The people shaping Enosx Technologies and its products.</p>
+            </div>
+          </div>
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {LEADERSHIP.map((member, index) => {
+              const accents = ["#FFD700", "#00F2FF", "#7000FF", "#FF0080", "#62E6A7"];
+              const accent = accents[index % accents.length];
+              return (
+                <motion.article
+                  key={member.name}
+                  initial={{ opacity: 0, y: 18 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  transition={{ delay: index * 0.08, duration: 0.45 }}
+                  viewport={{ once: true }}
+                  className="rounded-2xl border p-5 backdrop-blur-xl transition-transform hover:-translate-y-1"
+                  style={{ background: "rgba(8, 12, 20, 0.66)", borderColor: `${accent}35` }}
+                >
+                  <div className="mb-4 flex items-center gap-3">
+                    <div
+                      className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border text-sm font-bold"
+                      style={{ color: accent, background: `${accent}18`, borderColor: `${accent}45` }}
+                      aria-hidden="true"
+                    >
+                      {member.name.split(/\s+/).map((part) => part[0]).join("").slice(0, 2)}
+                    </div>
+                    <div className="min-w-0">
+                      <h3 className="font-semibold text-white">{member.name}</h3>
+                      <p className="text-xs leading-relaxed" style={{ color: accent }}>{member.role}</p>
+                    </div>
+                  </div>
+                  <p className="text-sm leading-relaxed text-white/65">{member.specialty}</p>
+                </motion.article>
+              );
+            })}
+          </div>
+        </motion.section>
 
         {/* Tech Stack Section */}
         <motion.div

@@ -8,9 +8,11 @@ import { useState, useRef, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { nanoid } from "nanoid";
 import { toast } from "sonner";
+import { showError } from "@/lib/errorReporting";
 import Sidebar from "@/components/Sidebar";
 import MessageBubble from "@/components/MessageBubble";
 import CommandBar, { type AIMode } from "@/components/CommandBar";
+import AppAwareSuggestions from "@/components/AppAwareSuggestions";
 import WelcomeScreen from "@/components/WelcomeScreen";
 import ConversationSearchDialog from "@/components/ConversationSearchDialog";
 import FileDropZone from "@/components/FileDropZone";
@@ -53,13 +55,9 @@ import { getSystemPrompt } from "@/lib/prompts";
 import { CONNECTOR_CATALOG } from "@/lib/connectorCatalog";
 import LeadCaptureDialog from "@/components/LeadCaptureDialog";
 import AdminConsoleDialog from "@/components/AdminConsoleDialog";
-import ChatSplitLayout from "@/components/ChatSplitLayout";
-import { getSplitEnabled, setSplitEnabled, onSplitPrefChange, notifySplitPrefChanged } from "@/lib/splitPref";
-import { WORKSPACE_DIRECTIVES } from "@/lib/workspaceDirectives";
-import { useCommandChain, type SystemAction } from "@/hooks/useCommandChain";
-import { ComputerWorkspaceProvider, useComputerWorkspace } from "@/contexts/ComputerWorkspaceContext";
-import { Bell, BellRing, ChevronDown, Menu } from "lucide-react";
-import { useScriptRuntime, type ScriptLanguage } from "@/hooks/useScriptRuntime";
+import { deleteConversation as deleteCloudConversation, loadConversations, saveConversation } from "@/lib/firebaseStorage";
+import { ChevronDown, Copy, Gauge, Menu, Share2 } from "lucide-react";
+import { copyTranscript } from "@/lib/shareConversation";
 import {
   getNotificationPermission,
   requestEnosxNotificationPermission,
@@ -86,6 +84,53 @@ const generateTitle = (firstMessage: string): string => {
   return words.join(" ") + (firstMessage.split(/\s+/).length > 6 ? "..." : "");
 };
 
+function isImageGenerationRequest(text: string): boolean {
+  if (/\b(?:online|internet|web)\b/i.test(text) && /\b(?:image|picture|photo|video|clip|movie)s?\b/i.test(text)) return false;
+  return /\b(?:generate|create|make|draw|paint|render|illustrate|design)\b.{0,120}\b(?:image|picture|illustration|artwork|logo|icon|avatar)\b/i.test(text);
+}
+
+function isImageEditRequest(text: string): boolean {
+  return /\b(?:edit|modify|transform|restyle|retouch|recolor|recolour|replace|remove|add|change|enhance|improve|reimagine|adjust|crop|upscale|make)\b/i.test(text);
+}
+
+function getOnlineMediaSearch(text: string): { type: "images" | "videos"; query: string } | null {
+  if (isImageGenerationRequest(text)) return null;
+  if (!/\b(?:online|internet|web|search|find|show|display|look\s+up)\b/i.test(text)) return null;
+  const type = /\b(?:video|videos|clip|clips|movie|movies)\b/i.test(text) ? "videos"
+    : /\b(?:image|images|picture|pictures|photo|photos)\b/i.test(text) ? "images"
+      : null;
+  if (!type) return null;
+  const query = text
+    .replace(/\b(?:please|online|on\s+the\s+internet|from\s+the\s+web|from\s+online|search\s+(?:for|the\s+web\s+for)|find|show|display|look\s+up|me|some|images?|pictures?|photos?|videos?|clips?|movies?)\b/gi, " ")
+    .replace(/[?!.,]+/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+  return { type, query: (query || text).slice(0, 240) };
+}
+
+async function searchOnlineMedia(query: string, type: "images" | "videos"): Promise<string> {
+  try {
+    const response = await fetch("/api/media-search", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ query, type }),
+    });
+    if (!response.ok) return "";
+    const payload = await response.json() as { results?: Array<{ title?: string; url?: string; imageUrl?: string; source?: string }> };
+    const results = Array.isArray(payload.results) ? payload.results : [];
+    const lines = results.flatMap((item) => {
+      const mediaUrl = type === "images" ? item.imageUrl || item.url : item.url;
+      if (!mediaUrl || !/^https?:\/\//i.test(mediaUrl)) return [];
+      const title = (item.title || (type === "images" ? "Online image" : "Online video")).replace(/[\r\n\[\]]/g, " ").slice(0, 150);
+      const source = item.source ? ` — ${item.source.replace(/[\r\n]/g, " ").slice(0, 80)}` : "";
+      return [type === "images" ? `![${title}](${mediaUrl})\n[Source: ${title}${source}](${item.url || mediaUrl})` : `[${title}${source}](${mediaUrl})`];
+    });
+    return lines.length ? `### Verified online ${type} results\n${lines.join("\n\n")}` : "";
+  } catch {
+    return "";
+  }
+}
+
 function normalizeConversation(raw: any): Conversation | null {
   if (!raw || typeof raw.id !== "string") return null;
   const now = new Date();
@@ -108,18 +153,6 @@ function normalizeConversation(raw: any): Conversation | null {
 }
 
 const ACTION_BLOCK = /\[\[ACTION:\s*({[\s\S]*?})\s*\]\]/g;
-
-// Chat-page mapping of AI app names to workspace app ids (mirrors the workspace
-// page so proposed actions like "Launch terminal" open the right window).
-function mapWorkspaceAppId(appName: string): "browser" | "github" | "files" | "terminal" | "settings" | null {
-  const normalized = String(appName || "").toLowerCase().trim();
-  if (["browser", "chrome", "edge", "globe", "web"].includes(normalized)) return "browser";
-  if (["github", "git", "code"].includes(normalized)) return "github";
-  if (["terminal", "console", "cmd", "powershell", "shell", "bash"].includes(normalized)) return "terminal";
-  if (["files", "file", "folder", "explorer", "notepad", "calculator", "vscode"].includes(normalized)) return "files";
-  if (["settings", "config"].includes(normalized)) return "settings";
-  return null;
-}
 
 function removeActionBlocks(content: string) {
   return content.replace(ACTION_BLOCK, "").replace(/\n{3,}/g, "\n\n").trim();
@@ -203,44 +236,12 @@ async function loadGitHubConnectorContext(): Promise<string> {
   }
 }
 
-function extractLiveCodePreview(content: string): { language: ScriptLanguage; name: string; content: string } | null {
-  const matches = [...content.matchAll(/```([a-zA-Z0-9+#_-]*)\s*\n([\s\S]*?)(?:```|$)/g)];
-  const latest = matches.at(-1);
-  if (!latest?.[2]?.trim() || latest[2].trim().length < 8) return null;
-
-  const rawLanguage = (latest[1] || "").toLowerCase();
-  const language: ScriptLanguage = rawLanguage === "sh" || rawLanguage === "bash" || rawLanguage === "shell"
-    ? "shell"
-    : rawLanguage === "bat" || rawLanguage === "batch" || rawLanguage === "cmd"
-      ? "batch"
-      : "python";
-  const extension = language === "python" ? "py" : language === "shell" ? "sh" : "bat";
-  return { language, name: `enosx-live-preview.${extension}`, content: latest[2] };
-}
-
-function parseWorkspaceActions(text: string): SystemAction[] {
-  const actions: SystemAction[] = [];
-  const regex = /\[\[ACTION:\s*({.*?})\s*\]\]/g;
-  let match;
-  while ((match = regex.exec(text)) !== null) {
-    try {
-      const action = JSON.parse(match[1]) as SystemAction;
-      if (
-        ["open_url", "launch_app", "read_webpage", "extract_links", "click_element", "fill_form", "chain", "delay", "create_script", "run_script"].includes(action.type)
-      ) {
-        actions.push(action);
-      }
-    } catch {
-      /* ignore malformed blocks */
-    }
-  }
-  return actions;
-}
-
 export default function ChatPage() {
   const { config } = useTheme();
+  const { user, isAuthenticated, updateProfile } = useAuth();
   const [conversations, setConversations] = useState<Conversation[]>(() => {
-    const saved = localStorage.getItem("enosx_chats");
+    const owner = user?.provider === "guest" || !user ? "guest" : user.id;
+    const saved = localStorage.getItem(`enosx_chats_${owner}`) || (owner === "guest" ? localStorage.getItem("enosx_chats") : null);
     if (saved) {
       try {
         const parsed = JSON.parse(saved);
@@ -251,69 +252,84 @@ export default function ChatPage() {
     }
     return [];
   });
+  const [readyOwner, setReadyOwner] = useState<string>(user?.provider === "guest" || !user ? "guest" : user.id);
   const [activeId, setActiveId] = useState<string | null>(() => {
-    return localStorage.getItem("enosx_active_chat");
+    const owner = user?.provider === "guest" || !user ? "guest" : user.id;
+    return localStorage.getItem(`enosx_active_chat_${owner}`) || (owner === "guest" ? localStorage.getItem("enosx_active_chat") : null);
   });
   const [activeMode, setActiveMode] = useState<AIMode>("ex-core");
-  const { user, isAuthenticated, updateProfile } = useAuth();
 
-  // Persist conversations to localStorage and Neon
+  // Keep local data account-scoped. A device's guest/local conversations are
+  // never automatically copied into another signed-in account.
   useEffect(() => {
-    localStorage.setItem("enosx_chats", JSON.stringify(conversations));
-    
-    // Sync to backend if authenticated
-    if (isAuthenticated && user?.id) {
-      const syncHistory = async () => {
-        try {
-          // Sync all conversations (debounced or on change)
-          for (const conv of conversations) {
-            await fetch('/api/history', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ userId: user.id, chat: conv }),
-            });
-          }
-        } catch (err) {
-          console.error("Failed to sync history to Neon:", err);
-        }
-      };
-      syncHistory();
+    const owner = user?.provider === "guest" || !user ? "guest" : user.id;
+    setReadyOwner("");
+    const saved = localStorage.getItem(`enosx_chats_${owner}`);
+    let local: Conversation[] = [];
+    if (saved) {
+      try { local = (JSON.parse(saved) as unknown[]).map(normalizeConversation).filter(Boolean) as Conversation[]; }
+      catch (error) { console.error("Failed to load account-scoped chats:", error); }
+    } else if (owner === "guest") {
+      try { local = (JSON.parse(localStorage.getItem("enosx_chats") || "[]") as unknown[]).map(normalizeConversation).filter(Boolean) as Conversation[]; }
+      catch { local = []; }
     }
-  }, [conversations, isAuthenticated, user?.id]);
+    setConversations(local);
+    setActiveId(localStorage.getItem(`enosx_active_chat_${owner}`) || (owner === "guest" ? localStorage.getItem("enosx_active_chat") : null));
 
-  // Load history from Neon on mount if authenticated
-  useEffect(() => {
-    if (isAuthenticated && user?.id) {
-      const loadHistory = async () => {
-        try {
-          const res = await fetch(`/api/history?userId=${user.id}`);
-          if (res.ok) {
-            const data = await res.json();
-            if (data.history && data.history.length > 0) {
-              const remote = data.history.map(normalizeConversation).filter(Boolean) as Conversation[];
-              setConversations((local) => {
-                const byId = new Map(local.map((conversation) => [conversation.id, conversation]));
-                remote.forEach((conversation) => byId.set(conversation.id, conversation));
-                return Array.from(byId.values()).sort((a, b) => b.updatedAt.getTime() - a.updatedAt.getTime());
-              });
-            }
-          }
-        } catch (err) {
-          console.error("Failed to load history from Neon:", err);
-        }
-      };
-      loadHistory();
+    if (!isAuthenticated || !user || user.provider === "guest") {
+      setReadyOwner(owner);
+      return;
     }
-  }, [isAuthenticated, user?.id]);
+    let cancelled = false;
+    void loadConversations(user.id).then((remote) => {
+      if (cancelled) return;
+      const byId = new Map(remote.map((conversation) => [conversation.id, conversation]));
+      local.forEach((conversation) => byId.set(conversation.id, conversation));
+      setConversations(Array.from(byId.values()).sort((a, b) => b.updatedAt.getTime() - a.updatedAt.getTime()));
+      setReadyOwner(owner);
+    }).catch((error) => {
+      console.error("Failed to load chats from Firestore:", error);
+      setReadyOwner(owner);
+    });
+    return () => { cancelled = true; };
+  }, [isAuthenticated, user?.id, user?.provider]);
+
+  // Persist locally and sync signed-in accounts to Firestore.
+  useEffect(() => {
+    const owner = user?.provider === "guest" || !user ? "guest" : user.id;
+    if (readyOwner !== owner) return;
+    localStorage.setItem(`enosx_chats_${owner}`, JSON.stringify(conversations));
+    if (owner === "guest") localStorage.setItem("enosx_chats", JSON.stringify(conversations));
+
+    // Streamed replies update this state many times per second. Wait until the
+    // response settles before syncing, otherwise every token can start another
+    // full conversation write and compete with the AI request.
+    if (!isAuthenticated || !user?.id || user.provider === "guest") return;
+    const syncTimer = window.setTimeout(() => {
+      void (async () => {
+        try {
+          await Promise.all(conversations.map((conversation) => saveConversation(user.id, conversation)));
+        } catch (err) {
+          console.error("Failed to sync history to Firestore:", err);
+        }
+      })();
+    }, 800);
+
+    return () => window.clearTimeout(syncTimer);
+  }, [conversations, isAuthenticated, user?.id, user?.provider, readyOwner]);
 
   // Persist activeId to localStorage
   useEffect(() => {
+    const owner = user?.provider === "guest" || !user ? "guest" : user.id;
+    if (readyOwner !== owner) return;
     if (activeId) {
-      localStorage.setItem("enosx_active_chat", activeId);
+      localStorage.setItem(`enosx_active_chat_${owner}`, activeId);
+      if (owner === "guest") localStorage.setItem("enosx_active_chat", activeId);
     } else {
-      localStorage.removeItem("enosx_active_chat");
+      localStorage.removeItem(`enosx_active_chat_${owner}`);
+      if (owner === "guest") localStorage.removeItem("enosx_active_chat");
     }
-  }, [activeId]);
+  }, [activeId, user?.id, user?.provider, readyOwner]);
 
   const [speakingMessageId, setSpeakingMessageId] = useState<string | null>(null);
   const [autoSpeak, setAutoSpeak] = useState(false);
@@ -325,8 +341,10 @@ export default function ChatPage() {
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
+  const shouldAutoScrollRef = useRef(true);
   const activeIdRef = useRef<string | null>(null);
   const conversationsRef = useRef<Conversation[]>([]);
+  const godModeReturnConversationIdRef = useRef<string | null>(null);
   // Prevent double submission (e.g. rapid Enter presses) from adding the same
   // prompt twice to the conversation.
   const sendingRef = useRef(false);
@@ -341,17 +359,15 @@ export default function ChatPage() {
   }, []);
 
   const { sendMessage, isLoading: isChatLoading, isThinking, error: chatError, isFreeMode } = useAI();
-  const { generateImage, isGenerating, error: imageError } = useImageGeneration();
-  const { createScript, updateScript, deleteScript } = useScriptRuntime();
+  const { generateImage, isGenerating, error: imageError, clearError: clearImageError } = useImageGeneration();
   const [notificationPermission, setNotificationPermission] = useState<NotificationPermission | "unsupported">(() => getNotificationPermission());
-  const liveDraftIdRef = useRef<string | null>(null);
-  const liveCodingNotifiedRef = useRef(false);
   const isLoading = isChatLoading || isGenerating;
   const error = chatError || imageError;
 
   const {
     voiceState,
     transcript,
+    microphoneStream,
     isSupported: isVoiceSupported,
     startListening,
     stopListening,
@@ -363,7 +379,7 @@ export default function ChatPage() {
     onFinalResultRef,
   } = useVoice();
 
-  const { recordOutgoingMessage, recordVoiceUsage, refreshFromConversations } = useAnalytics();
+  const { analytics, recordOutgoingMessage, recordTokenUsage, recordVoiceUsage, refreshFromConversations } = useAnalytics();
   const conversationSearch = useConversationSearch();
   const { getAdminContext } = useAdminConsole();
 
@@ -377,13 +393,13 @@ export default function ChatPage() {
   const { enrichMessageWithContext } = useContextAwareMessages();
   const { fileContext, getFileContextMessage, clearFiles, loadFile, removeFile } = useFileContext();
   const { getMemoryContext, addMemory } = useMemoryBank();
-  const { getKnowledgeContext, addEntry } = useKnowledgeBank();
+  const { getSkillContext, getKnowledgeContext, addEntry } = useKnowledgeBank();
   const { parseActions } = useSystemActions();
 
   const handleFileUpload = useCallback(
     async (file: File) => {
       if (fileContext.files.length >= 10) {
-        toast.error("Maximum 10 files allowed");
+        showError("Maximum 10 files allowed");
         return;
       }
 
@@ -393,7 +409,7 @@ export default function ChatPage() {
       const isVideo = file.type.startsWith("video/") || ["mp4", "webm", "mov", "m4v", "avi", "mkv"].includes(extension);
       const maxSize = isVideo ? 100 * 1024 * 1024 : 25 * 1024 * 1024;
       if (file.size > maxSize) {
-        toast.error("File too large (maximum 25MB per file)");
+        showError("File too large (maximum 25MB per file)");
         return;
       }
       try {
@@ -402,23 +418,22 @@ export default function ChatPage() {
         toast.success(`${file.name} is ready for ENOSX analysis`);
       } catch (error) {
         console.error("[ChatPage] File analysis failed", error);
-        toast.error(`Could not analyze ${file.name}. Try a smaller or supported file.`);
+        showError(`Could not analyze ${file.name}. Try a smaller or supported file.`);
       }
     },
     [fileContext.files.length, loadFile]
   );
 
   const handleFilesSelected = useCallback((files: File[]) => {
-    files.forEach((file) => { void handleFileUpload(file); });
-  }, [handleFileUpload]);
+    const remaining = Math.max(0, 10 - fileContext.files.length);
+    if (files.length > remaining) showError(`You can attach up to 10 files per message. ${remaining} slot${remaining === 1 ? "" : "s"} remaining.`);
+    const acceptedFiles = files.slice(0, remaining);
+    void (async () => {
+      for (const file of acceptedFiles) await handleFileUpload(file);
+    })();
+  }, [fileContext.files.length, handleFileUpload]);
 
   const [isGodModeActive, setIsGodModeActive] = useState(false);
-  // Standalone split-screen toggle (shared with /workspace via localStorage).
-  const [chatSplitEnabled, setChatSplitEnabled] = useState<boolean>(() => getSplitEnabled());
-  useEffect(() => {
-    const unsub = onSplitPrefChange(() => setChatSplitEnabled(getSplitEnabled()));
-    return unsub;
-  }, []);
   const [showGodModeWarning, setShowGodModeWarning] = useState(false);
   const [showGodTerminal, setShowGodTerminal] = useState(false);
   const [showEthicalHackingQuiz, setShowEthicalHackingQuiz] = useState(false);
@@ -426,9 +441,6 @@ export default function ChatPage() {
   const [screenGuiderActive, setScreenGuiderActive] = useState(false);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(true);
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
-  const [isImageMode, setIsImageMode] = useState(false);
-  const isImageModeRef = useRef(false);
-  useEffect(() => { isImageModeRef.current = isImageMode; }, [isImageMode]);
   const { isCompactMode } = useCompactMode();
   const isMobile = useIsMobile();
   const deviceType = useDeviceType();
@@ -444,6 +456,13 @@ export default function ChatPage() {
   const acknowledgeGodModeWarning = useCallback(() => {
     setShowGodModeWarning(false);
     setIsGodModeActive(true);
+    godModeReturnConversationIdRef.current = activeIdRef.current;
+    const godConversation = createConversation();
+    godConversation.title = `GOD MODE — ${new Date().toLocaleString([], { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" })}`;
+    setConversations((prev) => [godConversation, ...prev]);
+    activeIdRef.current = godConversation.id;
+    setActiveId(godConversation.id);
+    shouldAutoScrollRef.current = true;
     toast.success("Authorized lab mode confirmed — GOD MODE initializing");
   }, []);
 
@@ -466,19 +485,8 @@ export default function ChatPage() {
         data: { url: window.location.href },
       });
     } else if (permission === "denied") {
-      toast.error("Notifications are blocked. Enable them in your browser site settings.");
+      showError("Notifications are blocked. Enable them in your browser site settings.");
     }
-  }, []);
-
-  const handleToggleImageMode = useCallback(() => {
-    setIsImageMode((prev) => {
-      if (prev) {
-        toast.info("Image mode disabled");
-      } else {
-        toast.success("Image mode enabled — your next message will generate an image");
-      }
-      return !prev;
-    });
   }, []);
 
   const handleSend = useCallback(
@@ -500,6 +508,9 @@ export default function ChatPage() {
         return "";
       }
       if (aiMode) setActiveMode(aiMode);
+      // Do not keep showing an old image-generation failure after the user
+      // starts a normal chat request.
+      clearImageError();
       let convId = activeIdRef.current;
 
       if (!convId) {
@@ -516,6 +527,11 @@ export default function ChatPage() {
       if (fileContext.isLoaded) {
         messageContent += getFileContextMessage();
       }
+      const inputImage = fileContext.files.find((file) =>
+        (file.mimeType?.toLowerCase().startsWith("image/") || /^(?:png|jpe?g|webp)$/i.test(file.type))
+        && file.content.startsWith("data:image/")
+      )?.content;
+      const shouldGenerateImage = isImageGenerationRequest(text) || Boolean(inputImage && isImageEditRequest(text));
 
       const userMessage: Message = {
         id: nanoid(),
@@ -542,13 +558,13 @@ export default function ChatPage() {
       const assistantMessage: Message = {
         id: assistantId,
         role: "assistant",
-        content: "",
+        content: shouldGenerateImage ? "🖼️ Generating your image..." : "",
         timestamp: new Date(),
+        isStreaming: shouldGenerateImage,
       };
 
       // ── Image generation mode ────────────────────────────────────────────────
-      if (isImageModeRef.current) {
-        setIsImageMode(false);
+      if (shouldGenerateImage) {
         // Show generating state
         setConversations((prev) =>
           prev.map((c) =>
@@ -562,7 +578,8 @@ export default function ChatPage() {
           )
         );
 
-        const imgResult = await generateImage(text);
+        // FLUX Kontext accepts a prompt alone or a prompt plus one optional input image.
+        const imgResult = await generateImage(text, inputImage);
         if (imgResult && imgResult.url) {
           const imageMarkdown = imgResult.revised_prompt
             ? `Here's the image I generated for you:\n\n![Generated Image](${imgResult.url})\n\n*Prompt: ${imgResult.revised_prompt}*`
@@ -574,8 +591,9 @@ export default function ChatPage() {
                 ? {
                     ...c,
                     messages: c.messages.map((m) =>
-                      m.id === assistantId ? { ...m, content: imageMarkdown } : m
+                      m.id === assistantId ? { ...m, content: imageMarkdown, isStreaming: false } : m
                     ),
+                    updatedAt: new Date(),
                   }
                 : c
             )
@@ -587,8 +605,9 @@ export default function ChatPage() {
                 ? {
                     ...c,
                     messages: c.messages.map((m) =>
-                      m.id === assistantId ? { ...m, content: "Sorry, I couldn't generate that image. Please try again later." } : m
+                      m.id === assistantId ? { ...m, content: imgResult?.error ? `Image generation failed: ${imgResult.error}` : "Sorry, I couldn't generate that image. Please try again later.", isStreaming: false } : m
                     ),
+                    updatedAt: new Date(),
                   }
                 : c
             )
@@ -629,22 +648,28 @@ export default function ChatPage() {
       const connectorContext = selectedConnectorNames.length
         ? `### Selected Connectors\nThe user selected these connector services for this chat: ${selectedConnectorNames.join(", ")}. Treat them as requested context. Use a connector only when its capability is actually available to the runtime; if it is not connected, state that clearly instead of claiming an external action was completed.`
         : "";
+      const mediaSearchRequest = getOnlineMediaSearch(userMessage.content);
+      const onlineMediaContext = mediaSearchRequest
+        ? await searchOnlineMedia(mediaSearchRequest.query, mediaSearchRequest.type)
+        : "";
 
       // ── SYSTEM PROMPT CONSTRUCTION ──────────────────────────────────────────────
       const identity = getAIIdentity();
-      // Workspace mode: when the split-screen computer pane is visible, teach the
-      // AI to emit [[ACTION: ...]] blocks so its coding runs live in the pane.
-      const workspaceDirectives = chatSplitEnabled && deviceType === "desktop" ? `\n\n${WORKSPACE_DIRECTIVES}` : "";
       const memoryContext = getMemoryContext(userMessage.content);
+      const skillContext = getSkillContext(userMessage.content);
       const knowledgeContext = getKnowledgeContext(userMessage.content);
       const leadershipInfo = identity.leadership.map(l => `- ${l.name}: ${l.role} (${l.specialty})`).join('\n');
       const companyFacts = identity.companyFacts.map(fact => `- ${fact}`).join('\n');
       const companyFaqs = identity.companyFaqs.map(faq => `- Q: ${faq.question}\n  A: ${faq.answer}`).join('\n');
+      const userPersonalization = user
+        ? `### Signed-in user context\n- Name: ${user.displayName || "Not provided"}\n- Email: ${user.email || "Not provided"}\n- Preferred language: ${user.language || "Not specified"}\n- AI personality preference: ${user.aiPersonality || "Not specified"}\n- Theme preference: ${user.theme || "Not specified"}\n\nUse this profile and personalization context to make relevant answers more helpful. Address the user by name naturally when appropriate, respect their language and personality preferences, and use their email only when directly relevant. Do not unnecessarily repeat or expose personal details.`
+        : "### User context\nThe user is not signed in; do not assume personal profile details.";
       
             const systemPrompt: Message = {
         id: "system-identity",
         role: "system",
         content: `${getSystemPrompt(activeMode)}
+${userPersonalization}
 
 ### Enosx Technologies - Verified Information
 Founder & CEO: ${identity.founder}
@@ -667,6 +692,9 @@ ${githubContext}
 
 ${connectorContext}
 
+### Online media results
+${onlineMediaContext ? `${onlineMediaContext}\nUse these exact results in the answer: show image results with the supplied Markdown image syntax and show video results as concise clickable links. Do not change the URLs or invent additional media.` : "No online media search was run for this request, or no results are configured. Do not claim to have searched."}
+
 ### Connector Privacy and Access
 - Never inspect, query, or use a connected connector unless the user explicitly selected it for this prompt.
 - Do not access connectors to check deployment status or deployment errors unless the user explicitly selected the relevant connector and asked for that check.
@@ -685,7 +713,7 @@ ${connectorContext}
 - Identify potential bugs before they occur
 - Recommend appropriate abstractions and refactoring opportunities
 
-Current System Status: ONLINE${workspaceDirectives}
+Current System Status: ONLINE
 ${memoryContext}
 ${knowledgeContext}
 ${getAdminContext().trim() ? `
@@ -694,94 +722,52 @@ ${getAdminContext()}` : ""}`,
         timestamp: new Date(),
       };
 
-
       // Enrich history with app context and system identity
       let enrichedMessages = [systemPrompt, ...history, userMessage];
       enrichedMessages = enrichMessageWithContext(enrichedMessages, activeWindow);
 
       let streamedContent = "";
+      const updateReasoningStatus = (status: string) => {
+        setConversations((prev) => prev.map((c) => c.id === targetConvId ? { ...c, messages: c.messages.map((m) => m.id === assistantId ? { ...m, reasoningStatus: status, isStreaming: status !== "Answer ready" } : m) } : c));
+      };
+      let pendingRenderChunk = "";
+      let renderFrameQueued = false;
+      const flushStreamToChat = () => {
+        renderFrameQueued = false;
+        if (!pendingRenderChunk) return;
+        const chunk = pendingRenderChunk;
+        pendingRenderChunk = "";
+        setConversations((prev) =>
+          prev.map((c) =>
+            c.id === targetConvId
+              ? {
+                  ...c,
+                  messages: c.messages.map((m) =>
+                    m.id === assistantId ? { ...m, content: m.content + chunk } : m
+                  ),
+                }
+              : c
+          )
+        );
+      };
+      const queueStreamRender = () => {
+        if (renderFrameQueued) return;
+        renderFrameQueued = true;
+        window.requestAnimationFrame(flushStreamToChat);
+      };
       await sendMessage(
         enrichedMessages,
         (chunk) => {
           streamedContent += chunk;
+          pendingRenderChunk += chunk;
+          queueStreamRender();
 
-          const livePreview = extractLiveCodePreview(streamedContent);
-          if (livePreview) {
-            if (!chatSplitEnabledRef.current) {
-              setSplitEnabled(true);
-              notifySplitPrefChanged();
-              setChatSplitEnabled(true);
-              toast.info("Live coding detected — opening the split workspace automatically");
-            }
-            if (!liveCodingNotifiedRef.current) {
-              liveCodingNotifiedRef.current = true;
-              sendEnosxNotification({
-                title: "ENOSX AI is writing code",
-                body: "The live coding workspace has opened so you can watch the code appear.",
-                tag: "enosx-live-coding",
-                data: { url: window.location.href },
-              });
-            }
-            if (!liveDraftIdRef.current) {
-              liveDraftIdRef.current = createScript(livePreview.name, livePreview.language, livePreview.content).id;
-            } else {
-              updateScript(liveDraftIdRef.current, livePreview.content);
-            }
-          }
-
-          setConversations((prev) =>
-            prev.map((c) =>
-              c.id === targetConvId
-                ? {
-                    ...c,
-                    messages: c.messages.map((m) =>
-                      m.id === assistantId ? { ...m, content: m.content + chunk } : m
-                    ),
-                  }
-                : c
-            )
-          );
         },
         () => {
+          // Apply the final buffered chunk before cleaning the streamed reply.
+          flushStreamToChat();
           const proposedActions = parseActions(streamedContent) as AssistantAction[];
           const cleanContent = removeActionBlocks(streamedContent);
-          // Workspace mode: execute the AI's actions automatically in the computer pane.
-          const actions = parseWorkspaceActions(streamedContent);
-          if (liveDraftIdRef.current && actions.some((action) => action.type === "create_script" || action.type === "run_script")) {
-            deleteScript(liveDraftIdRef.current);
-            liveDraftIdRef.current = null;
-          }
-          if (liveCodingNotifiedRef.current) {
-            sendEnosxNotification({
-              title: "ENOSX AI finished writing code",
-              body: "The generated code is ready in the live workspace.",
-              tag: "enosx-live-coding-complete",
-              data: { url: window.location.href },
-            });
-            liveCodingNotifiedRef.current = false;
-          }
-          // Also auto-run any review-free proposed actions (e.g. "Launch terminal") so
-          // the AI's coding shows up live even when the model skips [[ACTION: ...]] blocks.
-          for (const pa of proposedActions) {
-            // Convert chat proposed actions into workspace SystemActions so they
-            // run automatically in the computer pane when split is on.
-            if (pa.type === "launch_app" && pa.app) {
-              const mapped = mapWorkspaceAppId(pa.app);
-              if (mapped) {
-                (window as any).__chatOpenWorkspaceWindow?.(mapped);
-                toast.success(`Opened ${pa.app} in the workspace`);
-              } else {
-                toast.info(`"${pa.app}" isn't a workspace app — opening it in a new tab instead.`);
-              }
-            } else if (pa.type === "open_url" && pa.url) {
-              actions.push({ type: "open_url", url: pa.url } as SystemAction);
-            } else if ((pa.type === "read_webpage" || pa.type === "extract_links") && pa.url) {
-              actions.push({ type: pa.type, url: pa.url } as SystemAction);
-            } else if (pa.type === "delay") {
-              actions.push({ type: "delay", ms: pa.delay ?? 500 } as SystemAction);
-            }
-          }
-          (window as any).__chatExecuteWorkspaceActions?.(actions);
           setConversations((prev) =>
             prev.map((conversation) =>
               conversation.id === targetConvId
@@ -789,13 +775,22 @@ ${getAdminContext()}` : ""}`,
                     ...conversation,
                     messages: conversation.messages.map((message) =>
                       message.id === assistantId
-                        ? { ...message, content: cleanContent, proposedActions: proposedActions.length ? proposedActions : undefined }
+                        ? { ...message, content: cleanContent, isStreaming: false, proposedActions: proposedActions.length ? proposedActions : undefined }
                         : message,
                     ),
                   }
                 : conversation,
             ),
           );
+          const notificationReply = cleanContent.replace(/\s+/g, " ").trim();
+          if (notificationReply) {
+            sendEnosxNotification({
+              title: user?.displayName ? `ENOSX AI · ${user.displayName}` : "ENOSX AI",
+              body: notificationReply.slice(0, 240),
+              tag: `enosx-reply-${assistantId}`,
+              data: { url: window.location.href, conversationId: targetConvId, messageId: assistantId },
+            });
+          }
           if (autoSpeak) {
             speak(cleanContent);
             if (speechSettings.continuousConversation) {
@@ -806,7 +801,14 @@ ${getAdminContext()}` : ""}`,
             }
           }
         },
-        { githubContext, aiMode }
+        {
+          githubContext,
+          aiMode,
+          skillContext,
+          attachments: userMessage.attachments,
+          onTokenUsage: ({ totalTokens }) => recordTokenUsage(totalTokens),
+        },
+        updateReasoningStatus
       );
 
       return removeActionBlocks(streamedContent) || "ENOSX Core returned an empty response.";
@@ -815,7 +817,7 @@ ${getAdminContext()}` : ""}`,
         sendingRef.current = false;
       }
     },
-    [sendMessage, speak, autoSpeak, fileContext.isLoaded, getFileContextMessage, getMemoryContext, getKnowledgeContext, addMemory, addEntry, enrichMessageWithContext, activeWindow, clearFiles, parseActions, speechSettings.continuousConversation, scheduleListenAgain, createScript, updateScript, deleteScript]
+    [sendMessage, speak, autoSpeak, user, fileContext.isLoaded, getFileContextMessage, getMemoryContext, getSkillContext, getKnowledgeContext, addMemory, addEntry, enrichMessageWithContext, activeWindow, clearFiles, parseActions, speechSettings.continuousConversation, scheduleListenAgain]
   );
 
   const createNewChat = useCallback(() => {
@@ -836,8 +838,11 @@ ${getAdminContext()}` : ""}`,
 
   const deleteConversation = useCallback((id: string) => {
     setConversations((prev) => prev.filter((c) => c.id !== id));
+    if (user && user.provider !== "guest") {
+      void deleteCloudConversation(user.id, id).catch((error) => console.error("Failed to delete chat from Firestore:", error));
+    }
     if (activeId === id) setActiveId(null);
-  }, [activeId]);
+  }, [activeId, user]);
 
   const handleStartVoice = (event?: React.MouseEvent) => {
     playSound("click");
@@ -861,6 +866,17 @@ ${getAdminContext()}` : ""}`,
     setShowGodTerminal(true);
   };
 
+  const handleCloseGodMode = () => {
+    setShowGodTerminal(false);
+    setIsGodModeActive(false);
+    setShowEthicalHackingQuiz(false);
+    const returnConversationId = godModeReturnConversationIdRef.current;
+    godModeReturnConversationIdRef.current = null;
+    activeIdRef.current = returnConversationId;
+    setActiveId(returnConversationId);
+    shouldAutoScrollRef.current = true;
+  };
+
   const toggleScreenGuider = () => {
     const newState = !screenGuiderActive;
     setScreenGuiderActive(newState);
@@ -871,21 +887,46 @@ ${getAdminContext()}` : ""}`,
     }
   };
 
-  // Auto scroll to bottom
+  // Keep follow-up scrolling inside the chat pane. scrollIntoView can scroll
+  // ancestor windows during streamed updates and pull the whole desktop UI up.
+  const updateChatScrollIntent = () => {
+    const container = messagesContainerRef.current;
+    if (!container) return;
+    shouldAutoScrollRef.current = container.scrollHeight - container.clientHeight - container.scrollTop < 140;
+  };
+
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    if (!shouldAutoScrollRef.current) return;
+    const container = messagesContainerRef.current;
+    if (!container) return;
+    const frame = window.requestAnimationFrame(() => {
+      container.scrollTop = container.scrollHeight;
+    });
+    return () => window.cancelAnimationFrame(frame);
   }, [conversations, activeId]);
 
   const activeConversation = conversations.find((c) => c.id === activeId);
   const messages = activeConversation?.messages || [];
-
-  // Keep workspace hooks unconditional: phone and TV layouts return early, so
-  // every render must execute the same hooks in the same order.
-  const { executeChain } = useCommandChain();
-  const chatSplitEnabledRef = useRef(chatSplitEnabled);
-  useEffect(() => {
-    chatSplitEnabledRef.current = chatSplitEnabled;
-  }, [chatSplitEnabled]);
+  const handleShareConversation = useCallback(async () => {
+    if (!activeConversation || activeConversation.messages.length === 0) return;
+    const text = activeConversation.messages.map((message) => `${message.role === "user" ? "You" : "ENOSX AI"}: ${message.content}`).join("\n\n");
+    try {
+      if (navigator.share) {
+        await navigator.share({ title: activeConversation.title || "ENOSX AI conversation", text });
+        toast.success("Conversation shared");
+      } else if (await copyTranscript(activeConversation)) {
+        toast.success("Conversation copied to your clipboard");
+      }
+    } catch (error) {
+      if (error instanceof DOMException && error.name === "AbortError") return;
+      showError("Could not share this conversation");
+    }
+  }, [activeConversation]);
+  const handleCopyConversation = useCallback(async () => {
+    if (!activeConversation || activeConversation.messages.length === 0) return;
+    const copied = await copyTranscript(activeConversation);
+    toast[copied ? "success" : "error"](copied ? "Conversation copied to your clipboard" : "Could not copy this conversation");
+  }, [activeConversation]);
 
   if (deviceType === "tv") {
     return (
@@ -910,10 +951,10 @@ ${getAdminContext()}` : ""}`,
           speak={speak}
           stopSpeaking={handleStopSpeak}
           messagesEndRef={messagesEndRef as React.RefObject<HTMLDivElement>}
-          isImageMode={isImageMode}
-          onToggleImageMode={handleToggleImageMode}
           isFreeMode={isFreeMode}
           onFilesSelected={handleFilesSelected}
+          attachments={fileContext.files}
+          audioStream={microphoneStream}
         />
       </GlobalLayout>
     );
@@ -945,61 +986,14 @@ ${getAdminContext()}` : ""}`,
           isMobileSidebarOpen={isMobileSidebarOpen}
           setIsMobileSidebarOpen={setIsMobileSidebarOpen}
           messagesEndRef={messagesEndRef as React.RefObject<HTMLDivElement>}
-          isImageMode={isImageMode}
-          onToggleImageMode={handleToggleImageMode}
           isFreeMode={isFreeMode}
           onFilesSelected={handleFilesSelected}
+          attachments={fileContext.files}
+          audioStream={microphoneStream}
           onSettingsClick={() => setShowProfilePanel(true)}
         />
       </GlobalLayout>
     );
-  }
-
-  const wrapWithSplit = (content: React.ReactNode) =>
-    chatSplitEnabled ? <ChatSplitLayout>{content}</ChatSplitLayout> : content;
-
-  // ── Live coding in the computer pane ──────────────────────────────────────────
-  // The command chain is a module-level singleton, so any executor component in
-  // the tree can run actions into the SAME script store the terminal watches.
-
-  // This component lives inside the ComputerWorkspaceProvider (when split is on)
-  // and drives the pane: it runs the AI's actions automatically and opens the
-  // right apps so the coding is visible without any clicks.
-  function WorkspaceActionsController() {
-    const { openWindow, focusWindow } = useComputerWorkspace();
-    const handleWorkspaceActions = useCallback(
-      (actions: SystemAction[]) => {
-        if (!chatSplitEnabledRef.current || actions.length === 0) return;
-        const types = actions.map((a) => a.type);
-        const needsTerminal = types.some((t) => t === "create_script" || t === "run_script");
-        const needsBrowser = types.some((t) => t === "open_url" || t === "read_webpage" || t === "extract_links");
-        if (needsTerminal) focusWindow("terminal");
-        else if (needsBrowser) focusWindow("browser");
-        toast.info(`ENOSX is executing ${actions.length} action(s) in the computer pane...`);
-        void executeChain(actions);
-      },
-      // eslint-disable-next-line react-hooks/exhaustive-deps
-      [executeChain, focusWindow]
-    );
-    const handleWorkspaceActionsRef = useRef(handleWorkspaceActions);
-    useEffect(() => {
-      handleWorkspaceActionsRef.current = handleWorkspaceActions;
-    }, [handleWorkspaceActions]);
-
-    // Auto-open the terminal and browser so AI coding appears automatically.
-    useEffect(() => {
-      if (!chatSplitEnabledRef.current) return;
-      openWindow("terminal");
-      openWindow("browser");
-      // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, []);
-
-    // Expose the executor to the handleSend flow above via the same module-level
-    // singleton used elsewhere (last-write-wins is fine — the ref is always fresh).
-    (window as any).__chatExecuteWorkspaceActions = (actions: SystemAction[]) =>
-      handleWorkspaceActionsRef.current(actions);
-    (window as any).__chatOpenWorkspaceWindow = (appId: string) => openWindow(appId as any);
-    return null;
   }
 
   const chatBody = (
@@ -1053,7 +1047,7 @@ ${getAdminContext()}` : ""}`,
         />
       )}
 
-      <main className="flex-1 flex flex-col relative min-w-0">
+      <main className="flex-1 flex flex-col relative min-w-0 min-h-0 overflow-hidden">
         {/* Top Header */}
         <header className="h-16 flex items-center justify-between px-6 z-20 flex-shrink-0">
           <div className="flex items-center gap-4">
@@ -1066,23 +1060,27 @@ ${getAdminContext()}` : ""}`,
               </button>
             )}
             <div className="flex flex-col">
-              <h1 className="text-sm font-bold tracking-tight text-white/90">
+              <h1 className="text-base font-bold tracking-tight text-white/90">
                 {activeConversation?.title || "ENOSX AI"}
               </h1>
             </div>
           </div>
 
           <div className="flex items-center gap-3">
-            <button
-              type="button"
-              onClick={() => void handleEnableNotifications()}
-              title={notificationPermission === "granted" ? "ENOSX notifications are enabled" : "Enable ENOSX notifications"}
-              className="flex items-center gap-1.5 rounded-full border px-3 py-1 text-[11px] font-semibold transition hover:bg-white/10"
-              style={{ borderColor: notificationPermission === "granted" ? "rgba(52,211,153,0.35)" : "rgba(255,255,255,0.12)", color: notificationPermission === "granted" ? "#6ee7b7" : "rgba(255,255,255,0.78)" }}
+            <div
+              role="status"
+              aria-label={`${analytics.totalTokensUsed.toLocaleString()} tokens used`}
+              title="Lifetime tokens used in this browser. Provider-reported counts are used when available; otherwise the app estimates from text length. No usage limit is shown."
+              className="flex items-center gap-1.5 rounded-full border border-white/10 bg-white/[0.04] px-2.5 py-1.5 text-[11px] font-medium text-white/65"
             >
-              {notificationPermission === "granted" ? <BellRing size={12} /> : <Bell size={12} />}
-              {notificationPermission === "granted" ? "Alerts On" : "Enable Alerts"}
-            </button>
+              <Gauge size={13} className="text-cyan-300" />
+              <span>{analytics.totalTokensUsed.toLocaleString()}</span>
+              <span className="hidden sm:inline">tokens</span>
+            </div>
+            <div className="hidden items-center gap-1 sm:flex" aria-label="Conversation actions">
+              <button type="button" onClick={() => void handleShareConversation()} disabled={!activeConversation?.messages.length} title="Share conversation" aria-label="Share conversation" className="rounded-full border border-white/10 p-2 text-white/65 transition hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-30"><Share2 size={14} /></button>
+              <button type="button" onClick={() => void handleCopyConversation()} disabled={!activeConversation?.messages.length} title="Copy conversation" aria-label="Copy conversation" className="rounded-full border border-white/10 p-2 text-white/65 transition hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-30"><Copy size={14} /></button>
+            </div>
             {screenGuiderActive && (
               <motion.div 
                 initial={{ opacity: 0, scale: 0.8 }}
@@ -1099,12 +1097,13 @@ ${getAdminContext()}` : ""}`,
         {/* Chat Area */}
         <div 
           ref={messagesContainerRef}
+          onScroll={updateChatScrollIntent}
           className="flex-1 overflow-y-auto scrollbar-hide px-4 md:px-0"
         >
           <AnimatePresence mode="wait">
             {!activeConversation || activeConversation.messages.length === 0 ? (
-              <WelcomeScreen 
-                key="welcome" 
+              <WelcomeScreen
+                key="welcome"
                 onSuggestion={(text) => void handleSendTracked(text)}
               />
             ) : (
@@ -1124,26 +1123,8 @@ ${getAdminContext()}` : ""}`,
                     onStopSpeak={handleStopSpeak}
                   />
                 ))}
-                {/* In-message 'ENOSX is thinking...' indicator while the AI processes */}
                 {isLoading && (
-                  <motion.div
-                    key="thinking-indicator"
-                    initial={{ opacity: 0, y: 12 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -8 }}
-                    className="flex flex-row gap-3"
-                  >
-                    <div
-                      className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 text-xs font-bold"
-                      style={{ background: config.accent + "22", color: config.accent }}
-                    >
-                      EX
-                    </div>
-                    <div className="flex items-center gap-1 text-sm italic px-1">
-                      <span style={{ color: config.accent }}>ENOSX is thinking</span>
-                      <span style={{ color: config.accent }} className="thinking-pulse">...</span>
-                    </div>
-                  </motion.div>
+                  <span className="sr-only" role="status">Assistant is responding.</span>
                 )}
                 <div ref={messagesEndRef} className="h-4" />
                 
@@ -1189,6 +1170,8 @@ ${getAdminContext()}` : ""}`,
               onClear={clearFiles}
             />
 
+            <AppAwareSuggestions onSuggestionClick={(suggestion) => void handleSendTracked(suggestion, activeMode)} />
+
             <CommandBar
               onSend={handleSendTracked}
               isLoading={isLoading}
@@ -1198,10 +1181,10 @@ ${getAdminContext()}` : ""}`,
               onStopSpeaking={handleStopSpeak}
               voiceState={voiceState}
               transcript={transcript}
-              isImageMode={isImageMode}
-              onToggleImageMode={handleToggleImageMode}
               isFreeMode={isFreeMode}
               onFilesSelected={handleFilesSelected}
+              attachments={fileContext.files}
+              audioStream={microphoneStream}
             />
           </div>
         </div>
@@ -1211,21 +1194,9 @@ ${getAdminContext()}` : ""}`,
     </div>
   );
 
-  // Workspace-aware view: when split is on, the whole layout (chat + computer
-  // pane) lives inside a ComputerWorkspaceProvider so window actions from the
-  // AI's coding drive the pane, and a hidden controller runs those actions.
-  const workspaceBody = chatSplitEnabled ? (
-    <ComputerWorkspaceProvider>
-      <WorkspaceActionsController />
-      {wrapWithSplit(chatBody)}
-    </ComputerWorkspaceProvider>
-  ) : (
-    wrapWithSplit(chatBody)
-  );
-
   return (
     <GlobalLayout>
-      {workspaceBody}
+      {chatBody}
       {/* Floating dialogs and overlays live outside the split so they always render above it */}
       <EnosxOnboardingDialog
         isOpen={showEnosxOnboarding}
@@ -1271,11 +1242,7 @@ ${getAdminContext()}` : ""}`,
         {showGodTerminal && (
           <GodModeTerminal 
             isOpen={showGodTerminal}
-            onClose={() => {
-              setShowGodTerminal(false);
-              setIsGodModeActive(false);
-              setShowEthicalHackingQuiz(false);
-            }}
+            onClose={handleCloseGodMode}
             onOpenQuiz={() => setShowEthicalHackingQuiz(true)}
             onOpenCEOProfile={() => setShowCEOProfile(true)}
             onExecute={executeGodCommand}
@@ -1305,6 +1272,8 @@ ${getAdminContext()}` : ""}`,
             onClose={() => setShowProfilePanel(false)}
             onOpenAdminConsole={() => setShowAdminConsole(true)}
             onOpenLeadCapture={() => setShowLeadCapture(true)}
+            onEnableNotifications={handleEnableNotifications}
+            notificationPermission={notificationPermission}
           />
         )}
       </AnimatePresence>

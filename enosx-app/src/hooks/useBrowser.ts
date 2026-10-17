@@ -4,6 +4,7 @@
  * Integrates with backend API for headless browser operations
  */
 import { useState, useCallback, useEffect } from 'react';
+import { reportClientError } from '@/lib/errorReporting';
 
 export interface WebPageContent {
   title?: string;
@@ -98,6 +99,7 @@ export function useBrowser() {
 
   const setError = useCallback((error: string | null) => {
     setState(prev => ({ ...prev, error }));
+    if (error) reportClientError(error, 'browser.action');
   }, []);
 
   /**

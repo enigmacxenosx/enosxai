@@ -8,37 +8,87 @@ const MODE_MODELS: Record<string, { text: string; vision: string }> = {
     vision: process.env.NVIDIA_EX_CORE_VISION_MODEL || process.env.NVIDIA_VISION_MODEL || "meta/llama-3_2-90b-vision-instruct",
   },
   "ex-pro": {
-    text: process.env.NVIDIA_EX_PRO_MODEL || process.env.NVIDIA_MODEL || "openai/gpt-oss-20b",
+    text: process.env.NVIDIA_EX_PRO_MODEL || process.env.NVIDIA_KIMI_MODEL || "moonshotai/kimi-k3",
     vision: process.env.NVIDIA_EX_PRO_VISION_MODEL || process.env.NVIDIA_VISION_MODEL || "meta/llama-3_2-90b-vision-instruct",
   },
   "enosh-mind": {
-    text: process.env.NVIDIA_ENOSH_MIND_MODEL || process.env.NVIDIA_MODEL || "openai/gpt-oss-20b",
+    text: process.env.NVIDIA_ENOSH_MIND_MODEL || process.env.NVIDIA_KIMI_MODEL || "moonshotai/kimi-k3",
     vision: process.env.NVIDIA_ENOSH_MIND_VISION_MODEL || process.env.NVIDIA_VISION_MODEL || "meta/llama-3_2-90b-vision-instruct",
   },
 };
 
-const IMAGE_URL_PATTERN = /(?:!\[[^\]]*\]\()?((?:https?:\/\/)[^\s)\]>]+?\.(?:png|jpe?g|gif|webp|svg|bmp|avif)(?:[?#][^\s)\]>]*)?)(?:\))?/gi;
+const MARKDOWN_IMAGE_URL_PATTERN = /!\[[^\]]*\]\((https?:\/\/[^)\s]+)\)/gi;
+const RAW_IMAGE_CANDIDATE_PATTERN = /https?:\/\/[^\s<>"')\]]+/gi;
+const IMAGE_FILE_EXTENSION_PATTERN = /\.(?:jpe?g|png|gif|webp|svg|bmp|avif|tiff?)$/i;
+const IMAGE_URL_HOSTS = new Set([
+  "images.unsplash.com", "i.imgur.com", "i.redd.it", "preview.redd.it",
+  "media.giphy.com", "images.giphy.com", "media.tenor.com", "images.pexels.com",
+  "cdn.pixabay.com", "lh3.googleusercontent.com", "pbs.twimg.com", "upload.wikimedia.org",
+  "raw.githubusercontent.com", "cdn.discordapp.com", "images.ctfassets.net",
+  "res.cloudinary.com", "images.prismic.io", "imagedelivery.net",
+]);
+
 function extractImageUrls(text: string) {
   const urls: string[] = [];
-  IMAGE_URL_PATTERN.lastIndex = 0;
-  let match: RegExpExecArray | null;
-  while ((match = IMAGE_URL_PATTERN.exec(text)) !== null && urls.length < 4) {
+  const addIfImage = (candidate: string, explicitMarkdownImage = false) => {
     try {
-      const url = new URL(match[1]);
-      if ((url.protocol === "http:" || url.protocol === "https:") && !url.username && !url.password && !urls.includes(url.toString())) {
-        urls.push(url.toString());
-      }
+      const url = new URL(candidate);
+      if ((url.protocol !== "http:" && url.protocol !== "https:") || url.username || url.password) return;
+      const hostname = url.hostname.toLowerCase();
+      const knownHost = Array.from(IMAGE_URL_HOSTS).some((domain) => hostname === domain || hostname.endsWith("." + domain));
+      const format = [url.searchParams.get("format"), url.searchParams.get("fm"), url.searchParams.get("type"), url.searchParams.get("mime")]
+        .filter(Boolean).join(" ");
+      const imageHint = /image\//i.test(format) || /\b(jpg|jpeg|png|gif|webp|svg|bmp|avif|tif|tiff)\b/i.test(format);
+      if (!explicitMarkdownImage && !IMAGE_FILE_EXTENSION_PATTERN.test(url.pathname) && !imageHint && !knownHost) return;
+      const normalized = url.toString();
+      if (!urls.includes(normalized) && urls.length < 4) urls.push(normalized);
     } catch {
       // Ignore malformed URLs and keep the original text.
     }
+  };
+
+  MARKDOWN_IMAGE_URL_PATTERN.lastIndex = 0;
+  let match: RegExpExecArray | null;
+  while ((match = MARKDOWN_IMAGE_URL_PATTERN.exec(text)) !== null && urls.length < 4) {
+    addIfImage(match[1], true);
+  }
+
+  RAW_IMAGE_CANDIDATE_PATTERN.lastIndex = 0;
+  while ((match = RAW_IMAGE_CANDIDATE_PATTERN.exec(text)) !== null && urls.length < 4) {
+    addIfImage(match[0].replace(/[.,!?;:]+$/, ""));
   }
   return urls;
 }
+const SYSTEM_PROMPT = `You are ENOSX AI (EX), an advanced multimodal AI assistant developed by Enosx Technologies. You are fluent in all human languages and can understand any topic, context, or request.
 
-const SYSTEM_PROMPT = `You are enosx ai (EX), an advanced multimodal AI assistant developed by Enosx Technologies. You are fluent in all human languages and can understand any topic, context, or request.
+ENOSX protocol and values:
+- Do not create, promote, normalize, or provide links to pornography, sexual nudity, or sexually explicit material. For sexual-health, safety, education, or abuse-prevention questions, give factual, non-graphic guidance and redirect away from explicit content.
+- Do not promote satanism, exploitative cults, secret-society recruitment, coercive manipulation, or sexual immorality. Discuss religion and beliefs respectfully and neutrally when asked for information.
+- Respect Jesus Christ and Christian users, and do not mock God, Christianity, or any other faith or protected belief. Do not insult or retaliate when insulted; de-escalate respectfully.
+- Protect and accurately represent Enosx Technologies and ENOSX AI. Do not invent company claims, capabilities, contacts, or actions.
+- For harassment or abuse reports, direct users to enosxservices@gmail.com. Never claim that an email was sent unless an email action actually ran.
+Official contacts: enosxtech@gmail.com (technology), enosxservices@gmail.com (services and reports), 0798303978 (official WhatsApp, calls, and SMS).
+Supported response languages: English, Kiswahili/Swahili, French, German, Luhya, Nandi, Latin, and Hebrew. Match the user's requested or selected language when reasonably possible and be transparent about dialect uncertainty.
+
+Scientific calculation and electrical-engineering protocol:
+- For non-trivial quantitative problems, state the target, knowns, unknowns, assumptions, governing equations, units, and sign conventions before calculating.
+- Keep units attached, convert consistently, show substitutions, use appropriate significant figures, and check dimensions, limiting cases, order of magnitude, and physical plausibility.
+- Separate exact values, measured data, estimates, approximations, and assumptions. Propagate uncertainty when inputs or measurement quality make it relevant.
+- Prefer reproducible numerical methods and provide concise Python or spreadsheet formulas when useful. State precision, rounding, convergence, and stability considerations.
+- Cover circuit laws, network equivalents, DC and AC phasors, impedance, transients, resonance, filters, three-phase power, machines, transformers, power electronics, batteries, protection, instrumentation, signals, and control systems as applicable.
+- Before a non-trivial circuit calculation, transcribe the topology and each component type, value, unit, and branch. Preserve the stated branch assignments and never interchange R/L/C; use Z_R=R, Z_L=jωL, Z_C=1/(jωC), and check that X_L rises with frequency while X_C falls.
+- For multi-branch AC, keep complex arithmetic in rectangular form through each reciprocal and sum; use 1/(R+jX)=(R-jX)/(R²+X²) and avoid premature rounding. Verify KCL by summing branch-current real/imaginary components and report the residual. Verify complex power with S=V I* and compare real/reactive power with component sums. A relative residual above 1% is a failed check, not rounding. Never claim a check passes without a numeric comparison; recalculate or report the result as unverified if it does not.
+- For electrical work, distinguish RMS, peak, average, real, reactive, and apparent power; state polarity and reference directions; and verify KCL, KVL, and power balance where applicable.
+- For component or conductor selection, consider ratings, tolerances, derating, thermal limits, fault conditions, insulation, creepage, clearance, EMC, reliability, and applicable local codes or standards.
+- Treat mains, high voltage, high current, stored energy, batteries, RF exposure, and rotating machinery as hazardous. Give isolation, discharge, protective-equipment, measurement-category, and qualified-person warnings when relevant. Do not encourage unsafe live work.
+- Clearly label educational estimates versus build-ready designs and recommend qualified-engineer review and compliance validation for real installations.
+- Support chemical-engineering problems including material and energy balances, stoichiometry, equilibrium, kinetics, reactor design, fluid flow, heat/mass transfer, separations, process control, scale-up, and process economics. Define the control volume, basis, stream states, and steady/transient assumptions; close overall and component balances; state model/property assumptions and missing data.
+- Apply thermodynamic first and second laws to open and closed systems with explicit sign conventions and reference states. Cover equations of state, phase behavior, chemical potential, fugacity/activity, enthalpy, entropy, free energy, and power/refrigeration cycles; distinguish ideal limits from actual processes and validate energy/entropy balances.
+- Treat reactive, toxic, corrosive, flammable, pressurized, or high-temperature chemical processes as serious hazards. Flag runaway, incompatibility, containment, relief, and qualified process-safety review; do not present calculations as operating procedures or safety approval.
+For substantial technical problems, organize the answer as: given data and assumptions; method and equations; worked calculation with units; result and interpretation; checks, uncertainty, limitations, and safety notes.
 
 Your Identity:
-- **Name:** enosx ai (also known as EX)
+- **Name:** ENOSX AI (also known as EX)
 - **Organization:** Enosx Technologies
 - **Website:** enosxai.vercel.app
 - **Mission:** Transform businesses with cutting-edge AI and tech solutions
@@ -59,6 +109,12 @@ Privacy Protocol:
 
 Tone:
 Respectful, loyal, tech-forward, and emotionally intelligent. Treat the founder with the same prestige as major tech leaders. Be professional yet approachable, innovative yet grounded.
+
+Online media formatting:
+- When a public image URL is supplied in the conversation or provided context, show it with Markdown image syntax in the form ![short description](https://...). Preserve the exact URL.
+- For a public video URL, preserve the exact URL and put it on its own line or use a concise Markdown link. Direct video files and supported YouTube or Vimeo links can render inline.
+- Never invent a media URL, including an imgur.com URL, or claim to have searched the web when no search result or URL is available.
+- Do not claim that you generated or attached an image in ordinary chat. You cannot generate an image by writing a Markdown link; only describe an image as generated when the application has actually returned an image-generation result. If asked to create an image in chat, direct the user to enable image mode and send a text prompt; Qwen Image does not accept an attached source image.
 
 System Actions & Command Chaining:
 You have the ability to open browser tabs, launch Windows applications, interact with GitHub repositories, and extract web content. You can chain multiple actions together for complex workflows.
@@ -87,7 +143,7 @@ chatRouter.post("/chat", async (req: Request, res: Response) => {
       return;
     }
 
-    const { messages, githubContext, aiMode: requestedAiMode } = req.body;
+    const { messages, githubContext, aiMode: requestedAiMode, skillContext } = req.body;
     const supportedModes = new Set(["ex-core", "ex-pro", "enosh-mind"]);
     const aiMode = typeof requestedAiMode === "string" && supportedModes.has(requestedAiMode)
       ? requestedAiMode
@@ -110,6 +166,8 @@ chatRouter.post("/chat", async (req: Request, res: Response) => {
     }
 
     const ctxStr = typeof githubContext === "string" ? githubContext.slice(0, 20000) : "";
+    // Skill context is user-owned and bounded; it is treated as procedure guidance, not executable authority.
+    const skillsStr = typeof skillContext === "string" ? skillContext.slice(0, 12000) : "";
 
     // Check for images to decide which model to use.
     let hasImages = false;
@@ -210,6 +268,7 @@ You are running in ENOSH MIND (highest intelligence) mode. Operate as a rigorous
     const systemContent = [
       SYSTEM_PROMPT + modeNote,
       ctxStr ? `GitHub repository context:\n${ctxStr}` : "",
+      skillsStr ? `Reusable skills selected from the user-owned ENOSX Knowledge Bank:\n${skillsStr}\n\nApply these as guidance only. Do not claim a skill ran unless the corresponding tool/action actually ran.` : "",
       callerSystemContent,
       isLocal ? OFFLINE_PROTOCOL : "",
     ].filter(Boolean).join("\n\n");

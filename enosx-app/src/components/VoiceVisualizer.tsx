@@ -12,6 +12,7 @@ interface VoiceVisualizerProps {
   isListening: boolean;
   color: string;
   accentRgb: string;
+  audioStream?: MediaStream | null;
 }
 
 const BAR_COUNT = 20;
@@ -21,12 +22,14 @@ export default function VoiceVisualizer({
   isListening,
   color,
   accentRgb,
+  audioStream = null,
 }: VoiceVisualizerProps) {
   const [bars, setBars] = useState<number[]>(Array(BAR_COUNT).fill(0.1));
   const analyserRef = useRef<AnalyserNode | null>(null);
   const sourceRef = useRef<MediaStreamAudioSourceNode | null>(null);
   const contextRef = useRef<AudioContext | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
+  const ownsStreamRef = useRef(false);
   const animFrameRef = useRef<number>(0);
   const mountedRef = useRef(true);
 
@@ -49,12 +52,13 @@ export default function VoiceVisualizer({
 
     const startAnalysis = async () => {
       try {
-        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        const stream = audioStream ?? await navigator.mediaDevices.getUserMedia({ audio: true });
         if (!mounted) {
-          stream.getTracks().forEach((t) => t.stop());
+          if (!audioStream) stream.getTracks().forEach((t) => t.stop());
           return;
         }
         streamRef.current = stream;
+        ownsStreamRef.current = !audioStream;
         const ctx = new AudioContext();
         contextRef.current = ctx;
         const analyser = ctx.createAnalyser();
@@ -64,14 +68,14 @@ export default function VoiceVisualizer({
         sourceRef.current = source;
         source.connect(analyser);
 
-        const dataArray = new Uint8Array(analyser.frequencyBinCount);
+        const dataArray = new Uint8Array(analyser.fftSize);
 
         const draw = () => {
           if (!mounted || !analyserRef.current) return;
-          analyserRef.current.getByteFrequencyData(dataArray);
+          analyserRef.current.getByteTimeDomainData(dataArray);
           const newBars = Array.from({ length: BAR_COUNT }, (_, i) => {
             const idx = Math.floor((i / BAR_COUNT) * dataArray.length);
-            return Math.max(0.08, dataArray[idx] / 255);
+            return Math.max(0.08, Math.abs(dataArray[idx] - 128) / 128);
           });
           setBars(newBars);
           animFrameRef.current = requestAnimationFrame(draw);
@@ -98,7 +102,7 @@ export default function VoiceVisualizer({
       mounted = false;
       cleanup();
     };
-  }, [isListening, isActive]);
+  }, [isListening, isActive, audioStream]);
 
   function cleanup() {
     cancelAnimationFrame(animFrameRef.current);
@@ -111,8 +115,9 @@ export default function VoiceVisualizer({
       contextRef.current = null;
     }
     if (streamRef.current) {
-      streamRef.current.getTracks().forEach((t) => t.stop());
+      if (ownsStreamRef.current) streamRef.current.getTracks().forEach((t) => t.stop());
       streamRef.current = null;
+      ownsStreamRef.current = false;
     }
     analyserRef.current = null;
   }
@@ -127,6 +132,9 @@ export default function VoiceVisualizer({
 
   return (
     <div
+      data-testid="voice-waveform"
+      role="img"
+      aria-label={isListening ? "Live microphone audio waveform" : "Voice audio waveform"}
       className="flex items-center justify-center gap-0.5 h-full rounded-xl px-4"
       style={{
         background: `rgba(${accentRgb}, 0.06)`,
@@ -151,6 +159,7 @@ export default function VoiceVisualizer({
       {displayBars.map((h, i) => (
         <motion.div
           key={i}
+          data-waveform-bar="true"
           animate={{ scaleY: h }}
           transition={{ duration: 0.08, ease: "easeOut" }}
           className="rounded-full origin-center"

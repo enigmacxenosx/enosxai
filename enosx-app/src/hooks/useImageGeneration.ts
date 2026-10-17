@@ -1,26 +1,24 @@
 import { useState, useCallback } from "react";
 import { toast } from "sonner";
+import { showError } from "@/lib/errorReporting";
 
 interface ImageGenerationResult {
-  url: string;
+  url?: string;
   revised_prompt?: string;
+  error?: string;
 }
 
 /**
- * Generates images through the server-side /api/image/generate Vercel
- * function. The OpenRouter API key lives on the server and is NEVER exposed
- * to the browser (the previous client-side implementation leaked the key
- * via a VITE_ variable and used provider credentials in the browser.
- *
- * Model selection, retries, and failover are handled server-side; see
- * api/image/generate.ts for the configured OpenRouter image model.
+ * Calls the server-side /api/image/generate Vercel function.
+ * NVIDIA credentials stay on the server and are never exposed to the browser.
  */
 export function useImageGeneration() {
   const [isGenerating, setIsGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const clearError = useCallback(() => setError(null), []);
 
   const generateImage = useCallback(
-    async (prompt: string): Promise<ImageGenerationResult | null> => {
+    async (prompt: string, image?: string): Promise<ImageGenerationResult | null> => {
       setIsGenerating(true);
       setError(null);
 
@@ -30,7 +28,7 @@ export function useImageGeneration() {
           headers: {
             "Content-Type": "application/json",
           },
-          body: JSON.stringify({ prompt }),
+          body: JSON.stringify({ prompt, ...(image ? { image, mode: "img2img" } : {}) }),
         });
 
         if (!response.ok) {
@@ -39,22 +37,26 @@ export function useImageGeneration() {
             const errData = await response.json();
             if (errData?.error) message = errData.error;
             if (errData?.status === "CONFIGURATION_ERROR") {
-              message = "OpenRouter image generation is not configured on the server.";
+              message = "NVIDIA image generation is not configured on the server.";
+            }
+            if (errData?.status === "MISSING_IMAGE") {
+              message = "Attach an image before using this image-edit model.";
             }
           } catch {
             /* use default message */
           }
           setError(message);
           if (response.status !== 503) {
-            toast.error(message);
+            showError(message);
           }
-          return null;
+          return { error: message };
         }
 
         const data = (await response.json()) as ImageGenerationResult;
         if (!data?.url) {
-          setError("Image generation returned no image.");
-          return null;
+          const message = "NVIDIA image generation returned no image.";
+          setError(message);
+          return { error: message };
         }
 
         return {
@@ -63,10 +65,10 @@ export function useImageGeneration() {
         };
       } catch (err) {
         const message =
-          err instanceof Error ? err.message : "Image generation failed.";
+          err instanceof Error ? err.message : "NVIDIA image generation failed.";
         setError(message);
-        toast.error(message);
-        return null;
+        showError(message);
+        return { error: message };
       } finally {
         setIsGenerating(false);
       }
@@ -74,5 +76,5 @@ export function useImageGeneration() {
     []
   );
 
-  return { generateImage, isGenerating, error };
+  return { generateImage, isGenerating, error, clearError };
 }

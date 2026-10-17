@@ -1,5 +1,6 @@
 import { useCallback, useState } from "react";
 import { toast } from "sonner";
+import { showError } from "@/lib/errorReporting";
 import { useScriptRuntime } from "@/hooks/useScriptRuntime";
 
 export interface SystemAction {
@@ -86,7 +87,7 @@ export function useCommandChain() {
       }
       return false;
     } catch (error) {
-      toast.error(`Action failed: ${error instanceof Error ? error.message : String(error)}`);
+      showError(`Action failed: ${error instanceof Error ? error.message : String(error)}`);
       return false;
     }
   }, []);

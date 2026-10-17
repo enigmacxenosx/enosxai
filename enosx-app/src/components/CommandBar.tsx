@@ -10,8 +10,8 @@
 
 import { useState, useRef, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { ArrowUp, Mic, MicOff, Square, Loader2, ChevronDown, Paperclip } from "lucide-react";
-import { VoiceState } from "@/lib/types";
+import { ArrowUp, Mic, MicOff, Square, Loader2, ChevronDown, Paperclip, ListChecks, Languages, Code2, Sparkles } from "lucide-react";
+import { VoiceState, type Attachment } from "@/lib/types";
 import { useTheme } from "@/contexts/ThemeContext";
 import { useWallpaper } from "@/contexts/WallpaperContext";
 import VoiceVisualizer from "./VoiceVisualizer";
@@ -55,38 +55,43 @@ export const AI_MODES: AIModeOption[] = [
   },
 ];
 
-const QUICK_SUGGESTIONS = ["Explain simply", "Add examples", "Make a plan"];
+const PROMPT_RECIPES = [
+  { label: "Summarize", icon: ListChecks, suffix: "Summarize this with the key points, decisions, risks, and next steps." },
+  { label: "Translate", icon: Languages, suffix: "Translate this accurately into [target language] and preserve the tone and formatting." },
+  { label: "Code review", icon: Code2, suffix: "Review this code for correctness, security, maintainability, and performance. Suggest a corrected version." },
+  { label: "Make a plan", icon: Sparkles, suffix: "Turn this into a practical step-by-step plan with assumptions, dependencies, and a clear definition of done." },
+];
 
 interface CommandBarProps {
   onSend: (text: string, aiMode?: AIMode, selectedConnectorIds?: string[]) => void;
   isLoading: boolean;
   voiceState: VoiceState;
+  audioStream?: MediaStream | null;
   transcript: string;
   isVoiceSupported: boolean;
   onStartVoice: () => void;
   onStopVoice: () => void;
   onStopSpeaking: () => void;
   disabled?: boolean;
-  isImageMode?: boolean;
-  onToggleImageMode?: () => void;
   isFreeMode?: boolean;
   onFilesSelected?: (files: File[]) => void;
+  attachments?: Attachment[];
 }
 
 export default function CommandBar({
   onSend,
   isLoading,
   voiceState,
+  audioStream = null,
   transcript,
   isVoiceSupported,
   onStartVoice,
   onStopVoice,
   onStopSpeaking,
   disabled = false,
-  isImageMode = false,
-  onToggleImageMode,
   isFreeMode = false,
   onFilesSelected,
+  attachments = [],
 }: CommandBarProps) {
   const { config } = useTheme();
   const { settings: wallpaperSettings } = useWallpaper();
@@ -115,6 +120,19 @@ export default function CommandBar({
   const voiceActive = isListening || isSpeaking || isProcessing;
 
   const currentMode = AI_MODES.find((m) => m.id === aiMode) ?? AI_MODES[0];
+  const hasImageAttachment = attachments.some((file) =>
+    /image/i.test(`${file.mimeType ?? ""} ${file.type}`) || /\.(png|jpe?g|gif|webp|bmp|avif|heic)$/i.test(file.name),
+  );
+  const hasVideoAttachment = attachments.some((file) =>
+    /video/i.test(`${file.mimeType ?? ""} ${file.type}`) || /\.(mp4|m4v|webm|mov|avi|mkv)$/i.test(file.name),
+  );
+  const contextualPlaceholder = hasImageAttachment && hasVideoAttachment
+    ? "Analyze your image and video in real time..."
+    : hasVideoAttachment
+      ? "Ask ENOSX to inspect your video in real time..."
+      : hasImageAttachment
+        ? "Ask ENOSX to analyze your image..."
+        : "Ask Enosx anything...";
 
   // Sync transcript to input
   useEffect(() => {
@@ -178,15 +196,15 @@ export default function CommandBar({
     <>
       {/* Voice overlay removed for seamless input experience */}
 
-      {/* ── Main command bar (enlarged) ── */}
-      <div className="px-4 pb-3 pt-1.5 flex-shrink-0">
+      {/* ── Main command bar ── */}
+      <div className="px-4 pb-2 pt-1 flex-shrink-0">
         <motion.div
           initial={{ y: 20, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
           transition={{ type: "spring", stiffness: 300, damping: 30, delay: 0.1 }}
-          className="max-w-5xl mx-auto"
+          className="mx-auto w-full max-w-3xl"
         >
-          {/* Main input container — enlarged */}
+          {/* Main input container */}
           <motion.div
             animate={
               isListening
@@ -204,7 +222,7 @@ export default function CommandBar({
                 ? { duration: 1.5, repeat: Infinity, ease: "easeInOut" }
                 : { duration: 0.3 }
             }
-            className={`flex flex-col gap-1.5 rounded-2xl px-4 py-2 transition-all duration-300 ${isListening ? 'shadow-[0_0_20px_rgba(0,242,255,0.2)]' : ''} rainbow-glow rainbow-glow-border`}
+            className={`phone-command-shell flex flex-col gap-0.5 rounded-2xl px-3 py-1 transition-all duration-300 ${isListening ? 'shadow-[0_0_20px_rgba(0,242,255,0.2)]' : ''} rainbow-glow rainbow-glow-border`}
             style={{
               background: `rgba(12,12,16,${wallpaperSettings.panelOpacity})`,
               backdropFilter: `blur(${wallpaperSettings.blurAmount}px)`,
@@ -237,9 +255,9 @@ export default function CommandBar({
                   >
                     Try
                   </motion.span>
-                  {QUICK_SUGGESTIONS.map((suggestion, index) => (
+                  {PROMPT_RECIPES.map(({ label, icon: Icon, suffix }, index) => (
                     <motion.button
-                      key={suggestion}
+                      key={label}
                       type="button"
                       initial={{ opacity: 0, x: -3 }}
                       animate={{ opacity: 1, x: 0 }}
@@ -250,14 +268,15 @@ export default function CommandBar({
                       }}
                       whileHover={{ y: -1 }}
                       whileTap={{ scale: 0.97, y: 0 }}
-                      onClick={() => setValue((current) => `${current.trimEnd()}\n\n${suggestion}`)}
+                      onClick={() => setValue((current) => `${current.trimEnd()}\n\n${suffix}`)}
                       className="shrink-0 rounded-full border px-2.5 py-1 text-[10px] leading-none text-white/60 transition-[color,background-color,border-color,transform] duration-150 hover:text-white/90"
                       style={{
                         borderColor: `rgba(${config.accentRgb}, 0.2)`,
                         background: `rgba(${config.accentRgb}, 0.06)`,
                       }}
                     >
-                      {suggestion}
+                      <Icon size={11} aria-hidden="true" />
+                      {label}
                     </motion.button>
                   ))}
                 </motion.div>
@@ -268,6 +287,7 @@ export default function CommandBar({
             <div className="flex items-center gap-2">
               <div className="relative" ref={modeRef}>
                 <motion.button
+                  type="button"
                   whileHover={{ scale: 1.03 }}
                   whileTap={{ scale: 0.97 }}
                   onClick={() => setModeOpen((o) => !o)}
@@ -316,6 +336,7 @@ export default function CommandBar({
                   >
                     {AI_MODES.map((mode) => (
                       <motion.button
+                        type="button"
                         key={mode.id}
                         whileHover={{ scale: 1.05 }}
                         whileTap={{ scale: 0.95 }}
@@ -348,7 +369,7 @@ export default function CommandBar({
 	
 	              {/* Textarea and buttons container */}
 	              <div className="flex items-end gap-2">
-                {/* Textarea — larger */}
+                {/* Compact textarea */}
               <textarea
                 ref={textareaRef}
                 value={value}
@@ -362,13 +383,13 @@ export default function CommandBar({
                   }
                 }}
                 onKeyDown={handleKeyDown}
-	                placeholder={
-	                  isListening
-	                    ? "Listening... Speak now."
-	                    : isSpeaking
-	                    ? "AI is speaking..."
-	                    : "Ask ENOSX AI anything."
-	                }
+                placeholder={
+                  isListening
+                    ? "Listening... Speak now."
+                    : isSpeaking
+                      ? "AI is speaking..."
+                      : contextualPlaceholder
+                }
                 rows={1}
                 disabled={disabled && !isListening}
                 className="flex-1 bg-transparent outline-none resize-none text-sm leading-snug"
@@ -376,8 +397,8 @@ export default function CommandBar({
                   color: config.text,
                   caretColor: config.accent,
                   maxHeight: 144,
-                  minHeight: 44,
-                  paddingTop: "10px",
+                  minHeight: 32,
+                  paddingTop: "5px",
                   fontFamily: "'Eurostile', sans-serif",
                 }}
               />
@@ -391,7 +412,7 @@ export default function CommandBar({
                     whileTap={{ scale: 0.92 }}
                     type="button"
                     onClick={() => fileInputRef.current?.click()}
-                    className="w-9 h-9 rounded-xl flex items-center justify-center transition-all duration-200"
+                    className="min-h-8 min-w-8 w-8 h-8 rounded-xl flex items-center justify-center transition-all duration-200 touch-manipulation"
                     style={{ background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.08)", color: config.textMuted }}
                     title="Attach any file"
                     aria-label="Attach any file"
@@ -403,10 +424,11 @@ export default function CommandBar({
                 {/* Voice button */}
                 {isVoiceSupported && (
                   <motion.button
+                    type="button"
                     whileHover={{ scale: 1.08 }}
                     whileTap={{ scale: 0.92 }}
                     onClick={handleVoiceClick}
-                    className="relative w-9 h-9 rounded-xl flex items-center justify-center transition-all duration-200"
+                    className="relative min-h-8 min-w-8 w-8 h-8 rounded-xl flex items-center justify-center transition-all duration-200 touch-manipulation"
                     style={
                       isListening || isSpeaking
                         ? {
@@ -442,11 +464,12 @@ export default function CommandBar({
 
                 {/* Send button — upward arrow */}
                 <motion.button
+                  type="button"
                   whileHover={canSend ? { scale: 1.08 } : {}}
                   whileTap={canSend ? { scale: 0.92 } : {}}
                   onClick={handleSend}
                   disabled={!canSend}
-                  className="w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-200"
+                  className="min-h-8 min-w-8 w-8 h-8 rounded-full flex items-center justify-center transition-all duration-200 touch-manipulation"
                   style={
                     canSend
                       ? {
@@ -482,6 +505,27 @@ export default function CommandBar({
                   )}
                 </motion.button>
               </div>
+              <AnimatePresence initial={false}>
+                {isListening && (
+                  <motion.div
+                    key="voice-waveform"
+                    data-testid="voice-waveform-panel"
+                    initial={{ height: 0, opacity: 0, y: -4 }}
+                    animate={{ height: 44, opacity: 1, y: 0 }}
+                    exit={{ height: 0, opacity: 0, y: -4 }}
+                    transition={{ duration: 0.18 }}
+                    className="overflow-hidden"
+                  >
+                    <VoiceVisualizer
+                      isActive={isListening}
+                      isListening={isListening}
+                      color={config.accent}
+                      accentRgb={config.accentRgb}
+                      audioStream={audioStream}
+                    />
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </div>
           </motion.div>
         </motion.div>

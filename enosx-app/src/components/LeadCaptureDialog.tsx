@@ -10,6 +10,7 @@ import { motion } from "framer-motion";
 import { Check, Download, Trash2, X } from "lucide-react";
 import { Lead, useLeadCapture } from "@/hooks/useLeadCapture";
 import { toast } from "sonner";
+import { showError } from "@/lib/errorReporting";
 
 interface LeadCaptureDialogProps {
   isOpen: boolean;
@@ -55,13 +56,13 @@ export default function LeadCaptureDialog({ isOpen, onClose, transcript, convers
       setPhone("");
       setInterest("");
     } else {
-      toast.error(result.message);
+      showError(result.message);
     }
   };
 
   const handleExport = () => {
     if (!leads.length) {
-      toast.error("There are no captured leads to export.");
+      showError("There are no captured leads to export.");
       return;
     }
     exportCsv();

@@ -1,6 +1,7 @@
 import { Copy, Sparkles, X } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
+import { showError } from "@/lib/errorReporting";
 import { useTheme } from "@/contexts/ThemeContext";
 
 interface ReusableFeaturesDialogProps {
@@ -49,7 +50,7 @@ export default function ReusableFeaturesDialog({ open, onClose }: ReusableFeatur
       toast.success(`${name} prompt copied`);
       window.setTimeout(() => setCopiedName(null), 1600);
     } catch {
-      toast.error("Clipboard access is unavailable");
+      showError("Clipboard access is unavailable");
     }
   };
 

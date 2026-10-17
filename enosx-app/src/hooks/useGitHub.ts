@@ -4,6 +4,7 @@
  * AI-assisted content generation, and pushing commits via GitHub REST API.
  */
 import { useState, useCallback } from 'react';
+import { reportClientError } from '@/lib/errorReporting';
 
 export interface GitHubAccount {
   id: string;
@@ -97,6 +98,7 @@ export function useGitHub() {
 
   const setError = useCallback((error: string | null) => {
     setState(prev => ({ ...prev, error }));
+    if (error) reportClientError(error, 'github.action');
   }, []);
 
   const addAccount = useCallback(async (username: string, token: string): Promise<boolean> => {

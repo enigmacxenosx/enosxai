@@ -1,17 +1,28 @@
 /**
- * AuthContext — User authentication and profile management.
- * Supports Google OAuth (via redirect), email/password, and Neon DB persistence.
- * Profile data is stored in Neon (PostgreSQL) via a lightweight serverless API.
+ * Firebase Authentication and user profile context.
+ * Signed-in identity is owned by Firebase Auth; user preferences are synced to Firestore.
  */
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import React, { createContext, useContext, useEffect, useState } from "react";
+import {
+  createUserWithEmailAndPassword,
+  onAuthStateChanged,
+  signInWithEmailAndPassword,
+  signInWithPopup,
+  signOut as firebaseSignOut,
+  GoogleAuthProvider,
+  updateProfile as updateFirebaseProfile,
+  type User as FirebaseUser,
+} from "firebase/auth";
+import { firebaseAuth, firebaseConfigured, requireFirebase } from "@/lib/firebase";
+import { loadUserProfile, saveUserProfile } from "@/lib/firebaseStorage";
+import { reportClientError } from "@/lib/errorReporting";
 
 export interface UserProfile {
   id: string;
   email: string;
   displayName: string;
   avatarUrl?: string;
-  provider: 'google' | 'email' | 'github';
-  // Preferences
+  provider: "google" | "email" | "github" | "guest";
   theme?: string;
   wallpaper?: string;
   aiPersonality?: string;
@@ -41,245 +52,187 @@ interface AuthContextType extends AuthState {
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
+const GUEST_STORAGE_KEY = "enosx-guest-profile";
 
-const STORAGE_KEY = 'enosx-auth-user';
-const NEON_API_BASE = (import.meta.env.VITE_NEON_API_URL as string | undefined)?.replace(/\/$/, '') || null;
+function providerFor(user: FirebaseUser): UserProfile["provider"] {
+  const providerId = user.providerData[0]?.providerId;
+  return providerId === "google.com" ? "google" : providerId === "github.com" ? "github" : "email";
+}
 
-// ── Helpers ──────────────────────────────────────────────────────────────────
+function userFromFirebase(user: FirebaseUser, saved: Record<string, unknown> | null): UserProfile {
+  return {
+    id: user.uid,
+    email: user.email || "",
+    displayName: user.displayName || String(saved?.displayName || "User"),
+    avatarUrl: user.photoURL || (typeof saved?.avatarUrl === "string" ? saved.avatarUrl : undefined),
+    provider: providerFor(user),
+    theme: typeof saved?.theme === "string" ? saved.theme : undefined,
+    wallpaper: typeof saved?.wallpaper === "string" ? saved.wallpaper : undefined,
+    aiPersonality: typeof saved?.aiPersonality === "string" ? saved.aiPersonality : undefined,
+    language: typeof saved?.language === "string" ? saved.language : undefined,
+    gender: typeof saved?.gender === "string" ? saved.gender : undefined,
+    notifications: typeof saved?.notifications === "boolean" ? saved.notifications : undefined,
+    compactMode: typeof saved?.compactMode === "boolean" ? saved.compactMode : undefined,
+    createdAt: typeof saved?.createdAt === "string" ? saved.createdAt : undefined,
+    updatedAt: typeof saved?.updatedAt === "string" ? saved.updatedAt : undefined,
+  };
+}
 
-function loadUser(): UserProfile | null {
+function loadGuest(): UserProfile | null {
   try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (raw) return JSON.parse(raw);
-  } catch {}
-  return null;
-}
-
-function saveUser(user: UserProfile | null) {
-  try {
-    if (user) localStorage.setItem(STORAGE_KEY, JSON.stringify(user));
-    else localStorage.removeItem(STORAGE_KEY);
-  } catch {}
-}
-
-class AuthApiError extends Error {
-  constructor(message: string, readonly status: number) {
-    super(message);
-    this.name = 'AuthApiError';
+    const stored = localStorage.getItem(GUEST_STORAGE_KEY);
+    return stored ? JSON.parse(stored) as UserProfile : null;
+  } catch {
+    return null;
   }
 }
 
-async function apiCall(path: string, method: string, body?: object) {
-  if (!NEON_API_BASE) {
-    throw new AuthApiError('Remote auth is not configured', 404);
-  }
-
-  const res = await fetch(`${NEON_API_BASE}${path}`, {
-    method,
-    headers: { 'Content-Type': 'application/json' },
-    body: body ? JSON.stringify(body) : undefined,
-  });
-  if (!res.ok) {
-    const err = await res.json().catch(() => ({ message: 'Request failed' }));
-    throw new AuthApiError(err.message || 'Request failed', res.status);
-  }
-  return res.json();
+function firebaseErrorMessage(error: unknown): string {
+  reportClientError(error, "auth");
+  const code = typeof error === "object" && error && "code" in error ? String(error.code) : "";
+  if (code === "auth/operation-not-allowed") return "Enable this sign-in method in Firebase Console → Authentication → Sign-in method.";
+  if (code === "auth/invalid-credential" || code === "auth/wrong-password" || code === "auth/user-not-found") return "Invalid email or password.";
+  if (code === "auth/email-already-in-use") return "An account already exists for this email. Try signing in.";
+  if (code === "auth/weak-password") return "Choose a stronger password (at least 6 characters).";
+  if (code === "auth/unauthorized-domain") return "Add this app's domain to Firebase Authentication → Settings → Authorized domains.";
+  if (error instanceof Error) return error.message;
+  return "Authentication failed. Please try again.";
 }
-
-function canUseLocalAuthFallback(error: unknown) {
-  // Use the local-storage fallback whenever the server route is unreachable:
-  // 404/405 (route missing), 500 (server failure), 503 (DATABASE_URL not
-  // configured — the production deployment case), or network errors.
-  if (error instanceof AuthApiError) {
-    return error.status === 404 || error.status === 405 || error.status >= 500;
-  }
-  // TypeError covers offline/network failures; treat them as fallback-eligible.
-  return error instanceof TypeError;
-}
-
-// ── Provider ─────────────────────────────────────────────────────────────────
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [state, setState] = useState<AuthState>({
-    user: loadUser(),
-    isLoading: false,
-    isAuthenticated: !!loadUser(),
+    user: firebaseConfigured ? null : loadGuest(),
+    isLoading: firebaseConfigured,
+    isAuthenticated: !firebaseConfigured && !!loadGuest(),
     error: null,
   });
 
-  // Handle Google OAuth callback (hash-based token)
   useEffect(() => {
-    const hash = window.location.hash;
-    if (hash.includes('access_token') || hash.includes('id_token')) {
-      handleGoogleCallback(hash);
-    }
-    // Check for stored Google profile from popup
-    const pendingGoogle = sessionStorage.getItem('enosx-google-profile');
-    if (pendingGoogle) {
-      try {
-        const profile = JSON.parse(pendingGoogle);
-        sessionStorage.removeItem('enosx-google-profile');
-        setUser(profile);
-      } catch {}
-    }
-  }, []);
-
-  const handleGoogleCallback = async (hash: string) => {
-    setState(prev => ({ ...prev, isLoading: true }));
-    try {
-      const params = new URLSearchParams(hash.replace('#', ''));
-      const idToken = params.get('id_token') || params.get('access_token');
-      if (!idToken) throw new Error('No token in callback');
-      // Decode JWT payload (Google id_token)
-      const payload = JSON.parse(atob(idToken.split('.')[1]));
-      const user: UserProfile = {
-        id: payload.sub,
-        email: payload.email,
-        displayName: payload.name,
-        avatarUrl: payload.picture,
-        provider: 'google',
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-      };
-      await syncUserToNeon(user);
-      setUser(user);
-      window.history.replaceState({}, document.title, window.location.pathname);
-    } catch (err) {
-      setState(prev => ({ ...prev, isLoading: false, error: err instanceof Error ? err.message : 'Google sign-in failed' }));
-    }
-  };
-
-  const syncUserToNeon = async (user: UserProfile) => {
-    try {
-      await apiCall('/auth/upsert', 'POST', user);
-    } catch {
-      // Non-fatal: store locally even if Neon sync fails
-    }
-  };
-
-  const setUser = (user: UserProfile | null) => {
-    saveUser(user);
-    setState(prev => ({ ...prev, user, isAuthenticated: !!user, isLoading: false, error: null }));
-  };
-
-  const signInWithGoogle = () => {
-    const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
-    if (!clientId) {
-      // Demo mode: create a mock Google user for preview
-      const mockUser: UserProfile = {
-        id: `google_demo_${Date.now()}`,
-        email: 'demo@enosx.ai',
-        displayName: 'Demo User',
-        avatarUrl: `https://ui-avatars.com/api/?name=Demo+User&background=7c6ff7&color=fff`,
-        provider: 'google',
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-      };
-      setUser(mockUser);
+    if (!firebaseAuth) {
+      setState((previous) => ({ ...previous, isLoading: false }));
       return;
     }
-    const redirectUri = `${window.location.origin}${window.location.pathname}`;
-    const scope = 'openid email profile';
-    const url = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&response_type=id_token&scope=${encodeURIComponent(scope)}&nonce=${Math.random().toString(36)}`;
-    window.location.href = url;
+    return onAuthStateChanged(firebaseAuth, async (firebaseUser) => {
+      if (!firebaseUser) {
+        const guest = loadGuest();
+        setState((previous) => ({ ...previous, user: guest, isAuthenticated: !!guest, isLoading: false }));
+        return;
+      }
+      try {
+        const savedProfile = await loadUserProfile(firebaseUser.uid);
+        const profile = userFromFirebase(firebaseUser, savedProfile);
+        setState((previous) => ({ ...previous, user: profile, isAuthenticated: true, isLoading: false, error: null }));
+        void saveUserProfile(firebaseUser.uid, profile as unknown as Record<string, unknown>).catch((error) => console.error("Firebase profile sync failed:", error));
+      } catch (error) {
+        console.error("Could not load Firebase profile:", error);
+        const profile = userFromFirebase(firebaseUser, null);
+        setState((previous) => ({ ...previous, user: profile, isAuthenticated: true, isLoading: false }));
+      }
+    });
+  }, []);
+
+  const signInWithGoogle = () => {
+    if (!firebaseAuth) {
+      reportClientError("Firebase is not configured for authentication.", "auth.configuration");
+      setState((previous) => ({ ...previous, error: "Firebase is not configured. Set the VITE_FIREBASE_* values before signing in." }));
+      return;
+    }
+    setState((previous) => ({ ...previous, isLoading: true, error: null }));
+    void signInWithPopup(firebaseAuth, new GoogleAuthProvider())
+      .catch((error) => setState((previous) => ({ ...previous, isLoading: false, error: firebaseErrorMessage(error) })));
   };
 
   const signInWithEmail = async (email: string, password: string): Promise<boolean> => {
-    setState(prev => ({ ...prev, isLoading: true, error: null }));
+    if (!firebaseAuth) {
+      reportClientError("Firebase is not configured for authentication.", "auth.configuration");
+      setState((previous) => ({ ...previous, error: "Firebase is not configured. Set the VITE_FIREBASE_* values before signing in." }));
+      return false;
+    }
+    setState((previous) => ({ ...previous, isLoading: true, error: null }));
     try {
-      let user: UserProfile;
-      try {
-        const data = await apiCall('/auth/signin', 'POST', { email, password });
-        user = data.user;
-      } catch (error) {
-        if (!canUseLocalAuthFallback(error)) throw error;
-        // Server unavailable (missing route, crash, or DATABASE_URL not
-        // configured): fall back to locally stored accounts created by a
-        // previous sign-up on this device.
-        const stored = localStorage.getItem(`enosx-user-${email.toLowerCase()}`);
-        if (!stored) {
-          throw new Error('No account found with this email. Try signing up first, or continue as a guest.');
-        }
-        const storedUser = JSON.parse(stored);
-        if (storedUser.password !== btoa(password)) throw new Error('Invalid email or password');
-        user = storedUser.profile;
-      }
-      setUser(user);
+      await signInWithEmailAndPassword(firebaseAuth, email.trim().toLowerCase(), password);
       return true;
-    } catch (err) {
-      setState(prev => ({ ...prev, isLoading: false, error: err instanceof Error ? err.message : 'Sign in failed' }));
+    } catch (error) {
+      setState((previous) => ({ ...previous, isLoading: false, error: firebaseErrorMessage(error) }));
       return false;
     }
   };
 
   const signUpWithEmail = async (email: string, password: string, displayName: string): Promise<boolean> => {
-    setState(prev => ({ ...prev, isLoading: true, error: null }));
+    if (!firebaseAuth) {
+      reportClientError("Firebase is not configured for authentication.", "auth.configuration");
+      setState((previous) => ({ ...previous, error: "Firebase is not configured. Set the VITE_FIREBASE_* values before creating an account." }));
+      return false;
+    }
+    setState((previous) => ({ ...previous, isLoading: true, error: null }));
     try {
-      const newUser: UserProfile = {
-        id: `email_${Date.now()}_${Math.random().toString(36).slice(2)}`,
-        email,
-        displayName,
-        avatarUrl: `https://ui-avatars.com/api/?name=${encodeURIComponent(displayName)}&background=7c6ff7&color=fff`,
-        provider: 'email',
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-      };
+      const credential = await createUserWithEmailAndPassword(firebaseAuth, email.trim().toLowerCase(), password);
+      await updateFirebaseProfile(credential.user, { displayName: displayName.trim() });
+      const profile = userFromFirebase(credential.user, null);
       try {
-        await apiCall('/auth/signup', 'POST', { ...newUser, password });
+        await saveUserProfile(credential.user.uid, { ...profile, createdAt: new Date().toISOString() });
       } catch (error) {
-        if (!canUseLocalAuthFallback(error)) throw error;
-        // Server unavailable: store the account locally so it can be
-        // signed in again on this device without a database.
-        localStorage.setItem(`enosx-user-${email.toLowerCase()}`, JSON.stringify({ profile: newUser, password: btoa(password) }));
+        // Auth accounts remain valid if Firestore rules/database setup is still pending.
+        console.error("Firebase profile write failed:", error);
       }
-      setUser(newUser);
+      setState((previous) => ({ ...previous, user: profile, isAuthenticated: true, isLoading: false, error: null }));
       return true;
-    } catch (err) {
-      setState(prev => ({ ...prev, isLoading: false, error: err instanceof Error ? err.message : 'Sign up failed' }));
+    } catch (error) {
+      setState((previous) => ({ ...previous, isLoading: false, error: firebaseErrorMessage(error) }));
       return false;
     }
   };
 
   const continueAsGuest = () => {
     const guest: UserProfile = {
-      id: `guest_${Date.now()}`,
-      email: '',
-      displayName: 'Guest',
-      avatarUrl: `https://ui-avatars.com/api/?name=Guest&background=4b5563&color=fff`,
-      provider: 'github',
+      id: `guest_${crypto.randomUUID()}`,
+      email: "",
+      displayName: "Guest",
+      avatarUrl: "https://ui-avatars.com/api/?name=Guest&background=4b5563&color=fff",
+      provider: "guest",
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     };
-    setUser(guest);
+    localStorage.setItem(GUEST_STORAGE_KEY, JSON.stringify(guest));
+    setState((previous) => ({ ...previous, user: guest, isAuthenticated: true, isLoading: false, error: null }));
   };
 
   const signOut = () => {
-    setUser(null);
+    localStorage.removeItem(GUEST_STORAGE_KEY);
+    if (firebaseAuth) {
+      void firebaseSignOut(firebaseAuth).catch((error) => console.error("Firebase sign-out failed:", error));
+    } else {
+      setState((previous) => ({ ...previous, user: null, isAuthenticated: false, isLoading: false }));
+    }
   };
 
   const updateProfile = async (updates: Partial<UserProfile>): Promise<boolean> => {
     if (!state.user) return false;
-    setState(prev => ({ ...prev, isLoading: true }));
+    const updated: UserProfile = { ...state.user, ...updates, updatedAt: new Date().toISOString() };
     try {
-      const updated: UserProfile = {
-        ...state.user,
-        ...updates,
-        updatedAt: new Date().toISOString(),
-      };
-      try {
-        await apiCall('/auth/update', 'PUT', updated);
-      } catch {
-        // Non-fatal
+      if (state.user.provider !== "guest") {
+        const { auth } = requireFirebase();
+        const currentUser = auth.currentUser;
+        if (!currentUser || currentUser.uid !== state.user.id) throw new Error("Your Firebase session has expired. Sign in again.");
+        if (updates.displayName !== undefined || updates.avatarUrl !== undefined) {
+          await updateFirebaseProfile(currentUser, {
+            displayName: updates.displayName ?? currentUser.displayName,
+            photoURL: updates.avatarUrl ?? currentUser.photoURL,
+          });
+        }
+        await saveUserProfile(state.user.id, updated as unknown as Record<string, unknown>);
+      } else {
+        localStorage.setItem(GUEST_STORAGE_KEY, JSON.stringify(updated));
       }
-      setUser(updated);
+      setState((previous) => ({ ...previous, user: updated, isLoading: false, error: null }));
       return true;
-    } catch (err) {
-      setState(prev => ({ ...prev, isLoading: false, error: err instanceof Error ? err.message : 'Update failed' }));
+    } catch (error) {
+      setState((previous) => ({ ...previous, isLoading: false, error: firebaseErrorMessage(error) }));
       return false;
     }
   };
 
-  const clearError = () => setState(prev => ({ ...prev, error: null }));
+  const clearError = () => setState((previous) => ({ ...previous, error: null }));
 
   return (
     <AuthContext.Provider value={{ ...state, signInWithGoogle, signInWithEmail, signUpWithEmail, continueAsGuest, signOut, updateProfile, clearError }}>
@@ -289,7 +242,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 }
 
 export function useAuth() {
-  const ctx = useContext(AuthContext);
-  if (!ctx) throw new Error('useAuth must be used within AuthProvider');
-  return ctx;
+  const context = useContext(AuthContext);
+  if (!context) throw new Error("useAuth must be used within AuthProvider");
+  return context;
 }

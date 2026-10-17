@@ -6,7 +6,7 @@
  */
 import { useState, useEffect, useRef, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, ShieldOff, Cpu, BrainCircuit } from "lucide-react";
+import { X, Crown, Cpu, BrainCircuit } from "lucide-react";
 import { useTheme } from "@/contexts/ThemeContext";
 
 function buildSimulatedWifiAuditReport(command: string): string {
@@ -230,7 +230,7 @@ export default function GodModeTerminal({ isOpen, onClose, onOpenQuiz, onOpenCEO
                   <div className="w-3 h-3 rounded-full bg-green-500/50" />
                 </div>
                 <div className="flex items-center gap-2 ml-4">
-                  <ShieldOff size={14} className="text-cyan-400" />
+                  <Crown size={14} className="text-amber-300" />
                   <span className="text-[10px] font-bold tracking-[0.2em] text-cyan-400 uppercase">
                     GOD MODE ROOT CONSOLE — ENOSH@ENOSX-CORE
                   </span>

@@ -17,6 +17,7 @@ export interface TopicCount {
 export interface AnalyticsState {
   totalMessages: number;
   totalConversations: number;
+  totalTokensUsed: number;
   questionTopics: TopicCount[];
   voiceUsageCount: number;
   lastUpdated: number;
@@ -37,6 +38,7 @@ function normalizeTopic(text: string): string {
 export const DEFAULT_ANALYTICS: AnalyticsState = {
   totalMessages: 0,
   totalConversations: 0,
+  totalTokensUsed: 0,
   questionTopics: [],
   voiceUsageCount: 0,
   lastUpdated: 0,
@@ -111,6 +113,16 @@ export function useAnalytics() {
     }));
   }, []);
 
+  const recordTokenUsage = useCallback((tokens: number) => {
+    const safeTokens = Number.isFinite(tokens) ? Math.max(0, Math.floor(tokens)) : 0;
+    if (!safeTokens) return;
+    setAnalytics((current) => ({
+      ...current,
+      totalTokensUsed: current.totalTokensUsed + safeTokens,
+      lastUpdated: Date.now(),
+    }));
+  }, []);
+
   /** Derive a simple analytics summary from all conversations in storage. */
   const refreshFromConversations = useCallback((conversations: Conversation[]) => {
     setAnalytics((current) => {
@@ -132,6 +144,7 @@ export function useAnalytics() {
     analytics,
     recordOutgoingMessage,
     recordVoiceUsage,
+    recordTokenUsage,
     refreshFromConversations,
     resetAnalytics,
   };

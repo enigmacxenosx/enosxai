@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
+import { showError } from "@/lib/errorReporting";
 import { VoiceState } from "@/lib/types";
 
 const VOICE_SERVICE_URL = "/api/voice";
@@ -8,6 +9,7 @@ const VOICE_SERVICE_URL = "/api/voice";
 export interface SpeechSettings {
   rate: number;
   pitch: number;
+  voiceProvider: "magpie" | "chatterbox";
   /** Auto re-listen after the assistant finishes speaking. */
   continuousConversation: boolean;
   /** Start listening when the wake phrase is heard while the app is open. */
@@ -17,6 +19,7 @@ export interface SpeechSettings {
 const DEFAULT_SPEECH_SETTINGS: SpeechSettings = {
   rate: 1,
   pitch: 1,
+  voiceProvider: "magpie",
   continuousConversation: false,
   wakePhrase: false,
 };
@@ -31,6 +34,7 @@ export function loadSpeechSettings(): SpeechSettings {
       return {
         rate: Math.min(2, Math.max(0.5, Number(parsed.rate) || 1)),
         pitch: Math.min(2, Math.max(0, Number(parsed.pitch) || 1)),
+        voiceProvider: parsed.voiceProvider === "chatterbox" ? "chatterbox" : "magpie",
         continuousConversation: Boolean(parsed.continuousConversation),
         wakePhrase: Boolean(parsed.wakePhrase),
       };
@@ -79,7 +83,7 @@ function cleanSpeechText(text: string) {
     .trim();
 }
 
-function splitIntoSpeechChunks(text: string, maximumLength = 220) {
+function splitIntoSpeechChunks(text: string, maximumLength = 100) {
   const sentences = text.match(/[^.!?]+[.!?]+|[^.!?]+$/g) ?? [text];
   const chunks: string[] = [];
   let currentChunk = "";
@@ -139,9 +143,12 @@ function getRecognitionErrorMessage(error: string) {
 export function useVoice() {
   const [voiceState, setVoiceState] = useState<VoiceState>("idle");
   const [transcript, setTranscript] = useState("");
+  const [microphoneStream, setMicrophoneStream] = useState<MediaStream | null>(null);
+  const microphoneStreamRef = useRef<MediaStream | null>(null);
   const [settings, setSettings] = useState<SpeechSettings>(() => loadSpeechSettings());
   const recognitionRef = useRef<ISpeechRecognition | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  const speechRequestIdRef = useRef(0);
   const languageRef = useRef("en-US");
   const settingsRef = useRef<SpeechSettings>(settings);
   const onFinalResultRef = useRef<((text: string) => void) | undefined>(undefined);
@@ -176,6 +183,7 @@ export function useVoice() {
   }, []);
 
   const stopSpeaking = useCallback(() => {
+    speechRequestIdRef.current += 1;
     releaseAudio();
     if (typeof window !== "undefined" && "speechSynthesis" in window) {
       window.speechSynthesis.cancel();
@@ -183,16 +191,28 @@ export function useVoice() {
     setVoiceState("idle");
   }, [releaseAudio]);
 
+  const releaseMicrophone = useCallback(() => {
+    microphoneStreamRef.current?.getTracks().forEach((track) => track.stop());
+    microphoneStreamRef.current = null;
+    setMicrophoneStream(null);
+  }, []);
+
   const stopListening = useCallback(() => {
     const recognition = recognitionRef.current;
-    if (!recognition) return;
-
-    try {
-      recognition.stop();
-    } catch {
-      recognitionRef.current = null;
-      setVoiceState("idle");
+    if (recognition) {
+      try {
+        recognition.stop();
+      } catch {
+        recognitionRef.current = null;
+        setVoiceState("idle");
+      }
     }
+    releaseMicrophone();
+  }, [releaseMicrophone]);
+
+  useEffect(() => () => {
+    microphoneStreamRef.current?.getTracks().forEach((track) => track.stop());
+    recognitionRef.current?.stop();
   }, []);
 
   const startListening = useCallback(
@@ -200,14 +220,14 @@ export function useVoice() {
       const language = requestedLanguage || languageRef.current;
 
       if (!isSupported) {
-        toast.error(
+        showError(
           "Voice input is not supported in this browser. Please use the latest Chrome or Edge."
         );
         return;
       }
 
       if (!window.isSecureContext && window.location.hostname !== "localhost") {
-        toast.error("Voice input requires a secure HTTPS connection.");
+        showError("Voice input requires a secure HTTPS connection.");
         return;
       }
 
@@ -222,7 +242,8 @@ export function useVoice() {
             autoGainControl: true,
           },
         });
-        stream.getTracks().forEach((track) => track.stop());
+        microphoneStreamRef.current = stream;
+        setMicrophoneStream(stream);
       } catch (error) {
         const name = error instanceof DOMException ? error.name : "";
         const message =
@@ -231,7 +252,8 @@ export function useVoice() {
             : name === "NotFoundError"
               ? "No microphone was found. Check that a microphone is connected and available."
               : "We could not access your microphone. Check your browser permission and try again.";
-        toast.error(message);
+        releaseMicrophone();
+        showError(message);
         setVoiceState("idle");
         return;
       }
@@ -246,7 +268,8 @@ export function useVoice() {
         }).webkitSpeechRecognition;
 
       if (!SpeechRecognitionAPI) {
-        toast.error("Voice input is not available in this browser.");
+        releaseMicrophone();
+        showError("Voice input is not available in this browser.");
         return;
       }
 
@@ -305,13 +328,15 @@ export function useVoice() {
       recognition.onerror = (event) => {
         if (recognitionRef.current !== recognition) return;
         recognitionRef.current = null;
+        releaseMicrophone();
         setVoiceState("idle");
-        toast.error(getRecognitionErrorMessage(event.error));
+        showError(getRecognitionErrorMessage(event.error));
       };
 
       recognition.onend = () => {
         if (recognitionRef.current !== recognition) return;
         recognitionRef.current = null;
+        releaseMicrophone();
         setVoiceState("idle");
       };
 
@@ -320,12 +345,13 @@ export function useVoice() {
         recognition.start();
       } catch (error) {
         recognitionRef.current = null;
+        releaseMicrophone();
         setVoiceState("idle");
         console.error("Speech recognition could not start", error);
-        toast.error("Voice input could not start. Please try again.");
+        showError("Voice input could not start. Please try again.");
       }
     },
-    [isSupported, stopListening]
+    [isSupported, stopListening, releaseMicrophone]
   );
 
   /**
@@ -358,71 +384,83 @@ export function useVoice() {
       if (!cleanText) return;
 
       stopSpeaking();
-
-      const speakWithBrowser = () => {
-        if (typeof window === "undefined" || !("speechSynthesis" in window)) {
-          throw new Error("Speech synthesis is not supported in this browser.");
-        }
-
-        const utterance = new SpeechSynthesisUtterance(cleanText);
-        utterance.lang = languageRef.current;
-        utterance.rate = settingsRef.current.rate;
-        utterance.pitch = settingsRef.current.pitch;
-        utterance.onend = () => {
-          setVoiceState("idle");
-          scheduleListenAgain(onFinalResultRef.current ?? (() => {}));
-        };
-        utterance.onerror = () => {
-          setVoiceState("idle");
-          toast.error("The ENOSX voice could not be played by this browser.");
-        };
-        setVoiceState("speaking");
-        window.speechSynthesis.speak(utterance);
-      };
+      const requestId = speechRequestIdRef.current;
+      const provider = settingsRef.current.voiceProvider;
+      const chunks = splitIntoSpeechChunks(cleanText);
 
       try {
         setVoiceState("speaking");
-        const response = await fetch(VOICE_SERVICE_URL, {
-          method: "POST",
-          headers: { "Content-Type": "application/json", Accept: "audio/wav" },
-          body: JSON.stringify({ text: cleanText }),
-        });
-        if (!response.ok) {
-          const detail = await response.json().catch(() => ({}));
-          throw new Error(detail.error || `Voice service failed with ${response.status}`);
-        }
-        const audioBlob = await response.blob();
-        if (!audioBlob.size) throw new Error("Voice service returned empty audio.");
-        const objectUrl = URL.createObjectURL(
-          audioBlob.type ? audioBlob : new Blob([audioBlob], { type: "audio/wav" })
-        );
-        const audio = new Audio(objectUrl);
-        audio.preload = "auto";
-        audioRef.current = audio;
-        audio.onended = () => {
-          if (audioRef.current !== audio) return;
-          releaseAudio();
-          setVoiceState("idle");
-          scheduleListenAgain(onFinalResultRef.current ?? (() => {}));
+        const fetchChunk = async (index: number) => {
+          const response = await fetch(VOICE_SERVICE_URL, {
+            method: "POST",
+            headers: { "Content-Type": "application/json", Accept: "audio/wav" },
+            body: JSON.stringify({ text: chunks[index], provider }),
+          });
+          if (!response.ok) {
+            const detail = await response.json().catch(() => ({}));
+            throw new Error(detail.error || `Voice service failed with ${response.status}`);
+          }
+          const audioBlob = await response.blob();
+          if (!audioBlob.size) throw new Error("Voice service returned empty audio.");
+          return audioBlob;
         };
-        audio.onerror = () => {
-          if (audioRef.current !== audio) return;
-          releaseAudio();
-          setVoiceState("idle");
-          toast.error("The ENOSX voice service could not play this response.");
+
+        let prefetchedChunk: Promise<{ audioBlob?: Blob; error?: unknown }> | null = null;
+        const playChunk = async (index: number) => {
+          if (requestId !== speechRequestIdRef.current) return;
+          if (index >= chunks.length) {
+            setVoiceState("idle");
+            scheduleListenAgain(onFinalResultRef.current ?? (() => {}));
+            return;
+          }
+
+          const result = prefetchedChunk
+            ? await prefetchedChunk
+            : { audioBlob: await fetchChunk(index) };
+          prefetchedChunk = null;
+          if (result.error) throw result.error;
+          const audioBlob = result.audioBlob!;
+          if (requestId !== speechRequestIdRef.current) return;
+
+          if (index + 1 < chunks.length) {
+            prefetchedChunk = fetchChunk(index + 1).then(
+              (blob) => ({ audioBlob: blob }),
+              (error) => ({ error })
+            );
+          }
+
+          const objectUrl = URL.createObjectURL(
+            audioBlob.type ? audioBlob : new Blob([audioBlob], { type: "audio/wav" })
+          );
+          const audio = new Audio(objectUrl);
+          audio.preload = "auto";
+          audioRef.current = audio;
+          audio.onended = () => {
+            if (audioRef.current !== audio || requestId !== speechRequestIdRef.current) return;
+            releaseAudio();
+            void playChunk(index + 1).catch((error) => {
+              if (requestId !== speechRequestIdRef.current) return;
+              console.error("ENOSX voice service failed", error);
+              setVoiceState("idle");
+              showError("The selected ENOSX voice could not finish speaking this response.");
+            });
+          };
+          audio.onerror = () => {
+            if (audioRef.current !== audio) return;
+            releaseAudio();
+            setVoiceState("idle");
+            showError("The ENOSX voice service could not play this response.");
+          };
+          await audio.play();
         };
-        await audio.play();
+
+        await playChunk(0);
       } catch (error) {
+        if (requestId !== speechRequestIdRef.current) return;
         console.error("ENOSX voice service failed", error);
         releaseAudio();
-        try {
-          // Keep voice available when server TTS is unavailable or delayed audio autoplay is rejected.
-          speakWithBrowser();
-        } catch (fallbackError) {
-          console.error("Browser speech fallback failed", fallbackError);
-          setVoiceState("idle");
-          toast.error("ENOSX voice is unavailable. Check your browser audio settings.");
-        }
+        setVoiceState("idle");
+        showError(error instanceof Error ? error.message : "NVIDIA voice is unavailable. Please try again.");
       }
     },
     [releaseAudio, scheduleListenAgain, stopSpeaking]
@@ -435,6 +473,7 @@ export function useVoice() {
   return {
     voiceState,
     transcript,
+    microphoneStream,
     isSupported,
     startListening,
     stopListening,

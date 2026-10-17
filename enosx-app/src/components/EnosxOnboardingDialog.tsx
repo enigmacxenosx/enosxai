@@ -4,13 +4,14 @@ import { Check, ChevronLeft, ChevronRight, Globe2, Image, Sparkles, UserRound, X
 import { useAuth } from "@/contexts/AuthContext";
 import { useTheme } from "@/contexts/ThemeContext";
 import { WALLPAPER_PRESETS, useWallpaper } from "@/contexts/WallpaperContext";
+import { ENOSX_LANGUAGES } from "@/lib/languageDictionary";
 
 interface EnosxOnboardingDialogProps {
   isOpen: boolean;
   onClose: () => void;
 }
 
-const LANGUAGES = ["English", "Swahili", "Spanish", "French", "German", "Arabic", "Japanese", "Chinese"];
+const LANGUAGES = ENOSX_LANGUAGES;
 const GENDERS = ["Woman", "Man", "Non-binary", "Prefer not to say"];
 const PERSONALITIES = [
   { id: "assistant", label: "Professional", desc: "Clear, focused, business-ready" },

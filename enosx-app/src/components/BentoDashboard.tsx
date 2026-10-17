@@ -7,6 +7,7 @@
 import { motion } from "framer-motion";
 import { BarChart3, Zap, MessageSquare, Clock, TrendingUp } from "lucide-react";
 import { useTheme } from "@/contexts/ThemeContext";
+import { useAnalytics } from "@/hooks/useAnalytics";
 import { Conversation } from "@/lib/types";
 
 interface BentoDashboardProps {
@@ -19,6 +20,7 @@ export default function BentoDashboard({
   activeConversation,
 }: BentoDashboardProps) {
   const { config } = useTheme();
+  const { analytics } = useAnalytics();
 
   // Calculate stats
   const totalMessages = conversations.reduce(
@@ -28,8 +30,6 @@ export default function BentoDashboard({
   const totalConversations = conversations.length;
   const avgMessagesPerConv =
     totalConversations > 0 ? Math.round(totalMessages / totalConversations) : 0;
-  const estimatedTokens = Math.round(totalMessages * 75); // Rough estimate
-
   const bento = [
     {
       title: "Total Messages",
@@ -56,8 +56,9 @@ export default function BentoDashboard({
       accentColor: "#22c55e",
     },
     {
-      title: "Est. Tokens",
-      value: estimatedTokens.toLocaleString(),
+      title: "Tokens Used",
+      value: analytics.totalTokensUsed.toLocaleString(),
+      subtitle: "Lifetime · no cap",
       icon: TrendingUp,
       size: "col-span-1 row-span-1",
       color: "rgba(168, 85, 247, 0.1)",

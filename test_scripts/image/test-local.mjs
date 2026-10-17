@@ -1,56 +1,88 @@
 /**
- * Local functional test for the image generation pipeline.
- * Runs the same OpenRouter call that api/image/generate.ts performs,
- * without deploying to Vercel. Requires OPENROUTER_API_KEY.
+ * Optional live smoke test for NVIDIA image generation.
+ * Requires NVIDIA_IMAGE_API_KEY or NVIDIA_API_KEY; keys are never printed.
  */
-const apiKey = process.env.OPENROUTER_API_KEY;
+const apiKey = process.env.NVIDIA_IMAGE_API_KEY?.trim() || process.env.NVIDIA_API_KEY?.trim();
+const endpoint = process.env.NVIDIA_IMAGE_ENDPOINT?.trim();
 if (!apiKey) {
-  console.error("OPENROUTER_API_KEY not set — skipping live call (expected in CI).");
+  console.log("NVIDIA image credentials are not set — skipping live call (expected in CI).");
   process.exit(0);
 }
+if (!endpoint) {
+  console.error("Set NVIDIA_IMAGE_ENDPOINT to a deployed Stable Diffusion 3.5 Large NIM endpoint before running the live test.");
+  process.exit(2);
+}
 
-const MODELS = ["google/gemini-3.1-flash-image", "openai/gpt-5-image-mini", "openrouter/auto"];
-const prompt = process.argv[2] || "a small neon circuit owl on a dark background, minimal";
+const payload = {
+  prompt: process.argv[2] || "test image",
+  mode: "base",
+  width: 1024,
+  height: 1024,
+  cfg_scale: 5,
+  steps: 28,
+  seed: 0,
+};
 
-for (const model of MODELS) {
+const maxAttempts = 3;
+let response;
+for (let attempt = 0; attempt < maxAttempts; attempt++) {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 30_000);
   try {
-    const res = await fetch("https://openrouter.ai/api/v1/images/generations", {
+    response = await fetch(endpoint, {
       method: "POST",
       headers: {
-        "Content-Type": "application/json",
         Authorization: `Bearer ${apiKey}`,
-        "HTTP-Referer": process.env.OPENROUTER_SITE_URL || "https://enosxtechnologies450.vercel.app",
-        "X-Title": "ENOSX AI",
+        Accept: "application/json",
+        "Content-Type": "application/json",
       },
-      body: JSON.stringify({ model, prompt }),
+      body: JSON.stringify(payload),
+      signal: controller.signal,
     });
-    console.log(`[model=${model}] status=${res.status}`);
-    if (res.ok) {
-      const data = await res.json();
-      const img = data?.data?.[0] || data?.choices?.[0]?.message?.attachments?.[0];
-      if (img) {
-        const url = img.url || (img.b64_json ? `data:image/png;base64,${img.b64_json}` : "");
-        if (url && /^https:\/\//.test(url)) {
-          // Verify the returned link actually resolves to an image
-          const head = await fetch(url, { method: "GET" });
-          const ctype = head.headers.get("content-type") || "";
-          console.log(`SUCCESS: url resolves (status ${head.status}, content-type ${ctype})`);
-          console.log("URL:", url);
-          if (img.revised_prompt) console.log("Revised prompt:", img.revised_prompt.slice(0, 200));
-          process.exit(0);
-        } else {
-          console.log(`WARN: non-HTTP url payload from ${model}`);
-        }
-      } else {
-        console.log(`WARN: no image payload from ${model}`);
-      }
-    } else {
-      const text = await res.text().catch(() => "");
-      console.log(`FAIL: ${model} -> ${res.status} ${text.slice(0, 120)}`);
+  } catch (error) {
+    clearTimeout(timeout);
+    if (attempt === maxAttempts - 1) {
+      console.error(error?.name === "AbortError" ? "NVIDIA request timed out after retries." : "NVIDIA request failed after retries.");
+      process.exit(1);
     }
-  } catch (e) {
-    console.error(`ERR: ${model}`, e.message);
+    const delay = Math.min(4000, 500 * 2 ** attempt);
+    console.warn(`NVIDIA request timed out or failed; retry ${attempt + 2}/${maxAttempts} in ${delay}ms.`);
+    await new Promise((resolve) => setTimeout(resolve, delay));
+    continue;
   }
+  clearTimeout(timeout);
+
+  if (![408, 425, 429].includes(response.status) && response.status < 500) break;
+  if (attempt === maxAttempts - 1) break;
+  const retryAfter = response.headers.get("retry-after");
+  const retrySeconds = Number(retryAfter);
+  const retryDateMs = retryAfter ? Date.parse(retryAfter) - Date.now() : NaN;
+  const requestedDelay = Number.isFinite(retrySeconds)
+    ? retrySeconds * 1000
+    : Number.isFinite(retryDateMs) && retryDateMs >= 0
+      ? retryDateMs
+      : 500 * 2 ** attempt;
+  const delay = Math.min(4000, Math.max(0, requestedDelay));
+  console.warn(`NVIDIA returned HTTP ${response.status}; retry ${attempt + 2}/${maxAttempts} in ${delay}ms.`);
+  await response.body?.cancel().catch(() => undefined);
+  await new Promise((resolve) => setTimeout(resolve, delay));
 }
-console.log("All candidates exhausted.");
-process.exit(1);
+
+const text = await response.text();
+console.log(`NVIDIA image endpoint status: ${response.status}`);
+if (!response.ok) {
+  console.error(response.status === 429
+    ? "NVIDIA rate limit persisted after retries."
+    : response.status === 408 || response.status === 504
+      ? "NVIDIA request timed out."
+      : "NVIDIA image generation failed; response body omitted to avoid leaking provider details.");
+  process.exit(1);
+}
+
+const data = JSON.parse(text);
+const image = data?.artifacts?.[0]?.base64 || data?.image || data?.images?.[0] || data?.data?.[0]?.url || data?.data?.[0]?.b64_json;
+if (typeof image !== "string" || image.length === 0) {
+  console.error("NVIDIA response did not contain an image payload.");
+  process.exit(1);
+}
+console.log("NVIDIA image endpoint returned an image payload.");

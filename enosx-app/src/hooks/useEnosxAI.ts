@@ -5,12 +5,27 @@
  */
 
 import { useState, useCallback } from "react";
-import { Message } from "@/lib/types";
+import { Attachment, Message } from "@/lib/types";
+import { chatWithLocalModel, isDesktopShell, readLocalModelSettings } from "@/lib/localModels";
+import { reportClientError } from "@/lib/errorReporting";
 
 type ChatOptions = {
   aiMode?: string;
   githubContext?: string;
+  skillContext?: string;
+  attachments?: Attachment[];
+  onTokenUsage?: (usage: { totalTokens: number; estimated: boolean }) => void;
 };
+
+function estimateTokenCount(text: string): number {
+  const characterCount = Array.from(text.trim()).length;
+  return characterCount ? Math.ceil(characterCount / 4) : 0;
+}
+
+function estimateRequestTokens(messages: Message[], response: string): number {
+  const promptText = messages.map((message) => `${message.role}: ${message.content}`).join("\n");
+  return estimateTokenCount(`${promptText}\nassistant: ${response}`);
+}
 
 type ApiErrorPayload = {
   error?: string | { message?: string };
@@ -63,15 +78,39 @@ export function useEnosxAI() {
       onChunk: (chunk: string) => void,
       onDone: () => void,
       options?: ChatOptions,
+      onReasoningStatus?: (status: string) => void,
     ) => {
       setIsLoading(true);
       setError(null);
       // Surface a friendly in-message indicator while the AI is processing.
       setIsThinking(true);
+      onReasoningStatus?.("Analyzing request");
       const requestController = new AbortController();
       const requestTimeout = window.setTimeout(() => requestController.abort(), 50_000);
+      let usingLocalModel = false;
 
       try {
+        const localSettings = readLocalModelSettings();
+        if (isDesktopShell() && localSettings.enabled) {
+          usingLocalModel = true;
+          if (!localSettings.model.trim()) {
+            throw new Error("Local chat is enabled, but no Ollama model is selected. Open Settings → Offline models to choose one.");
+          }
+          const answer = await chatWithLocalModel(
+            localSettings.baseUrl,
+            localSettings.model,
+            messages.map(({ role, content }) => ({ role, content })),
+          );
+          if (answer) onChunk(answer);
+          else onChunk("The local model returned an empty response. Please try again.");
+          options?.onTokenUsage?.({
+            totalTokens: estimateRequestTokens(messages, answer || "The local model returned an empty response. Please try again."),
+            estimated: true,
+          });
+          onDone();
+          return;
+        }
+
         const sendRequest = async () => {
           let userId: string | undefined;
           try {
@@ -88,7 +127,9 @@ export function useEnosxAI() {
             body: JSON.stringify({
               messages,
               githubContext: options?.githubContext,
+              skillContext: options?.skillContext,
               aiMode: options?.aiMode,
+              attachments: options?.attachments,
               userId,
             }),
           });
@@ -109,6 +150,10 @@ export function useEnosxAI() {
         let buffer = "";
         let sawContent = false;
         let streamError: string | null = null;
+        let sawReasoning = false;
+        let sawAnswer = false;
+        let generatedText = "";
+        let providerTokenCount: number | null = null;
 
         const processEvent = (event: string) => {
           for (const line of event.split("\n")) {
@@ -119,18 +164,37 @@ export function useEnosxAI() {
 
             try {
               const parsed = JSON.parse(data) as {
-                choices?: Array<{ delta?: { content?: string } }>;
+                choices?: Array<{ delta?: { content?: string; reasoning_content?: string; reasoning?: string } }>;
                 error?: { message?: string };
+                usage?: { total_tokens?: number; prompt_tokens?: number; completion_tokens?: number };
               };
+
+              if (parsed.usage) {
+                const total = parsed.usage.total_tokens;
+                const splitTotal = (parsed.usage.prompt_tokens ?? 0) + (parsed.usage.completion_tokens ?? 0);
+                if (typeof total === "number" && Number.isFinite(total)) providerTokenCount = total;
+                else if (splitTotal > 0) providerTokenCount = splitTotal;
+              }
 
               if (parsed.error?.message) {
                 streamError = parsed.error.message;
                 continue;
               }
 
-              const content = parsed.choices?.[0]?.delta?.content;
+              const delta = parsed.choices?.[0]?.delta;
+              const reasoning = delta?.reasoning_content || delta?.reasoning;
+              if (reasoning && !sawReasoning) {
+                sawReasoning = true;
+                onReasoningStatus?.("Analyzing request");
+              }
+              const content = delta?.content;
               if (content) {
                 sawContent = true;
+                generatedText += content;
+                if (!sawAnswer) {
+                  sawAnswer = true;
+                  onReasoningStatus?.("Drafting answer");
+                }
                 onChunk(content);
               }
             } catch {
@@ -152,18 +216,27 @@ export function useEnosxAI() {
         buffer += decoder.decode();
         if (buffer.trim()) processEvent(buffer);
 
+        onReasoningStatus?.(sawContent ? "Answer ready" : "Preparing response");
+
         if (streamError) {
           throw new Error(streamError);
         }
 
         if (!sawContent) {
           onChunk("Sorry, I received an empty response this time. Please try again — I’ll pick right back up where we left off.");
+          generatedText = "Sorry, I received an empty response this time. Please try again — I’ll pick right back up where we left off.";
         }
+
+        options?.onTokenUsage?.({
+          totalTokens: providerTokenCount ?? estimateRequestTokens(messages, generatedText),
+          estimated: providerTokenCount === null,
+        });
 
         onDone();
       } catch (err) {
         const errorMessage = err instanceof Error ? err.message : "Unknown error";
-        const friendlyError = getFriendlyErrorMessage(errorMessage);
+        const friendlyError = usingLocalModel ? `Local model error: ${errorMessage}` : getFriendlyErrorMessage(errorMessage);
+        reportClientError(err, "ai.request");
         setError(friendlyError);
         console.error("[useEnosxAI] Error:", errorMessage);
 

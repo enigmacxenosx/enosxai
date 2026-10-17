@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { FolderPlus, HardDrive, ListMusic, Music2, Play, Search, Trash2, Upload, Video, Image as ImageIcon, FileText } from "lucide-react";
 import { toast } from "sonner";
+import { showError } from "@/lib/errorReporting";
 import { useAuth } from "@/contexts/AuthContext";
 import { useTheme } from "@/contexts/ThemeContext";
 import { GlobalLayout } from "@/components/GlobalLayout";
@@ -69,7 +70,7 @@ export default function MediaLibraryPage() {
       setFolders(payload.folders || []);
       setPlaylists(payload.playlists || []);
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Could not load media library");
+      showError(error instanceof Error ? error.message : "Could not load media library");
     } finally { setIsLoading(false); }
   }, [userId, search, folderFilter]);
 
@@ -82,12 +83,12 @@ export default function MediaLibraryPage() {
   }, [assets, playlistFilter, playlists]);
 
   const uploadFiles = async (files: File[]) => {
-    if (!userId) { toast.error("Sign in to save files to your library"); return; }
+    if (!userId) { showError("Sign in to save files to your library"); return; }
     setIsUploading(true);
     let uploaded = 0;
     try {
       for (const file of files) {
-        if (file.size > MAX_BYTES) { toast.error(file.name + " is larger than 25MB"); continue; }
+        if (file.size > MAX_BYTES) { showError(file.name + " is larger than 25MB"); continue; }
         const content = await readAsDataUrl(file);
         const response = await fetch("/api/media", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ userId, name: file.name, mimeType: file.type || "application/octet-stream", sizeBytes: file.size, content, folderId: folderFilter === "all" ? null : folderFilter }) });
         const payload = await response.json();
@@ -96,7 +97,7 @@ export default function MediaLibraryPage() {
       }
       if (uploaded) toast.success(uploaded + " file" + (uploaded === 1 ? "" : "s") + " added to your library");
       await loadLibrary();
-    } catch (error) { toast.error(error instanceof Error ? error.message : "Upload failed"); }
+    } catch (error) { showError(error instanceof Error ? error.message : "Upload failed"); }
     finally { setIsUploading(false); if (inputRef.current) inputRef.current.value = ""; }
   };
 
@@ -105,7 +106,7 @@ export default function MediaLibraryPage() {
     if (!name || !userId) return;
     const response = await fetch("/api/media/folders", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ userId, name }) });
     const payload = await response.json();
-    if (!response.ok) { toast.error(payload.message || "Could not create folder"); return; }
+    if (!response.ok) { showError(payload.message || "Could not create folder"); return; }
     setNewFolder("");
     await loadLibrary();
     setFolderFilter(payload.folder.id);
@@ -116,22 +117,22 @@ export default function MediaLibraryPage() {
     if (!name || !userId) return;
     const response = await fetch("/api/media/playlists", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ userId, name }) });
     const payload = await response.json();
-    if (!response.ok) { toast.error(payload.message || "Could not create playlist"); return; }
+    if (!response.ok) { showError(payload.message || "Could not create playlist"); return; }
     setNewPlaylist("");
     await loadLibrary();
   };
 
   const moveAsset = async (assetId: string, nextFolderId: string) => {
     const response = await fetch("/api/media/" + encodeURIComponent(assetId), { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ userId, folderId: nextFolderId || null }) });
-    if (!response.ok) { toast.error("Could not move file"); return; }
+    if (!response.ok) { showError("Could not move file"); return; }
     await loadLibrary();
   };
 
   const addToPlaylist = async (assetId: string) => {
-    if (!addPlaylistId) { toast.error("Create or choose a playlist first"); return; }
+    if (!addPlaylistId) { showError("Create or choose a playlist first"); return; }
     const response = await fetch("/api/media/playlists/" + encodeURIComponent(addPlaylistId) + "/items", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ userId, mediaId: assetId }) });
     const payload = await response.json();
-    if (!response.ok) { toast.error(payload.message || "Could not add to playlist"); return; }
+    if (!response.ok) { showError(payload.message || "Could not add to playlist"); return; }
     setPlaylists((current) => current.map((playlist) => playlist.id === payload.playlist.id ? payload.playlist : playlist));
     toast.success("Added to playlist");
   };
@@ -139,7 +140,7 @@ export default function MediaLibraryPage() {
   const deleteAsset = async (asset: MediaAsset) => {
     if (!window.confirm("Delete " + asset.name + " from your media library?")) return;
     const response = await fetch("/api/media/" + encodeURIComponent(asset.id) + "?userId=" + encodeURIComponent(userId), { method: "DELETE" });
-    if (!response.ok) { toast.error("Could not delete file"); return; }
+    if (!response.ok) { showError("Could not delete file"); return; }
     setAssets((current) => current.filter((entry) => entry.id !== asset.id));
     setPlaylists((current) => current.map((playlist) => ({ ...playlist, mediaIds: playlist.mediaIds.filter((id) => id !== asset.id) })));
     toast.success("File deleted");

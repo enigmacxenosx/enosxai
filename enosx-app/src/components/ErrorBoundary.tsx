@@ -1,4 +1,5 @@
 import React from "react";
+import { reportClientError } from "@/lib/errorReporting";
 
 interface State {
   hasError: boolean;
@@ -20,6 +21,7 @@ export default class ErrorBoundary extends React.Component<
 
   componentDidCatch(error: Error, info: React.ErrorInfo) {
     console.error("ENOSX Error:", error, info);
+    reportClientError(error, "react.error-boundary", info.componentStack || "");
     if (/dynamically imported module|importing a module script failed|Loading chunk/i.test(error.message)) {
       const recoveryKey = "enosx-chunk-recovery-v1";
       if (!sessionStorage.getItem(recoveryKey)) {

@@ -1,5 +1,6 @@
 const MAX_MESSAGES = 24;
 const MAX_MESSAGE_LENGTH = 5000;
+const PROVIDER_RETRY_STATUSES = new Set([408, 429, 500, 502, 503, 504]);
 
 const SYSTEM_PROMPT = `You are ExLover Coach, the relationship-care product from Enosx Technologies. You are a warm, emotionally intelligent relationship coach whose job is to help a person slow down, understand their feelings, communicate clearly, make grounded decisions, and protect their dignity.
 
@@ -47,40 +48,38 @@ function normalizeMessages(input: unknown) {
     .filter((message) => message.content.length > 0);
 }
 
-async function callOpenRouter(apiKey: string, messages: Array<{ role: string; content: string }>) {
-  const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+async function callNvidia(apiKey: string, messages: Array<{ role: string; content: string }>) {
+  const baseUrl = (process.env.NVIDIA_API_BASE_URL || "https://integrate.api.nvidia.com/v1").replace(/\/$/, "");
+  const request = {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
       Authorization: `Bearer ${apiKey}`,
-      "HTTP-Referer": process.env.OPENROUTER_SITE_URL || "https://exlover.vercel.app",
-      "X-Title": "ExLover Coach by Enosx Technologies",
     },
     body: JSON.stringify({
-      models: [process.env.EXLOVER_MODEL || process.env.OPENROUTER_MODEL || "openrouter/auto"],
+      model: process.env.NVIDIA_EX_CORE_MODEL || process.env.NVIDIA_MODEL || "openai/gpt-oss-20b",
       messages,
       stream: false,
       max_tokens: 900,
       temperature: 0.62,
+      reasoning_effort: "low",
     }),
-  });
-  return response;
-}
+  };
 
-async function callOpenAI(apiKey: string, messages: Array<{ role: string; content: string }>) {
-  return fetch("https://api.openai.com/v1/chat/completions", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${apiKey}`,
-    },
-    body: JSON.stringify({
-      model: process.env.EXLOVER_MODEL || "gpt-4o-mini",
-      messages,
-      max_tokens: 900,
-      temperature: 0.62,
-    }),
-  });
+  for (let attempt = 0; attempt < 2; attempt += 1) {
+    try {
+      const response = await fetch(`${baseUrl}/chat/completions`, {
+        ...request,
+        signal: AbortSignal.timeout(35_000),
+      });
+      if (response.ok || !PROVIDER_RETRY_STATUSES.has(response.status) || attempt === 1) return response;
+    } catch (error) {
+      if (attempt === 1) throw error;
+    }
+    await new Promise((resolve) => setTimeout(resolve, 350));
+  }
+
+  throw new Error("The coach provider did not return a response.");
 }
 
 export default async function handler(req: any, res: any) {
@@ -107,15 +106,12 @@ export default async function handler(req: any, res: any) {
       ...messages,
     ];
 
-    const openRouterKey = process.env.OPENROUTER_API_KEY?.trim();
-    const openAIKey = process.env.OPENAI_API_KEY?.trim();
-    if (!openRouterKey && !openAIKey) {
-      return sendJson(res, 503, { error: "AI provider is not configured.", code: "MISSING_PROVIDER_KEY" });
+    const nvidiaKey = process.env.NVIDIA_API_KEY?.trim();
+    if (!nvidiaKey) {
+      return sendJson(res, 503, { error: "NVIDIA API provider is not configured.", code: "MISSING_PROVIDER_KEY" });
     }
 
-    const providerResponse = openRouterKey
-      ? await callOpenRouter(openRouterKey, fullMessages)
-      : await callOpenAI(openAIKey!, fullMessages);
+    const providerResponse = await callNvidia(nvidiaKey, fullMessages);
 
     if (!providerResponse.ok) {
       const providerError = await providerResponse.text().catch(() => "");

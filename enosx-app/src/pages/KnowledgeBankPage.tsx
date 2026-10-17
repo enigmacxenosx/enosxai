@@ -2,6 +2,7 @@ import { useMemo, useRef, useState } from "react";
 import { useLocation } from "wouter";
 import { ArrowLeft, BookOpen, Check, CloudOff, Command, Download, FileUp, Fingerprint, Plus, Search, Shield, Trash2, Upload, X } from "lucide-react";
 import { toast } from "sonner";
+import { showError } from "@/lib/errorReporting";
 import { GlobalLayout } from "@/components/GlobalLayout";
 import { useGitHub } from "@/hooks/useGitHub";
 import { useKnowledgeBank, readKnowledgeFile, KnowledgeKind, VECTOR_DIMENSIONS } from "@/hooks/useKnowledgeBank";
@@ -27,7 +28,7 @@ export default function KnowledgeBankPage() {
 
   const saveEntry = (): void => {
     if (!title.trim() || !content.trim()) {
-      toast.error("Title and knowledge content are required");
+      showError("Title and knowledge content are required");
       return;
     }
     addEntry({ title: title.trim(), content: content.trim(), kind, source: "Manual GOD MODE entry", tags: tags.split(",").map((tag) => tag.trim()).filter(Boolean) });
@@ -47,10 +48,10 @@ export default function KnowledgeBankPage() {
   };
 
   const syncToGitHub = async () => {
-    if (!activeAccount || !currentRepo) { toast.error("Open GitHub and select an account and repository first"); return; }
+    if (!activeAccount || !currentRepo) { showError("Open GitHub and select an account and repository first"); return; }
     const ok = await upsertFile("knowledge/enosx-knowledge-bank.json", exportEntries(), `sync: update knowledge bank (${stats.total} entries)`);
     if (ok) toast.success(`Knowledge Bank updated in ${currentRepo.fullName}`);
-    else toast.error("Knowledge Bank GitHub sync failed");
+    else showError("Knowledge Bank GitHub sync failed");
   };
 
   const runCommand = () => {
@@ -84,7 +85,7 @@ export default function KnowledgeBankPage() {
     <main className="mx-auto grid max-w-7xl gap-6 p-5 md:p-10 lg:grid-cols-[1fr_330px]">
       <section>
         <div className="mb-6 flex flex-wrap items-end justify-between gap-4"><div><h2 className="text-3xl font-semibold">Your private brain.</h2><p className="mt-2 max-w-xl text-sm leading-6 text-white/50">Store facts, instructions, skills, and project context on this device. The bank remains useful without an API key; optional models can be connected later for richer answers.</p></div><div className="flex gap-2"><button onClick={() => jsonRef.current?.click()} className="rounded-xl border border-white/10 px-3 py-2 text-xs text-white/70 hover:bg-white/10"><Upload size={14} className="mr-2 inline"/>Import JSON</button><button onClick={download} className="rounded-xl border border-white/10 px-3 py-2 text-xs text-white/70 hover:bg-white/10"><Download size={14} className="mr-2 inline"/>Export</button><button onClick={syncToGitHub} disabled={githubBusy} className="rounded-xl border border-cyan-300/20 bg-cyan-300/10 px-3 py-2 text-xs text-cyan-100 hover:bg-cyan-300/20 disabled:opacity-50"><Upload size={14} className="mr-2 inline"/>{githubBusy ? "Syncing..." : "Push GitHub"}</button>
-<input ref={jsonRef} type="file" accept="application/json" className="hidden" onChange={async (event) => { const file = event.target.files?.[0]; if (!file) return; try { const count = importEntries(JSON.parse(await file.text())); toast.success(`${count} entries imported`); } catch { toast.error("Invalid knowledge JSON"); } event.target.value = ""; }}/></div></div>
+<input ref={jsonRef} type="file" accept="application/json" className="hidden" onChange={async (event) => { const file = event.target.files?.[0]; if (!file) return; try { const count = importEntries(JSON.parse(await file.text())); toast.success(`${count} entries imported`); } catch { showError("Invalid knowledge JSON"); } event.target.value = ""; }}/></div></div>
         <div className="mb-5 flex items-center gap-3 rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3"><Search size={17} className="text-white/40"/><input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search your local brain..." className="w-full bg-transparent text-sm outline-none placeholder:text-white/30"/><span className="text-xs text-white/30">{visibleEntries.length} results</span></div>
         <div className="space-y-3">{visibleEntries.map((entry) => <article key={entry.id} className="rounded-2xl border border-white/10 bg-white/[0.035] p-5 transition hover:border-cyan-300/30"><div className="flex items-start justify-between gap-4"><div><div className="mb-2 flex flex-wrap items-center gap-2"><span className="rounded-full border border-cyan-300/20 bg-cyan-300/10 px-2 py-1 text-[10px] uppercase tracking-wider text-cyan-200">{entry.kind}</span>{entry.tags.map((tag) => <span key={tag} className="text-[10px] text-white/35">#{tag}</span>)}</div><h3 className="font-medium">{entry.title}</h3></div><button onClick={() => removeEntry(entry.id)} className="text-white/25 hover:text-red-300"><Trash2 size={16}/></button></div><p className="mt-3 whitespace-pre-wrap text-sm leading-6 text-white/60">{entry.content}</p><p className="mt-4 text-[10px] uppercase tracking-wider text-white/25">Source: {entry.source} · Updated {new Date(entry.updatedAt).toLocaleString()}</p></article>)}{!visibleEntries.length && <div className="rounded-2xl border border-dashed border-white/15 p-12 text-center"><Fingerprint className="mx-auto mb-3 text-cyan-300/50" size={32}/><p className="text-sm text-white/55">Your brain is empty.</p><p className="mt-1 text-xs text-white/30">Add a fact, upload a document, or use GOD MODE.</p></div>}</div>
       </section>

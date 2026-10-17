@@ -7,8 +7,9 @@ packages:
   - scripts
 
 allowBuilds:
+  '@firebase/util': true
   esbuild: true
-
+  protobufjs: true
 
 catalog:
   '@replit/vite-plugin-cartographer': ^0.5.21

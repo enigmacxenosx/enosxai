@@ -67,8 +67,11 @@ function formatTime(date = new Date()) {
   return date.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
 }
 
-function demoReply(userMessage: string) {
+function demoReply(userMessage: string, mode: Mode = "clarity") {
   const lower = userMessage.toLowerCase();
+  if (/(hurt myself|harm myself|kill myself|suicid|unsafe|threaten|stalk)/i.test(lower)) {
+    return "I’m really glad you said this out loud. Your immediate safety matters more than solving the relationship right now. If you may be in danger or might hurt yourself or someone else, contact local emergency services or a trusted person who can stay with you now. If you can, move away from anything you could use to cause harm and do not face this moment alone.";
+  }
   if (lower.includes("boundary")) {
     return "A boundary is not a threat or a test; it is a clear statement of what you will do to stay well. Try this shape: “When X happens, I feel Y. I need Z going forward. If that cannot happen, I will do A.”\n\nBefore you send it, ask yourself: is the boundary specific, possible for you to keep, and about your action rather than controlling theirs?";
   }
@@ -77,6 +80,12 @@ function demoReply(userMessage: string) {
   }
   if (lower.includes("conversation") || lower.includes("say")) {
     return "Let’s make the conversation less about winning a reaction and more about making your truth easy to understand. Start with observation, impact, need, and invitation: “When I notice __, I feel __. I need __. Can we talk about __?”\n\nWhat do you most want them to understand, even if they do not agree?";
+  }
+  if (mode === "communication") {
+    return "Let’s turn the feeling into words you can stand behind. Try: “I want to share something, not start a fight. When __ happened, I felt __. What I need is __. Are you willing to talk about it?”\n\nKeep the message to one situation, one feeling, and one clear request.";
+  }
+  if (mode === "healing") {
+    return "You do not have to be finished grieving to take care of yourself. For today, choose one small stabilizing action: eat something, step outside, contact a safe friend, or create a short no-contact window. Which part needs the most care right now?";
   }
   return "Let’s slow this down together. I hear that something in this relationship is asking for clarity, not another round of guessing.\n\nTry finishing this sentence without editing yourself: “The part I am afraid to admit is…” That answer often points to the need underneath the immediate problem. What comes up?";
 }
@@ -158,7 +167,7 @@ export default function App() {
       const payload = await response.json().catch(() => ({}));
       if (!response.ok) throw new Error(payload.error || "Coach unavailable");
 
-      const assistantContent = typeof payload.reply === "string" ? payload.reply : demoReply(text);
+      const assistantContent = typeof payload.reply === "string" ? payload.reply : demoReply(text, activeMode);
       setMessages((current) => [
         ...current,
         {
@@ -174,7 +183,7 @@ export default function App() {
         {
           id: crypto.randomUUID(),
           role: "assistant",
-          content: demoReply(text),
+          content: demoReply(text, activeMode),
           timestamp: formatTime(),
         },
       ]);

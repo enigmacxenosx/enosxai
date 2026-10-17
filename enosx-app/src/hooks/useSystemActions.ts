@@ -1,5 +1,6 @@
 import { useCallback } from "react";
 import { toast } from "sonner";
+import { showError } from "@/lib/errorReporting";
 import { useCommandChain, type SystemAction } from "./useCommandChain";
 
 export function useSystemActions() {
@@ -50,7 +51,7 @@ export function useSystemActions() {
             toast.info("Action proposed. Review the website and fields before approving an interaction.");
           }
         } catch (e) {
-          toast.error(`Action failed: ${e instanceof Error ? e.message : String(e)}`);
+          showError(`Action failed: ${e instanceof Error ? e.message : String(e)}`);
         }
       } else {
         // Multiple actions - use command chain

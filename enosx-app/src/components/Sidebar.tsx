@@ -23,6 +23,7 @@ import {
   Settings,
   Sparkles,
   Monitor,
+  Presentation,
 } from "lucide-react";
 import { Conversation } from "@/lib/types";
 import { useTheme } from "@/contexts/ThemeContext";
@@ -157,6 +158,14 @@ export default function Sidebar({
       danger: false,
     },
     {
+      label: "Visual Story Studio",
+      description: "Bring data to life with motion",
+      icon: Presentation,
+      onClick: () => { window.location.href = "/visual-story"; },
+      accent: false,
+      danger: false,
+    },
+    {
       label: "Reusable Workflows",
       description: "Copy repeatable AI workflows",
       icon: Sparkles,
@@ -257,13 +266,13 @@ export default function Sidebar({
               }}
               title={collapsed ? item.label : undefined}
             >
-              <Icon size={16} className="flex-shrink-0" />
+              <Icon size={14} className="flex-shrink-0" />
               {!collapsed && (
                 <div className="flex flex-col items-start overflow-hidden flex-1">
                   <div className="flex items-center justify-between w-full">
-                    <span className="text-sm font-semibold whitespace-nowrap">{item.label}</span>
+                    <span className="text-base font-semibold whitespace-nowrap">{item.label}</span>
                   </div>
-                  <span className="text-[10px] opacity-60 whitespace-nowrap">{item.description}</span>
+                  <span className="text-xs opacity-70 whitespace-nowrap">{item.description}</span>
                 </div>
               )}
             </motion.button>
@@ -274,7 +283,11 @@ export default function Sidebar({
       {/* Conversation history */}
       <div className="min-h-0 flex-1 overflow-y-auto px-2.5 pb-2 space-y-1 scrollbar-thin">
         <AnimatePresence initial={false}>
-          {conversations.map((conv, i) => (
+          {conversations.map((conv, i) => {
+            const isGodModeConversation = /^GOD MODE\b/i.test(conv.title);
+            const ConversationIcon = isGodModeConversation ? Crown : MessageSquare;
+            const modeAccent = isGodModeConversation ? "#fbbf24" : config.accent;
+            return (
             <motion.div
               key={conv.id}
               initial={{ opacity: 0, scale: 0.8 }}
@@ -292,10 +305,10 @@ export default function Sidebar({
                 style={
                   activeId === conv.id
                     ? {
-                        background: `rgba(${config.accentRgb}, 0.14)`,
-                        border: `1px solid rgba(${config.accentRgb}, 0.28)`,
+                        background: isGodModeConversation ? "rgba(251,191,36,0.12)" : `rgba(${config.accentRgb}, 0.14)`,
+                        border: isGodModeConversation ? "1px solid rgba(251,191,36,0.32)" : `1px solid rgba(${config.accentRgb}, 0.28)`,
                         color: config.text,
-                        boxShadow: `0 0 12px rgba(${config.accentRgb}, 0.1)`,
+                        boxShadow: isGodModeConversation ? "0 0 12px rgba(251,191,36,0.1)" : `0 0 12px rgba(${config.accentRgb}, 0.1)`,
                       }
                     : {
                         background: "transparent",
@@ -305,9 +318,9 @@ export default function Sidebar({
                 }
                 title={collapsed ? conv.title : undefined}
               >
-                <MessageSquare
-                  size={13}
-                  style={{ color: activeId === conv.id ? config.accent : config.textMuted, flexShrink: 0 }}
+                <ConversationIcon
+                  size={11}
+                  style={{ color: activeId === conv.id || isGodModeConversation ? modeAccent : config.textMuted, flexShrink: 0 }}
                 />
                 {!collapsed && (
                   <span className="text-sm truncate flex-1">
@@ -323,12 +336,13 @@ export default function Sidebar({
                   className="absolute right-2 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity p-1"
                   aria-label={`Delete ${conv.title}`}
                 >
-                  <Trash2 size={12} />
+                  <Trash2 size={10} />
                 </motion.button>
               )}
               </div>
             </motion.div>
-          ))}
+            );
+          })}
         </AnimatePresence>
       </div>
 
@@ -352,13 +366,13 @@ export default function Sidebar({
                 className="w-6 h-6 rounded-full flex-shrink-0 flex items-center justify-center text-xs font-bold"
                 style={{ background: `rgba(${config.accentRgb}, 0.2)`, color: config.accent }}
               >
-                {isAuthenticated && user?.displayName ? user.displayName.charAt(0).toUpperCase() : <User size={13} />}
+                {isAuthenticated && user?.displayName ? user.displayName.charAt(0).toUpperCase() : <User size={11} />}
               </div>
             )
           }
           {!collapsed && (
             <div className="flex flex-col items-start overflow-hidden">
-              <span className="text-sm font-semibold whitespace-nowrap" style={{ color: config.text }}>
+              <span className="text-base font-semibold whitespace-nowrap" style={{ color: config.text }}>
                 {isAuthenticated ? user?.displayName ?? 'Profile' : 'Sign In'}
               </span>
               <span className="text-[10px] whitespace-nowrap truncate max-w-[160px]" style={{ color: config.textMuted }}>
@@ -404,7 +418,7 @@ export default function Sidebar({
                 color: config.textMuted,
               }}
             >
-              <X size={14} />
+              <X size={12} />
             </button>
             {sidebarContent}
           </motion.div>

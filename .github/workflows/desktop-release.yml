@@ -18,7 +18,62 @@ env:
   CARGO_TERM_COLOR: always
 
 jobs:
+  ui-regression:
+    name: UI regression gate
+    runs-on: ubuntu-24.04
+    outputs:
+      release_notes: ${{ steps.notes.outputs.release_notes }}
+    steps:
+      - name: Check out the release source
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.inputs.tag_name || github.ref }}
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Match desktop bundle version to release tag
+        env:
+          RELEASE_TAG: ${{ github.event.inputs.tag_name || github.ref_name }}
+        run: node .github/scripts/sync-desktop-version.mjs
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9
+      - name: Install JavaScript dependencies
+        run: pnpm install --frozen-lockfile
+      - name: Extract release notes
+        id: notes
+        env:
+          RELEASE_TAG: ${{ github.event.inputs.tag_name || github.ref_name }}
+        run: |
+          python3 - <<'PY' >> "$GITHUB_OUTPUT"
+          import os, re
+          from pathlib import Path
+          tag = os.environ["RELEASE_TAG"]
+          lines = Path("CHANGELOG.md").read_text().splitlines()
+          start = next((i for i, line in enumerate(lines) if re.match(rf"^##\s+{re.escape(tag)}(?:\s|$)", line)), None)
+          if start is None:
+              body = f"Release {tag}. See the repository changelog for details."
+          else:
+              end = next((i for i in range(start + 1, len(lines)) if lines[i].startswith("## ")), len(lines))
+              body = "\n".join(lines[start:end]).strip()
+          print("release_notes<<NOTES_EOF")
+          print(body)
+          print("NOTES_EOF")
+          PY
+      - name: Install Playwright Chromium
+        run: pnpm --filter @workspace/enosx-app exec playwright install --with-deps chromium
+      - name: Run UI regression suite
+        run: pnpm --filter @workspace/enosx-app test:e2e
+      - name: Typecheck and build release source
+        run: |
+          pnpm --filter @workspace/enosx-app typecheck
+          pnpm --filter @workspace/enosx-app build
   build:
+    needs: ui-regression
+    permissions:
+      contents: write
     name: Build ${{ matrix.platform }} installer
     strategy:
       fail-fast: false
@@ -28,17 +83,23 @@ jobs:
             args: "--bundles nsis,msi"
           - platform: macos-latest
             args: "--bundles dmg"
-          - platform: ubuntu-22.04
+          - platform: ubuntu-24.04
             args: "--bundles appimage,deb"
     runs-on: ${{ matrix.platform }}
     steps:
-      - name: Check out source
+      - name: Check out the tested release source
         uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.inputs.tag_name || github.ref }}
 
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
           node-version: 22
+      - name: Match desktop bundle version to release tag
+        env:
+          RELEASE_TAG: ${{ github.event.inputs.tag_name || github.ref_name }}
+        run: node .github/scripts/sync-desktop-version.mjs
 
       - name: Set up pnpm
         uses: pnpm/action-setup@v4
@@ -69,6 +130,9 @@ jobs:
           tagName: ${{ github.event_name == 'workflow_dispatch' && inputs.tag_name || github.ref_name }}
           releaseName: ENOSX AI ${{ github.event_name == 'workflow_dispatch' && inputs.tag_name || github.ref_name }}
           releaseBody: |
+            ${{ needs.ui-regression.outputs.release_notes }}
+
+            ---
             Download the installer for your operating system below.
 
             - Windows: `.msi` or `.exe`

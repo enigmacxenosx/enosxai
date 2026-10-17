@@ -9,7 +9,7 @@
  */
 
 import { motion, AnimatePresence } from "framer-motion";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   Trash2,
   MessageSquare,
@@ -22,6 +22,7 @@ import {
   Library,
   Settings,
   Sparkles,
+  Monitor,
   Presentation,
 } from "lucide-react";
 import { Conversation } from "@/lib/types";
@@ -30,6 +31,7 @@ import BrandMark from "./BrandMark";
 import { useWallpaper } from "@/contexts/WallpaperContext";
 import { useAuth } from "@/contexts/AuthContext";
 import ReusableFeaturesDialog from "./ReusableFeaturesDialog";
+import { chooseAndStartLocalModel, getLocalModelStatus, getSavedLocalModelPath, isTauriDesktop, startSavedLocalModel, stopLocalModel } from "@/lib/localModel";
 
 interface SidebarProps {
   conversations: Conversation[];
@@ -69,9 +71,58 @@ export default function Sidebar({
   onMobileClose,
 }: SidebarProps) {
   const [showReusableFeatures, setShowReusableFeatures] = useState(false);
+  const [localModelRunning, setLocalModelRunning] = useState(false);
+  const [localModelName, setLocalModelName] = useState<string | null>(null);
+  const [localModelBusy, setLocalModelBusy] = useState(false);
   const { config } = useTheme();
   const { settings } = useWallpaper();
   const { user, isAuthenticated } = useAuth();
+
+  const handleLocalModel = async () => {
+    if (!isTauriDesktop()) {
+      window.alert("Open ENOSX AI Desktop to launch a local GGUF model. The browser version cannot start local processes.");
+      return;
+    }
+    setLocalModelBusy(true);
+    try {
+      if (localModelRunning) {
+        await stopLocalModel();
+        setLocalModelRunning(false);
+        setLocalModelName(null);
+      } else {
+        const status = await chooseAndStartLocalModel();
+        setLocalModelRunning(status.running);
+        setLocalModelName(status.modelPath?.split(/[\\/]/).pop() ?? "Local model");
+      }
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      if (!message.toLowerCase().includes("cancelled")) window.alert(message);
+    } finally {
+      setLocalModelBusy(false);
+    }
+  };
+
+  useEffect(() => {
+    if (isTauriDesktop()) {
+      void getLocalModelStatus().then((status) => {
+        setLocalModelRunning(status.running);
+        setLocalModelName(status.modelPath?.split(/[\\/]/).pop() ?? null);
+        if (!status.running) {
+          const savedPath = getSavedLocalModelPath();
+          if (savedPath) {
+            setLocalModelBusy(true);
+            void startSavedLocalModel(savedPath).then((started) => {
+              setLocalModelRunning(started.running);
+              setLocalModelName(started.modelPath?.split(/[\\/]/).pop() ?? "Local model");
+            }).catch(() => {
+              // Keep startup quiet when llama-server is unavailable; the sidebar
+              // remains available so the user can choose another GGUF file.
+            }).finally(() => setLocalModelBusy(false));
+          }
+        }
+      }).catch(() => undefined);
+    }
+  }, []);
 
   const navItems = [
     {
@@ -96,6 +147,14 @@ export default function Sidebar({
       icon: Library,
       onClick: () => { window.location.href = "/media-library"; },
       accent: false,
+      danger: false,
+    },
+    {
+      label: localModelBusy ? "Starting Offline AI…" : localModelRunning ? "Stop Offline AI" : "Open GGUF Model",
+      description: localModelRunning ? (localModelName || "Local server running") : "PC · start a local offline model",
+      icon: Monitor,
+      onClick: handleLocalModel,
+      accent: localModelRunning,
       danger: false,
     },
     {

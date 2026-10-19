@@ -1,5 +1,10 @@
-## v0.1.30 — Safety guard, domain expertise, feedback & faster replies
+## v0.1.30 — Mobile & image-generation fixes, connector composer, safety guard
 
+- Fixed the chat interface breaking on mobile phones: PDF support now loads on demand and degrades gracefully instead of crashing the whole app on phones with older browsers, the phone layout keeps the composer docked even without dynamic viewport units, and phone composer chips (AI mode, prompt suggestions, connectors) size to their labels instead of being squeezed into 40px squares with clipped text.
+- Fixed hosted image generation returning "NVIDIA image generation returned no usable image": NVIDIA image responses are now parsed defensively, including binary and inline data-URL images in any payload shape, so generated images render again.
+- Replaced the composer's "Connectors" text button with connector logos that stack like a page group with a `+N` overflow, and compacted the composer and sidebar controls.
+- Expanded ENOSX AI's system prompt so it knows and accurately reports its capabilities and Enosx Technologies details.
+- Includes the previously unpushed context-window and long-term memory selection improvements.
 - Added a shared safety guard to both chat services: crisis and self-harm messages receive immediate guidance with local emergency contacts, requests sexualizing minors are refused with child-protection pointers, and weapon/explosive synthesis requests are declined with safer alternatives. Education, history, and professional questions on these topics remain answerable.
 - Added domain knowledge modules for finance, law, and medicine plus a fairness and bias section, injected into the assistant's system prompt so answers follow each field's standards and state scope disclaimers.
 - Added response feedback: thumbs up/down with an optional improvement note in chat, stored on-device and relayed to ENOSX support through a new rate-limited feedback endpoint.

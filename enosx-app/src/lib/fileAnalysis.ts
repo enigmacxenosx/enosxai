@@ -1,9 +1,25 @@
 import * as XLSX from "xlsx";
 import mammoth from "mammoth";
-import { getDocument, GlobalWorkerOptions } from "pdfjs-dist";
 import pdfWorker from "pdfjs-dist/build/pdf.worker.mjs?url";
 
-GlobalWorkerOptions.workerSrc = pdfWorker;
+type PdfJsModule = typeof import("pdfjs-dist");
+
+let pdfjsPromise: Promise<PdfJsModule> | null = null;
+
+function loadPdfjs(): Promise<PdfJsModule> {
+  if (!pdfjsPromise) {
+    pdfjsPromise = import("pdfjs-dist")
+      .then((pdfjs) => {
+        pdfjs.GlobalWorkerOptions.workerSrc = pdfWorker;
+        return pdfjs;
+      })
+      .catch((error) => {
+        pdfjsPromise = null;
+        throw error;
+      });
+  }
+  return pdfjsPromise;
+}
 
 const MAX_TEXT_CHARS = 120_000;
 const MAX_IMAGE_BYTES = 200_000;
@@ -175,6 +191,7 @@ async function sampleVideoFrames(file: File) {
 
 async function extractPdf(file: File) {
   const data = await file.arrayBuffer();
+  const { getDocument } = await loadPdfjs();
   const pdf = await getDocument({ data }).promise;
   const pages: string[] = [];
   for (let i = 1; i <= Math.min(pdf.numPages, 40); i += 1) {
@@ -220,7 +237,13 @@ export async function analyzeFile(file: File) {
   const ext = extension(file.name);
   let text = "";
   if (isTextFile(file)) text = await file.text();
-  else if (ext === "pdf") text = await extractPdf(file);
+  else if (ext === "pdf") {
+    try {
+      text = await extractPdf(file);
+    } catch {
+      text = `PDF document ${file.name} is attached. Extractable text was not available in this browser.`;
+    }
+  }
   else if (ext === "docx" || ["xlsx", "xls"].includes(ext)) text = await extractOffice(file);
   else text = `Binary document ${file.name} (${file.type || "unknown type"}) is attached. Extractable text was not available in the browser.`;
   return { content: text.slice(0, MAX_TEXT_CHARS), analysisContent: text.slice(0, MAX_TEXT_CHARS), analysisFrames: [] as string[], kind: "document" as const };

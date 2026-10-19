@@ -277,7 +277,7 @@ export default function CommandBar({
                       whileHover={{ y: -1 }}
                       whileTap={{ scale: 0.97, y: 0 }}
                       onClick={() => setValue((current) => `${current.trimEnd()}\n\n${suffix}`)}
-                      className="shrink-0 rounded-full border px-2.5 py-1 text-[10px] leading-none text-white/60 transition-[color,background-color,border-color,transform] duration-150 hover:text-white/90"
+                      className="composer-chip shrink-0 rounded-full border px-2.5 py-1 text-[10px] leading-none text-white/60 transition-[color,background-color,border-color,transform] duration-150 hover:text-white/90"
                       style={{
                         borderColor: `rgba(${config.accentRgb}, 0.2)`,
                         background: `rgba(${config.accentRgb}, 0.06)`,
@@ -299,7 +299,7 @@ export default function CommandBar({
                   whileHover={{ scale: 1.03 }}
                   whileTap={{ scale: 0.97 }}
                   onClick={() => setModeOpen((o) => !o)}
-                  className="flex items-center gap-1 px-2 py-0.5 rounded-lg font-semibold text-[10px] whitespace-nowrap transition-all"
+                  className="composer-chip flex items-center gap-1 px-2 py-0.5 rounded-lg font-semibold text-[10px] whitespace-nowrap transition-all"
                   style={{
                     background: currentMode.bgColor,
                     border: `1.5px solid ${currentMode.color}`,

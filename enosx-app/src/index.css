@@ -665,8 +665,14 @@
     .phone-composer-dock button {
       min-width: 40px !important;
       min-height: 40px !important;
-      width: 40px !important;
-      height: 40px !important;
+    }
+
+    .phone-composer-dock button.composer-chip {
+      width: auto !important;
+      height: auto !important;
+      min-width: 0 !important;
+      min-height: 30px !important;
+      padding: 6px 10px !important;
     }
 
     .phone-composer-dock textarea::placeholder {
@@ -682,6 +688,8 @@
 
   /* Shared dashboard/settings neon glass language */
   .neon-dashboard-stage {
+    height: 100vh;
+    height: 100dvh;
     background:
       radial-gradient(circle at 12% 16%, rgba(0, 213, 255, .13), transparent 28%),
       radial-gradient(circle at 88% 14%, rgba(255, 0, 170, .12), transparent 26%),

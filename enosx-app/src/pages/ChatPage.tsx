@@ -1179,18 +1179,14 @@ ${getAdminContext()}` : ""}`,
           <div className="relative mx-auto max-w-[820px]">
             <AnimatePresence>
               {error && (
-                <motion.div
+                <motion.p
                   initial={{ opacity: 0, y: 8 }}
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: 8 }}
                   role="alert"
-                  className="absolute inset-x-0 bottom-full z-30 mb-2 flex items-start gap-3 rounded-2xl border border-amber-200/15 bg-[#17151b]/95 px-4 py-3 text-xs text-amber-100/85 shadow-2xl backdrop-blur-xl"
+                  className="absolute inset-x-0 bottom-full z-30 mb-2 px-1 text-xs leading-relaxed text-amber-100/75"
                 >
-                  <span className="mt-1 h-2 w-2 shrink-0 rounded-full bg-amber-300/85" aria-hidden="true" />
-                  <div className="min-w-0 flex-1">
-                    <p className="font-semibold text-amber-100">The response could not be completed</p>
-                    <p className="mt-1 break-words text-amber-100/65">{error}</p>
-                  </div>
+                  {error}
                   <motion.button
                     type="button"
                     whileHover={{ scale: 1.02 }}
@@ -1199,11 +1195,11 @@ ${getAdminContext()}` : ""}`,
                       const lastUserMsg = activeConversation?.messages.filter(m => m.role === 'user').pop();
                       if (lastUserMsg) void handleSendTracked(lastUserMsg.content);
                     }}
-                    className="shrink-0 rounded-lg bg-amber-200/10 px-3 py-1.5 font-medium text-amber-100 transition-colors hover:bg-amber-200/15"
+                    className="ml-1 inline font-medium text-amber-100 underline decoration-amber-100/40 underline-offset-2 transition-colors hover:text-amber-50"
                   >
                     Try again
                   </motion.button>
-                </motion.div>
+                </motion.p>
               )}
             </AnimatePresence>
             {/* File context badges */}

@@ -39,9 +39,6 @@ export default function WelcomeScreen({ onSuggestion, isCompact }: WelcomeScreen
           <h2 className="text-2xl font-semibold tracking-[-0.03em] sm:text-3xl" style={{ color: config.text }}>
             What would you like to work on?
           </h2>
-          <p className="mt-3 max-w-md text-sm leading-6 text-white/45">
-            Start with a prompt below or ask anything. ENOSX AI is ready when you are.
-          </p>
         </div>
 
         <div className="flex flex-wrap justify-center gap-2">

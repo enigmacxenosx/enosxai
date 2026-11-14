@@ -4,7 +4,7 @@ import { Mic, History, Plus, Settings, Volume2 } from "lucide-react";
 import { Conversation, Message, VoiceState, type Attachment } from "@/lib/types";
 import { useTheme } from "@/contexts/ThemeContext";
 import MessageBubble from "./MessageBubble";
-import CommandBar, { type AIMode } from "./CommandBar";
+import CommandBar, { AIModePicker, type AIMode } from "./CommandBar";
 
 interface TVChatLayoutProps {
   conversations: Conversation[];
@@ -14,6 +14,8 @@ interface TVChatLayoutProps {
   messages: Message[];
   isLoading: boolean;
   handleSend: (text: string, aiMode?: AIMode) => void;
+  aiMode: AIMode;
+  onAiModeChange: (mode: AIMode) => void;
   waitingCount?: number;
   voiceState: VoiceState;
   transcript: string;
@@ -37,6 +39,8 @@ export default function TVChatLayout({
   messages,
   isLoading,
   handleSend,
+  aiMode,
+  onAiModeChange,
   waitingCount = 0,
   voiceState,
   transcript,
@@ -70,7 +74,8 @@ export default function TVChatLayout({
           </div>
         </div>
         
-        <div className="flex gap-6">
+        <div className="flex items-center gap-6">
+          <AIModePicker aiMode={aiMode} onChange={onAiModeChange} />
           <button 
             onClick={createNewChat}
             className="px-8 py-4 rounded-2xl bg-white/5 border border-white/10 flex items-center gap-3 hover:bg-white/10 transition-all focus:ring-4 focus:ring-cyan-500 outline-none"
@@ -165,6 +170,7 @@ export default function TVChatLayout({
       <div className="mt-12 opacity-0 pointer-events-none absolute">
         <CommandBar
           onSend={handleSend}
+          aiMode={aiMode}
           isLoading={isLoading}
           waitingCount={waitingCount}
           voiceState={voiceState}

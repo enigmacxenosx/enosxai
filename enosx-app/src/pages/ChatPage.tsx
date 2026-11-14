@@ -11,7 +11,7 @@ import { toast } from "sonner";
 import { showError } from "@/lib/errorReporting";
 import Sidebar from "@/components/Sidebar";
 import MessageBubble from "@/components/MessageBubble";
-import CommandBar, { type AIMode } from "@/components/CommandBar";
+import CommandBar, { AIModePicker, type AIMode } from "@/components/CommandBar";
 import AppAwareSuggestions from "@/components/AppAwareSuggestions";
 import WelcomeScreen, { WelcomeSuggestions } from "@/components/WelcomeScreen";
 import ConversationSearchDialog from "@/components/ConversationSearchDialog";
@@ -949,6 +949,8 @@ ${getAdminContext()}` : ""}`,
           messages={messages}
           isLoading={isLoading}
           handleSend={handleSendTracked}
+          aiMode={activeMode}
+          onAiModeChange={setActiveMode}
           waitingCount={waitingMessages.length}
           voiceState={voiceState}
           transcript={transcript}
@@ -983,6 +985,8 @@ ${getAdminContext()}` : ""}`,
           messages={messages}
           isLoading={isLoading}
           handleSend={handleSendTracked}
+          aiMode={activeMode}
+          onAiModeChange={setActiveMode}
           waitingCount={waitingMessages.length}
           voiceState={voiceState}
           transcript={transcript}
@@ -1075,6 +1079,7 @@ ${getAdminContext()}` : ""}`,
           </div>
 
           <div className="flex items-center gap-3">
+            <AIModePicker aiMode={activeMode} onChange={setActiveMode} />
             <div
               role="status"
               aria-label={`${analytics.totalTokensUsed.toLocaleString()} tokens used`}
@@ -1187,6 +1192,7 @@ ${getAdminContext()}` : ""}`,
 
             <CommandBar
               onSend={handleSendTracked}
+              aiMode={activeMode}
               isLoading={isLoading}
               waitingCount={waitingMessages.length}
               isVoiceSupported={isVoiceSupported}

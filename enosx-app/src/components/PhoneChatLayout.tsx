@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Menu, Plus } from "lucide-react";
 import Sidebar from "./Sidebar";
 import MessageBubble from "./MessageBubble";
-import CommandBar, { type AIMode } from "./CommandBar";
+import CommandBar, { AIModePicker, type AIMode } from "./CommandBar";
 import WelcomeScreen, { WelcomeSuggestions } from "./WelcomeScreen";
 import { Conversation, Message, VoiceState, type Attachment } from "@/lib/types";
 import { useTheme } from "@/contexts/ThemeContext";
@@ -17,6 +17,8 @@ interface PhoneChatLayoutProps {
   messages: Message[];
   isLoading: boolean;
   handleSend: (text: string, aiMode?: AIMode) => void;
+  aiMode: AIMode;
+  onAiModeChange: (mode: AIMode) => void;
   waitingCount?: number;
   voiceState: VoiceState;
   transcript: string;
@@ -44,6 +46,8 @@ export default function PhoneChatLayout({
   messages,
   isLoading,
   handleSend,
+  aiMode,
+  onAiModeChange,
   waitingCount = 0,
   voiceState,
   transcript,
@@ -74,8 +78,9 @@ export default function PhoneChatLayout({
         >
           <Menu size={24} />
         </button>
-        <div className="text-sm font-bold tracking-tighter text-white/90">
-          ENOSX <span className="text-cyan-400">AI</span>
+        <div className="flex items-center gap-2">
+          <div className="text-sm font-bold tracking-tighter text-white/90">ENOSX <span className="text-cyan-400">AI</span></div>
+          <AIModePicker aiMode={aiMode} onChange={onAiModeChange} />
         </div>
         <button
           type="button"
@@ -111,6 +116,7 @@ export default function PhoneChatLayout({
       <div className="phone-composer-dock relative z-30 shrink-0 border-t border-white/10 bg-black/80 px-3 pb-[calc(0.5rem+env(safe-area-inset-bottom))] pt-2 backdrop-blur-xl">
         <CommandBar
           onSend={handleSend}
+          aiMode={aiMode}
           isLoading={isLoading}
           waitingCount={waitingCount}
           voiceState={voiceState}

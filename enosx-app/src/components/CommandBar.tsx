@@ -55,6 +55,39 @@ export const AI_MODES: AIModeOption[] = [
   },
 ];
 
+export function AIModePicker({ aiMode, onChange }: { aiMode: AIMode; onChange: (mode: AIMode) => void }) {
+  const [modeOpen, setModeOpen] = useState(false);
+  const modeRef = useRef<HTMLDivElement>(null);
+  const currentMode = AI_MODES.find((mode) => mode.id === aiMode) ?? AI_MODES[0];
+
+  useEffect(() => {
+    function handleOutside(event: MouseEvent) {
+      if (modeRef.current && !modeRef.current.contains(event.target as Node)) setModeOpen(false);
+    }
+    if (modeOpen) document.addEventListener("mousedown", handleOutside);
+    return () => document.removeEventListener("mousedown", handleOutside);
+  }, [modeOpen]);
+
+  return (
+    <div className="relative" ref={modeRef}>
+      <motion.button type="button" whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }} onClick={() => setModeOpen((open) => !open)} className="flex items-center gap-1 rounded-full border px-2.5 py-1.5 text-[11px] font-medium whitespace-nowrap transition-all" style={{ background: currentMode.bgColor, borderColor: `${currentMode.color}66`, color: currentMode.color }} aria-haspopup="menu" aria-expanded={modeOpen} title={`AI mode: ${currentMode.label}`}>
+        {currentMode.label}<ChevronDown size={11} style={{ transform: modeOpen ? "rotate(180deg)" : "rotate(0deg)", transition: "transform 0.2s ease" }} />
+      </motion.button>
+      <AnimatePresence>
+        {modeOpen && (
+          <motion.div initial={{ opacity: 0, y: -4, scale: 0.97 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: -4, scale: 0.97 }} transition={{ duration: 0.15 }} className="absolute right-0 top-full z-50 mt-2 flex min-w-[250px] flex-col gap-1 rounded-2xl p-1.5" style={{ background: "rgba(12,12,18,0.97)", border: "1px solid rgba(255,255,255,0.1)", backdropFilter: "blur(16px)", WebkitBackdropFilter: "blur(16px)", boxShadow: "0 8px 32px rgba(0,0,0,0.5)" }} role="menu">
+            {AI_MODES.map((mode) => (
+              <motion.button type="button" key={mode.id} whileHover={{ backgroundColor: "rgba(255,255,255,0.07)" }} whileTap={{ scale: 0.95 }} onClick={() => { onChange(mode.id); setModeOpen(false); }} className="flex items-center justify-between gap-4 rounded-lg px-3 py-2 text-left transition-all" style={aiMode === mode.id ? { background: mode.bgColor, border: `1px solid ${mode.color}66`, color: mode.color } : { background: "rgba(255,255,255,0.04)", border: "1px solid transparent", color: "rgba(255,255,255,0.55)" }} role="menuitem">
+                <span className="flex flex-col gap-0.5"><span className="text-xs font-semibold whitespace-nowrap">{mode.label}</span><span className="text-[10px] font-normal opacity-70 whitespace-nowrap">{mode.description}</span></span>
+              </motion.button>
+            ))}
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+}
+
 const PROMPT_RECIPES = [
   { label: "Summarize", icon: ListChecks, suffix: "Summarize this with the key points, decisions, risks, and next steps." },
   { label: "Translate", icon: Languages, suffix: "Translate this accurately into [target language] and preserve the tone and formatting." },
@@ -78,6 +111,7 @@ interface CommandBarProps {
   attachments?: Attachment[];
   waitingCount?: number;
   tightBottom?: boolean;
+  aiMode: AIMode;
 }
 
 export default function CommandBar({
@@ -96,34 +130,20 @@ export default function CommandBar({
   attachments = [],
   waitingCount = 0,
   tightBottom = false,
+  aiMode,
 }: CommandBarProps) {
   const { config } = useTheme();
   const { settings: wallpaperSettings } = useWallpaper();
   const [value, setValue] = useState("");
-  const [aiMode, setAiMode] = useState<AIMode>("ex-core");
-  const [modeOpen, setModeOpen] = useState(false);
   const [selectedConnectorIds, setSelectedConnectorIds] = useState<string[]>([]);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
-  const modeRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
-
-  // Close dropdown when clicking outside
-  useEffect(() => {
-    function handleOutside(e: MouseEvent) {
-      if (modeRef.current && !modeRef.current.contains(e.target as Node)) {
-        setModeOpen(false);
-      }
-    }
-    if (modeOpen) document.addEventListener("mousedown", handleOutside);
-    return () => document.removeEventListener("mousedown", handleOutside);
-  }, [modeOpen]);
 
   const isListening = voiceState === "listening";
   const isSpeaking = voiceState === "speaking";
   const isProcessing = voiceState === "processing";
   const voiceActive = isListening || isSpeaking || isProcessing;
 
-  const currentMode = AI_MODES.find((m) => m.id === aiMode) ?? AI_MODES[0];
   const hasImageAttachment = attachments.some((file) =>
     /image/i.test(`${file.mimeType ?? ""} ${file.type}`) || /\.(png|jpe?g|gif|webp|bmp|avif|heic)$/i.test(file.name),
   );
@@ -293,91 +313,14 @@ export default function CommandBar({
               )}
             </AnimatePresence>
 
-            {/* AI Mode selector — single compact tab with dropdown */}
             <div className="flex items-center gap-2">
-              <div className="relative" ref={modeRef}>
-                <motion.button
-                  type="button"
-                  whileHover={{ scale: 1.03 }}
-                  whileTap={{ scale: 0.97 }}
-                  onClick={() => setModeOpen((o) => !o)}
-                  className="composer-chip flex items-center gap-1 rounded-full px-2.5 py-1 font-medium text-[11px] whitespace-nowrap transition-all"
-                  style={{
-                    background: currentMode.bgColor,
-                    border: `1px solid ${currentMode.color}66`,
-                    color: currentMode.color,
-                    boxShadow: "none",
-                  }}
-                >
-                  {currentMode.label}
-                  <ChevronDown
-                    size={10}
-                    style={{
-                      transform: modeOpen ? "rotate(180deg)" : "rotate(0deg)",
-                      transition: "transform 0.2s ease",
-                    }}
-                  />
-                </motion.button>
-              </div>
-
               <ConnectorPicker
                 selectedConnectorIds={selectedConnectorIds}
                 onToggleConnector={handleToggleConnector}
               />
-
             </div>
 
-              <AnimatePresence>
-                {modeOpen && (
-                  <motion.div
-                    initial={{ opacity: 0, y: -4, scale: 0.97 }}
-                    animate={{ opacity: 1, y: 0, scale: 1 }}
-                    exit={{ opacity: 0, y: -4, scale: 0.97 }}
-                    transition={{ duration: 0.15 }}
-                    className="absolute bottom-full left-0 z-50 mb-2 flex min-w-[248px] flex-col gap-1 rounded-2xl p-1.5"
-                    style={{
-                      background: "rgba(12,12,18,0.97)",
-                      border: "1px solid rgba(255,255,255,0.1)",
-                      backdropFilter: "blur(16px)",
-                      WebkitBackdropFilter: "blur(16px)",
-                      boxShadow: "0 8px 32px rgba(0,0,0,0.5)",
-                      minWidth: 250,
-                    }}
-                  >
-                    {AI_MODES.map((mode) => (
-                      <motion.button
-                        type="button"
-                        key={mode.id}
-                        whileHover={{ backgroundColor: "rgba(255,255,255,0.07)" }}
-                        whileTap={{ scale: 0.95 }}
-                        onClick={() => { setAiMode(mode.id); setModeOpen(false); }}
-                        className="flex items-center justify-between gap-4 px-3 py-2 rounded-lg text-left transition-all"
-                        style={
-                          aiMode === mode.id
-                            ? {
-                                background: mode.bgColor,
-                                border: `1px solid ${mode.color}66`,
-                                color: mode.color,
-                                boxShadow: "none",
-                              }
-                            : {
-                                background: "rgba(255,255,255,0.04)",
-                                border: "1px solid transparent",
-                                color: "rgba(255,255,255,0.55)",
-                              }
-                        }
-                      >
-                        <span className="flex flex-col gap-0.5">
-                          <span className="font-semibold text-xs whitespace-nowrap">{mode.label}</span>
-                          <span className="text-[10px] font-normal opacity-70 whitespace-nowrap">{mode.description}</span>
-                        </span>
-                      </motion.button>
-                    ))}
-                  </motion.div>
-                )}
-	              </AnimatePresence>
-	
-	              {/* Textarea and buttons container */}
+              {/* Textarea and buttons container */}
 	              <div className="flex items-end gap-2">
                 {/* Compact textarea */}
               <textarea

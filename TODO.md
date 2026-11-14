@@ -8,3 +8,12 @@
 - [ ] Add play/pause autoplay and beat navigation so the story can be presented as an animated sequence.
 - [ ] Add the Visual Story Studio to ENOSX navigation and the static route manifest.
 - [ ] Validate the ENOSX app with typecheck and production build; resolve actionable errors before delivery.
+
+
+## Online Learning Media and Website Study
+- [x] Recognize natural requests for online tutorial videos and pictures; fetch both media types when requested together and show inline pictures, source links, and playable/clickable videos.
+- [x] Let users ask ENOSX AI to study a simple website from a supplied URL; ground the response in extracted page text and cite the page.
+- [x] Keep website retrieval bounded and SSRF-resistant; treat retrieved page content as untrusted and report unavailable media/pages honestly.
+- [x] Add starter prompts that demonstrate media search and website study.
+- [x] Validate typecheck and production builds; inspect the changed diff before delivery.
+- [ ] Confirm `SERPER_API_KEY` is configured for the Vercel production environment so online image/video search can return live results.

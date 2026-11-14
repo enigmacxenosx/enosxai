@@ -4,7 +4,7 @@
  */
 
 import { motion } from "framer-motion";
-import { CalendarDays, Code2, Lightbulb, PenLine } from "lucide-react";
+import { BookOpen, CalendarDays, Code2, Lightbulb, PenLine, Images } from "lucide-react";
 import { useTheme } from "@/contexts/ThemeContext";
 import BrandMark from "./BrandMark";
 
@@ -16,6 +16,8 @@ interface WelcomeScreenProps {
 const STARTERS = [
   { label: "Plan my week", prompt: "Help me plan my week with clear priorities and realistic time blocks.", icon: CalendarDays, color: "#54d9c5" },
   { label: "Explain a topic", prompt: "Explain a difficult topic simply, then test my understanding with an example.", icon: Lightbulb, color: "#b990ff" },
+  { label: "Find learning media", prompt: "Find online tutorial videos and pictures about web design for beginners, and show the results with source links.", icon: Images, color: "#73d5ff" },
+  { label: "Study a webpage", prompt: "Study this page: https://www.w3.org/WAI/fundamentals/accessibility-intro/. Summarize its main ideas and suggest what I should learn next.", icon: BookOpen, color: "#a5e8a1" },
   { label: "Review code", prompt: "Review this code for correctness, security, maintainability, and performance.", icon: Code2, color: "#72d8bd" },
   { label: "Draft something", prompt: "Help me draft a clear, polished version of this idea.", icon: PenLine, color: "#8de6d1" },
 ];

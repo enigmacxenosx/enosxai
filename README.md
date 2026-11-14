@@ -151,6 +151,10 @@ Image provider keys must remain server-side and must not use a `VITE_` prefix. T
 **Online media search**:
 - `SERPER_API_KEY` — (Optional) server-only Serper.dev key for searching online images and videos. Add it to the Vercel project's environment variables; do not use a `VITE_` prefix. Without it, regular chat continues to work and media search is simply unavailable.
 
+Chat can search for online learning videos and pictures from natural-language requests, including requests for both types together. Pictures appear inline with a source link; videos embed when the source supports it and otherwise remain clickable. Media search requires `SERPER_API_KEY`.
+
+**Website study**: Ask Enosx AI to read or summarize a public webpage and include its HTTP(S) URL. The reader fetches static HTML/text only, rejects private/internal network targets, validates redirects, and bounds the amount of content returned. JavaScript-only or protected pages may need the relevant text pasted into chat.
+
 **Voice**:
 - `ELEVEN_LABS_API_KEY` — ElevenLabs API key (stored as encrypted secret)
 - `ELEVEN_LABS_VOICE_ID` — (Optional) Custom voice ID

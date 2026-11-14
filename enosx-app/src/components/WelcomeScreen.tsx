@@ -35,7 +35,6 @@ export default function WelcomeScreen({ onSuggestion, isCompact }: WelcomeScreen
           <div className="mb-5 flex h-12 w-12 items-center justify-center rounded-2xl bg-white/[0.045] ring-1 ring-white/[0.08]">
             <BrandMark size={isCompact ? 32 : 38} />
           </div>
-          <p className="mb-2 text-[11px] font-medium uppercase tracking-[0.2em] text-white/35">Your AI workspace</p>
           <h2 className="text-2xl font-semibold tracking-[-0.03em] sm:text-3xl" style={{ color: config.text }}>
             What would you like to work on?
           </h2>

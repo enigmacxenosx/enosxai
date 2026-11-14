@@ -929,11 +929,14 @@ ${getAdminContext()}` : ""}`,
     if (!shouldAutoScrollRef.current) return;
     const container = messagesContainerRef.current;
     if (!container) return;
+    // Scroll when a response starts/finishes or the conversation changes, not
+    // on every streamed token. This keeps the chat viewport from rising while
+    // the assistant is writing.
     const frame = window.requestAnimationFrame(() => {
       container.scrollTop = container.scrollHeight;
     });
     return () => window.cancelAnimationFrame(frame);
-  }, [conversations, activeId]);
+  }, [activeId, isLoading]);
 
   const activeConversation = conversations.find((c) => c.id === activeId);
   const messages = activeConversation?.messages || [];
@@ -1167,41 +1170,42 @@ ${getAdminContext()}` : ""}`,
                 )}
                 <div ref={messagesEndRef} className="h-4" />
                 
-                {/* Floating error indicator */}
-                <AnimatePresence>
-                  {error && (
-                    <motion.div
-                      initial={{ opacity: 0, y: 10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      exit={{ opacity: 0, y: 10 }}
-                      className="flex flex-col gap-2 rounded-2xl bg-amber-300/[0.055] p-4 text-sm text-amber-100/80 ring-1 ring-amber-200/10"
-                    >
-                      <div className="font-bold flex items-center gap-2">
-                        <span className="h-2 w-2 rounded-full bg-amber-300/80" />
-                        The response could not be completed
-                      </div>
-                      <p className="opacity-80">{error}</p>
-                      <motion.button
-                        whileHover={{ scale: 1.02 }}
-                        whileTap={{ scale: 0.98 }}
-                        onClick={() => {
-                          const lastUserMsg = activeConversation.messages.filter(m => m.role === 'user').pop();
-                          if (lastUserMsg) void handleSendTracked(lastUserMsg.content);
-                        }}
-                        className="mt-2 self-start rounded-lg bg-amber-200/10 px-3.5 py-2 text-xs font-medium text-amber-100 transition-all hover:bg-amber-200/15"
-                      >
-                        Try again
-                      </motion.button>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
               </motion.div>
             )}
           </AnimatePresence>
         </div>
 
-        <div className={`premium-composer-dock z-20 px-4 pb-3 pt-3 ${isCompactMode ? "pb-4" : "md:px-6 md:pb-4 md:pt-4"}`}>
+        <div className={`premium-composer-dock relative z-20 px-4 pb-3 pt-3 ${isCompactMode ? "pb-4" : "md:px-6 md:pb-4 md:pt-4"}`}>
           <div className="relative mx-auto max-w-[820px]">
+            <AnimatePresence>
+              {error && (
+                <motion.div
+                  initial={{ opacity: 0, y: 8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: 8 }}
+                  role="alert"
+                  className="absolute inset-x-0 bottom-full z-30 mb-2 flex items-start gap-3 rounded-2xl border border-amber-200/15 bg-[#17151b]/95 px-4 py-3 text-xs text-amber-100/85 shadow-2xl backdrop-blur-xl"
+                >
+                  <span className="mt-1 h-2 w-2 shrink-0 rounded-full bg-amber-300/85" aria-hidden="true" />
+                  <div className="min-w-0 flex-1">
+                    <p className="font-semibold text-amber-100">The response could not be completed</p>
+                    <p className="mt-1 break-words text-amber-100/65">{error}</p>
+                  </div>
+                  <motion.button
+                    type="button"
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                    onClick={() => {
+                      const lastUserMsg = activeConversation?.messages.filter(m => m.role === 'user').pop();
+                      if (lastUserMsg) void handleSendTracked(lastUserMsg.content);
+                    }}
+                    className="shrink-0 rounded-lg bg-amber-200/10 px-3 py-1.5 font-medium text-amber-100 transition-colors hover:bg-amber-200/15"
+                  >
+                    Try again
+                  </motion.button>
+                </motion.div>
+              )}
+            </AnimatePresence>
             {/* File context badges */}
             <FileContextBadge
               fileContext={fileContext}

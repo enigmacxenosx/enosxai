@@ -79,6 +79,9 @@ function cleanSpeechText(text: string) {
     .replace(/```[\s\S]*?```/g, " Code block omitted. ")
     .replace(/!\[([^\]]*)\]\([^)]*\)/g, "$1")
     .replace(/\[([^\]]+)\]\([^)]*\)/g, "$1")
+    .replace(/^\s*[-*+]\s+/gm, "")
+    .replace(/^\s*(\d+)[.)]\s+/gm, "Step $1: ")
+    .replace(/^\s*>\s?/gm, "")
     .split(/\r?\n/);
   const spokenLines: string[] = [];
   const cellsAreSeparator = (value: string) =>
@@ -116,6 +119,7 @@ function cleanSpeechText(text: string) {
 
   return spokenLines
     .join(". ")
+    .replace(/([.!?])(?:\s*[.!?])+/g, "$1")
     .replace(/[*_#`~]/g, "")
     .replace(/\s+/g, " ")
     .trim();

@@ -1199,9 +1199,10 @@ ${getAdminContext()}` : ""}`,
               onFilesSelected={handleFilesSelected}
               attachments={fileContext.files}
               audioStream={microphoneStream}
+              tightBottom={!activeConversation || activeConversation.messages.length === 0}
             />
             {(!activeConversation || activeConversation.messages.length === 0) && (
-              <div className="mt-3 pb-1">
+              <div className="pb-1">
                 <WelcomeSuggestions onSuggestion={(text) => void handleSendTracked(text)} />
               </div>
             )}

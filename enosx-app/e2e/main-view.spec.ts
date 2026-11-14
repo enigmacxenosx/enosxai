@@ -48,7 +48,8 @@ test("desktop welcome composer rises into the open space above its suggestions",
     };
   });
   expect(geometry.composerTop).toBeLessThan(390);
-  expect(geometry.chipsTop).toBeGreaterThan(geometry.composerBottom);
+  expect(geometry.chipsTop - geometry.composerBottom).toBeGreaterThanOrEqual(-1);
+  expect(geometry.chipsTop - geometry.composerBottom).toBeLessThanOrEqual(1);
   expect(geometry.chipsBottom).toBeLessThanOrEqual(geometry.viewportHeight + 2);
 });
 
@@ -128,6 +129,7 @@ test("mobile welcome suggestions sit below the composer without stealing focus o
     expect(geometry.composer.left).toBeGreaterThanOrEqual(0);
     expect(geometry.composer.right).toBeLessThanOrEqual(geometry.width);
     expect(geometry.composer.top).toBeLessThan(geometry.chips.top);
+    expect(geometry.chips.top - geometry.composer.bottom).toBeLessThanOrEqual(1);
     expect(geometry.chips.left).toBeGreaterThanOrEqual(0);
     expect(geometry.chips.right).toBeLessThanOrEqual(geometry.width);
     expect(geometry.chips.bottom).toBeLessThanOrEqual(geometry.height + 2);

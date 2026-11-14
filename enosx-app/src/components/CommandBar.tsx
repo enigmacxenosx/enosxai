@@ -77,6 +77,7 @@ interface CommandBarProps {
   onFilesSelected?: (files: File[]) => void;
   attachments?: Attachment[];
   waitingCount?: number;
+  tightBottom?: boolean;
 }
 
 export default function CommandBar({
@@ -94,6 +95,7 @@ export default function CommandBar({
   onFilesSelected,
   attachments = [],
   waitingCount = 0,
+  tightBottom = false,
 }: CommandBarProps) {
   const { config } = useTheme();
   const { settings: wallpaperSettings } = useWallpaper();
@@ -199,7 +201,7 @@ export default function CommandBar({
       {/* Voice overlay removed for seamless input experience */}
 
       {/* ── Main command bar ── */}
-      <div className="px-4 pb-2 pt-1 flex-shrink-0">
+      <div className={`px-4 ${tightBottom ? "pb-0" : "pb-2"} pt-1 flex-shrink-0`}>
         {waitingCount > 0 && (
           <div className="mx-auto mb-2 flex max-w-3xl items-center gap-2 rounded-xl border border-cyan-300/15 bg-cyan-300/[0.06] px-3 py-2 text-[11px] text-cyan-100/75" role="status">
             <Clock3 size={13} className="shrink-0 text-cyan-300" />

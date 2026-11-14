@@ -123,9 +123,10 @@ export default function PhoneChatLayout({
           onFilesSelected={onFilesSelected}
           attachments={attachments}
           audioStream={audioStream}
+          tightBottom={messages.length === 0}
         />
         {messages.length === 0 && (
-          <div className="mt-2 px-2 pb-1">
+          <div className="px-2 pb-1">
             <WelcomeSuggestions onSuggestion={(p: string) => handleSend(p)} />
           </div>
         )}

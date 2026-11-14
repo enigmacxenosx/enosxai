@@ -75,10 +75,48 @@ interface ISpeechRecognition extends EventTarget {
 type SpeechRecognitionConstructor = new () => ISpeechRecognition;
 
 function cleanSpeechText(text: string) {
-  return text
-    .replace(/!\[.*?\]\(.*?\)/g, "")
-    .replace(/\[(.*?)\]\(.*?\)/g, "$1")
-    .replace(/[*_#`]/g, "")
+  const lines = text
+    .replace(/```[\s\S]*?```/g, " Code block omitted. ")
+    .replace(/!\[([^\]]*)\]\([^)]*\)/g, "$1")
+    .replace(/\[([^\]]+)\]\([^)]*\)/g, "$1")
+    .split(/\r?\n/);
+  const spokenLines: string[] = [];
+  const cellsAreSeparator = (value: string) =>
+    value.split("|").map((cell) => cell.trim()).filter(Boolean).every((cell) => /^:?-{3,}:?$/.test(cell));
+
+  for (let index = 0; index < lines.length; index += 1) {
+    const line = lines[index].trim();
+    if (line.includes("|") && cellsAreSeparator(line)) continue;
+    if (!line.includes("|")) {
+      if (line) spokenLines.push(line);
+      continue;
+    }
+
+    const cells = (value: string) => value.split("|").map((cell) => cell.trim()).filter(Boolean);
+    const header = cells(line);
+    const next = lines[index + 1]?.trim() ?? "";
+    const isTableHeader = next.includes("|") && cells(next).every((cell) => /^:?-{3,}:?$/.test(cell));
+    if (isTableHeader) {
+      index += 1;
+      const rows: string[] = [];
+      while (index + 1 < lines.length && lines[index + 1].includes("|")) {
+        const values = cells(lines[++index]);
+        if (!values.length || values.every((cell) => /^:?-{3,}:?$/.test(cell))) continue;
+        rows.push(values.map((value, cellIndex) => {
+          const label = header[cellIndex];
+          return label ? `${label}: ${value}` : value;
+        }).join(", "));
+      }
+      spokenLines.push(rows.length ? rows.join(". ") : header.join(", "));
+      continue;
+    }
+
+    spokenLines.push(cells(line).join(", "));
+  }
+
+  return spokenLines
+    .join(". ")
+    .replace(/[*_#`~]/g, "")
     .replace(/\s+/g, " ")
     .trim();
 }

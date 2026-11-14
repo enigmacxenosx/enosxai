@@ -1149,7 +1149,7 @@ ${getAdminContext()}` : ""}`,
           </AnimatePresence>
         </div>
 
-        <div className={`premium-composer-dock relative z-20 px-4 pb-3 pt-3 ${isCompactMode ? "pb-4" : "md:px-6 md:pb-4 md:pt-4"}`}>
+        <div className={`premium-composer-dock relative z-20 px-4 pb-3 pt-3 ${isCompactMode ? "pb-4" : "md:px-6 md:pb-4 md:pt-4"} ${(!activeConversation || activeConversation.messages.length === 0) ? "md:pb-20" : ""}`}>
           <div className="relative mx-auto max-w-[820px]">
             <AnimatePresence>
               {error && (

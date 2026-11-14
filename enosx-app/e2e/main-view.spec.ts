@@ -29,6 +29,29 @@ test("welcome view keeps the composer inside the viewport", async ({ page }) => 
   expect(geometry.composerBottom).toBeLessThanOrEqual(geometry.viewportHeight + 2);
 });
 
+test("desktop welcome composer rises into the open space above its suggestions", async ({ page }) => {
+  await page.setViewportSize({ width: 1274, height: 619 });
+  await openWorkspace(page);
+  const geometry = await page.evaluate(() => {
+    const composer = document.querySelector(".phone-command-shell")?.getBoundingClientRect();
+    const labels = ["Plan my week", "Explain a topic", "Find learning media", "Study a webpage", "Review code", "Draft something"];
+    const chips = [...document.querySelectorAll("button")]
+      .filter((button) => labels.some((label) => button.textContent?.includes(label)))
+      .map((button) => button.getBoundingClientRect());
+    if (!composer || chips.length !== labels.length) throw new Error("Expected the desktop composer and all six welcome suggestions");
+    return {
+      composerTop: composer.top,
+      composerBottom: composer.bottom,
+      chipsTop: Math.min(...chips.map((rect) => rect.top)),
+      chipsBottom: Math.max(...chips.map((rect) => rect.bottom)),
+      viewportHeight: innerHeight,
+    };
+  });
+  expect(geometry.composerTop).toBeLessThan(390);
+  expect(geometry.chipsTop).toBeGreaterThan(geometry.composerBottom);
+  expect(geometry.chipsBottom).toBeLessThanOrEqual(geometry.viewportHeight + 2);
+});
+
 test("voice input shows a live waveform while listening", async ({ page }) => {
   await page.addInitScript(() => {
     class MockSpeechRecognition {

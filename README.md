@@ -136,8 +136,12 @@ Existing pre-Firebase chats are not automatically copied into a signed-in accoun
 
 **AI Services**:
 - `NVIDIA_API_KEY` — NVIDIA's OpenAI-compatible API for chat
-- EX Pro and ENOSH MIND use NVIDIA `moonshotai/kimi-k3` for text chat by default; set `NVIDIA_EX_PRO_MODEL`, `NVIDIA_ENOSH_MIND_MODEL`, or shared `NVIDIA_KIMI_MODEL` to override server-side.
-- `NVIDIA_MODEL` and `NVIDIA_EX_CORE_MODEL` — Optional EX Core text model configuration
+- `NVIDIA_MODEL` and `NVIDIA_EX_CORE_MODEL` — Optional default and EX Core text model configuration; the recommended value is `meta/muse-glimmer-30b`
+- `NVIDIA_EX_PRO_MODEL` — EX Pro text model configuration; the recommended value is `meta/muse-glimmer-30b`
+- `NVIDIA_ENOSH_MIND_MODEL` — ENOSH MIND text model configuration; the recommended value is `stepfun-ai/step-5-preview`
+- `NVIDIA_VISION_MODEL` — Shared fallback vision model configuration
+- `NVIDIA_EX_CORE_VISION_MODEL` and `NVIDIA_EX_PRO_VISION_MODEL` — Explicit Muse Glimmer vision routing for EX Core and EX Pro
+- `NVIDIA_ENOSH_MIND_VISION_MODEL` — Explicit Step 5 Preview vision routing for ENOSH MIND
 - `NVIDIA_IMAGE_API_KEY` — Optional image-provider key; falls back to `NVIDIA_API_KEY`
 - `NVIDIA_IMAGE_ENDPOINT` — Required URL for a deployed Stable Diffusion 3.5 Large NIM endpoint
 - `NVIDIA_IMAGE_MODEL` — Optional model identifier; defaults to Stable Diffusion 3.5 Large for model-specific `/v1/infer` endpoints

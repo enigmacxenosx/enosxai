@@ -71,3 +71,53 @@ test("composer remains inside the viewport at a phone width", async ({ page }) =
   expect(geometry.right).toBeLessThanOrEqual(geometry.width);
   expect(geometry.bottom).toBeLessThanOrEqual(geometry.height + 8);
 });
+
+test("mobile welcome suggestions sit below the composer without stealing focus or scrolling the page", async ({ page }) => {
+  for (const viewport of [
+    { width: 360, height: 780 },
+    { width: 390, height: 844 },
+    { width: 430, height: 932 },
+    { width: 390, height: 640 },
+  ]) {
+    await page.setViewportSize(viewport);
+    await openWorkspace(page);
+
+    const composer = page.locator(".phone-command-shell");
+    const textarea = page.getByPlaceholder("Ask Enosx anything...");
+    const starters = ["Plan my week", "Explain a topic", "Find learning media", "Study a webpage", "Review code", "Draft something"];
+    const geometry = await page.evaluate((labels) => {
+      const composer = document.querySelector(".phone-command-shell")?.getBoundingClientRect();
+      const buttons = [...document.querySelectorAll("button")].filter((button) => labels.some((label) => button.textContent?.includes(label)));
+      const chips = buttons.map((button) => button.getBoundingClientRect());
+      const chat = document.querySelector("main.flex-1.min-h-0.overflow-y-auto");
+      if (!composer || chips.length !== labels.length) throw new Error("Expected the mobile composer and all six welcome suggestions");
+      return {
+        composer: { left: composer.left, right: composer.right, top: composer.top, bottom: composer.bottom },
+        chips: { left: Math.min(...chips.map((rect) => rect.left)), right: Math.max(...chips.map((rect) => rect.right)), top: Math.min(...chips.map((rect) => rect.top)), bottom: Math.max(...chips.map((rect) => rect.bottom)) },
+        width: innerWidth,
+        height: innerHeight,
+        pageScrollY: window.scrollY,
+        chat: chat && { scrollTop: chat.scrollTop, scrollHeight: chat.scrollHeight, clientHeight: chat.clientHeight },
+        textareaFocused: document.activeElement === document.querySelector(".phone-command-shell textarea"),
+      };
+    }, starters);
+
+    expect(geometry.composer.left).toBeGreaterThanOrEqual(0);
+    expect(geometry.composer.right).toBeLessThanOrEqual(geometry.width);
+    expect(geometry.composer.top).toBeLessThan(geometry.chips.top);
+    expect(geometry.chips.left).toBeGreaterThanOrEqual(0);
+    expect(geometry.chips.right).toBeLessThanOrEqual(geometry.width);
+    expect(geometry.chips.bottom).toBeLessThanOrEqual(geometry.height + 2);
+    expect(geometry.pageScrollY).toBe(0);
+    expect(geometry.textareaFocused).toBe(false);
+
+    await textarea.click();
+    await expect(textarea).toBeFocused();
+    if (geometry.chat) {
+      await page.locator("main.flex-1.min-h-0.overflow-y-auto").evaluate((element) => {
+        element.scrollTop = element.scrollHeight;
+      });
+      await expect.poll(() => page.evaluate(() => window.scrollY)).toBe(0);
+    }
+  }
+});

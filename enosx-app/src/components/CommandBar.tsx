@@ -254,7 +254,7 @@ export default function CommandBar({
                     ease: [0.23, 1, 0.32, 1],
                     scale: { duration: 0.24, ease: [0.23, 1, 0.32, 1] },
                   }}
-                  className="flex items-center gap-1.5 overflow-x-auto px-1 pt-0.5"
+                  className="prompt-suggestions-row flex items-center gap-1.5 overflow-x-auto px-1 pt-0.5"
                   aria-label="Prompt suggestions"
                 >
                   <motion.span

@@ -702,6 +702,24 @@
       padding: 6px 10px !important;
     }
 
+    .phone-composer-dock .prompt-suggestions-row {
+      gap: 4px;
+      padding-left: 0;
+      padding-right: 0;
+    }
+
+    .phone-composer-dock .prompt-suggestions-row .composer-chip {
+      min-height: 24px !important;
+      padding: 4px 7px !important;
+      font-size: 9px !important;
+      gap: 4px;
+    }
+
+    .phone-composer-dock .prompt-suggestions-row .composer-chip svg {
+      width: 10px;
+      height: 10px;
+    }
+
     .phone-composer-dock textarea::placeholder {
       color: rgba(255,255,255,0.42);
     }

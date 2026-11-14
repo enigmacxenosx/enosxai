@@ -11,6 +11,7 @@ import BrandMark from "./BrandMark";
 interface WelcomeScreenProps {
   onSuggestion: (text: string) => void;
   isCompact?: boolean;
+  isComposerFlow?: boolean;
   showSuggestions?: boolean;
 }
 
@@ -23,14 +24,14 @@ const STARTERS = [
   { label: "Draft something", prompt: "Help me draft a clear, polished version of this idea.", icon: PenLine, color: "#8de6d1" },
 ];
 
-export function WelcomeSuggestions({ onSuggestion }: Pick<WelcomeScreenProps, "onSuggestion">) {
+export function WelcomeSuggestions({ onSuggestion, animateEntrance = true }: Pick<WelcomeScreenProps, "onSuggestion"> & { animateEntrance?: boolean }) {
   return (
     <div className="welcome-suggestions gap-2" aria-label="Suggested prompts">
       {STARTERS.map(({ label, prompt, icon: Icon, color }, index) => (
         <motion.button
           key={label}
           type="button"
-          initial={{ opacity: 0, y: 8 }}
+          initial={{ opacity: 0, y: animateEntrance ? 8 : 0 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.08 + index * 0.05, duration: 0.3 }}
           whileHover={{ y: -2 }}
@@ -46,18 +47,18 @@ export function WelcomeSuggestions({ onSuggestion }: Pick<WelcomeScreenProps, "o
   );
 }
 
-export default function WelcomeScreen({ onSuggestion, isCompact, showSuggestions = true }: WelcomeScreenProps) {
+export default function WelcomeScreen({ onSuggestion, isCompact, isComposerFlow = false, showSuggestions = true }: WelcomeScreenProps) {
   const { config } = useTheme();
 
   return (
-    <div className="flex min-h-full flex-col items-center justify-center px-4 py-10 sm:px-6">
+    <div className={isComposerFlow ? "flex w-full flex-col items-center px-4 pb-3 pt-5 sm:px-6" : "flex min-h-full flex-col items-center justify-center px-4 py-10 sm:px-6"}>
       <motion.div
         initial={{ opacity: 0, y: 12 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.45, ease: "easeOut" }}
         className="w-full max-w-2xl"
       >
-        <div className="mb-8 flex flex-col items-center text-center">
+        <div className={`${isComposerFlow ? "mb-0" : "mb-8"} flex flex-col items-center text-center`}>
           <div className="mb-5 flex h-12 w-12 items-center justify-center rounded-2xl bg-white/[0.045] ring-1 ring-white/[0.08]">
             <BrandMark size={isCompact ? 32 : 38} />
           </div>

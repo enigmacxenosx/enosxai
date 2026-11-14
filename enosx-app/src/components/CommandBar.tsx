@@ -111,6 +111,7 @@ interface CommandBarProps {
   attachments?: Attachment[];
   waitingCount?: number;
   tightBottom?: boolean;
+  animateEntrance?: boolean;
   aiMode: AIMode;
 }
 
@@ -130,6 +131,7 @@ export default function CommandBar({
   attachments = [],
   waitingCount = 0,
   tightBottom = false,
+  animateEntrance = true,
   aiMode,
 }: CommandBarProps) {
   const { config } = useTheme();
@@ -229,9 +231,9 @@ export default function CommandBar({
           </div>
         )}
         <motion.div
-          initial={{ y: 20, opacity: 0 }}
+          initial={animateEntrance ? { y: 20, opacity: 0 } : false}
           animate={{ y: 0, opacity: 1 }}
-          transition={{ type: "spring", stiffness: 300, damping: 30, delay: 0.1 }}
+          transition={animateEntrance ? { type: "spring", stiffness: 300, damping: 30, delay: 0.1 } : { duration: 0 }}
           className="mx-auto w-full max-w-none"
         >
           {/* Main input container */}

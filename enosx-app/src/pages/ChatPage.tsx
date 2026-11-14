@@ -1008,6 +1008,8 @@ ${getAdminContext()}` : ""}`,
     );
   }
 
+  const isWelcomeState = !activeConversation || activeConversation.messages.length === 0;
+
   const chatBody = (
     <div className="premium-chat-shell flex h-full w-full overflow-hidden text-white font-sans selection:bg-violet-500/30">
       {/* Quiet ambient background */}
@@ -1059,7 +1061,7 @@ ${getAdminContext()}` : ""}`,
         />
       )}
 
-      <main className="flex-1 flex flex-col relative min-w-0 min-h-0 overflow-hidden">
+      <main className={`flex-1 flex flex-col relative min-w-0 min-h-0 overflow-hidden ${isWelcomeState ? "welcome-chat-layout" : ""}`}>
         {/* Top Header */}
         <header className="premium-chat-header flex h-16 items-center justify-between px-4 sm:px-6 z-20 flex-shrink-0">
           <div className="flex items-center gap-4">
@@ -1111,13 +1113,14 @@ ${getAdminContext()}` : ""}`,
         <div 
           ref={messagesContainerRef}
           onScroll={updateChatScrollIntent}
-          className="premium-chat-scroll flex-1 overflow-y-auto scrollbar-hide px-4 md:px-0"
+          className={`premium-chat-scroll flex-1 overflow-y-auto scrollbar-hide px-4 md:px-0 ${isWelcomeState ? "welcome-chat-scroll" : ""}`}
         >
           <AnimatePresence mode="wait">
             {!activeConversation || activeConversation.messages.length === 0 ? (
               <WelcomeScreen
                 key="welcome"
                 onSuggestion={(text) => void handleSendTracked(text)}
+                isComposerFlow={isWelcomeState}
                 showSuggestions={false}
               />
             ) : (
@@ -1154,8 +1157,8 @@ ${getAdminContext()}` : ""}`,
           </AnimatePresence>
         </div>
 
-        <div className={`premium-composer-dock phone-composer-dock relative z-20 px-4 pb-3 pt-3 ${isCompactMode ? "pb-4" : "md:px-8 lg:px-12 md:pb-4 md:pt-4"} ${(!activeConversation || activeConversation.messages.length === 0) ? "md:pb-20" : ""}`}>
-          <div className="relative mx-auto w-full max-w-none">
+        <div className={`premium-composer-dock phone-composer-dock relative z-20 px-4 pb-3 pt-3 ${isCompactMode ? "pb-4" : "md:px-8 lg:px-12 md:pb-4 md:pt-4"} ${isWelcomeState ? "welcome-composer-dock" : ""}`}>
+          <div className={`relative mx-auto w-full ${isWelcomeState ? "max-w-3xl" : "max-w-none"}`}>
             <AnimatePresence>
               {error && (
                 <motion.p
@@ -1206,10 +1209,11 @@ ${getAdminContext()}` : ""}`,
               attachments={fileContext.files}
               audioStream={microphoneStream}
               tightBottom={!activeConversation || activeConversation.messages.length === 0}
+              animateEntrance={!isWelcomeState}
             />
             {(!activeConversation || activeConversation.messages.length === 0) && (
               <div className="welcome-suggestions-dock pb-1">
-                <WelcomeSuggestions onSuggestion={(text) => void handleSendTracked(text)} />
+                <WelcomeSuggestions onSuggestion={(text) => void handleSendTracked(text)} animateEntrance={!isWelcomeState} />
               </div>
             )}
           </div>

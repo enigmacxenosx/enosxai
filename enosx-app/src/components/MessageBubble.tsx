@@ -336,16 +336,16 @@ export default function MessageBubble({
       className={`flex min-w-0 gap-3 ${isUser ? "flex-row-reverse" : "flex-row"}`}
     >
       {/* Flat message surface: media and text are not nested inside chat bubbles. */}
-      <div className={`flex min-w-0 max-w-[90%] flex-col gap-1 ${isUser ? "items-end" : "items-start"}`}>
+      <div className={`flex min-w-0 max-w-[92%] flex-col gap-1 ${isUser ? "items-end" : "items-start"}`}>
         <motion.div
           transition={{ type: "spring", stiffness: 400, damping: 30 }}
           className={`relative w-full transition-all duration-300 ${!isUser && (isEmpty || isStreaming) ? 'rainbow-glow' : ''}`}
           style={{
-            background: "transparent",
+            background: isUser ? "rgba(155, 140, 255, 0.09)" : "transparent",
             border: "0",
-            borderRadius: 0,
+            borderRadius: isUser ? "18px" : 0,
             boxShadow: "none",
-            padding: isEmpty ? "4px 0" : "0",
+            padding: isEmpty ? "4px 0" : isUser ? "12px 15px" : "0",
             maxWidth: "100%",
             overflowWrap: "anywhere",
           }}
@@ -361,7 +361,7 @@ export default function MessageBubble({
                     <MediaAttachmentList attachments={message.attachments} />
                   )}
                   <div
-                    className="text-base leading-relaxed"
+                    className="text-[15px] leading-7"
                     style={{ color: config.text }}
                   >
                     {renderContentWithMedia(message.content, config.accent)}

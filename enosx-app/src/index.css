@@ -1340,3 +1340,31 @@ code, pre, kbd, samp, .font-mono {
   border-left-color: #8588f5;
   background: linear-gradient(90deg, rgba(111, 114, 238, 0.12), transparent);
 }
+
+/* Premium chat workspace: quiet surfaces, soft violet focus, no hard split lines. */
+.premium-chat-shell {
+  background: #0d0e14;
+}
+.premium-chat-header {
+  background: rgba(13, 14, 20, 0.72);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+}
+.premium-chat-scroll {
+  scrollbar-gutter: stable;
+}
+.premium-composer-dock {
+  background: linear-gradient(180deg, transparent 0%, rgba(13, 14, 20, 0.72) 35%, rgba(13, 14, 20, 0.94) 100%);
+}
+.premium-chat-shell textarea::placeholder {
+  color: rgba(255, 255, 255, 0.34);
+}
+.premium-chat-shell button:focus-visible,
+.premium-chat-shell textarea:focus-visible {
+  outline: 2px solid rgba(155, 140, 255, 0.55);
+  outline-offset: 2px;
+}
+@media (max-width: 767px) {
+  .premium-chat-header { height: 3.5rem; }
+  .premium-composer-dock { padding-bottom: max(0.75rem, env(safe-area-inset-bottom)); }
+}

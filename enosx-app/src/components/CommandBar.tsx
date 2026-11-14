@@ -1,6 +1,6 @@
 /*
  * ENOSX AI — CommandBar
- * Enlarged floating command bar with voice visualization, micro-interactions
+ * Focused premium composer with voice visualization and concise mode controls.
  * Features:
  *   - AI mode selector inside the message bar as a three-tier dropdown
  *   - Larger message input area
@@ -32,7 +32,7 @@ export const AI_MODES: AIModeOption[] = [
   {
     id: "ex-core",
     label: "EX Core",
-    description: "Everyday intelligence",
+    description: "Fast everyday assistance",
     color: "#7c6ff7",
     bgColor: "rgba(124,111,247,0.15)",
     borderColor: "rgba(124,111,247,0.4)",
@@ -40,7 +40,7 @@ export const AI_MODES: AIModeOption[] = [
   {
     id: "ex-pro",
     label: "EX Pro",
-    description: "Expert intelligence",
+    description: "Deeper expert responses",
     color: "#a855f7",
     bgColor: "rgba(168,85,247,0.15)",
     borderColor: "rgba(168,85,247,0.4)",
@@ -48,7 +48,7 @@ export const AI_MODES: AIModeOption[] = [
   {
     id: "enosh-mind",
     label: "ENOSH MIND",
-    description: "Maximum intelligence",
+    description: "Strategic reasoning and analysis",
     color: "#00f2ff",
     bgColor: "rgba(0,242,255,0.15)",
     borderColor: "rgba(0,242,255,0.4)",
@@ -230,14 +230,14 @@ export default function CommandBar({
                 ? { duration: 1.5, repeat: Infinity, ease: "easeInOut" }
                 : { duration: 0.3 }
             }
-            className={`phone-command-shell flex flex-col gap-0.5 rounded-2xl px-3 py-1 transition-all duration-300 ${isListening ? 'shadow-[0_0_20px_rgba(0,242,255,0.2)]' : ''} rainbow-glow rainbow-glow-border`}
+            className={`phone-command-shell flex flex-col gap-1 rounded-[22px] px-4 py-2.5 transition-all duration-300 ${isListening ? 'shadow-[0_0_0_3px_rgba(155,140,255,0.16)]' : ''}`}
             style={{
-              background: `rgba(12,12,16,${wallpaperSettings.panelOpacity})`,
+              background: `rgba(21,21,29,${Math.max(wallpaperSettings.panelOpacity, 0.92)})`,
               backdropFilter: `blur(${wallpaperSettings.blurAmount}px)`,
               WebkitBackdropFilter: `blur(${wallpaperSettings.blurAmount}px)`,
               borderWidth: "1px",
               borderStyle: "solid",
-              borderColor: isListening ? "rgba(0, 242, 255, 0.5)" : "transparent",
+              borderColor: isListening ? `rgba(${config.accentRgb}, 0.42)` : "rgba(255,255,255,0.09)",
               transition: "all 0.3s ease",
             }}
           >
@@ -299,12 +299,12 @@ export default function CommandBar({
                   whileHover={{ scale: 1.03 }}
                   whileTap={{ scale: 0.97 }}
                   onClick={() => setModeOpen((o) => !o)}
-                  className="composer-chip flex items-center gap-1 px-2 py-0.5 rounded-lg font-semibold text-[10px] whitespace-nowrap transition-all"
+                  className="composer-chip flex items-center gap-1 rounded-full px-2.5 py-1 font-medium text-[11px] whitespace-nowrap transition-all"
                   style={{
                     background: currentMode.bgColor,
-                    border: `1.5px solid ${currentMode.color}`,
+                    border: `1px solid ${currentMode.color}66`,
                     color: currentMode.color,
-                    boxShadow: `0 0 8px ${currentMode.color}33`,
+                    boxShadow: "none",
                   }}
                 >
                   {currentMode.label}
@@ -332,10 +332,10 @@ export default function CommandBar({
                     animate={{ opacity: 1, y: 0, scale: 1 }}
                     exit={{ opacity: 0, y: -4, scale: 0.97 }}
                     transition={{ duration: 0.15 }}
-                    className="absolute bottom-full mb-2 left-0 flex flex-col gap-1.5 p-2 rounded-xl z-50"
+                    className="absolute bottom-full left-0 z-50 mb-2 flex min-w-[248px] flex-col gap-1 rounded-2xl p-1.5"
                     style={{
                       background: "rgba(12,12,18,0.97)",
-                      border: "1px solid rgba(255,255,255,0.08)",
+                      border: "1px solid rgba(255,255,255,0.1)",
                       backdropFilter: "blur(16px)",
                       WebkitBackdropFilter: "blur(16px)",
                       boxShadow: "0 8px 32px rgba(0,0,0,0.5)",
@@ -346,7 +346,7 @@ export default function CommandBar({
                       <motion.button
                         type="button"
                         key={mode.id}
-                        whileHover={{ scale: 1.05 }}
+                        whileHover={{ backgroundColor: "rgba(255,255,255,0.07)" }}
                         whileTap={{ scale: 0.95 }}
                         onClick={() => { setAiMode(mode.id); setModeOpen(false); }}
                         className="flex items-center justify-between gap-4 px-3 py-2 rounded-lg text-left transition-all"
@@ -354,13 +354,13 @@ export default function CommandBar({
                           aiMode === mode.id
                             ? {
                                 background: mode.bgColor,
-                                border: `1.5px solid ${mode.color}`,
+                                border: `1px solid ${mode.color}66`,
                                 color: mode.color,
-                                boxShadow: `0 0 8px ${mode.color}33`,
+                                boxShadow: "none",
                               }
                             : {
                                 background: "rgba(255,255,255,0.04)",
-                                border: "1px solid rgba(255,255,255,0.07)",
+                                border: "1px solid transparent",
                                 color: "rgba(255,255,255,0.55)",
                               }
                         }
@@ -420,8 +420,8 @@ export default function CommandBar({
                     whileTap={{ scale: 0.92 }}
                     type="button"
                     onClick={() => fileInputRef.current?.click()}
-                    className="min-h-7 min-w-7 w-7 h-7 rounded-lg flex items-center justify-center transition-all duration-200 touch-manipulation"
-                    style={{ background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.08)", color: config.textMuted }}
+                    className="min-h-8 min-w-8 w-8 h-8 rounded-full flex items-center justify-center transition-all duration-200 touch-manipulation"
+                    style={{ background: "transparent", border: "1px solid transparent", color: config.textMuted }}
                     title="Attach any file"
                     aria-label="Attach any file"
                   >
@@ -436,17 +436,17 @@ export default function CommandBar({
                     whileHover={{ scale: 1.08 }}
                     whileTap={{ scale: 0.92 }}
                     onClick={handleVoiceClick}
-                    className="relative min-h-7 min-w-7 w-7 h-7 rounded-lg flex items-center justify-center transition-all duration-200 touch-manipulation"
+                    className="relative min-h-8 min-w-8 w-8 h-8 rounded-full flex items-center justify-center transition-all duration-200 touch-manipulation"
                     style={
                       isListening || isSpeaking
                         ? {
                             background: `rgba(${config.accentRgb}, 0.2)`,
-                            border: `1px solid rgba(${config.accentRgb}, 0.4)`,
+                            border: `1px solid rgba(${config.accentRgb}, 0.32)`,
                             color: config.accent,
                           }
                         : {
-                            background: "rgba(255,255,255,0.05)",
-                            border: "1px solid rgba(255,255,255,0.08)",
+                            background: "transparent",
+                            border: "1px solid transparent",
                             color: config.textMuted,
                           }
                     }
@@ -477,12 +477,12 @@ export default function CommandBar({
                   whileTap={canSend ? { scale: 0.92 } : {}}
                   onClick={handleSend}
                   disabled={!canSend}
-                  className="min-h-7 min-w-7 w-7 h-7 rounded-full flex items-center justify-center transition-all duration-200 touch-manipulation"
+                  className="min-h-8 min-w-8 w-8 h-8 rounded-full flex items-center justify-center transition-all duration-200 touch-manipulation"
                   style={
                     canSend
                       ? {
-                          background: `rgba(${config.accentRgb}, 0.85)`,
-                          border: `1px solid rgba(${config.accentRgb}, 0.6)`,
+                          background: `rgba(${config.accentRgb}, 0.92)`,
+                          border: `1px solid rgba(${config.accentRgb}, 0.72)`,
                           color: "#fff",
                           boxShadow: `0 4px 12px rgba(${config.accentRgb}, 0.3)`,
                         }
@@ -493,8 +493,8 @@ export default function CommandBar({
                           color: config.accent,
                         }
                       : {
-                          background: "rgba(255,255,255,0.04)",
-                          border: "1px solid rgba(255,255,255,0.07)",
+                          background: "rgba(255,255,255,0.055)",
+                          border: "1px solid transparent",
                           color: config.textMuted,
                           cursor: "not-allowed",
                         }

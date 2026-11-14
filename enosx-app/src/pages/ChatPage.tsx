@@ -1029,12 +1029,12 @@ ${getAdminContext()}` : ""}`,
   }
 
   const chatBody = (
-    <div className="flex h-full w-full overflow-hidden text-white font-sans selection:bg-cyan-500/30">
-      {/* Background with iridescence */}
+    <div className="premium-chat-shell flex h-full w-full overflow-hidden text-white font-sans selection:bg-violet-500/30">
+      {/* Quiet ambient background */}
       <div 
         className="fixed inset-0 z-0 pointer-events-none opacity-40"
         style={{
-          background: "radial-gradient(circle at 50% -20%, rgba(0, 242, 255, 0.15), transparent 70%), radial-gradient(circle at 0% 100%, rgba(112, 0, 255, 0.1), transparent 50%)",
+          background: "radial-gradient(circle at 50% -20%, rgba(155, 140, 255, 0.10), transparent 62%), radial-gradient(circle at 0% 100%, rgba(111, 92, 196, 0.07), transparent 46%)",
         }}
       />
 
@@ -1081,18 +1081,18 @@ ${getAdminContext()}` : ""}`,
 
       <main className="flex-1 flex flex-col relative min-w-0 min-h-0 overflow-hidden">
         {/* Top Header */}
-        <header className="h-16 flex items-center justify-between px-6 z-20 flex-shrink-0">
+        <header className="premium-chat-header flex h-16 items-center justify-between px-4 sm:px-6 z-20 flex-shrink-0">
           <div className="flex items-center gap-4">
             {isMobile && (
               <button 
                 onClick={() => setIsMobileSidebarOpen(true)}
-                className="p-2 rounded-lg bg-white/5 border border-white/10"
+                className="rounded-xl p-2 text-white/60 transition hover:bg-white/[0.06] hover:text-white"
               >
                 <Menu size={20} />
               </button>
             )}
             <div className="flex flex-col">
-              <h1 className="text-base font-bold tracking-tight text-white/90">
+              <h1 className="max-w-[45vw] truncate text-sm font-medium tracking-[-0.01em] text-white/75 sm:text-base">
                 {activeConversation?.title || "ENOSX AI"}
               </h1>
             </div>
@@ -1103,15 +1103,15 @@ ${getAdminContext()}` : ""}`,
               role="status"
               aria-label={`${analytics.totalTokensUsed.toLocaleString()} tokens used`}
               title="Lifetime tokens used in this browser. Provider-reported counts are used when available; otherwise the app estimates from text length. No usage limit is shown."
-              className="flex items-center gap-1.5 rounded-full border border-white/10 bg-white/[0.04] px-2.5 py-1.5 text-[11px] font-medium text-white/65"
+              className="hidden items-center gap-1.5 rounded-full bg-white/[0.035] px-2.5 py-1.5 text-[11px] font-medium text-white/45 sm:flex"
             >
-              <Gauge size={13} className="text-cyan-300" />
+              <Gauge size={13} className="text-violet-300/70" />
               <span>{analytics.totalTokensUsed.toLocaleString()}</span>
               <span className="hidden sm:inline">tokens</span>
             </div>
             <div className="hidden items-center gap-1 sm:flex" aria-label="Conversation actions">
-              <button type="button" onClick={() => void handleShareConversation()} disabled={!activeConversation?.messages.length} title="Share conversation" aria-label="Share conversation" className="rounded-full border border-white/10 p-2 text-white/65 transition hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-30"><Share2 size={14} /></button>
-              <button type="button" onClick={() => void handleCopyConversation()} disabled={!activeConversation?.messages.length} title="Copy conversation" aria-label="Copy conversation" className="rounded-full border border-white/10 p-2 text-white/65 transition hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-30"><Copy size={14} /></button>
+              <button type="button" onClick={() => void handleShareConversation()} disabled={!activeConversation?.messages.length} title="Share conversation" aria-label="Share conversation" className="rounded-full p-2 text-white/45 transition hover:bg-white/[0.06] hover:text-white disabled:cursor-not-allowed disabled:opacity-30"><Share2 size={14} /></button>
+              <button type="button" onClick={() => void handleCopyConversation()} disabled={!activeConversation?.messages.length} title="Copy conversation" aria-label="Copy conversation" className="rounded-full p-2 text-white/45 transition hover:bg-white/[0.06] hover:text-white disabled:cursor-not-allowed disabled:opacity-30"><Copy size={14} /></button>
             </div>
             {screenGuiderActive && (
               <motion.div 
@@ -1130,7 +1130,7 @@ ${getAdminContext()}` : ""}`,
         <div 
           ref={messagesContainerRef}
           onScroll={updateChatScrollIntent}
-          className="flex-1 overflow-y-auto scrollbar-hide px-4 md:px-0"
+          className="premium-chat-scroll flex-1 overflow-y-auto scrollbar-hide px-4 md:px-0"
         >
           <AnimatePresence mode="wait">
             {!activeConversation || activeConversation.messages.length === 0 ? (
@@ -1143,7 +1143,7 @@ ${getAdminContext()}` : ""}`,
                 key="messages"
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
-                className="max-w-5xl mx-auto py-8 space-y-8"
+                className="mx-auto max-w-[820px] space-y-10 py-8 sm:py-10"
               >
                 {activeConversation.messages.map((msg, idx) => (
                   <MessageBubble
@@ -1156,7 +1156,14 @@ ${getAdminContext()}` : ""}`,
                   />
                 ))}
                 {isLoading && (
-                  <span className="sr-only" role="status">Assistant is responding.</span>
+                  <div className="flex items-center gap-3 py-2 text-xs text-white/40" role="status">
+                    <span className="flex items-center gap-1" aria-hidden="true">
+                      <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-violet-300/80" />
+                      <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-violet-300/60 [animation-delay:120ms]" />
+                      <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-violet-300/40 [animation-delay:240ms]" />
+                    </span>
+                    <span>Preparing your answer…</span>
+                  </div>
                 )}
                 <div ref={messagesEndRef} className="h-4" />
                 
@@ -1167,11 +1174,11 @@ ${getAdminContext()}` : ""}`,
                       initial={{ opacity: 0, y: 10 }}
                       animate={{ opacity: 1, y: 0 }}
                       exit={{ opacity: 0, y: 10 }}
-                      className="p-3 rounded-xl bg-amber-500/10 border border-amber-400/20 text-amber-200 text-sm flex flex-col gap-2"
+                      className="flex flex-col gap-2 rounded-2xl bg-amber-300/[0.055] p-4 text-sm text-amber-100/80 ring-1 ring-amber-200/10"
                     >
                       <div className="font-bold flex items-center gap-2">
-                        <span className="w-2 h-2 rounded-full bg-amber-400" />
-                        Connection issue
+                        <span className="h-2 w-2 rounded-full bg-amber-300/80" />
+                        The response could not be completed
                       </div>
                       <p className="opacity-80">{error}</p>
                       <motion.button
@@ -1181,9 +1188,9 @@ ${getAdminContext()}` : ""}`,
                           const lastUserMsg = activeConversation.messages.filter(m => m.role === 'user').pop();
                           if (lastUserMsg) void handleSendTracked(lastUserMsg.content);
                         }}
-                        className="mt-2 self-start px-4 py-1.5 rounded-lg bg-amber-500/15 hover:bg-amber-500/25 border border-amber-400/25 transition-all text-xs font-bold"
+                        className="mt-2 self-start rounded-lg bg-amber-200/10 px-3.5 py-2 text-xs font-medium text-amber-100 transition-all hover:bg-amber-200/15"
                       >
-                        Retry Transmission
+                        Try again
                       </motion.button>
                     </motion.div>
                   )}
@@ -1193,8 +1200,8 @@ ${getAdminContext()}` : ""}`,
           </AnimatePresence>
         </div>
 
-        <div className={`px-4 pb-2 pt-3 ${isCompactMode ? "pb-4" : "md:px-6 md:pb-2 md:pt-4"} z-20`}>
-          <div className="max-w-5xl mx-auto relative">
+        <div className={`premium-composer-dock z-20 px-4 pb-3 pt-3 ${isCompactMode ? "pb-4" : "md:px-6 md:pb-4 md:pt-4"}`}>
+          <div className="relative mx-auto max-w-[820px]">
             {/* File context badges */}
             <FileContextBadge
               fileContext={fileContext}

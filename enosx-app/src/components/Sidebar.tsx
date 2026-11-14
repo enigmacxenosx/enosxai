@@ -55,7 +55,7 @@ export default function Sidebar({
   onSelect,
   onNew,
   onDelete,
-  collapsed = true,
+  collapsed = false,
   onToggle,
   onSettingsClick,
   onGitHubClick,
@@ -71,6 +71,17 @@ export default function Sidebar({
   const { config } = useTheme();
   const { settings } = useWallpaper();
   const { user, isAuthenticated } = useAuth();
+
+  const conversationSection = (conversation: Conversation) => {
+    const date = new Date(conversation.updatedAt || conversation.createdAt);
+    const now = new Date();
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const conversationDay = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+    const daysAgo = Math.round((today.getTime() - conversationDay.getTime()) / 86400000);
+    if (daysAgo <= 0) return "Today";
+    if (daysAgo === 1) return "Yesterday";
+    return "Older";
+  };
 
   const navItems = [
     {
@@ -210,16 +221,21 @@ export default function Sidebar({
             const isGodModeConversation = /^GOD MODE\b/i.test(conv.title);
             const ConversationIcon = isGodModeConversation ? Crown : MessageSquare;
             const modeAccent = isGodModeConversation ? "#fbbf24" : config.accent;
+            const section = conversationSection(conv);
+            const previousSection = i > 0 ? conversationSection(conversations[i - 1]) : null;
             return (
-            <motion.div
-              key={conv.id}
-              initial={{ opacity: 0, scale: 0.8 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.8 }}
-              transition={{ duration: 0.2, delay: i * 0.02 }}
-              className="group relative"
-            >
-              <div className={`relative w-full flex items-center ${collapsed ? 'justify-center' : 'justify-start'} rounded-xl transition-all duration-200`}>
+            <div key={conv.id}>
+              {!collapsed && section !== previousSection && (
+                <div className="px-2 pb-1 pt-4 text-[10px] font-medium uppercase tracking-[0.16em]" style={{ color: config.textMuted, opacity: 0.65 }}>{section}</div>
+              )}
+              <motion.div
+                initial={{ opacity: 0, scale: 0.8 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.8 }}
+                transition={{ duration: 0.2, delay: i * 0.02 }}
+                className="group relative"
+              >
+                <div className={`relative w-full flex items-center ${collapsed ? 'justify-center' : 'justify-start'} rounded-xl transition-all duration-200`}>
               <motion.button
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
@@ -262,8 +278,9 @@ export default function Sidebar({
                   <Trash2 size={9} />
                 </motion.button>
               )}
-              </div>
-            </motion.div>
+                </div>
+              </motion.div>
+            </div>
             );
           })}
         </AnimatePresence>

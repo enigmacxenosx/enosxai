@@ -25,6 +25,7 @@ import VoiceSettingsPanel from './VoiceSettingsPanel';
 import { useVoice } from '../hooks/useVoice';
 import LocalModelsPanel from './LocalModelsPanel';
 import { ENOSX_LANGUAGES } from '../lib/languageDictionary';
+import EnosxSignInModal from './EnosxSignInModal';
 
 type View = 'profile' | 'preferences' | 'appearance' | 'privacy' | 'voice' | 'models';
 
@@ -102,10 +103,6 @@ export default function ProfilePanel({ isOpen, onClose, onOpenAdminConsole, onOp
 
   const accentRgb = config.accentRgb;
   const accentColor = config.accent;
-
-  React.useEffect(() => {
-    if (isOpen && !isLoading && !user) continueAsGuest();
-  }, [continueAsGuest, isLoading, isOpen, user]);
 
   React.useEffect(() => {
     if (user) {
@@ -205,6 +202,10 @@ export default function ProfilePanel({ isOpen, onClose, onOpenAdminConsole, onOp
   const toggleStyle = (value: boolean) => ({
     background: value ? `rgba(${accentRgb},0.7)` : 'rgba(255,255,255,0.15)',
   });
+
+  if (isOpen && !isLoading && !user) {
+    return <EnosxSignInModal onClose={onClose} />;
+  }
 
   return (
     <AnimatePresence>

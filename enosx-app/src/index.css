@@ -1413,3 +1413,29 @@ code, pre, kbd, samp, .font-mono {
   .premium-chat-header { height: 3.5rem; }
   .premium-composer-dock { padding-bottom: max(0.75rem, env(safe-area-inset-bottom)); }
 }
+
+/* Vektor-inspired ENOSX sign-in modal */
+.enosx-signin-scrim { position: fixed; inset: 0; z-index: 100; display: grid; place-items: center; padding: 16px; overflow: auto; background: rgba(0,0,0,.58); }
+.enosx-signin-modal { position: relative; display: grid; grid-template-columns: minmax(0, 1fr) minmax(360px, 1fr); width: min(880px, 100%); min-height: 540px; overflow: hidden; border: 1px solid rgba(255,255,255,.1); border-radius: 24px; background: #f8f8f6; color: #1a1a18; box-shadow: 0 28px 100px rgba(0,0,0,.52); }
+.enosx-signin-story { display: flex; flex-direction: column; justify-content: space-between; gap: 28px; padding: 30px 18px 28px 20px; background: #efefed; }
+.enosx-signin-workflows { display: flex; flex-direction: column; gap: 10px; }
+.enosx-signin-workflow { display: flex; align-items: center; gap: 14px; width: calc(100% - 32px); padding: 10px 16px; border-radius: 14px; background: #fff; font-size: 14px; font-weight: 600; line-height: 1.35; }
+.enosx-signin-workflow:nth-child(even) { margin-left: 32px; }
+.enosx-signin-chain { display: flex; align-items: center; gap: 5px; flex: none; }
+.enosx-signin-icon { display: grid; width: 28px; height: 28px; place-items: center; border: 1px solid #e2e2de; border-radius: 8px; color: #42423e; background: #fff; }
+.enosx-signin-arrow { color: #898984; font-size: 12px; }
+.enosx-signin-caption { max-width: 330px; min-height: 50px; margin: 0 0 16px; font-size: 18px; font-weight: 600; line-height: 1.4; }
+.enosx-signin-progress { display: flex; gap: 8px; }.enosx-signin-progress i { display: block; flex: 1; height: 3px; border-radius: 999px; background: #3a3a37; }.enosx-signin-progress i:not(:first-child) { opacity: .16; }
+.enosx-signin-form-panel { position: relative; display: flex; flex-direction: column; padding: 48px 48px 32px; background: #f8f8f6; }
+.enosx-signin-close { position: absolute; top: 16px; right: 16px; display: grid; width: 32px; height: 32px; place-items: center; border: 0; border-radius: 8px; color: #777771; background: transparent; cursor: pointer; }.enosx-signin-close:hover { color: #1a1a18; background: #e9e9e5; }
+.enosx-signin-mark { align-self: center; display: grid; width: 40px; height: 40px; place-items: center; border: 2px solid currentColor; border-radius: 12px; color: #1a1a18; font-family: Georgia, serif; font-size: 23px; font-weight: 700; transform: rotate(-6deg); }
+.enosx-signin-form-panel h1 { margin: 18px 0 6px; text-align: center; color: #1a1a18; font-family: Newsreader, Georgia, serif; font-size: 26px; font-weight: 600; }.enosx-signin-subtitle { margin: 0 0 26px; color: #6b6b66; font-size: 15px; text-align: center; }
+.enosx-signin-provider { position: relative; display: flex; align-items: center; justify-content: center; width: 100%; height: 40px; margin-bottom: 8px; border: 1px solid #e2e2de; border-radius: 10px; color: #1a1a18; background: #fff; font: 600 14px Inter, system-ui, sans-serif; cursor: pointer; }.enosx-signin-provider:hover:not(:disabled) { border-color: #bdbdb8; background: #fcfcfa; }.enosx-signin-provider:disabled { cursor: wait; opacity: .65; }
+.enosx-google-mark { position: absolute; left: 26px; color: #4285f4; font-size: 17px; font-weight: 800; }.enosx-microsoft-mark { position: absolute; left: 26px; display: grid; grid-template-columns: 7px 7px; gap: 1px; }.enosx-microsoft-mark i { display: block; width: 7px; height: 7px; background: #f25022; }.enosx-microsoft-mark i:nth-child(2) { background: #7fba00; }.enosx-microsoft-mark i:nth-child(3) { background: #00a4ef; }.enosx-microsoft-mark i:nth-child(4) { background: #ffb900; }.enosx-apple-mark { position: absolute; left: 28px; font-size: 14px; }
+.enosx-signin-last-used { position: absolute; right: 10px; padding: 3px 9px; border-radius: 999px; color: #1a6fd4; background: #e3effd; font-size: 11px; font-weight: 500; }
+.enosx-signin-or { display: flex; align-items: center; gap: 14px; margin: 16px 0; color: #6b6b66; font-size: 13px; }.enosx-signin-or::before, .enosx-signin-or::after { content: ""; flex: 1; height: 1px; background: #e2e2de; }.enosx-signin-or span { flex: none; }
+.enosx-signin-form-panel input { width: 100%; height: 40px; margin-bottom: 10px; padding: 0 12px; border: 1px solid #e2e2de; border-radius: 10px; outline: none; color: #1a1a18; background: #fff; font: 400 15px Inter, system-ui, sans-serif; }.enosx-signin-form-panel input:focus { border-color: #6a9fe3; box-shadow: 0 0 0 3px rgba(74,139,220,.14); }.enosx-signin-form-panel input::placeholder { color: #8b8b85; }
+.enosx-signin-submit { display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; height: 40px; border: 0; border-radius: 10px; color: #fff; background: #8c8c88; font: 600 15px Inter, system-ui, sans-serif; cursor: pointer; }.enosx-signin-submit.is-ready { background: #1a1a18; }.enosx-signin-submit:disabled { cursor: wait; opacity: .7; }
+.enosx-signin-message { min-height: 20px; margin: 10px 0 0; color: #c4311f; font-size: 13px; text-align: center; }.enosx-signin-guest { align-self: center; margin-top: 12px; border: 0; color: #6b6b66; background: transparent; font: 500 13px Inter, system-ui, sans-serif; text-decoration: underline; cursor: pointer; }.enosx-signin-guest:hover { color: #1a1a18; }
+.enosx-signin-terms { margin: auto 0 0; padding-top: 18px; color: #6b6b66; font-size: 12px; line-height: 1.5; text-align: center; }.enosx-signin-terms a { color: inherit; }
+@media (max-width: 760px) { .enosx-signin-modal { display: block; min-height: 0; }.enosx-signin-story { display: none; }.enosx-signin-form-panel { min-height: 520px; padding: 56px 24px 28px; } }

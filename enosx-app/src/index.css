@@ -1439,3 +1439,10 @@ code, pre, kbd, samp, .font-mono {
 .enosx-signin-message { min-height: 20px; margin: 10px 0 0; color: #c4311f; font-size: 13px; text-align: center; }.enosx-signin-guest { align-self: center; margin-top: 12px; border: 0; color: #6b6b66; background: transparent; font: 500 13px Inter, system-ui, sans-serif; text-decoration: underline; cursor: pointer; }.enosx-signin-guest:hover { color: #1a1a18; }
 .enosx-signin-terms { margin: auto 0 0; padding-top: 18px; color: #6b6b66; font-size: 12px; line-height: 1.5; text-align: center; }.enosx-signin-terms a { color: inherit; }
 @media (max-width: 760px) { .enosx-signin-modal { display: block; min-height: 0; }.enosx-signin-story { display: none; }.enosx-signin-form-panel { min-height: 520px; padding: 56px 24px 28px; } }
+
+.enosx-signin-form-state { animation: enosx-signin-step-in .22s ease-out both; }
+.enosx-signin-back { align-self: flex-start; margin: -8px 0 14px; padding: 0; border: 0; color: #6b6b66; background: transparent; font: 500 12px Inter, system-ui, sans-serif; cursor: pointer; }
+.enosx-signin-back:hover { color: #1a1a18; }
+.enosx-signin-subtitle { min-height: 20px; }
+#enosx-phone-recaptcha { min-height: 0; }
+@keyframes enosx-signin-step-in { from { opacity: .35; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }

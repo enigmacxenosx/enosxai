@@ -29,6 +29,8 @@ export default function EnosxSignInModal({ onClose }: EnosxSignInModalProps) {
   const recaptchaRef = useRef<RecaptchaVerifier | null>(null);
 
   const validEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim());
+  const formTitle = phoneMode ? (phoneConfirmation ? "Check your phone" : "Sign in with phone") : (showPassword ? "Enter your password" : "Welcome to ENOSX");
+  const formSubtitle = phoneMode ? (phoneConfirmation ? `Enter the code sent to ${phone}` : "We’ll send a verification code by SMS") : (showPassword ? email : "Sign in or sign up");
 
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
@@ -47,6 +49,17 @@ export default function EnosxSignInModal({ onClose }: EnosxSignInModalProps) {
       return;
     }
     await signInWithEmail(email, password);
+  };
+
+  const returnToProviderForm = () => {
+    setPhoneMode(false);
+    setShowPassword(false);
+    setPhoneConfirmation(null);
+    setPhoneCode("");
+    setMessage("");
+    clearError();
+    recaptchaRef.current?.clear();
+    recaptchaRef.current = null;
   };
 
   const handleProvider = (provider: string) => {
@@ -120,8 +133,8 @@ export default function EnosxSignInModal({ onClose }: EnosxSignInModalProps) {
         <section className="enosx-signin-form-panel">
           <button type="button" className="enosx-signin-close" onClick={onClose} aria-label="Close sign-in"><X size={18} /></button>
           <div className="enosx-signin-mark" aria-hidden="true">E</div>
-          <h1 id="enosx-signin-title">Welcome to ENOSX</h1>
-          <p className="enosx-signin-subtitle">Sign in or sign up</p>
+          <h1 id="enosx-signin-title">{formTitle}</h1>
+          <p className="enosx-signin-subtitle">{formSubtitle}</p>
 
           <button type="button" className="enosx-signin-provider" onClick={() => handleProvider("Google")} disabled={isLoading}>
             <span className="enosx-google-mark" aria-hidden="true">G</span>Continue with Google
@@ -136,19 +149,22 @@ export default function EnosxSignInModal({ onClose }: EnosxSignInModalProps) {
           </button>
 
           <div className="enosx-signin-or"><span>Or</span></div>
+          {(phoneMode || showPassword) && <button type="button" className="enosx-signin-back" onClick={returnToProviderForm}>← Back to sign-in options</button>}
+          <div className="enosx-signin-form-state">
           {phoneMode ? <form onSubmit={handlePhoneSubmit} noValidate>
             <label className="sr-only" htmlFor="enosx-signin-phone">Mobile number</label>
             <input id="enosx-signin-phone" type="tel" value={phone} onChange={(event) => { setPhone(event.target.value); setMessage(""); }} placeholder="Mobile number (+254...)" autoComplete="tel" disabled={Boolean(phoneConfirmation)} />
             {phoneConfirmation && <><label className="sr-only" htmlFor="enosx-signin-code">SMS verification code</label><input id="enosx-signin-code" inputMode="numeric" value={phoneCode} onChange={(event) => setPhoneCode(event.target.value.replace(/\D/g, "").slice(0, 6))} placeholder="6-digit verification code" autoComplete="one-time-code" /></>}
             <div id="enosx-phone-recaptcha" />
             <button className={`enosx-signin-submit ${phone.trim() ? "is-ready" : ""}`} type="submit" disabled={isLoading}>{isLoading ? "Verifying…" : phoneConfirmation ? "Verify code" : "Send SMS code"}<ArrowRight size={16} /></button>
-            <button type="button" className="enosx-signin-guest" onClick={() => { setPhoneMode(false); setPhoneConfirmation(null); setPhoneCode(""); setMessage(""); }}>Use email instead</button>
+            <button type="button" className="enosx-signin-guest" onClick={returnToProviderForm}>Use email instead</button>
           </form> : <form onSubmit={handleSubmit} noValidate>
             <label className="sr-only" htmlFor="enosx-signin-email">Email address</label>
             <input id="enosx-signin-email" type="email" value={email} onChange={(event) => { setEmail(event.target.value); setMessage(""); }} placeholder="Enter your email address" autoComplete="email" />
             {showPassword && <><label className="sr-only" htmlFor="enosx-signin-password">Password</label><input id="enosx-signin-password" type="password" value={password} onChange={(event) => setPassword(event.target.value)} placeholder="Enter your password" autoComplete="current-password" /></>}
             <button className={`enosx-signin-submit ${validEmail ? "is-ready" : ""}`} type="submit" disabled={isLoading}>{isLoading ? "Signing in…" : showPassword ? "Sign in" : "Continue"}<ArrowRight size={16} /></button>
           </form>}
+          </div>
           {(message || providerMessage || error) && <p className="enosx-signin-message" role="status">{message || providerMessage || error}</p>}
           <button type="button" className="enosx-signin-guest" onClick={() => { continueAsGuest(); onClose(); }}>Continue as guest</button>
           <p className="enosx-signin-terms">By continuing, you agree to our <a href="#terms">Terms of Service</a> and have read our <a href="#privacy">Privacy Policy</a>.</p>

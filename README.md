@@ -132,6 +132,15 @@ These are Firebase Web App client settings, not service-account secrets. Configu
 
 Authentication is handled by Firebase Auth; Firestore stores profiles under `users/{uid}` and chats/messages under that user's document tree. The checked-in `firestore.rules` limits reads and writes to the authenticated matching UID. Firebase Auth persists sign-in on the device/browser; the same Firebase account can be used on phone, tablet, or PC. Guest mode remains local to the device.
 
+#### Instagram and WhatsApp provider variables
+
+The sign-in UI includes Instagram and a WhatsApp-style phone option. Keep the following values server-side and never add a `VITE_` prefix or commit real credentials:
+
+- Instagram OAuth: `INSTAGRAM_CLIENT_ID`, `INSTAGRAM_CLIENT_SECRET`, and `INSTAGRAM_OAUTH_REDIRECT_URI`
+- WhatsApp Business OTP: `META_APP_SECRET`, `WHATSAPP_ACCESS_TOKEN`, `WHATSAPP_PHONE_NUMBER_ID`, `WHATSAPP_BUSINESS_ACCOUNT_ID`, and `WHATSAPP_VERIFY_TOKEN`
+
+WhatsApp does not provide a standard consumer “Sign in with WhatsApp” OAuth provider. Its credentials support a separate server-side WhatsApp Business OTP flow. Instagram OAuth also needs a server callback and a redirect URI registered in Meta Developer settings before the button can authenticate users. The current Google and phone/SMS flows remain handled by Firebase Auth.
+
 Existing pre-Firebase chats are not automatically copied into a signed-in account: they may belong to another person who used the same device. Export or review them before any future account migration.
 
 **AI Services**:

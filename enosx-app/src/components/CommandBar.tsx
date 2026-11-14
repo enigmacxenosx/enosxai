@@ -9,8 +9,8 @@
  */
 
 import { useState, useRef, useEffect, useCallback } from "react";
-import { motion, AnimatePresence } from "framer-motion";
-import { ArrowUp, Mic, MicOff, Square, Loader2, ChevronDown, Plus, Image } from "lucide-react";
+import { motion } from "framer-motion";
+import { ArrowUp, Mic, MicOff, Square, Loader2, Plus, Image } from "lucide-react";
 import { VoiceState } from "@/lib/types";
 import { useTheme } from "@/contexts/ThemeContext";
 import { useWallpaper } from "@/contexts/WallpaperContext";
@@ -71,13 +71,6 @@ export const AI_MODES: AIModeOption[] = [
     borderColor: "rgba(239,68,68,0.4)",
   },
   {
-    id: "fast",
-    label: "Fast",
-    color: "#10b981",
-    bgColor: "rgba(16,185,129,0.15)",
-    borderColor: "rgba(16,185,129,0.4)",
-  },
-  {
     id: "creative",
     label: "Creative",
     color: "#ec4899",
@@ -128,29 +121,15 @@ export default function CommandBar({
   const { settings: wallpaperSettings } = useWallpaper();
   const [value, setValue] = useState("");
   const [aiMode, setAiMode] = useState<AIMode>("ex");
-  const [modeOpen, setModeOpen] = useState(false);
   const [selectedConnectorIds, setSelectedConnectorIds] = useState<string[]>([]);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
-  const modeRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
-
-  // Close dropdown when clicking outside
-  useEffect(() => {
-    function handleOutside(e: MouseEvent) {
-      if (modeRef.current && !modeRef.current.contains(e.target as Node)) {
-        setModeOpen(false);
-      }
-    }
-    if (modeOpen) document.addEventListener("mousedown", handleOutside);
-    return () => document.removeEventListener("mousedown", handleOutside);
-  }, [modeOpen]);
 
   const isListening = voiceState === "listening";
   const isSpeaking = voiceState === "speaking";
   const isProcessing = voiceState === "processing";
   const voiceActive = isListening || isSpeaking || isProcessing;
 
-  const currentMode = AI_MODES.find((m) => m.id === aiMode) ?? AI_MODES[0];
 
   // Sync transcript to input
   useEffect(() => {
@@ -258,31 +237,34 @@ export default function CommandBar({
               transition: "all 0.3s ease",
             }}
           >
-            {/* AI Mode selector — single compact tab with dropdown */}
-            <div className="flex items-center gap-2">
-              <div className="relative" ref={modeRef}>
+            <div className="flex flex-wrap items-center gap-1.5" aria-label="Choose AI mode">
+              {AI_MODES.map((mode) => (
                 <motion.button
+                  key={`${mode.id}-${mode.label}`}
+                  type="button"
                   whileHover={{ scale: 1.03 }}
                   whileTap={{ scale: 0.97 }}
-                  onClick={() => setModeOpen((o) => !o)}
-                  className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg font-semibold text-[11px] whitespace-nowrap transition-all"
-                  style={{
-                    background: currentMode.bgColor,
-                    border: `1.5px solid ${currentMode.color}`,
-                    color: currentMode.color,
-                    boxShadow: `0 0 8px ${currentMode.color}33`,
-                  }}
+                  onClick={() => setAiMode(mode.id)}
+                  aria-pressed={aiMode === mode.id}
+                  className="rounded-lg px-2.5 py-1 font-semibold text-[11px] whitespace-nowrap transition-all"
+                  style={
+                    aiMode === mode.id
+                      ? {
+                          background: mode.bgColor,
+                          border: `1.5px solid ${mode.color}`,
+                          color: mode.color,
+                          boxShadow: `0 0 8px ${mode.color}33`,
+                        }
+                      : {
+                          background: "rgba(255,255,255,0.04)",
+                          border: `1px solid ${mode.borderColor}`,
+                          color: "rgba(255,255,255,0.62)",
+                        }
+                  }
                 >
-                  {currentMode.label}
-                  <ChevronDown
-                    size={11}
-                    style={{
-                      transform: modeOpen ? "rotate(180deg)" : "rotate(0deg)",
-                      transition: "transform 0.2s ease",
-                    }}
-                  />
+                  {mode.label}
                 </motion.button>
-              </div>
+              ))}
 
               <ConnectorPicker
                 selectedConnectorIds={selectedConnectorIds}
@@ -301,52 +283,6 @@ export default function CommandBar({
                 </motion.div>
               )}
             </div>
-
-              <AnimatePresence>
-                {modeOpen && (
-                  <motion.div
-                    initial={{ opacity: 0, y: -4, scale: 0.97 }}
-                    animate={{ opacity: 1, y: 0, scale: 1 }}
-                    exit={{ opacity: 0, y: -4, scale: 0.97 }}
-                    transition={{ duration: 0.15 }}
-                    className="absolute bottom-full mb-2 left-0 flex flex-wrap gap-1.5 p-2 rounded-xl z-50"
-                    style={{
-                      background: "rgba(12,12,18,0.97)",
-                      border: "1px solid rgba(255,255,255,0.08)",
-                      backdropFilter: "blur(16px)",
-                      WebkitBackdropFilter: "blur(16px)",
-                      boxShadow: "0 8px 32px rgba(0,0,0,0.5)",
-                      minWidth: 220,
-                    }}
-                  >
-                    {AI_MODES.map((mode) => (
-                      <motion.button
-                        key={mode.id}
-                        whileHover={{ scale: 1.05 }}
-                        whileTap={{ scale: 0.95 }}
-                        onClick={() => { setAiMode(mode.id); setModeOpen(false); }}
-                        className="px-3 py-1.5 rounded-lg font-semibold text-xs whitespace-nowrap transition-all"
-                        style={
-                          aiMode === mode.id
-                            ? {
-                                background: mode.bgColor,
-                                border: `1.5px solid ${mode.color}`,
-                                color: mode.color,
-                                boxShadow: `0 0 8px ${mode.color}33`,
-                              }
-                            : {
-                                background: "rgba(255,255,255,0.04)",
-                                border: "1px solid rgba(255,255,255,0.07)",
-                                color: "rgba(255,255,255,0.55)",
-                              }
-                        }
-                      >
-                        {mode.label}
-                      </motion.button>
-                    ))}
-                  </motion.div>
-                )}
-	              </AnimatePresence>
 	
 	              {/* Textarea and buttons container */}
 	              <div className="flex items-end gap-2">

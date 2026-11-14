@@ -1419,13 +1419,13 @@ code, pre, kbd, samp, .font-mono {
 .enosx-signin-modal { position: relative; display: grid; grid-template-columns: minmax(0, 1fr) minmax(360px, 1fr); width: min(880px, 100%); min-height: 540px; overflow: hidden; border: 1px solid rgba(255,255,255,.1); border-radius: 24px; background: #f8f8f6; color: #1a1a18; box-shadow: 0 28px 100px rgba(0,0,0,.52); }
 .enosx-signin-story { display: flex; flex-direction: column; justify-content: space-between; gap: 28px; padding: 30px 18px 28px 20px; background: #efefed; }
 .enosx-signin-workflows { display: flex; flex-direction: column; gap: 10px; }
-.enosx-signin-workflow { display: flex; align-items: center; gap: 14px; width: calc(100% - 32px); padding: 10px 16px; border-radius: 14px; background: #fff; font-size: 14px; font-weight: 600; line-height: 1.35; }
+.enosx-signin-workflow { display: flex; align-items: center; gap: 14px; width: calc(100% - 32px); padding: 10px 16px; border-radius: 14px; background: #fff; font-size: 14px; font-weight: 500; line-height: 1.35; }
 .enosx-signin-workflow:nth-child(even) { margin-left: 32px; }
 .enosx-signin-chain { display: flex; align-items: center; gap: 5px; flex: none; }
 .enosx-signin-icon { display: grid; width: 28px; height: 28px; place-items: center; border: 1px solid #e2e2de; border-radius: 8px; color: #42423e; background: #fff; }
 .enosx-signin-arrow { color: #898984; font-size: 12px; }
-.enosx-signin-caption { max-width: 330px; min-height: 50px; margin: 0 0 16px; font-size: 18px; font-weight: 600; line-height: 1.4; }
-.enosx-signin-progress { display: flex; gap: 8px; }.enosx-signin-progress i { display: block; flex: 1; height: 3px; border-radius: 999px; background: #3a3a37; }.enosx-signin-progress i:not(:first-child) { opacity: .16; }
+.enosx-signin-caption { max-width: 330px; min-height: 50px; margin: 0 0 16px; font-size: 18px; font-weight: 500; line-height: 1.4; }
+.enosx-signin-progress { display: flex; gap: 8px; }.enosx-signin-progress i { display: block; flex: 1; height: 3px; overflow: hidden; border-radius: 999px; background: #d9d9d5; }.enosx-signin-progress i::after { display: block; width: 0; height: 100%; background: #3a3a37; content: ""; }.enosx-signin-progress i.is-done::after { width: 100%; }.enosx-signin-progress i.is-active::after { animation: enosx-signin-fill 5s linear forwards; }
 .enosx-signin-form-panel { position: relative; display: flex; flex-direction: column; padding: 48px 48px 32px; background: #f8f8f6; }
 .enosx-signin-close { position: absolute; top: 16px; right: 16px; display: grid; width: 32px; height: 32px; place-items: center; border: 0; border-radius: 8px; color: #777771; background: transparent; cursor: pointer; }.enosx-signin-close:hover { color: #1a1a18; background: #e9e9e5; }
 .enosx-signin-mark { align-self: center; display: grid; width: 40px; height: 40px; place-items: center; border: 2px solid currentColor; border-radius: 12px; color: #1a1a18; font-family: Georgia, serif; font-size: 23px; font-weight: 700; transform: rotate(-6deg); }
@@ -1446,3 +1446,5 @@ code, pre, kbd, samp, .font-mono {
 .enosx-signin-subtitle { min-height: 20px; }
 #enosx-phone-recaptcha { min-height: 0; }
 @keyframes enosx-signin-step-in { from { opacity: .35; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes enosx-signin-fill { to { width: 100%; } }
+@media (prefers-reduced-motion: reduce) { .enosx-signin-progress i.is-active::after { width: 100%; animation: none; } }

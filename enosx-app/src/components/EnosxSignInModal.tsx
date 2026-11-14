@@ -1,5 +1,5 @@
-import { useRef, useState } from "react";
-import { ArrowRight, Clock3, FileSpreadsheet, GitBranch, Mail, MessageSquare, Phone, X } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { ArrowRight, CalendarDays, Clock3, FileSpreadsheet, FileText, GitBranch, Mail, MessageSquare, Phone, ShoppingBag, X } from "lucide-react";
 import { RecaptchaVerifier, type ConfirmationResult } from "firebase/auth";
 import { useAuth } from "@/contexts/AuthContext";
 import { firebaseAuth } from "@/lib/firebase";
@@ -13,6 +13,15 @@ const workflows = [
   { icons: [Clock3, FileSpreadsheet, "→", MessageSquare], label: "Automated sales reporting from spreadsheets" },
   { icons: [Clock3, Mail, "→"], label: "Summarize customer emails every Monday" },
   { icons: [GitBranch, "→"], label: "Review new pull requests" },
+  { icons: [ShoppingBag, "→", Mail], label: "Follow up on store refunds by email" },
+  { icons: [CalendarDays, "→", FileText], label: "Prep for calendar meetings in your notes" },
+];
+
+const captions = [
+  "AI workflow automation that runs on a schedule or trigger",
+  "Connect the tools your team already uses",
+  "Describe a task once and let it repeat",
+  "Review every run and stay in control",
 ];
 
 function ProviderLogo({ provider }: { provider: "google" | "instagram" | "whatsapp" }) {
@@ -32,7 +41,14 @@ export default function EnosxSignInModal({ onClose }: EnosxSignInModalProps) {
   const [showPassword, setShowPassword] = useState(false);
   const [message, setMessage] = useState("");
   const [providerMessage, setProviderMessage] = useState("");
+  const [captionIndex, setCaptionIndex] = useState(0);
   const recaptchaRef = useRef<RecaptchaVerifier | null>(null);
+
+  useEffect(() => {
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    const timer = window.setInterval(() => setCaptionIndex((index) => (index + 1) % captions.length), 5000);
+    return () => window.clearInterval(timer);
+  }, []);
 
   const validEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim());
   const formTitle = phoneMode ? (phoneConfirmation ? "Check your phone" : "Sign in with phone") : (showPassword ? "Enter your password" : "Welcome to ENOSX");
@@ -131,8 +147,8 @@ export default function EnosxSignInModal({ onClose }: EnosxSignInModalProps) {
             ))}
           </div>
           <div>
-            <p className="enosx-signin-caption">AI workflow automation that runs on a schedule or trigger</p>
-            <div className="enosx-signin-progress" aria-hidden="true"><i /><i /><i /><i /></div>
+            <p className="enosx-signin-caption" aria-live="polite">{captions[captionIndex]}</p>
+            <div className="enosx-signin-progress" aria-hidden="true">{captions.map((_, index) => <i key={index} className={index === captionIndex ? "is-active" : index < captionIndex ? "is-done" : ""} />)}</div>
           </div>
         </aside>
 

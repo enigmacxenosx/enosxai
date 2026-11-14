@@ -10,12 +10,12 @@
  *  - Privacy & Security settings
  *  - 4 featured wallpapers to choose from
  */
-import React, { useState, useRef } from 'react';
+import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   X, User, Mail, LogOut, Settings,
   Bell, Globe, Palette, Sparkles, Check, ChevronRight, ChevronLeft,
-  Camera, Edit3, Loader2, AlertCircle, CheckCircle2,
+  Loader2, AlertCircle, CheckCircle2,
   Monitor, Shield, Zap, Layers, Mic, ShieldAlert, Cpu,
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
@@ -38,13 +38,6 @@ interface ProfilePanelProps {
   notificationPermission?: NotificationPermission | "unsupported";
 }
 
-
-const PERSONALITIES = [
-  { id: 'assistant', label: 'Professional', icon: '💼', desc: 'Focused, concise, business-ready' },
-  { id: 'creative', label: 'Creative', icon: '🎨', desc: 'Imaginative, expressive, artistic' },
-  { id: 'mentor', label: 'Mentor', icon: '🧑‍🏫', desc: 'Patient, educational, detailed' },
-  { id: 'casual', label: 'Casual', icon: '😊', desc: 'Friendly, relaxed, conversational' },
-];
 
 const LANGUAGES = ENOSX_LANGUAGES;
 
@@ -84,9 +77,6 @@ export default function ProfilePanel({ isOpen, onClose, onOpenAdminConsole, onOp
 
   const [view, setView] = useState<View>('profile');
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
-  // Profile edit state
-  const [editName, setEditName] = useState(user?.displayName ?? '');
-  const [editPersonality, setEditPersonality] = useState(user?.aiPersonality ?? 'assistant');
   const [editLanguage, setEditLanguage] = useState(user?.language ?? 'English');
   const [editNotifications, setEditNotifications] = useState(user?.notifications ?? true);
   const [editCompact, setEditCompact] = useState(user?.compactMode ?? false);
@@ -98,48 +88,16 @@ export default function ProfilePanel({ isOpen, onClose, onOpenAdminConsole, onOp
   const [privacyPersonalization, setPrivacyPersonalization] = useState(true);
   const [privacySaved, setPrivacySaved] = useState(false);
 
-  // Avatar upload ref
-  const avatarInputRef = useRef<HTMLInputElement>(null);
-
   const accentRgb = config.accentRgb;
   const accentColor = config.accent;
 
   React.useEffect(() => {
     if (user) {
-      setEditName(user.displayName ?? '');
-      setEditPersonality(user.aiPersonality ?? 'assistant');
       setEditLanguage(user.language ?? 'English');
       setEditNotifications(user.notifications ?? true);
       setEditCompact(user.compactMode ?? false);
     }
   }, [user]);
-
-  const handleSaveProfile = async () => {
-    setSaveStatus('saving');
-    const ok = await updateProfile({
-      displayName: editName,
-      aiPersonality: editPersonality,
-      language: editLanguage,
-      notifications: editNotifications,
-      compactMode: editCompact,
-    });
-    setSaveStatus(ok ? 'saved' : 'error');
-    setTimeout(() => setSaveStatus('idle'), 2500);
-  };
-
-  // Handle profile picture upload from device
-  const handleAvatarUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = async (ev) => {
-      const dataUrl = ev.target?.result as string;
-      if (dataUrl) {
-        await updateProfile({ avatarUrl: dataUrl });
-      }
-    };
-    reader.readAsDataURL(file);
-  };
 
   // Handle language save
   const handleSaveLanguage = async () => {
@@ -310,66 +268,19 @@ export default function ProfilePanel({ isOpen, onClose, onOpenAdminConsole, onOp
               {/* ── PROFILE VIEW ── */}
               {view === 'profile' && user && (
                 <div className="neon-settings-view px-5 py-5 space-y-5">
-                  {/* Avatar with upload */}
+                  {/* Profile summary */}
                   <div className="flex flex-col items-center gap-3 py-2">
-                    <div className="relative">
-                      {user.avatarUrl
-                        ? <img src={user.avatarUrl} alt={user.displayName} className="w-20 h-20 rounded-2xl object-cover" style={{ border: `2px solid rgba(${accentRgb},0.4)` }} />
-                        : <div className="w-20 h-20 rounded-2xl flex items-center justify-center text-2xl font-black" style={{ background: `rgba(${accentRgb},0.15)`, border: `2px solid rgba(${accentRgb},0.3)`, color: accentColor }}>
-                            {user.displayName?.charAt(0).toUpperCase()}
-                          </div>}
-                      {/* Camera button — triggers file input */}
-                      <button
-                        onClick={() => avatarInputRef.current?.click()}
-                        className="absolute -bottom-1 -right-1 w-7 h-7 rounded-xl flex items-center justify-center cursor-pointer transition-all hover:scale-110"
-                        style={{ background: `rgba(${accentRgb},0.85)`, border: `1px solid rgba(${accentRgb},0.5)` }}
-                        title="Change profile picture"
-                      >
-                        <Camera size={12} style={{ color: '#fff' }} />
-                      </button>
-                      {/* Hidden file input */}
-                      <input
-                        ref={avatarInputRef}
-                        type="file"
-                        accept="image/*"
-                        className="hidden"
-                        onChange={handleAvatarUpload}
-                      />
-                    </div>
+                    {user.avatarUrl
+                      ? <img src={user.avatarUrl} alt={user.displayName} className="w-20 h-20 rounded-2xl object-cover" style={{ border: `2px solid rgba(${accentRgb},0.4)` }} />
+                      : <div className="w-20 h-20 rounded-2xl flex items-center justify-center text-2xl font-black" style={{ background: `rgba(${accentRgb},0.15)`, border: `2px solid rgba(${accentRgb},0.3)`, color: accentColor }}>
+                          {user.displayName?.charAt(0).toUpperCase()}
+                        </div>}
                     <div className="text-center">
                       <div className="font-bold text-base" style={{ color: 'rgba(255,255,255,0.9)' }}>{user.displayName}</div>
                       <div className="text-xs mt-0.5" style={{ color: 'rgba(255,255,255,0.4)' }}>{user.email}</div>
                       <div className="inline-flex items-center gap-1 mt-1.5 px-2 py-0.5 rounded-full text-xs" style={{ background: `rgba(${accentRgb},0.12)`, color: accentColor }}>
                         {user.provider === 'google' ? '🔵 Google' : user.provider === 'github' ? '⚫ GitHub' : '📧 Email'}
                       </div>
-                    </div>
-                    <p className="text-xs text-center" style={{ color: 'rgba(255,255,255,0.3)' }}>
-                      Tap the camera icon to upload a profile picture
-                    </p>
-                  </div>
-
-                  {/* Edit name */}
-                  <div>
-                    <label style={labelStyle}>DISPLAY NAME</label>
-                    <div className="relative">
-                      <Edit3 size={13} className="absolute left-3 top-1/2 -translate-y-1/2" style={{ color: 'rgba(255,255,255,0.3)' }} />
-                      <input type="text" value={editName} onChange={e => setEditName(e.target.value)} style={{ ...inputStyle, paddingLeft: 34 }} />
-                    </div>
-                  </div>
-
-                  {/* AI Personality */}
-                  <div>
-                    <label style={labelStyle}>AI PERSONALITY</label>
-                    <div className="grid grid-cols-2 gap-2">
-                      {PERSONALITIES.map(p => (
-                        <button key={p.id} onClick={() => setEditPersonality(p.id)}
-                          className="p-2.5 rounded-xl text-left transition-all"
-                          style={{ background: editPersonality === p.id ? `rgba(${accentRgb},0.15)` : 'rgba(255,255,255,0.04)', border: editPersonality === p.id ? `1px solid rgba(${accentRgb},0.4)` : '1px solid rgba(255,255,255,0.07)' }}>
-                          <div className="text-base mb-0.5">{p.icon}</div>
-                          <div className="text-xs font-semibold" style={{ color: editPersonality === p.id ? accentColor : 'rgba(255,255,255,0.8)' }}>{p.label}</div>
-                          <div className="text-xs mt-0.5" style={{ color: 'rgba(255,255,255,0.3)' }}>{p.desc}</div>
-                        </button>
-                      ))}
                     </div>
                   </div>
 
@@ -408,16 +319,6 @@ export default function ProfilePanel({ isOpen, onClose, onOpenAdminConsole, onOp
                       </button>
                     )}
                   </div>
-
-                  {/* Save */}
-                  <button onClick={handleSaveProfile} disabled={saveStatus === 'saving'}
-                    className="w-full py-3 rounded-2xl text-sm font-bold transition-all flex items-center justify-center gap-2"
-                    style={{ background: saveStatus === 'saved' ? 'rgba(34,197,94,0.2)' : saveStatus === 'error' ? 'rgba(220,20,60,0.2)' : `rgba(${accentRgb},0.18)`, border: saveStatus === 'saved' ? '1px solid rgba(34,197,94,0.4)' : saveStatus === 'error' ? '1px solid rgba(220,20,60,0.4)' : `1px solid rgba(${accentRgb},0.35)`, color: saveStatus === 'saved' ? '#4ade80' : saveStatus === 'error' ? '#ff6b8a' : accentColor }}>
-                    {saveStatus === 'saving' ? <><Loader2 size={14} className="animate-spin" /> Saving...</>
-                      : saveStatus === 'saved' ? <><CheckCircle2 size={14} /> Saved!</>
-                      : saveStatus === 'error' ? <><AlertCircle size={14} /> Save Failed</>
-                      : <><Check size={14} /> Save Changes</>}
-                  </button>
 
                   {/* Sign out */}
                   <button onClick={signOut} className="w-full py-2.5 rounded-2xl text-sm font-medium transition-all flex items-center justify-center gap-2 hover:bg-red-500/10" style={{ border: '1px solid rgba(220,20,60,0.2)', color: 'rgba(255,100,100,0.7)' }}>

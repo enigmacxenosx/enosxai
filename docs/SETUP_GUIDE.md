@@ -34,6 +34,7 @@ ENOSX AI is a Vite/React frontend with Vercel serverless API functions. The chat
 | `NVIDIA_EX_CORE_MODEL` | Override the EX Core text model |
 | `NVIDIA_EX_PRO_MODEL` | Override the EX Pro text model |
 | `NVIDIA_ENOSH_MIND_MODEL` | Override the ENOSH MIND text model |
+| `NVIDIA_VISION_MODEL` | Override the shared vision model |
 | `NVIDIA_API_BASE_URL` | Override the NVIDIA-compatible API base URL |
 | `GITHUB_TOKEN` | GitHub repository context features |
 | `VITE_FIREBASE_*` | Firebase authentication and cloud history |
@@ -49,6 +50,8 @@ pnpm dev
 ```
 
 Do not place a provider key in a `VITE_` variable. For a production-like deployment, configure the key in the server environment rather than a checked-in `.env` file.
+
+The recommended model routing is `meta/muse-glimmer-30b` for EX Core and EX Pro, and `stepfun-ai/step-5-preview` for ENOSH MIND. Use `meta/muse-glimmer-30b` for vision requests because it accepts both text and images.
 
 ## Vercel Deployment
 

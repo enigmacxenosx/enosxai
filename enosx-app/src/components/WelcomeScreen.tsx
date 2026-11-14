@@ -11,6 +11,7 @@ import BrandMark from "./BrandMark";
 interface WelcomeScreenProps {
   onSuggestion: (text: string) => void;
   isCompact?: boolean;
+  showSuggestions?: boolean;
 }
 
 const STARTERS = [
@@ -22,7 +23,30 @@ const STARTERS = [
   { label: "Draft something", prompt: "Help me draft a clear, polished version of this idea.", icon: PenLine, color: "#8de6d1" },
 ];
 
-export default function WelcomeScreen({ onSuggestion, isCompact }: WelcomeScreenProps) {
+export function WelcomeSuggestions({ onSuggestion }: Pick<WelcomeScreenProps, "onSuggestion">) {
+  return (
+    <div className="flex flex-wrap justify-center gap-2" aria-label="Suggested prompts">
+      {STARTERS.map(({ label, prompt, icon: Icon, color }, index) => (
+        <motion.button
+          key={label}
+          type="button"
+          initial={{ opacity: 0, y: 8 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.08 + index * 0.05, duration: 0.3 }}
+          whileHover={{ y: -2 }}
+          whileTap={{ scale: 0.985 }}
+          onClick={() => onSuggestion(prompt)}
+          className="group inline-flex h-9 items-center gap-2 rounded-full border border-white/[0.12] bg-[#11131b]/80 px-3.5 text-left text-[13px] font-medium text-white/75 shadow-[0_4px_16px_rgba(0,0,0,0.12)] backdrop-blur-sm transition-colors hover:border-white/[0.22] hover:bg-white/[0.08] hover:text-white"
+        >
+          <Icon size={14} strokeWidth={1.8} style={{ color }} />
+          <span>{label}</span>
+        </motion.button>
+      ))}
+    </div>
+  );
+}
+
+export default function WelcomeScreen({ onSuggestion, isCompact, showSuggestions = true }: WelcomeScreenProps) {
   const { config } = useTheme();
 
   return (
@@ -42,24 +66,7 @@ export default function WelcomeScreen({ onSuggestion, isCompact }: WelcomeScreen
           </h2>
         </div>
 
-        <div className="flex flex-wrap justify-center gap-2">
-          {STARTERS.map(({ label, prompt, icon: Icon, color }, index) => (
-            <motion.button
-              key={label}
-              type="button"
-              initial={{ opacity: 0, y: 8 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.08 + index * 0.05, duration: 0.3 }}
-              whileHover={{ y: -2 }}
-              whileTap={{ scale: 0.985 }}
-              onClick={() => onSuggestion(prompt)}
-              className="group inline-flex h-9 items-center gap-2 rounded-full border border-white/[0.12] bg-[#11131b]/80 px-3.5 text-left text-[13px] font-medium text-white/75 shadow-[0_4px_16px_rgba(0,0,0,0.12)] backdrop-blur-sm transition-colors hover:border-white/[0.22] hover:bg-white/[0.08] hover:text-white"
-            >
-              <Icon size={14} strokeWidth={1.8} style={{ color }} />
-              <span>{label}</span>
-            </motion.button>
-          ))}
-        </div>
+        {showSuggestions && <WelcomeSuggestions onSuggestion={onSuggestion} />}
       </motion.div>
     </div>
   );

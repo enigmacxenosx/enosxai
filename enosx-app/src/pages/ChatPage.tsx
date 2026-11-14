@@ -13,7 +13,7 @@ import Sidebar from "@/components/Sidebar";
 import MessageBubble from "@/components/MessageBubble";
 import CommandBar, { type AIMode } from "@/components/CommandBar";
 import AppAwareSuggestions from "@/components/AppAwareSuggestions";
-import WelcomeScreen from "@/components/WelcomeScreen";
+import WelcomeScreen, { WelcomeSuggestions } from "@/components/WelcomeScreen";
 import ConversationSearchDialog from "@/components/ConversationSearchDialog";
 import FileDropZone from "@/components/FileDropZone";
 import FileContextBadge from "@/components/FileContextBadge";
@@ -1113,6 +1113,7 @@ ${getAdminContext()}` : ""}`,
               <WelcomeScreen
                 key="welcome"
                 onSuggestion={(text) => void handleSendTracked(text)}
+                showSuggestions={false}
               />
             ) : (
               <motion.div 
@@ -1199,6 +1200,11 @@ ${getAdminContext()}` : ""}`,
               attachments={fileContext.files}
               audioStream={microphoneStream}
             />
+            {(!activeConversation || activeConversation.messages.length === 0) && (
+              <div className="mt-3 pb-1">
+                <WelcomeSuggestions onSuggestion={(text) => void handleSendTracked(text)} />
+              </div>
+            )}
           </div>
         </div>
 

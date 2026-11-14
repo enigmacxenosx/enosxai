@@ -48,6 +48,10 @@ async function getErrorMessage(response: Response) {
 }
 
 function getFriendlyErrorMessage(message: string) {
+  if (/NVIDIA_API_KEY is not configured|CONFIGURATION_ERROR/i.test(message)) {
+    return "The AI service is not configured on the server. Please add NVIDIA_API_KEY in the production deployment settings.";
+  }
+
   if (message.includes("401") || message.includes("403") || /authentication|unauthorized|forbidden/i.test(message)) {
     return "This AI mode is temporarily unavailable. Please try again shortly.";
   }

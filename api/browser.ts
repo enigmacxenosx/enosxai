@@ -66,7 +66,12 @@ export default async function handler(
   res: VercelResponse,
 ) {
   const route = typeof req.query.route === "string" ? req.query.route : "";
-  if (route === "healthz") return res.status(200).json({ ok: true });
+  if (route === "healthz") {
+    return res.status(200).json({
+      ok: true,
+      aiConfigured: Boolean(process.env.NVIDIA_API_KEY?.trim()),
+    });
+  }
   if (route === "read") return readHandler(req, res);
   if (route === "extract-links") return linksHandler(req, res);
   if (route) return res.status(404).json({ error: "Unknown browser route" });

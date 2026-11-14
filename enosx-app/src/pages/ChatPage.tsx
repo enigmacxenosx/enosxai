@@ -1076,10 +1076,10 @@ ${getAdminContext()}` : ""}`,
                 {activeConversation?.title || "ENOSX AI"}
               </h1>
             </div>
+            <AIModePicker aiMode={activeMode} onChange={setActiveMode} />
           </div>
 
           <div className="flex items-center gap-3">
-            <AIModePicker aiMode={activeMode} onChange={setActiveMode} />
             <div
               role="status"
               aria-label={`${analytics.totalTokensUsed.toLocaleString()} tokens used`}

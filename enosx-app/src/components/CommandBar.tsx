@@ -70,7 +70,7 @@ export function AIModePicker({ aiMode, onChange }: { aiMode: AIMode; onChange: (
 
   return (
     <div className="relative" ref={modeRef}>
-      <motion.button type="button" whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }} onClick={() => setModeOpen((open) => !open)} className="flex items-center gap-1 rounded-full border px-2.5 py-1.5 text-[11px] font-medium whitespace-nowrap transition-all" style={{ background: currentMode.bgColor, borderColor: `${currentMode.color}66`, color: currentMode.color }} aria-haspopup="menu" aria-expanded={modeOpen} title={`AI mode: ${currentMode.label}`}>
+      <motion.button type="button" whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }} onClick={() => setModeOpen((open) => !open)} className="flex items-center gap-1 rounded-full border-0 bg-transparent px-1.5 py-1 text-[11px] font-medium whitespace-nowrap transition-all" style={{ background: "transparent", borderColor: "transparent", color: currentMode.color }} aria-haspopup="menu" aria-expanded={modeOpen} title={`AI mode: ${currentMode.label}`}>
         {currentMode.label}<ChevronDown size={11} style={{ transform: modeOpen ? "rotate(180deg)" : "rotate(0deg)", transition: "transform 0.2s ease" }} />
       </motion.button>
       <AnimatePresence>

@@ -407,7 +407,7 @@ export default function CommandBar({
                   maxHeight: 144,
                   minHeight: 32,
                   paddingTop: "5px",
-                  fontFamily: "'Eurostile', sans-serif",
+                  fontFamily: "var(--font-body)",
                 }}
               />
 

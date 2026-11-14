@@ -13,21 +13,21 @@ The vision of ENOSX AI is to provide a fluid, iridescent interface powered by hi
 ### 3.1. Logo and Typography
 The primary logo of ENOSX AI is a stylized letterform "E" featuring a gradient transitioning from red at the top, through silver/metal in the body, to blue circuit traces at the bottom. For the application's splash screen and loading states, a secondary logo is utilized: bold black "EX" text inside a dark, glassmorphic rounded-square box with a distinct cyan glow.
 
-The typography system relies heavily on the **Eurostile** font for headings and branding elements, providing a futuristic and technical aesthetic. The primary body text utilizes the **Inter** font family for optimal readability across the interface.
+The typography system pairs **Manrope** for headings and high-emphasis display text with **Plus Jakarta Sans** for body copy and interface controls. Their confident geometric forms give the product a refined, contemporary voice while preserving clear readability. **JetBrains Mono** is reserved for code, terminals, and technical data.
 
 ### 3.2. Color Palette
-The ENOSX color palette is characterized by deep, dark backgrounds contrasted with vibrant, iridescent neon accents.
+The default ENOSX AI palette uses deep graphite surfaces, cool pearl text, and a restrained indigo accent. The optional Neon and Cyberpunk modes keep their brighter accents, while the default experience favors quiet contrast and polished depth.
 
 | Color Name | Hex Code | Usage |
 | :--- | :--- | :--- |
-| **Primary Background** | `#050505` to `#0a0a0a` | Deep dark backgrounds, surface panels |
-| **Cyan Accent** | `#00F2FF` | Primary brand accent, glows, loading states |
-| **Purple Accent** | `#7000FF` | Secondary accent, gradients |
-| **Crimson Red** | `#DC143C` | Default theme accent, top of the logo gradient |
-| **Silver/Metal** | `#E0E0E0` | Logo body, text highlights |
+| **Graphite Background** | `#0D0E14` | Default app canvas and deep surfaces |
+| **Refined Indigo** | `#777AF3` | Primary actions, focus states, and selected navigation |
+| **Cool Pearl** | `#F1F2F8` | Primary text and high-contrast content |
+| **Soft Lavender Line** | `rgba(193,197,255,0.12)` | Subtle borders and separators |
+| **Cyan / Crimson** | `#00F2FF` / `#DC143C` | Retained for optional themes and brand artwork |
 
-### 3.3. Design Language: "Aero-Glass"
-The defining visual characteristic of ENOSX AI is its "Aero-Glass" design language. This aesthetic is achieved through extensive use of glassmorphism, where interface elements feature semi-transparent backgrounds (`rgba` values) combined with backdrop blurs (`blur(20px)` or higher). This creates a sense of depth and layering, allowing the user's chosen wallpapers (such as Lavender Field, Neon City, Galaxy Tech, or EX Circuits) to subtly bleed through the interface.
+### 3.3. Design Language: "Premium Aero-Glass"
+The interface keeps ENOSX AI's layered glass identity but makes it more restrained and polished: graphite surfaces, thin cool-toned borders, soft indigo emphasis, and controlled shadows replace constant high-intensity neon. Moderate translucency and blur maintain depth while letting the user's chosen wallpapers (such as Lavender Field, Neon City, Galaxy Tech, or EX Circuits) remain visible. Motion is purposeful and subtle, supporting a fast, focused workspace rather than competing with its content.
 
 ## 4. AI Personality and Modes
 

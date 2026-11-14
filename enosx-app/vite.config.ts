@@ -50,8 +50,8 @@ export default defineConfig({
         name: 'ENOSX AI',
         short_name: 'ENOSX',
         description: 'Advanced AI Interface for Phone and TV',
-        theme_color: '#0a0a0a',
-        background_color: '#0a0a0a',
+        theme_color: '#0d0e14',
+        background_color: '#0d0e14',
         display: 'standalone',
         icons: [
           {

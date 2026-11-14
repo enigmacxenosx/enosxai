@@ -55,7 +55,7 @@ export default class ErrorBoundary extends React.Component<
               className="text-xs mb-6"
               style={{
                 color: "rgba(255,255,255,0.3)",
-                fontFamily: "monospace",
+                fontFamily: "var(--font-mono)",
               }}
             >
               {this.state.error?.message}

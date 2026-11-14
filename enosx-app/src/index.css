@@ -1,11 +1,11 @@
 /* ==========================================================================
-   ENOSX AI Assistant — "Crimson Matrix" Design System
-   Philosophy: Cyberpunk Glassmorphism / Obsidian Dark / Crimson Pulse
-   - Background: #0a0a0a Obsidian
-   - Glass surfaces: rgba(255,255,255,0.06) with backdrop-filter blur
-   - Accent: #dc143c Crimson → #8b0000 Deep Ruby
-   - Borders: rgba(255,255,255,0.10) translucent white
-   - Typography: Inter Variable, clean modern sans-serif
+   ENOSX AI Assistant — Premium Aero-Glass Design System
+   Philosophy: Refined graphite surfaces, clear hierarchy, restrained motion
+   - Background: #0d0e14 graphite
+   - Glass surfaces: subtle translucency and controlled backdrop blur
+   - Accent: refined indigo with theme-aware alternatives
+   - Borders: soft cool-toned separators and restrained highlights
+   - Typography: Manrope display, Plus Jakarta Sans interface and body
    ========================================================================== */
 
 @import "tailwindcss";
@@ -212,7 +212,7 @@
   }
   body {
     @apply bg-background text-foreground;
-    font-family: 'Eurostile', 'Inter', 'Segoe UI Variable', system-ui, -apple-system, sans-serif;
+    font-family: 'Plus Jakarta Sans', 'Segoe UI Variable', system-ui, -apple-system, sans-serif;
     font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11';
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
@@ -465,7 +465,7 @@
     border: 1px solid rgba(220, 20, 60, 0.2);
     border-radius: 4px;
     padding: 1px 5px;
-    font-family: 'Eurostile', 'JetBrains Mono', 'Fira Code', 'Cascadia Code', monospace;
+    font-family: 'JetBrains Mono', 'Fira Code', 'Cascadia Code', monospace;
     font-size: 0.85em;
     color: #ff8080;
   }
@@ -617,15 +617,15 @@
 
   /* ── Utility class for rainbow glow ── */
   .rainbow-glow {
-    animation: rainbow-glow 4s ease-in-out infinite !important;
+    animation: rainbow-glow 4s ease-in-out infinite;
   }
 
   .rainbow-glow-border {
-    animation: rainbow-border 4s ease-in-out infinite !important;
+    animation: rainbow-border 4s ease-in-out infinite;
   }
 
   .rainbow-thinking-dot {
-    animation: rainbow-thinking-dot 4s ease-in-out infinite !important;
+    animation: rainbow-thinking-dot 4s ease-in-out infinite;
   }
 
   /* Phone composer: keep the dock in normal flow so the visual viewport and
@@ -1152,4 +1152,202 @@
   outline: 2px solid rgba(220, 20, 60, 0.65);
   outline-offset: 2px;
   border-radius: 6px;
+}
+
+
+/* ── Premium Enosx AI theme: Manrope + Plus Jakarta Sans ─────────────── */
+:root {
+  --font-body: "Plus Jakarta Sans", "Segoe UI", system-ui, sans-serif;
+  --font-display: "Manrope", "Segoe UI", system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", "SFMono-Regular", Consolas, monospace;
+  --radius: 0.8rem;
+  --accent-new: #7478f4;
+  --accent-dim: rgba(116, 120, 244, 0.14);
+  --accent-glow: rgba(116, 120, 244, 0.22);
+  --border-new: rgba(190, 194, 255, 0.14);
+  --border-subtle: rgba(190, 194, 255, 0.08);
+  --text-primary: #f2f3fb;
+  --text-secondary: #a0a4bc;
+  --text-muted-new: #747a94;
+  --user-bubble: rgba(85, 88, 170, 0.24);
+  --user-border: rgba(150, 151, 255, 0.3);
+  --ai-bubble: rgba(23, 25, 38, 0.92);
+}
+
+/* Keep the established theme switcher, while refining the default Manus theme. */
+.manus {
+  --background: #0d0e14;
+  --foreground: #f1f2f8;
+  --card: rgba(23, 25, 37, 0.88);
+  --card-foreground: #f1f2f8;
+  --popover: rgba(20, 22, 34, 0.97);
+  --popover-foreground: #f1f2f8;
+  --primary: #6f72ee;
+  --primary-foreground: #ffffff;
+  --secondary: rgba(255, 255, 255, 0.055);
+  --secondary-foreground: #dedff0;
+  --muted: rgba(255, 255, 255, 0.06);
+  --muted-foreground: #9b9fb4;
+  --accent: rgba(111, 114, 238, 0.14);
+  --accent-foreground: #c5c7ff;
+  --border: rgba(193, 197, 255, 0.12);
+  --input: rgba(255, 255, 255, 0.06);
+  --ring: #8588fa;
+  --sidebar: rgba(14, 15, 23, 0.96);
+  --sidebar-foreground: #e7e8f1;
+  --sidebar-primary: #777af3;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: rgba(111, 114, 238, 0.12);
+  --sidebar-accent-foreground: #d5d6ff;
+  --sidebar-border: rgba(193, 197, 255, 0.1);
+  --sidebar-ring: #8588fa;
+  --bg-base: #0d0e14;
+  --bg-surface: #141621;
+  --bg-elevated: #1a1c2a;
+  --bg-hover: #222437;
+  --accent-new: #777af3;
+  --accent-dim: rgba(119, 122, 243, 0.13);
+  --accent-glow: rgba(119, 122, 243, 0.2);
+  --border-new: rgba(193, 197, 255, 0.13);
+  --border-subtle: rgba(193, 197, 255, 0.075);
+  --text-primary: #f1f2f8;
+  --text-secondary: #a4a7bb;
+  --text-muted-new: #747a90;
+  --user-bubble: rgba(89, 92, 180, 0.24);
+  --user-border: rgba(150, 151, 255, 0.28);
+  --ai-bubble: rgba(23, 25, 37, 0.94);
+}
+
+html, body, #root {
+  font-family: var(--font-body);
+  font-feature-settings: "kern", "liga";
+}
+body, button, input, textarea, select, option, [role="button"] {
+  font-family: var(--font-body);
+}
+.font-sans { font-family: var(--font-body); }
+.font-display { font-family: var(--font-display); }
+h1, h2, h3, h4, h5, h6,
+.prose-crimson h1, .prose-crimson h2, .prose-crimson h3, .prose-crimson h4 {
+  font-family: var(--font-display);
+  letter-spacing: -0.035em;
+  font-weight: 700;
+}
+code, pre, kbd, samp, .font-mono {
+  font-family: var(--font-mono);
+}
+
+.manus .glass-panel {
+  background: linear-gradient(145deg, rgba(255,255,255,0.055), rgba(255,255,255,0.025));
+  border-color: rgba(193, 197, 255, 0.13);
+  box-shadow: 0 18px 48px rgba(0, 0, 0, 0.22), inset 0 1px 0 rgba(255,255,255,0.045);
+}
+.manus ::selection { color: #fff; background: rgba(111, 114, 238, 0.42); }
+.manus ::-webkit-scrollbar-thumb { background: rgba(145, 148, 247, 0.24); }
+.manus ::-webkit-scrollbar-thumb:hover { background: rgba(145, 148, 247, 0.42); }
+.manus .prose-crimson { color: #e4e6f1; }
+.manus .prose-crimson h1,
+.manus .prose-crimson h2,
+.manus .prose-crimson h3,
+.manus .prose-crimson h4 { color: #f4f4fb; }
+.manus .prose-crimson strong { color: #fff; }
+.manus .prose-crimson code {
+  color: #c4c6ff;
+  background: rgba(111, 114, 238, 0.12);
+  border-color: rgba(145, 148, 247, 0.2);
+}
+.manus .prose-crimson ul li::marker { color: #9a9cff; }
+.manus .prose-crimson a { color: #b2b4ff; text-decoration-color: rgba(145, 148, 247, 0.45); }
+
+/* Calm the default sign-in surface without removing its identity or motion cues. */
+.manus .auth-neon-shell {
+  border-color: rgba(145, 148, 247, 0.2);
+  border-radius: 24px;
+  background: linear-gradient(145deg, rgba(26, 28, 42, 0.96), rgba(12, 13, 21, 0.98));
+  box-shadow: 0 28px 80px rgba(0, 0, 0, 0.42), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  animation: none;
+}
+.manus .auth-neon-shell::before { border-color: rgba(145, 148, 247, 0.1); box-shadow: none; animation: none; }
+.manus .auth-primary-button {
+  background: linear-gradient(135deg, #7478ed, #5c60cf) !important;
+  box-shadow: 0 10px 26px rgba(99, 102, 241, 0.22), inset 0 1px 0 rgba(255,255,255,0.2) !important;
+  animation: none;
+}
+.manus .auth-primary-button:hover {
+  background: linear-gradient(135deg, #8386f7, #666be0) !important;
+  box-shadow: 0 12px 30px rgba(99, 102, 241, 0.28) !important;
+}
+
+
+/* Default-theme surface refinements: restrained motion, softer borders, clear focus. */
+.manus .rainbow-glow,
+.manus .rainbow-glow-border,
+.manus .rainbow-thinking-dot {
+  animation: none !important;
+}
+.manus .rainbow-glow {
+  box-shadow: 0 12px 34px rgba(0, 0, 0, 0.24) !important;
+}
+.manus .rainbow-glow-border {
+  border-color: rgba(160, 163, 255, 0.18) !important;
+}
+.manus .rainbow-thinking-dot {
+  background: #8588f5 !important;
+  box-shadow: 0 0 10px rgba(133, 136, 245, 0.24) !important;
+}
+.manus .phone-command-shell {
+  background: rgba(20, 22, 33, 0.9) !important;
+  border: 1px solid rgba(193, 197, 255, 0.15) !important;
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.24), inset 0 1px 0 rgba(255, 255, 255, 0.055) !important;
+}
+.manus .phone-command-shell:focus-within {
+  border-color: rgba(133, 136, 245, 0.46) !important;
+  box-shadow: 0 0 0 3px rgba(111, 114, 238, 0.09), 0 16px 40px rgba(0, 0, 0, 0.26) !important;
+}
+.manus .phone-command-shell textarea:not(.font-mono),
+.manus input:not(.font-mono),
+.manus select:not(.font-mono) {
+  font-family: var(--font-body) !important;
+}
+.manus .neon-dashboard-stage {
+  background:
+    radial-gradient(circle at 15% 12%, rgba(111, 114, 238, 0.11), transparent 30%),
+    radial-gradient(circle at 86% 82%, rgba(107, 86, 198, 0.08), transparent 34%),
+    #0d0e14 !important;
+}
+.manus .neon-dashboard-stage::before { opacity: 0.11; background-size: 72px 72px; }
+.manus .neon-dashboard-sidebar {
+  background: rgba(15, 16, 25, 0.88) !important;
+  border-right-color: rgba(193, 197, 255, 0.11) !important;
+  box-shadow: 12px 0 42px rgba(0, 0, 0, 0.16) !important;
+}
+.manus .neon-dashboard-nav:hover,
+.manus .neon-dashboard-profile:hover {
+  border-color: rgba(145, 148, 247, 0.26) !important;
+  background: rgba(111, 114, 238, 0.1) !important;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06) !important;
+}
+.manus .visual-story-page {
+  background:
+    radial-gradient(circle at 76% 8%, rgba(119, 122, 243, 0.12), transparent 30%),
+    radial-gradient(circle at 8% 68%, rgba(111, 114, 238, 0.07), transparent 35%),
+    #0d0e14;
+}
+.manus .visual-story-live-dot { background: #8588f5; box-shadow: 0 0 10px rgba(133, 136, 245, 0.35); }
+.manus .story-overline { color: #aaaaff; }
+.manus .story-primary-button {
+  border-color: rgba(145, 148, 247, 0.28);
+  background: linear-gradient(135deg, #7478ed, #5c60cf);
+  box-shadow: 0 8px 26px rgba(99, 102, 241, 0.18);
+}
+.manus .story-primary-button:hover { box-shadow: 0 12px 30px rgba(99, 102, 241, 0.24); }
+.manus .story-metric-card-primary,
+.manus .story-metric-primary {
+  background: linear-gradient(135deg, rgba(111, 114, 238, 0.18), rgba(111, 114, 238, 0.06));
+  border-color: rgba(145, 148, 247, 0.22);
+}
+.manus .story-beat:hover,
+.manus .story-beat.is-active {
+  border-left-color: #8588f5;
+  background: linear-gradient(90deg, rgba(111, 114, 238, 0.12), transparent);
 }

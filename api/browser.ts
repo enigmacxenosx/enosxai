@@ -7,6 +7,8 @@ import type { VercelRequest, VercelResponse } from "@vercel/node";
 import * as https from "node:https";
 import * as http from "node:http";
 import { URL } from "node:url";
+import readHandler from "../lib/server/browser-read";
+import linksHandler from "../lib/server/browser-extract-links";
 
 function fetchPage(url: string): Promise<string> {
   return new Promise((resolve, reject) => {
@@ -63,6 +65,12 @@ export default async function handler(
   req: VercelRequest,
   res: VercelResponse,
 ) {
+  const route = typeof req.query.route === "string" ? req.query.route : "";
+  if (route === "healthz") return res.status(200).json({ ok: true });
+  if (route === "read") return readHandler(req, res);
+  if (route === "extract-links") return linksHandler(req, res);
+  if (route) return res.status(404).json({ error: "Unknown browser route" });
+
   const { url } = req.query;
 
   if (!url || typeof url !== "string") {

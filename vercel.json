@@ -47,16 +47,24 @@
       "destination": "/api/connectors/oauth?route=:connector/:phase"
     },
     {
+      "source": "/api/github/oauth/start",
+      "destination": "/api/github/oauth?route=start"
+    },
+    {
+      "source": "/api/github/oauth/callback",
+      "destination": "/api/github/oauth?route=callback"
+    },
+    {
       "source": "/api/browser/read",
-      "destination": "/api/browser-routes?route=read"
+      "destination": "/api/browser?route=read"
     },
     {
       "source": "/api/browser/extract-links",
-      "destination": "/api/browser-routes?route=extract-links"
+      "destination": "/api/browser?route=extract-links"
     },
     {
       "source": "/api/healthz",
-      "destination": "/api/browser-routes?route=healthz"
+      "destination": "/api/browser?route=healthz"
     },
     {
       "source": "/:path((?!api/|assets/|sw\\.js$|workbox-).*)",

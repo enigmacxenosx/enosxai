@@ -232,7 +232,7 @@ export default function CommandBar({
           initial={{ y: 20, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
           transition={{ type: "spring", stiffness: 300, damping: 30, delay: 0.1 }}
-          className="mx-auto w-full max-w-3xl"
+          className="mx-auto w-full max-w-none"
         >
           {/* Main input container */}
           <motion.div

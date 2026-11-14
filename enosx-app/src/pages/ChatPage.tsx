@@ -1154,8 +1154,8 @@ ${getAdminContext()}` : ""}`,
           </AnimatePresence>
         </div>
 
-        <div className={`premium-composer-dock phone-composer-dock relative z-20 px-4 pb-3 pt-3 ${isCompactMode ? "pb-4" : "md:px-6 md:pb-4 md:pt-4"} ${(!activeConversation || activeConversation.messages.length === 0) ? "md:pb-20" : ""}`}>
-          <div className="relative mx-auto max-w-[820px]">
+        <div className={`premium-composer-dock phone-composer-dock relative z-20 px-4 pb-3 pt-3 ${isCompactMode ? "pb-4" : "md:px-8 lg:px-12 md:pb-4 md:pt-4"} ${(!activeConversation || activeConversation.messages.length === 0) ? "md:pb-20" : ""}`}>
+          <div className="relative mx-auto w-full max-w-none">
             <AnimatePresence>
               {error && (
                 <motion.p

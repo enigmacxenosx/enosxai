@@ -10,6 +10,9 @@ import {
   signInWithPopup,
   signOut as firebaseSignOut,
   GoogleAuthProvider,
+  signInWithPhoneNumber,
+  type ConfirmationResult,
+  type RecaptchaVerifier,
   updateProfile as updateFirebaseProfile,
   type User as FirebaseUser,
 } from "firebase/auth";
@@ -44,6 +47,8 @@ interface AuthState {
 interface AuthContextType extends AuthState {
   signInWithGoogle: () => void;
   signInWithEmail: (email: string, password: string) => Promise<boolean>;
+  sendPhoneCode: (phoneNumber: string, verifier: RecaptchaVerifier) => Promise<ConfirmationResult | null>;
+  confirmPhoneCode: (confirmation: ConfirmationResult, code: string) => Promise<boolean>;
   signUpWithEmail: (email: string, password: string, displayName: string) => Promise<boolean>;
   continueAsGuest: () => void;
   signOut: () => void;
@@ -158,6 +163,34 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  const sendPhoneCode = async (phoneNumber: string, verifier: RecaptchaVerifier): Promise<ConfirmationResult | null> => {
+    if (!firebaseAuth) {
+      reportClientError("Firebase is not configured for authentication.", "auth.configuration");
+      setState((previous) => ({ ...previous, error: "Firebase is not configured. Set the VITE_FIREBASE_* values before signing in." }));
+      return null;
+    }
+    setState((previous) => ({ ...previous, isLoading: true, error: null }));
+    try {
+      const confirmation = await signInWithPhoneNumber(firebaseAuth, phoneNumber.trim(), verifier);
+      setState((previous) => ({ ...previous, isLoading: false, error: null }));
+      return confirmation;
+    } catch (error) {
+      setState((previous) => ({ ...previous, isLoading: false, error: firebaseErrorMessage(error) }));
+      return null;
+    }
+  };
+
+  const confirmPhoneCode = async (confirmation: ConfirmationResult, code: string): Promise<boolean> => {
+    setState((previous) => ({ ...previous, isLoading: true, error: null }));
+    try {
+      await confirmation.confirm(code.trim());
+      return true;
+    } catch (error) {
+      setState((previous) => ({ ...previous, isLoading: false, error: firebaseErrorMessage(error) }));
+      return false;
+    }
+  };
+
   const signUpWithEmail = async (email: string, password: string, displayName: string): Promise<boolean> => {
     if (!firebaseAuth) {
       reportClientError("Firebase is not configured for authentication.", "auth.configuration");
@@ -235,7 +268,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const clearError = () => setState((previous) => ({ ...previous, error: null }));
 
   return (
-    <AuthContext.Provider value={{ ...state, signInWithGoogle, signInWithEmail, signUpWithEmail, continueAsGuest, signOut, updateProfile, clearError }}>
+    <AuthContext.Provider value={{ ...state, signInWithGoogle, signInWithEmail, sendPhoneCode, confirmPhoneCode, signUpWithEmail, continueAsGuest, signOut, updateProfile, clearError }}>
       {children}
     </AuthContext.Provider>
   );

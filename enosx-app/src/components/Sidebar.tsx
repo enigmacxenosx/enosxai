@@ -18,7 +18,7 @@ import {
   X,
   User,
   NotebookPen,
-  BookOpen,
+  Search,
   Library,
   Settings,
   Sparkles,
@@ -82,15 +82,15 @@ export default function Sidebar({
       danger: false,
     },
     {
-      label: "Chat History",
-      description: "Browse past conversations",
-      icon: BookOpen,
+      label: "Search",
+      description: "Find past conversations",
+      icon: Search,
       onClick: onLibraryClick || (() => {}),
       accent: false,
       danger: false,
     },
     {
-      label: "Media Library",
+      label: "Library",
       description: "Your files, folders, and playlists",
       icon: Library,
       onClick: () => { window.location.href = "/media-library"; },
@@ -98,7 +98,7 @@ export default function Sidebar({
       danger: false,
     },
     {
-      label: "Reusable Workflows",
+      label: "Workflows",
       description: "Copy repeatable AI workflows",
       icon: Sparkles,
       onClick: onReusableFeatureClick || (() => setShowReusableFeatures(true)),
@@ -125,23 +125,23 @@ export default function Sidebar({
 
   const sidebarContent = (
     <>
-    <motion.aside
+      <motion.aside
       initial={false}
       animate={{ width: isMobileOpen ? 280 : collapsed ? 64 : 280 }}
       transition={{ type: "spring", stiffness: 300, damping: 30 }}
       className="neon-dashboard-sidebar relative flex-shrink-0 flex flex-col h-full overflow-hidden"
-      style={{
-        background: `linear-gradient(180deg, rgba(7,8,12,${settings.panelOpacity * 0.96}) 0%, rgba(12,12,18,${settings.panelOpacity * 0.9}) 100%)`,
+        style={{
+        background: `linear-gradient(180deg, rgba(10,10,15,${settings.panelOpacity * 0.98}) 0%, rgba(12,12,18,${settings.panelOpacity * 0.94}) 100%)`,
         backdropFilter: `blur(${settings.blurAmount}px)`,
         WebkitBackdropFilter: `blur(${settings.blurAmount}px)`,
-        borderRight: `1px solid rgba(${config.accentRgb}, 0.14)`,
-        boxShadow: `inset -1px 0 0 rgba(${config.accentRgb}, 0.06), 18px 0 50px rgba(0,0,0,0.22)`,
+        borderRight: "none",
+        boxShadow: "18px 0 50px rgba(0,0,0,0.18)",
       }}
     >
       {/* Logo header — clicking EX logo toggles sidebar */}
       <div
         className="flex items-center px-3 py-4 flex-shrink-0 relative"
-        style={{ borderBottom: `1px solid rgba(${config.accentRgb}, 0.08)`, minHeight: 72 }}
+        style={{ borderBottom: "none", minHeight: 72 }}
       >
         <div className={`flex items-center gap-3 ${collapsed ? 'mx-auto' : 'px-2'}`}>
           {/* EX logo button — toggles sidebar expand/collapse */}
@@ -182,30 +182,21 @@ export default function Sidebar({
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
               onClick={item.onClick}
-              className={`neon-dashboard-nav w-full flex items-center ${collapsed ? 'justify-center' : 'justify-start px-4'} py-2.5 rounded-lg transition-all duration-200 gap-3`}
+              className={`neon-dashboard-nav w-full flex items-center ${collapsed ? 'justify-center' : 'justify-start px-3'} py-2.5 rounded-[10px] transition-all duration-200 gap-3`}
               style={{
                 background: item.accent
-                  ? `linear-gradient(135deg, rgba(${config.accentRgb}, 0.18), rgba(${config.accentRgb}, 0.07))`
+                  ? `linear-gradient(135deg, rgba(${config.accentRgb}, 0.18), rgba(${config.accentRgb}, 0.09))`
                   : item.danger
                   ? "linear-gradient(135deg, rgba(220,20,60,0.13), rgba(220,20,60,0.04))"
-                  : "rgba(255,255,255,0.035)",
-                border: item.accent
-                  ? `1px solid rgba(${config.accentRgb}, 0.26)`
-                  : item.danger
-                  ? "1px solid rgba(220,20,60,0.22)"
-                  : "1px solid rgba(255,255,255,0.06)",
-                color: item.accent ? config.accent : item.danger ? "#ff6b8a" : config.text,
+                  : "transparent",
+                border: "none",
+                color: item.accent ? config.accent : item.danger ? "#ff6b8a" : config.textMuted,
               }}
               title={collapsed ? item.label : undefined}
             >
-              <Icon size={12} className="flex-shrink-0" />
+              <Icon size={16} strokeWidth={1.8} className="flex-shrink-0" />
               {!collapsed && (
-                <div className="flex flex-col items-start overflow-hidden flex-1">
-                  <div className="flex items-center justify-between w-full">
-                    <span className="text-base font-semibold whitespace-nowrap">{item.label}</span>
-                  </div>
-                  <span className="text-xs opacity-70 whitespace-nowrap">{item.description}</span>
-                </div>
+                <span className="text-sm font-medium whitespace-nowrap">{item.label}</span>
               )}
             </motion.button>
           );
@@ -238,13 +229,13 @@ export default function Sidebar({
                   activeId === conv.id
                     ? {
                         background: isGodModeConversation ? "rgba(251,191,36,0.12)" : `rgba(${config.accentRgb}, 0.14)`,
-                        border: isGodModeConversation ? "1px solid rgba(251,191,36,0.32)" : `1px solid rgba(${config.accentRgb}, 0.28)`,
+                        border: "none",
                         color: config.text,
-                        boxShadow: isGodModeConversation ? "0 0 12px rgba(251,191,36,0.1)" : `0 0 12px rgba(${config.accentRgb}, 0.1)`,
+                        boxShadow: "none",
                       }
                     : {
                         background: "transparent",
-                        border: "1px solid transparent",
+                        border: "none",
                         color: config.textMuted,
                       }
                 }
@@ -279,7 +270,7 @@ export default function Sidebar({
       </div>
 
       {/* Profile button — pinned to bottom */}
-      <div className="flex-shrink-0 px-2.5 py-3 border-t" style={{ borderColor: `rgba(${config.accentRgb}, 0.08)` }}>
+      <div className="flex-shrink-0 px-2.5 py-3">
         <motion.button
           whileHover={{ scale: 1.02 }}
           whileTap={{ scale: 0.98 }}

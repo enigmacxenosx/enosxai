@@ -25,7 +25,7 @@ const STARTERS = [
 
 export function WelcomeSuggestions({ onSuggestion }: Pick<WelcomeScreenProps, "onSuggestion">) {
   return (
-    <div className="flex flex-wrap justify-center gap-2" aria-label="Suggested prompts">
+    <div className="welcome-suggestions gap-2" aria-label="Suggested prompts">
       {STARTERS.map(({ label, prompt, icon: Icon, color }, index) => (
         <motion.button
           key={label}
@@ -36,7 +36,7 @@ export function WelcomeSuggestions({ onSuggestion }: Pick<WelcomeScreenProps, "o
           whileHover={{ y: -2 }}
           whileTap={{ scale: 0.985 }}
           onClick={() => onSuggestion(prompt)}
-          className="group inline-flex h-9 items-center gap-2 rounded-full border border-white/[0.12] bg-[#11131b]/80 px-3.5 text-left text-[13px] font-medium text-white/75 shadow-[0_4px_16px_rgba(0,0,0,0.12)] backdrop-blur-sm transition-colors hover:border-white/[0.22] hover:bg-white/[0.08] hover:text-white"
+          className="welcome-suggestion group inline-flex h-9 items-center gap-2 rounded-full border border-white/[0.12] bg-[#11131b]/80 px-3.5 text-left text-[13px] font-medium text-white/75 shadow-[0_4px_16px_rgba(0,0,0,0.12)] backdrop-blur-sm transition-colors hover:border-white/[0.22] hover:bg-white/[0.08] hover:text-white"
         >
           <Icon size={14} strokeWidth={1.8} style={{ color }} />
           <span>{label}</span>

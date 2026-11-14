@@ -40,7 +40,7 @@ function readAsDataUrl(file: File) {
 }
 
 export default function MediaLibraryPage() {
-  const { user, isAuthenticated } = useAuth();
+  const { user, isLoading: authLoading, continueAsGuest } = useAuth();
   const { config } = useTheme();
   const [assets, setAssets] = useState<MediaAsset[]>([]);
   const [folders, setFolders] = useState<Folder[]>([]);
@@ -74,6 +74,10 @@ export default function MediaLibraryPage() {
     } finally { setIsLoading(false); }
   }, [userId, search, folderFilter]);
 
+  useEffect(() => {
+    if (!authLoading && !user) continueAsGuest();
+  }, [authLoading, continueAsGuest, user]);
+
   useEffect(() => { void loadLibrary(); }, [loadLibrary]);
 
   const visibleAssets = useMemo(() => {
@@ -83,7 +87,7 @@ export default function MediaLibraryPage() {
   }, [assets, playlistFilter, playlists]);
 
   const uploadFiles = async (files: File[]) => {
-    if (!userId) { showError("Sign in to save files to your library"); return; }
+    if (!userId) { showError("Guest profile is still loading. Please try again."); return; }
     setIsUploading(true);
     let uploaded = 0;
     try {
@@ -146,9 +150,7 @@ export default function MediaLibraryPage() {
     toast.success("File deleted");
   };
 
-  if (!isAuthenticated) {
-    return <GlobalLayout><div className="flex h-full items-center justify-center p-6 text-center text-white"><div><HardDrive size={42} className="mx-auto mb-4 text-cyan-300" /><h1 className="text-2xl font-bold">Your Media Library</h1><p className="mt-2 text-sm text-white/55">Sign in to keep files, playlists, and folders attached to your account.</p><button type="button" onClick={() => window.location.href = "/"} className="mt-5 rounded-xl px-4 py-2 text-sm font-semibold" style={{ background: config.accent, color: "#05070c" }}>Go to ENOSX AI</button></div></div></GlobalLayout>;
-  }
+
 
   return <GlobalLayout>
     <div className="min-h-full overflow-y-auto px-4 py-6 text-white md:px-8">

@@ -1,6 +1,6 @@
 /**
  * ProfilePanel — Full-featured profile panel.
- * Sign in / Sign up with email, profile editing,
+ * Guest profile editing and preferences.
  * preferences (theme, wallpaper, AI personality, language, privacy).
  *
  * Features:
@@ -13,22 +13,20 @@
 import React, { useState, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-  X, User, Mail, Lock, Eye, EyeOff, LogOut, Settings,
+  X, User, Mail, LogOut, Settings,
   Bell, Globe, Palette, Sparkles, Check, ChevronRight, ChevronLeft,
   Camera, Edit3, Loader2, AlertCircle, CheckCircle2,
-  Monitor, Shield, Image, Sun, Moon, Zap, Layers, Mic, ShieldAlert, Cpu,
+  Monitor, Shield, Zap, Layers, Mic, ShieldAlert, Cpu,
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useTheme, THEMES, type Theme } from '../contexts/ThemeContext';
 import { useWallpaper, WALLPAPER_PRESETS } from '../contexts/WallpaperContext';
 import VoiceSettingsPanel from './VoiceSettingsPanel';
-import BrandMark from './BrandMark';
 import { useVoice } from '../hooks/useVoice';
-import { useSoundEffects } from '../hooks/useSoundEffects';
 import LocalModelsPanel from './LocalModelsPanel';
 import { ENOSX_LANGUAGES } from '../lib/languageDictionary';
 
-type View = 'auth' | 'profile' | 'preferences' | 'appearance' | 'privacy' | 'voice' | 'models';
+type View = 'profile' | 'preferences' | 'appearance' | 'privacy' | 'voice' | 'models';
 
 interface ProfilePanelProps {
   isOpen: boolean;
@@ -39,7 +37,6 @@ interface ProfilePanelProps {
   notificationPermission?: NotificationPermission | "unsupported";
 }
 
-type AuthMode = 'signin' | 'signup';
 
 const PERSONALITIES = [
   { id: 'assistant', label: 'Professional', icon: '💼', desc: 'Focused, concise, business-ready' },
@@ -80,23 +77,12 @@ const FEATURED_WALLPAPERS = [
 
 export default function ProfilePanel({ isOpen, onClose, onOpenAdminConsole, onOpenLeadCapture, onEnableNotifications, notificationPermission = "default" }: ProfilePanelProps) {
   const { settings: speechSettings, updateSettings: updateSpeechSettings } = useVoice();
-  const { play: playSound } = useSoundEffects();
   const { config, theme, setTheme } = useTheme();
-  const { settings, setPreset: setActivePreset, setCustomUrl, setBlurAmount } = useWallpaper();
-  const { user, isLoading, error, isAuthenticated, signInWithGoogle, signInWithEmail, signUpWithEmail, continueAsGuest, signOut, updateProfile, clearError } = useAuth();
+  const { settings, setPreset: setActivePreset, setBlurAmount } = useWallpaper();
+  const { user, isLoading, error, isAuthenticated, continueAsGuest, signOut, updateProfile } = useAuth();
 
-  const [view, setView] = useState<View>(isAuthenticated ? 'profile' : 'auth');
-  const [authMode, setAuthMode] = useState<AuthMode>('signin');
-  const [showPassword, setShowPassword] = useState(false);
-  const [rememberMe, setRememberMe] = useState(() => localStorage.getItem('enosx-remember-email') === 'true');
+  const [view, setView] = useState<View>('profile');
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
-  const [authTilt, setAuthTilt] = useState({ x: 0, y: 0 });
-
-  // Form state
-  const [email, setEmail] = useState(() => localStorage.getItem('enosx-login-email') ?? '');
-  const [password, setPassword] = useState('');
-  const [displayName, setDisplayName] = useState('');
-
   // Profile edit state
   const [editName, setEditName] = useState(user?.displayName ?? '');
   const [editPersonality, setEditPersonality] = useState(user?.aiPersonality ?? 'assistant');
@@ -118,13 +104,8 @@ export default function ProfilePanel({ isOpen, onClose, onOpenAdminConsole, onOp
   const accentColor = config.accent;
 
   React.useEffect(() => {
-    if (isAuthenticated && view === 'auth') setView('profile');
-    if (!isAuthenticated) setView('auth');
-  }, [isAuthenticated]);
-
-  React.useEffect(() => {
-    if (isOpen && !isAuthenticated && view === 'auth') playSound('authOpen');
-  }, [isOpen, isAuthenticated, view, playSound]);
+    if (isOpen && !isLoading && !user) continueAsGuest();
+  }, [continueAsGuest, isLoading, isOpen, user]);
 
   React.useEffect(() => {
     if (user) {
@@ -135,24 +116,6 @@ export default function ProfilePanel({ isOpen, onClose, onOpenAdminConsole, onOp
       setEditCompact(user.compactMode ?? false);
     }
   }, [user]);
-
-  const handleEmailAuth = async () => {
-    clearError();
-    if (!email.trim() || !password) return;
-    if (rememberMe) {
-      localStorage.setItem('enosx-remember-email', 'true');
-      localStorage.setItem('enosx-login-email', email.trim());
-    } else {
-      localStorage.removeItem('enosx-remember-email');
-      localStorage.removeItem('enosx-login-email');
-    }
-    if (authMode === 'signin') {
-      await signInWithEmail(email, password);
-    } else {
-      if (!displayName.trim()) return;
-      await signUpWithEmail(email, password, displayName);
-    }
-  };
 
   const handleSaveProfile = async () => {
     setSaveStatus('saving');
@@ -262,16 +225,6 @@ export default function ProfilePanel({ isOpen, onClose, onOpenAdminConsole, onOp
             }}
           >
             <motion.section
-              animate={{ rotateY: authTilt.x, rotateX: authTilt.y }}
-              transition={{ type: 'spring', stiffness: 180, damping: 22 }}
-              onPointerMove={(event) => {
-                const rect = event.currentTarget.getBoundingClientRect();
-                setAuthTilt({
-                  x: Number(((((event.clientX - rect.left) / rect.width) - 0.5) * 7).toFixed(2)),
-                  y: Number(((((event.clientY - rect.top) / rect.height) - 0.5) * -7).toFixed(2)),
-                });
-              }}
-              onPointerLeave={() => setAuthTilt({ x: 0, y: 0 })}
               className="auth-modal-frame flex h-[min(900px,calc(100vh-2rem))] w-full max-w-[520px] flex-col overflow-hidden rounded-[32px]"
               style={{
                 pointerEvents: 'auto',
@@ -288,10 +241,10 @@ export default function ProfilePanel({ isOpen, onClose, onOpenAdminConsole, onOp
             />
             <div className="relative flex h-full flex-col">
             {/* Header */}
-            {view !== 'auth' && <div className="flex items-center justify-between px-5 py-4 flex-shrink-0" style={{ borderBottom: `1px solid rgba(255,255,255,0.06)` }}>
+            <div className="flex items-center justify-between px-5 py-4 flex-shrink-0" style={{ borderBottom: `1px solid rgba(255,255,255,0.06)` }}>
               <div className="flex items-center gap-3">
                 {(view === 'appearance' || view === 'privacy' || view === 'voice' || view === 'models') && (
-                  <button onClick={() => setView(view === 'models' && !isAuthenticated ? 'auth' : 'preferences')} className="w-7 h-7 rounded-lg flex items-center justify-center hover:bg-white/10 transition-all" style={{ color: 'rgba(255,255,255,0.5)' }}>
+                  <button onClick={() => setView('preferences')} className="w-7 h-7 rounded-lg flex items-center justify-center hover:bg-white/10 transition-all" style={{ color: 'rgba(255,255,255,0.5)' }}>
                     <ChevronLeft size={14} />
                   </button>
                 )}
@@ -338,7 +291,7 @@ export default function ProfilePanel({ isOpen, onClose, onOpenAdminConsole, onOp
                   <X size={15} />
                 </button>
               </div>
-            </div>}
+            </div>
 
             {/* Error banner */}
             <AnimatePresence>
@@ -352,143 +305,6 @@ export default function ProfilePanel({ isOpen, onClose, onOpenAdminConsole, onOp
             </AnimatePresence>
 
             <div className="flex-1 overflow-y-auto">
-
-              {/* ── AUTH VIEW ── */}
-              {view === 'auth' && (
-                <motion.div
-                  initial={{ opacity: 0, y: 34, scale: 0.88, rotateX: 18 }}
-                  animate={{ opacity: 1, y: 0, scale: 1, rotateX: 0 }}
-                  transition={{ type: 'spring', stiffness: 220, damping: 20, mass: 0.8 }}
-                  className="auth-neon-shell auth-live-stage auth-form-layout px-6 py-8 sm:px-10 sm:py-10 space-y-5"
-                  style={{ '--auth-rgb': accentRgb, '--auth-accent': accentColor } as React.CSSProperties}
-                >
-                  <div className="auth-hero-visual" aria-hidden="true">
-                    <div className="auth-hero-grid" />
-                    <div className="auth-tech-circuit auth-tech-circuit-left" />
-                    <div className="auth-tech-circuit auth-tech-circuit-right" />
-                    <div className="auth-tech-core"><span className="auth-tech-core-ring" /><span className="auth-tech-core-ring auth-tech-core-ring-two" /><b>EX</b></div>
-                    <div className="auth-tech-node auth-tech-node-one" />
-                    <div className="auth-tech-node auth-tech-node-two" />
-                    <div className="auth-tech-node auth-tech-node-three" />
-                    <div className="auth-tech-label auth-tech-label-one">NEURAL LINK // 01</div>
-                    <div className="auth-tech-label auth-tech-label-two">CORE ONLINE</div>
-                    <div className="auth-hero-meta"><span>ENOSX / AI WORKSPACE</span><b>01</b></div>
-                    <BrandMark size={48} className="auth-hero-brand" animate />
-                    <div className="auth-hero-copy"><strong>Intelligence, in focus.</strong><span>Build a better flow.</span></div>
-                  </div>
-                  <span className="auth-particle auth-particle-one" />
-                  <span className="auth-particle auth-particle-two" />
-                  <span className="auth-particle auth-particle-three" />
-                  <span className="auth-data-stream auth-data-stream-one" />
-                  <span className="auth-data-stream auth-data-stream-two" />
-                  <span className="auth-data-stream auth-data-stream-three" />
-                  <div className="auth-energy-core" aria-hidden="true"><span /></div>
-                  <div className="text-center space-y-2 pb-2">
-                    <div className="auth-login-kicker"><span className="auth-kicker-dot" /> ENOSX AI <span className="auth-kicker-line" /></div>
-                    <div className="text-4xl sm:text-5xl font-black tracking-tight" style={{ color: '#fff', textShadow: '0 4px 24px rgba(0,0,0,0.22)' }}>
-                      {authMode === 'signin' ? 'Login' : 'Create account'}
-                    </div>
-                    <div className="text-xs sm:text-sm" style={{ color: 'rgba(255,255,255,0.68)' }}>
-                      {authMode === 'signin' ? 'Welcome back. Your AI workspace is ready.' : 'Start your private AI workspace in seconds.'}
-                    </div>
-                  </div>
-
-                  <div className="auth-mode-switch" role="tablist" aria-label="Authentication mode">
-                    <button type="button" role="tab" aria-selected={authMode === 'signin'} onClick={() => { setAuthMode('signin'); clearError(); }} className={authMode === 'signin' ? 'is-active' : ''}>Sign in</button>
-                    <button type="button" role="tab" aria-selected={authMode === 'signup'} onClick={() => { setAuthMode('signup'); clearError(); }} className={authMode === 'signup' ? 'is-active' : ''}>Create account</button>
-                  </div>
-
-                  <button
-                    type="button"
-                    onClick={() => { playSound('authGoogle'); signInWithGoogle(); }}
-                    disabled={isLoading}
-                    className="auth-google-button w-full py-3 rounded-xl text-sm font-semibold transition-all hover:scale-[1.02] active:scale-[0.98] flex items-center justify-center gap-3"
-                    style={{ background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.16)', color: 'rgba(255,255,255,0.9)', opacity: isLoading ? 0.7 : 1 }}
-                  >
-                    <span className="flex h-5 w-5 items-center justify-center rounded-full bg-white text-xs font-black" style={{ color: '#4285F4' }}>G</span>
-                    Continue with Google
-                  </button>
-
-                  <div className="relative flex items-center gap-3">
-                    <div className="flex-1 h-px" style={{ background: 'rgba(255,255,255,0.08)' }} />
-                    <span className="text-xs" style={{ color: 'rgba(255,255,255,0.3)' }}>or use email</span>
-                    <div className="flex-1 h-px" style={{ background: 'rgba(255,255,255,0.08)' }} />
-                  </div>
-
-                  <div className="space-y-3">
-                    {authMode === 'signup' && (
-                      <div>
-                        <label style={labelStyle}>DISPLAY NAME</label>
-                        <div className="relative">
-                          <User size={14} className="absolute left-3 top-1/2 -translate-y-1/2" style={{ color: 'rgba(255,255,255,0.3)' }} />
-                          <input type="text" value={displayName} onChange={e => setDisplayName(e.target.value)} placeholder="Your name" className="auth-neon-input" style={{ ...inputStyle, paddingLeft: 36 }} />
-                        </div>
-                      </div>
-                    )}
-                    <div>
-                      <label style={labelStyle}>EMAIL</label>
-                      <div className="relative">
-                        <Mail size={14} className="absolute left-3 top-1/2 -translate-y-1/2" style={{ color: 'rgba(255,255,255,0.3)' }} />
-                        <input aria-label="Email address" type="email" value={email} onChange={e => setEmail(e.target.value)} onKeyDown={e => e.key === 'Enter' && handleEmailAuth()} placeholder="you@example.com" className="auth-neon-input" style={{ ...inputStyle, paddingLeft: 36 }} />
-                      </div>
-                    </div>
-                    <div>
-                      <label style={labelStyle}>PASSWORD</label>
-                      <div className="relative">
-                        <Lock size={14} className="absolute left-3 top-1/2 -translate-y-1/2" style={{ color: 'rgba(255,255,255,0.3)' }} />
-                        <input aria-label="Password" type={showPassword ? 'text' : 'password'} value={password} onChange={e => setPassword(e.target.value)} onKeyDown={e => e.key === 'Enter' && handleEmailAuth()} placeholder="••••••••" className="auth-neon-input" style={{ ...inputStyle, paddingLeft: 36, paddingRight: 40 }} />
-                        <button type="button" aria-label={showPassword ? 'Hide password' : 'Show password'} onClick={() => setShowPassword(v => !v)} className="absolute right-3 top-1/2 -translate-y-1/2" style={{ color: 'rgba(255,255,255,0.3)' }}>
-                          {showPassword ? <EyeOff size={14} /> : <Eye size={14} />}
-                        </button>
-                      </div>
-                    </div>
-                    <div className="auth-slide-guest-row">
-                      <button type="button" onClick={continueAsGuest} className="auth-slide-guest">Continue as guest</button>
-                      <button type="button" onClick={() => setView('models')} className="auth-slide-link mt-2">Set up offline models</button>
-                    </div>
-                  </div>
-
-                  {authMode === 'signin' && <div className="flex items-center justify-between text-xs">
-                    <label className="auth-checkbox-label">
-                      <input type="checkbox" checked={rememberMe} onChange={e => setRememberMe(e.target.checked)} />
-                      <span className="auth-checkmark"><Check size={11} /></span>
-                      Remember me
-                    </label>
-                    <button type="button" className="auth-forgot" onClick={() => window.open('mailto:Enosxtech@gmail.com?subject=ENOSX%20AI%20password%20reset', '_self')}>Forgot password?</button>
-                  </div>}
-
-                  <button
-                    onClick={handleEmailAuth}
-                    disabled={isLoading || !email || !password || (authMode === 'signup' && !displayName)}
-                    className="auth-neon-button auth-primary-button w-full py-3 rounded-xl text-sm font-bold transition-all hover:scale-[1.02] active:scale-[0.98] flex items-center justify-center gap-2"
-                    style={{ background: 'linear-gradient(135deg, #22d3ee 0%, #6d5dfc 56%, #d946ef 100%)', border: '1px solid rgba(255,255,255,0.3)', color: '#fff', boxShadow: '0 10px 28px rgba(77,126,255,0.32)', opacity: isLoading || !email || !password ? 0.7 : 1 }}
-                  >
-                      {isLoading ? <Loader2 size={15} className="animate-spin" /> : authMode === 'signin' ? 'Enter Workspace' : 'Create Account'}
-                  </button>
-
-                  <div className="text-center text-xs" style={{ color: 'rgba(255,255,255,0.4)' }}>
-                    {authMode === 'signin' ? "Don't have an account? " : 'Already have an account? '}
-                    <button onClick={() => { setAuthMode(authMode === 'signin' ? 'signup' : 'signin'); clearError(); }} className="font-semibold underline" style={{ color: accentColor }}>
-                      {authMode === 'signin' ? 'Sign up' : 'Sign in'}
-                    </button>
-                  </div>
-
-                  <div className="relative flex items-center gap-3 pt-2">
-                    <div className="flex-1 h-px" style={{ background: 'rgba(255,255,255,0.08)' }} />
-                    <span className="text-xs uppercase tracking-widest" style={{ color: 'rgba(255,255,255,0.3)' }}>or</span>
-                    <div className="flex-1 h-px" style={{ background: 'rgba(255,255,255,0.08)' }} />
-                  </div>
-
-                    <button
-                    onClick={continueAsGuest}
-                    className="auth-neon-ghost-button auth-guest-button w-full py-3 rounded-2xl text-sm font-bold transition-all hover:scale-[1.02] active:scale-[0.98] flex items-center justify-center gap-2"
-                    style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.12)', color: 'rgba(255,255,255,0.85)' }}
-                  >
-                    Continue as Guest
-                  </button>
-                  <div className="auth-trust-row"><span className="auth-trust-lock"><Shield size={11} /></span><span>Private by design</span><i /> <span>Fast, focused, yours</span></div>
-                </motion.div>
-              )}
 
               {/* ── PROFILE VIEW ── */}
               {view === 'profile' && user && (

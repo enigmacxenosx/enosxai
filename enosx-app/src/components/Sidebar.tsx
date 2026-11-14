@@ -297,7 +297,7 @@ export default function Sidebar({
             background: `rgba(${config.accentRgb}, 0.07)`,
             border: `1px solid rgba(${config.accentRgb}, 0.18)`,
           }}
-          title={collapsed ? (isAuthenticated ? user?.displayName ?? 'Profile' : 'Sign In') : undefined}
+          title={collapsed ? (isAuthenticated ? user?.displayName ?? 'Profile' : 'Profile') : undefined}
         >
           {isAuthenticated && user?.avatarUrl
             ? <img src={user.avatarUrl} alt={user.displayName} className="w-6 h-6 rounded-full flex-shrink-0 object-cover" />
@@ -313,10 +313,10 @@ export default function Sidebar({
           {!collapsed && (
             <div className="flex flex-col items-start overflow-hidden">
               <span className="text-base font-semibold whitespace-nowrap" style={{ color: config.text }}>
-                {isAuthenticated ? user?.displayName ?? 'Profile' : 'Sign In'}
+                {isAuthenticated ? user?.displayName ?? 'Profile' : 'Profile'}
               </span>
               <span className="text-[10px] whitespace-nowrap truncate max-w-[160px]" style={{ color: config.textMuted }}>
-                {isAuthenticated ? user?.email : 'Account & preferences'}
+                {isAuthenticated ? user?.email : 'Guest mode · Account & preferences'}
               </span>
             </div>
           )}

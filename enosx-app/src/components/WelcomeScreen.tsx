@@ -14,10 +14,10 @@ interface WelcomeScreenProps {
 }
 
 const STARTERS = [
-  { label: "Plan my week", prompt: "Help me plan my week with clear priorities and realistic time blocks.", icon: CalendarDays },
-  { label: "Explain a difficult topic", prompt: "Explain a difficult topic simply, then test my understanding with an example.", icon: Lightbulb },
-  { label: "Review this code", prompt: "Review this code for correctness, security, maintainability, and performance.", icon: Code2 },
-  { label: "Draft something", prompt: "Help me draft a clear, polished version of this idea.", icon: PenLine },
+  { label: "Plan my week", prompt: "Help me plan my week with clear priorities and realistic time blocks.", icon: CalendarDays, color: "#54d9c5" },
+  { label: "Explain a topic", prompt: "Explain a difficult topic simply, then test my understanding with an example.", icon: Lightbulb, color: "#b990ff" },
+  { label: "Review code", prompt: "Review this code for correctness, security, maintainability, and performance.", icon: Code2, color: "#72d8bd" },
+  { label: "Draft something", prompt: "Help me draft a clear, polished version of this idea.", icon: PenLine, color: "#8de6d1" },
 ];
 
 export default function WelcomeScreen({ onSuggestion, isCompact }: WelcomeScreenProps) {
@@ -44,8 +44,8 @@ export default function WelcomeScreen({ onSuggestion, isCompact }: WelcomeScreen
           </p>
         </div>
 
-        <div className="grid gap-2 sm:grid-cols-2">
-          {STARTERS.map(({ label, prompt, icon: Icon }, index) => (
+        <div className="flex flex-wrap justify-center gap-2">
+          {STARTERS.map(({ label, prompt, icon: Icon, color }, index) => (
             <motion.button
               key={label}
               type="button"
@@ -55,12 +55,10 @@ export default function WelcomeScreen({ onSuggestion, isCompact }: WelcomeScreen
               whileHover={{ y: -2 }}
               whileTap={{ scale: 0.985 }}
               onClick={() => onSuggestion(prompt)}
-              className="group flex items-center gap-3 rounded-2xl bg-white/[0.035] px-4 py-3.5 text-left ring-1 ring-white/[0.07] transition-colors hover:bg-white/[0.07] hover:ring-white/[0.13]"
+              className="group inline-flex h-9 items-center gap-2 rounded-full border border-white/[0.12] bg-[#11131b]/80 px-3.5 text-left text-[13px] font-medium text-white/75 shadow-[0_4px_16px_rgba(0,0,0,0.12)] backdrop-blur-sm transition-colors hover:border-white/[0.22] hover:bg-white/[0.08] hover:text-white"
             >
-              <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-white/[0.055] text-white/55 transition-colors group-hover:text-white/85">
-                <Icon size={15} strokeWidth={1.8} />
-              </span>
-              <span className="text-sm font-medium text-white/70 transition-colors group-hover:text-white/90">{label}</span>
+              <Icon size={14} strokeWidth={1.8} style={{ color }} />
+              <span>{label}</span>
             </motion.button>
           ))}
         </div>

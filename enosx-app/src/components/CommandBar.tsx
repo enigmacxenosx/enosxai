@@ -21,6 +21,7 @@ import {
 } from "lucide-react";
 import { VoiceState, type Attachment } from "@/lib/types";
 import ConnectorPicker from "./ConnectorPicker";
+import VoiceVisualizer from "./VoiceVisualizer";
 
 export type AIMode = "ex-core" | "ex-pro" | "enosh-mind";
 
@@ -219,6 +220,7 @@ export default function CommandBar({
   onDraftChange,
   isLoading,
   voiceState,
+  audioStream,
   transcript,
   isVoiceSupported,
   onStartVoice,
@@ -330,6 +332,10 @@ export default function CommandBar({
 
   const canSend = value.trim().length > 0 && !disabled;
   const voiceActive = isListening || isSpeaking;
+  const modeRgb = currentMode.color.match(/^#([\da-f]{2})([\da-f]{2})([\da-f]{2})$/i);
+  const accentRgb = modeRgb
+    ? `${parseInt(modeRgb[1], 16)}, ${parseInt(modeRgb[2], 16)}, ${parseInt(modeRgb[3], 16)}`
+    : "124, 111, 247";
 
   return (
     <div className={`relative ${tightBottom ? "pb-0" : "pb-2"} pt-1 shrink-0`}>
@@ -349,6 +355,17 @@ export default function CommandBar({
           className={`enosx-composer${isListening ? " enosx-composer--listening" : ""}`}
           data-mode={aiMode}
         >
+          {voiceActive && (
+            <div data-testid="voice-waveform-panel" className="mx-1 mb-2 h-10">
+              <VoiceVisualizer
+                isActive={voiceActive}
+                isListening={isListening}
+                color={currentMode.color}
+                accentRgb={accentRgb}
+                audioStream={audioStream}
+              />
+            </div>
+          )}
           <textarea
             ref={textareaRef}
             value={value}

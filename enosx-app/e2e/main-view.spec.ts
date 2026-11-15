@@ -2,7 +2,7 @@ import { expect, test, type Page } from "@playwright/test";
 
 async function openWorkspace(page: Page) {
   await page.goto("/");
-  await expect(page.locator(".phone-command-shell textarea")).toBeVisible({ timeout: 30_000 });
+  await expect(page.locator(".enosx-composer textarea")).toBeVisible({ timeout: 30_000 });
 }
 
 test("welcome view keeps the composer inside the viewport", async ({ page }) => {
@@ -11,7 +11,7 @@ test("welcome view keeps the composer inside the viewport", async ({ page }) => 
 
   const geometry = await page.evaluate(() => {
     const header = document.querySelector("main header")?.getBoundingClientRect();
-    const composer = document.querySelector(".phone-command-shell")?.getBoundingClientRect();
+    const composer = document.querySelector(".enosx-composer")?.getBoundingClientRect();
     if (!header || !composer) throw new Error("Expected the chat header and composer to be rendered");
     return {
       headerBottom: header.bottom,
@@ -40,16 +40,16 @@ test("composer placeholder personalizes on desktop and stays compact on mobile",
   });
   await page.goto("/");
   await expect(page.getByPlaceholder("What can I help you with, Maya?")).toBeVisible({ timeout: 30_000 });
-  await page.setViewportSize({ width: 390, height: 844 });
+  await page.setViewportSize({ width: 320, height: 844 });
   await page.reload();
-  await expect(page.getByPlaceholder("Ask ENOSX...")).toBeVisible({ timeout: 30_000 });
+  await expect(page.getByPlaceholder("Ask…")).toBeVisible({ timeout: 30_000 });
 });
 
 test("desktop welcome composer rises into the open space above its suggestions", async ({ page }) => {
   await page.setViewportSize({ width: 1274, height: 619 });
   await openWorkspace(page);
   const geometry = await page.evaluate(() => {
-    const composer = document.querySelector(".phone-command-shell")?.getBoundingClientRect();
+    const composer = document.querySelector(".enosx-composer")?.getBoundingClientRect();
     const labels = ["Plan my week", "Explain a topic", "Find learning media", "Study a webpage", "Review code", "Draft something"];
     const chips = [...document.querySelectorAll("button")]
       .filter((button) => labels.some((label) => button.textContent?.includes(label)))
@@ -103,7 +103,7 @@ test("composer remains inside the viewport at a phone width", async ({ page }) =
   await page.setViewportSize({ width: 390, height: 844 });
   await openWorkspace(page);
   const geometry = await page.evaluate(() => {
-    const composer = document.querySelector(".phone-command-shell")?.getBoundingClientRect();
+    const composer = document.querySelector(".enosx-composer")?.getBoundingClientRect();
     if (!composer) throw new Error("Expected the composer to be rendered");
     return { left: composer.left, right: composer.right, bottom: composer.bottom, width: window.innerWidth, height: window.innerHeight };
   });
@@ -112,7 +112,7 @@ test("composer remains inside the viewport at a phone width", async ({ page }) =
   expect(geometry.bottom).toBeLessThanOrEqual(geometry.height + 8);
 });
 
-test("mobile welcome suggestions sit below the composer without stealing focus or scrolling the page", async ({ page }) => {
+test("mobile welcome suggestions sit above the composer and scroll horizontally without moving the page", async ({ page }) => {
   for (const viewport of [
     { width: 320, height: 568 },
     { width: 360, height: 780 },
@@ -134,41 +134,45 @@ test("mobile welcome suggestions sit below the composer without stealing focus o
       }, null, { timeout: 3000 });
     }
 
-    const composer = page.locator(".phone-command-shell");
-    const textarea = page.locator(".phone-command-shell textarea");
+    const composer = page.locator(".enosx-composer");
+    const textarea = page.locator(".enosx-composer textarea");
+    const suggestionRow = page.locator(".phone-welcome-suggestions .welcome-suggestions");
     const starters = ["Plan my week", "Explain a topic", "Find learning media", "Study a webpage", "Review code", "Draft something"];
     const geometry = await page.evaluate((labels) => {
-      const composer = document.querySelector(".phone-command-shell")?.getBoundingClientRect();
+      const composer = document.querySelector(".enosx-composer")?.getBoundingClientRect();
+      const suggestionRow = document.querySelector(".phone-welcome-suggestions .welcome-suggestions");
+      const suggestionBounds = suggestionRow?.getBoundingClientRect();
       const buttons = [...document.querySelectorAll("button")].filter((button) => labels.some((label) => button.textContent?.includes(label)));
-      const chips = buttons.map((button) => button.getBoundingClientRect());
       const chat = document.querySelector("main.flex-1.min-h-0.overflow-y-auto");
       const chatBounds = chat?.getBoundingClientRect();
       const heading = document.querySelector("main h2")?.getBoundingClientRect();
-      if (!composer || chips.length !== labels.length) throw new Error("Expected the mobile composer and all six welcome suggestions");
+      if (!composer || !suggestionRow || !suggestionBounds || buttons.length !== labels.length) throw new Error("Expected the mobile composer and all six welcome suggestions");
       return {
         composer: { left: composer.left, right: composer.right, top: composer.top, bottom: composer.bottom },
-        chips: { left: Math.min(...chips.map((rect) => rect.left)), right: Math.max(...chips.map((rect) => rect.right)), top: Math.min(...chips.map((rect) => rect.top)), bottom: Math.max(...chips.map((rect) => rect.bottom)) },
+        suggestionRow: { left: suggestionBounds.left, right: suggestionBounds.right, top: suggestionBounds.top, bottom: suggestionBounds.bottom, scrollWidth: suggestionRow.scrollWidth, clientWidth: suggestionRow.clientWidth },
         width: innerWidth,
         height: innerHeight,
         pageScrollY: window.scrollY,
         chat: chat && { scrollTop: chat.scrollTop, scrollHeight: chat.scrollHeight, clientHeight: chat.clientHeight },
         headingFullyVisible: Boolean(heading && chatBounds && heading.top >= chatBounds.top && heading.bottom <= chatBounds.bottom),
-        textareaFocused: document.activeElement === document.querySelector(".phone-command-shell textarea"),
+        textareaFocused: document.activeElement === document.querySelector(".enosx-composer textarea"),
       };
     }, starters);
 
     expect(geometry.composer.left).toBeGreaterThanOrEqual(0);
     expect(geometry.composer.right).toBeLessThanOrEqual(geometry.width);
-    expect(geometry.composer.top).toBeLessThan(geometry.chips.top);
-    expect(geometry.chips.top - geometry.composer.bottom).toBeGreaterThanOrEqual(11);
-    expect(geometry.chips.top - geometry.composer.bottom).toBeLessThanOrEqual(13);
-    expect(geometry.chips.left).toBeGreaterThanOrEqual(0);
-    expect(geometry.chips.right).toBeLessThanOrEqual(geometry.width);
-    expect(geometry.chips.bottom).toBeLessThanOrEqual(geometry.height + 2);
+    expect(geometry.suggestionRow.bottom).toBeLessThan(geometry.composer.top);
+    expect(geometry.suggestionRow.left).toBeGreaterThanOrEqual(0);
+    expect(geometry.suggestionRow.right).toBeLessThanOrEqual(geometry.width);
+    expect(geometry.suggestionRow.bottom).toBeLessThanOrEqual(geometry.height + 2);
+    expect(geometry.suggestionRow.scrollWidth).toBeGreaterThan(geometry.suggestionRow.clientWidth);
     if (viewport.height <= 600) expect(geometry.headingFullyVisible).toBe(true);
     expect(geometry.pageScrollY).toBe(0);
     expect(geometry.textareaFocused).toBe(false);
 
+    await suggestionRow.evaluate((element) => { element.scrollLeft = element.scrollWidth; });
+    await expect(page.getByRole("button", { name: /Draft something/ })).toBeInViewport();
+    await expect.poll(() => page.evaluate(() => window.scrollY)).toBe(0);
     await textarea.click();
     await expect(textarea).toBeFocused();
     if (geometry.chat) {
@@ -194,9 +198,9 @@ test("mobile composer returns to startup size after sending and keeps connector 
     await page.route("**/api/chat", (route) => route.abort());
     await page.route("**/api/error-report", (route) => route.abort());
 
-    const textarea = page.locator(".phone-command-shell textarea");
+    const textarea = page.locator(".enosx-composer textarea");
     await expect(textarea).toBeVisible({ timeout: 30_000 });
-    const shell = page.locator(".phone-command-shell");
+    const shell = page.locator(".enosx-composer");
     const startupBounds = await shell.boundingBox();
     expect(startupBounds).not.toBeNull();
     expect(startupBounds!.height).toBeLessThan(viewport.height * 0.3);
@@ -204,7 +208,7 @@ test("mobile composer returns to startup size after sending and keeps connector 
     await textarea.fill(Array.from({ length: 18 }, (_, index) => `Long message line ${index + 1}`).join("\n"));
 
     const expanded = await page.evaluate(() => {
-      const shell = document.querySelector(".phone-command-shell");
+      const shell = document.querySelector(".enosx-composer");
       const textarea = shell?.querySelector("textarea");
       const connector = shell?.querySelector('button[aria-label="Connectors"]');
       if (!shell || !textarea || !connector) throw new Error("Composer elements were not found");
@@ -263,7 +267,7 @@ test("composer keeps its size while an AI reply is active and another message is
   await page.route("**/api/error-report", (route) => route.abort());
   await openWorkspace(page);
 
-  const shell = page.locator(".phone-command-shell");
+  const shell = page.locator(".enosx-composer");
   const textarea = shell.locator("textarea");
   await textarea.fill("First message");
   await page.getByRole("button", { name: "Send message" }).click();

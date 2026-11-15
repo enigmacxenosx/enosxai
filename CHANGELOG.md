@@ -3,6 +3,7 @@
 - Improved the phone chat layout across narrow screens, including compact AI mode tabs, clearer touch targets, and a message composer that stays within a 320 px viewport.
 - Moved welcome prompt suggestions above the mobile message bar as a horizontally swipeable row; desktop suggestion layout is unchanged.
 - Refined composer controls, response actions, connector selection, and sign-in presentation.
+- Restored the live microphone waveform in the composer while voice input or playback is active.
 - Added hosted image and video generation improvements, connector management, and OAuth readiness status.
 - Sign-in providers require Firebase web-app configuration in the deployment environment and must be enabled in Firebase Authentication.
 

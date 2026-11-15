@@ -405,14 +405,8 @@ export default function MessageBubble({
                   whileHover={{ scale: 1.1 }}
                   whileTap={{ scale: 0.9 }}
                   onClick={() => (isSpeaking ? onStopSpeak() : onSpeak(message.content))}
-                  className="w-7 h-7 rounded-lg flex items-center justify-center transition-all duration-150"
+                  className="flex items-center justify-center p-0.5 transition-colors duration-150"
                   style={{
-                    background: isSpeaking
-                      ? `rgba(${config.accentRgb}, 0.12)`
-                      : "rgba(255,255,255,0.04)",
-                    border: isSpeaking
-                      ? `1px solid rgba(${config.accentRgb}, 0.3)`
-                      : "1px solid rgba(255,255,255,0.07)",
                     color: isSpeaking ? config.accent : config.textMuted,
                   }}
                   title={isSpeaking ? "Stop speaking" : "Speak"}
@@ -424,10 +418,8 @@ export default function MessageBubble({
                   whileHover={{ scale: 1.1 }}
                   whileTap={{ scale: 0.9 }}
                   onClick={() => onRedoResponse?.(message.id)}
-                  className="w-7 h-7 rounded-lg flex items-center justify-center transition-all duration-150"
+                  className="flex items-center justify-center p-0.5 text-white/45 transition-colors duration-150 hover:text-white/80"
                   style={{
-                    background: "rgba(255,255,255,0.04)",
-                    border: "1px solid rgba(255,255,255,0.07)",
                     color: config.textMuted,
                   }}
                   title="Redo response"

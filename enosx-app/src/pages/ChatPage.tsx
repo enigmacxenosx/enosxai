@@ -833,6 +833,28 @@ ${getAdminContext()}` : ""}`,
     [handleSend, recordOutgoingMessage]
   );
 
+  const handleRedoResponse = useCallback(async (messageId: string) => {
+    const conversation = conversationsRef.current.find((item) => item.id === activeIdRef.current);
+    if (!conversation || isLoading || sendingRef.current) return;
+    const messageIndex = conversation.messages.findIndex((message) => message.id === messageId);
+    const previousUserMessage = messageIndex > 0
+      ? [...conversation.messages.slice(0, messageIndex)].reverse().find((message) => message.role === "user")
+      : undefined;
+    if (!previousUserMessage) return;
+
+    const updatedConversation: Conversation = {
+      ...conversation,
+      messages: conversation.messages.filter((message) => message.id !== messageId),
+      updatedAt: new Date(),
+    };
+    const updatedConversations = conversationsRef.current.map((item) =>
+      item.id === updatedConversation.id ? updatedConversation : item,
+    );
+    conversationsRef.current = updatedConversations;
+    setConversations(updatedConversations);
+    await handleSend(previousUserMessage.content);
+  }, [handleSend, isLoading]);
+
   useEffect(() => {
     if (isLoading || sendingRef.current || waitingMessages.length === 0) return;
     const [nextMessage] = waitingMessages;
@@ -1140,6 +1162,7 @@ ${getAdminContext()}` : ""}`,
                     onSpeak={() => speak(msg.content)}
                     isSpeaking={speakingMessageId === msg.id}
                     onStopSpeak={handleStopSpeak}
+                    onRedoResponse={handleRedoResponse}
                   />
                 ))}
                 {isLoading && (

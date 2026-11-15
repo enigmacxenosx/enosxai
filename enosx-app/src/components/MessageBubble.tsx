@@ -8,7 +8,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import { motion } from "framer-motion";
-import { Copy, Volume2, VolumeX, Check, Download, ExternalLink, FileSearch, ListTree, ShieldCheck, FileText, FileSpreadsheet, ThumbsUp, ThumbsDown } from "lucide-react";
+import { Volume2, VolumeX, RotateCcw, ExternalLink, FileSearch, ListTree, ShieldCheck } from "lucide-react";
 import { Streamdown } from "streamdown";
 import { Message } from "@/lib/types";
 import { useTheme } from "@/contexts/ThemeContext";
@@ -16,8 +16,6 @@ import { useWallpaper } from "@/contexts/WallpaperContext";
 import ImageDisplay from "./ImageDisplay";
 import VideoDisplay from "./VideoDisplay";
 import MediaAttachmentList from "./MediaAttachmentList";
-import { downloadDocument } from "@/lib/documentExport";
-import { getMessageFeedback, submitMessageFeedback, type MessageFeedback, type MessageFeedbackRating } from "@/lib/feedback";
 
 interface MessageBubbleProps {
   message: Message;
@@ -25,6 +23,7 @@ interface MessageBubbleProps {
   onSpeak: (text: string) => void;
   onStopSpeak: () => void;
   isSpeaking: boolean;
+  onRedoResponse?: (messageId: string) => void;
   /** Optional handler for proposed actions (e.g. workspace mode runs open_url in-pane). */
   onExecuteProposedAction?: (action: NonNullable<Message["proposedActions"]>[number]) => void;
 }
@@ -222,64 +221,18 @@ export default function MessageBubble({
   onSpeak,
   onStopSpeak,
   isSpeaking,
+  onRedoResponse,
   onExecuteProposedAction,
 }: MessageBubbleProps) {
   const { config } = useTheme();
   const { settings: wallpaperSettings } = useWallpaper();
-  const [copied, setCopied] = useState(false);
   const [actionStatus, setActionStatus] = useState<string | null>(null);
-  const [exportMenuOpen, setExportMenuOpen] = useState(false);
-  const [feedback, setFeedback] = useState<MessageFeedback | null>(() => getMessageFeedback(message.id));
-  const [feedbackNote, setFeedbackNote] = useState("");
-  const [feedbackNoteOpen, setFeedbackNoteOpen] = useState(false);
-  const [feedbackNoteSent, setFeedbackNoteSent] = useState(false);
   const isUser = message.role === "user";
   const isStreaming = message.isStreaming;
   const isEmpty = !message.content?.trim() && isStreaming;
 
   // Check if assistant message is generating an image (text starts with image generation indicator)
   const isGeneratingImage = !isUser && message.content.includes("🖼️") && isStreaming;
-
-  const handleCopy = async () => {
-    await navigator.clipboard.writeText(message.content);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
-  };
-
-  const handleFeedback = (rating: MessageFeedbackRating) => {
-    setFeedback(submitMessageFeedback(message.id, rating));
-    setFeedbackNoteSent(false);
-    setFeedbackNoteOpen(rating === "down");
-  };
-
-  const handleFeedbackNoteSubmit = () => {
-    const note = feedbackNote.trim();
-    setFeedbackNoteOpen(false);
-    if (!note) return;
-    setFeedback(submitMessageFeedback(message.id, feedback?.rating ?? "down", { note }));
-    setFeedbackNoteSent(true);
-  };
-
-  const handleDownload = async (format: 'md' | 'pdf' | 'docx' | 'xlsx') => {
-    try {
-      if (format === 'md') {
-        const blob = new Blob([message.content], { type: "text/markdown" });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement("a");
-        a.href = url;
-        a.download = `enosx-doc-${new Date().getTime()}.md`;
-        document.body.appendChild(a);
-        a.click();
-        a.remove();
-        URL.revokeObjectURL(url);
-      } else {
-        await downloadDocument(format, message.content, `enosx-ai-${message.role}-response`);
-      }
-      setExportMenuOpen(false);
-    } catch (error) {
-      setActionStatus(error instanceof Error ? error.message : "Document export failed.");
-    }
-  };
 
   const handleProposedAction = async (action: NonNullable<Message["proposedActions"]>[number]) => {
     // Workspace / split-screen mode runs actions in-pane instead of opening new tabs.
@@ -446,55 +399,8 @@ export default function MessageBubble({
             transition={{ delay: 0.2 }}
             className={`flex items-center gap-1.5 ${isUser ? "flex-row-reverse" : "flex-row"}`}
           >
-            <motion.button
-              whileHover={{ scale: 1.1 }}
-              whileTap={{ scale: 0.9 }}
-              onClick={handleCopy}
-              className="w-7 h-7 rounded-lg flex items-center justify-center transition-all duration-150"
-              style={{
-                background: "rgba(255,255,255,0.04)",
-                border: "1px solid rgba(255,255,255,0.07)",
-                color: copied ? config.accent : config.textMuted,
-              }}
-              title="Copy"
-            >
-              {copied ? <Check size={12} /> : <Copy size={12} />}
-            </motion.button>
-
             {!isUser && (
               <>
-                <motion.button
-                  whileHover={{ scale: 1.1 }}
-                  whileTap={{ scale: 0.9 }}
-                  onClick={() => handleFeedback("up")}
-                  className="w-7 h-7 rounded-lg flex items-center justify-center transition-all duration-150"
-                  style={{
-                    background: feedback?.rating === "up" ? `rgba(${config.accentRgb}, 0.14)` : "rgba(255,255,255,0.04)",
-                    border: feedback?.rating === "up" ? `1px solid rgba(${config.accentRgb}, 0.3)` : "1px solid rgba(255,255,255,0.07)",
-                    color: feedback?.rating === "up" ? config.accent : config.textMuted,
-                  }}
-                  title="Helpful response"
-                  aria-label="Mark response as helpful"
-                >
-                  <ThumbsUp size={12} />
-                </motion.button>
-
-                <motion.button
-                  whileHover={{ scale: 1.1 }}
-                  whileTap={{ scale: 0.9 }}
-                  onClick={() => handleFeedback("down")}
-                  className="w-7 h-7 rounded-lg flex items-center justify-center transition-all duration-150"
-                  style={{
-                    background: feedback?.rating === "down" ? "rgba(248, 113, 113, 0.14)" : "rgba(255,255,255,0.04)",
-                    border: feedback?.rating === "down" ? "1px solid rgba(248, 113, 113, 0.35)" : "1px solid rgba(255,255,255,0.07)",
-                    color: feedback?.rating === "down" ? "#fca5a5" : config.textMuted,
-                  }}
-                  title="Needs improvement"
-                  aria-label="Mark response as needing improvement"
-                >
-                  <ThumbsDown size={12} />
-                </motion.button>
-
                 <motion.button
                   whileHover={{ scale: 1.1 }}
                   whileTap={{ scale: 0.9 }}
@@ -514,31 +420,21 @@ export default function MessageBubble({
                   {isSpeaking ? <VolumeX size={12} /> : <Volume2 size={12} />}
                 </motion.button>
 
-                <div className="relative">
-                  <motion.button
-                    whileHover={{ scale: 1.1 }}
-                    whileTap={{ scale: 0.9 }}
-                    onClick={() => setExportMenuOpen((open) => !open)}
-                    className="w-7 h-7 rounded-lg flex items-center justify-center transition-all duration-150"
-                    style={{
-                      background: exportMenuOpen ? `rgba(${config.accentRgb}, 0.14)` : "rgba(255,255,255,0.04)",
-                      border: exportMenuOpen ? `1px solid rgba(${config.accentRgb}, 0.35)` : "1px solid rgba(255,255,255,0.07)",
-                      color: exportMenuOpen ? config.accent : config.textMuted,
-                    }}
-                    title="Export as PDF, Word, Excel, or Markdown"
-                    aria-label="Export response"
-                  >
-                    <Download size={12} />
-                  </motion.button>
-                  {exportMenuOpen && (
-                    <div className="absolute bottom-9 left-0 z-20 flex min-w-36 flex-col gap-1 rounded-xl border border-white/10 bg-[#11131b]/95 p-1.5 shadow-2xl backdrop-blur-xl">
-                      <button type="button" onClick={() => void handleDownload("pdf")} className="flex items-center gap-2 rounded-lg px-2.5 py-2 text-left text-[11px] text-white/75 hover:bg-white/10"><FileText size={13} className="text-red-300" /> PDF document</button>
-                      <button type="button" onClick={() => void handleDownload("docx")} className="flex items-center gap-2 rounded-lg px-2.5 py-2 text-left text-[11px] text-white/75 hover:bg-white/10"><FileText size={13} className="text-blue-300" /> Word document</button>
-                      <button type="button" onClick={() => void handleDownload("xlsx")} className="flex items-center gap-2 rounded-lg px-2.5 py-2 text-left text-[11px] text-white/75 hover:bg-white/10"><FileSpreadsheet size={13} className="text-emerald-300" /> Excel workbook</button>
-                      <button type="button" onClick={() => void handleDownload("md")} className="flex items-center gap-2 rounded-lg px-2.5 py-2 text-left text-[11px] text-white/75 hover:bg-white/10"><Download size={13} className="text-white/45" /> Markdown file</button>
-                    </div>
-                  )}
-                </div>
+                <motion.button
+                  whileHover={{ scale: 1.1 }}
+                  whileTap={{ scale: 0.9 }}
+                  onClick={() => onRedoResponse?.(message.id)}
+                  className="w-7 h-7 rounded-lg flex items-center justify-center transition-all duration-150"
+                  style={{
+                    background: "rgba(255,255,255,0.04)",
+                    border: "1px solid rgba(255,255,255,0.07)",
+                    color: config.textMuted,
+                  }}
+                  title="Redo response"
+                  aria-label="Redo response"
+                >
+                  <RotateCcw size={12} />
+                </motion.button>
               </>
             )}
 
@@ -552,29 +448,6 @@ export default function MessageBubble({
               })}
             </span>
           </motion.div>
-          {!isUser && feedbackNoteOpen && (
-            <div className="mt-1 flex flex-wrap items-center gap-1.5">
-              <input
-                value={feedbackNote}
-                onChange={(event) => setFeedbackNote(event.target.value)}
-                onKeyDown={(event) => { if (event.key === "Enter") handleFeedbackNoteSubmit(); }}
-                placeholder="What should be better? (optional)"
-                aria-label="Feedback note"
-                className="h-7 w-60 max-w-full rounded-lg border border-white/10 bg-black/30 px-2 text-[11px] outline-none placeholder:text-white/35"
-                style={{ color: config.text }}
-              />
-              <button
-                type="button"
-                onClick={handleFeedbackNoteSubmit}
-                className="h-7 rounded-lg border border-white/10 bg-white/5 px-2.5 text-[11px] text-white/80 transition-colors hover:bg-white/10"
-              >
-                Send
-              </button>
-            </div>
-          )}
-          {!isUser && feedbackNoteSent && (
-            <p className="mt-0.5 text-[10px]" style={{ color: config.textMuted }}>Thanks — your note was sent to the Enosx team.</p>
-          )}
           </>
         )}
       </div>

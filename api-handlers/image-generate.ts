@@ -24,7 +24,7 @@
  */
 import type { VercelRequest, VercelResponse } from "@vercel/node";
 import sharp from "sharp";
-import { fetchNvidiaWithRetry } from "../../lib/server/retryFetch";
+import { fetchNvidiaWithRetry } from "../lib/server/retryFetch";
 
 const DEFAULT_PROMPT = "Create a polished image based on the supplied prompt.";
 const DEFAULT_WIDTH = 1024;

@@ -5,10 +5,7 @@
   "outputDirectory": "enosx-app/dist/public",
   "buildCommand": "pnpm run build",
   "functions": {
-    "api/image/generate.ts": {
-      "maxDuration": 120
-    },
-    "api/video/generate.ts": {
+    "api/generate.ts": {
       "maxDuration": 120
     },
     "api/**/*.ts": {
@@ -45,6 +42,14 @@
     }
   ],
   "rewrites": [
+    {
+      "source": "/api/image/generate",
+      "destination": "/api/generate?kind=image"
+    },
+    {
+      "source": "/api/video/generate",
+      "destination": "/api/generate?kind=video"
+    },
     {
       "source": "/api/connectors/:connector/oauth/:phase",
       "destination": "/api/connectors/oauth?route=:connector/:phase"

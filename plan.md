@@ -31,6 +31,19 @@ Add a first-class `/visual-story` route in the existing React/Vite app. The rout
 - **Signature brand color:** ENOSX crimson `#dc143c`, used as the narrative accent and active-state signal.
 
 
+## NVIDIA Image and Video Generation
+
+### Implementation approach
+Keep NVIDIA credentials server-side. Use NVIDIA-hosted FLUX.2 Klein 4B for image generation and Cosmos3 Nano for short text-to-video or image-to-video clips. The Vercel Hobby deployment allows at most 12 serverless functions, so preserve the public image/video paths with rewrites to one shared API function and keep the two provider handlers outside the Vercel `api/` entrypoint directory.
+
+### Project structure
+- `api/generate.ts`: dispatch the rewritten image and video paths to the appropriate server-side handler.
+- `api-handlers/image-generate.ts`: NVIDIA FLUX image generation, existing compatibility behavior, and watermarking.
+- `api-handlers/video-generate.ts`: NVIDIA Cosmos3 Nano text-to-video and image-to-video generation.
+- `vercel.json`: map the existing image/video URLs to the shared function and apply its 120-second limit.
+- `api-server/src/routes/image.ts` and `api-server/src/routes/video.ts`: keep the alternate Express deployment paths behaviorally consistent.
+
+
 # ENOSX AI Online Learning Media and Website Study
 
 ## Implementation approach

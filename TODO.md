@@ -3,6 +3,7 @@
 ## NVIDIA Image and Video Generation
 - [ ] Generate images using NVIDIA's hosted FLUX.2 Klein 4B endpoint by default; retain optional custom image endpoint overrides and keep all NVIDIA credentials server-side.
 - [ ] Generate short text-to-video clips and image-to-video clips using NVIDIA Cosmos3 Nano; render the returned MP4 inline in the chat and show a clear error when generation is unavailable or refused.
+- [ ] Route image and video requests through one shared Vercel function while preserving `/api/image/generate` and `/api/video/generate`, keeping deployments within the Hobby limit of 12 serverless functions.
 - [ ] Document required Vercel secrets and model choices, and validate the frontend and API packages with typecheck/build.
 
 - [ ] Add a `/visual-story` page that lets users turn labeled numeric data into a visual narrative with a large animated chart stage.

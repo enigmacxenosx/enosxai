@@ -260,7 +260,7 @@ export default function CommandBar({
                 ? { duration: 1.5, repeat: Infinity, ease: "easeInOut" }
                 : { duration: 0.3 }
             }
-            className={`phone-command-shell flex flex-col gap-1 rounded-[22px] px-4 py-2.5 transition-all duration-300 ${isListening ? 'shadow-[0_0_0_3px_rgba(155,140,255,0.16)]' : ''}`}
+            className={`phone-command-shell flex flex-col gap-1 rounded-[20px] px-3.5 py-2 transition-all duration-300 ${isListening ? 'shadow-[0_0_0_3px_rgba(155,140,255,0.16)]' : ''}`}
             style={{
               background: `rgba(21,21,29,${Math.max(wallpaperSettings.panelOpacity, 0.92)})`,
               backdropFilter: `blur(${wallpaperSettings.blurAmount}px)`,

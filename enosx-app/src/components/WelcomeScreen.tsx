@@ -37,7 +37,7 @@ export function WelcomeSuggestions({ onSuggestion, animateEntrance = true }: Pic
           whileHover={{ y: -2 }}
           whileTap={{ scale: 0.985 }}
           onClick={() => onSuggestion(prompt)}
-          className="welcome-suggestion group inline-flex h-9 items-center gap-2 rounded-full border border-white/[0.12] bg-[#11131b]/80 px-3.5 text-left text-[13px] font-medium text-white/75 shadow-[0_4px_16px_rgba(0,0,0,0.12)] backdrop-blur-sm transition-colors hover:border-white/[0.22] hover:bg-white/[0.08] hover:text-white"
+          className="welcome-suggestion group inline-flex h-8 items-center gap-1.5 rounded-full border border-white/[0.12] bg-[#11131b]/80 px-3 text-left text-[12px] font-medium text-white/75 shadow-[0_4px_16px_rgba(0,0,0,0.12)] backdrop-blur-sm transition-colors hover:border-white/[0.22] hover:bg-white/[0.08] hover:text-white"
         >
           <Icon size={14} strokeWidth={1.8} style={{ color }} />
           <span>{label}</span>
@@ -59,10 +59,10 @@ export default function WelcomeScreen({ onSuggestion, isCompact, isComposerFlow 
         className="w-full max-w-2xl"
       >
         <div className={`${isComposerFlow ? "mb-0" : "mb-8"} flex flex-col items-center text-center`}>
-          <div className="mb-5 flex h-12 w-12 items-center justify-center rounded-2xl bg-white/[0.045] ring-1 ring-white/[0.08]">
-            <BrandMark size={isCompact ? 32 : 38} />
+          <div className="mb-4 flex h-11 w-11 items-center justify-center rounded-2xl bg-white/[0.045] ring-1 ring-white/[0.08]">
+            <BrandMark size={isCompact ? 30 : 35} />
           </div>
-          <h2 className="text-2xl font-semibold tracking-[-0.03em] sm:text-3xl" style={{ color: config.text }}>
+          <h2 className="text-xl font-semibold tracking-[-0.03em] sm:text-2xl" style={{ color: config.text }}>
             What would you like to work on?
           </h2>
         </div>

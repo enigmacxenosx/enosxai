@@ -1486,3 +1486,199 @@ code, pre, kbd, samp, .font-mono {
 @keyframes enosx-signin-step-in { from { opacity: .35; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
 @keyframes enosx-signin-fill { to { width: 100%; } }
 @media (prefers-reduced-motion: reduce) { .enosx-signin-progress i.is-active::after { width: 100%; animation: none; } }
+
+/* ==========================================================================
+   ENOSX AI message bar — mirrors the supplied EnosxAI reference exactly.
+   Light theme uses the reference light palette, every dark theme the dark one.
+   The input keeps a fixed 52px height so the bar never grows after a prompt.
+   ========================================================================== */
+.enosx-composer {
+  --bar-bg: #1e1f24;
+  --bar-line: #2e3037;
+  --bar-text: #f1f2f6;
+  --bar-muted: #8c90a0;
+  --bar-chip: #2a2c33;
+  --bar-accent: #8b8bff;
+  --bar-send: #f1f2f6;
+  --bar-send-fg: #14161f;
+  position: relative;
+  background: var(--bar-bg);
+  border: 1px solid var(--bar-line);
+  border-radius: 24px;
+  padding: 18px 18px 14px;
+  transition: border-color 0.15s ease, box-shadow 0.2s ease;
+}
+html.light .enosx-composer,
+body.light .enosx-composer {
+  --bar-bg: #ffffff;
+  --bar-line: #dcdfe8;
+  --bar-text: #14161f;
+  --bar-muted: #6b7084;
+  --bar-chip: #eceef5;
+  --bar-accent: #5b5bf0;
+  --bar-send: #14161f;
+  --bar-send-fg: #ffffff;
+}
+.enosx-composer:focus-within { border-color: var(--bar-accent); }
+.enosx-composer--listening { box-shadow: 0 0 0 3px rgba(139, 139, 255, 0.18); }
+
+.enosx-composer__input {
+  display: block;
+  width: 100%;
+  height: 52px;
+  min-height: 52px;
+  max-height: 52px;
+  resize: none;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: var(--bar-text);
+  font-family: var(--font-body, inherit);
+  font-size: 16px;
+  font-weight: 500;
+  line-height: 1.5;
+  padding: 2px 4px;
+  overflow-y: auto;
+  scrollbar-width: thin;
+}
+/* The bar itself shows focus; the input never draws a second rectangle. */
+.enosx-composer__input:focus,
+.enosx-composer__input:focus-visible {
+  outline: none !important;
+  outline-offset: 0 !important;
+  box-shadow: none !important;
+}
+.enosx-composer .enosx-composer__input::placeholder { color: var(--bar-muted) !important; }
+.enosx-composer__input:disabled { cursor: not-allowed; opacity: 0.6; }
+
+.enosx-composer__tools { display: flex; align-items: center; gap: 8px; margin-top: 10px; }
+.enosx-composer__spacer { flex: 1 1 auto; min-width: 0; }
+
+.enosx-icon {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  border: 1px solid var(--bar-line);
+  border-radius: 50%;
+  background: transparent;
+  color: var(--bar-text);
+  cursor: pointer;
+  transition: background-color 0.15s ease, color 0.15s ease;
+}
+.enosx-icon:hover { background: var(--bar-chip); }
+.enosx-icon--plain { border-color: transparent; color: var(--bar-muted); }
+.enosx-icon--plain:hover { color: var(--bar-text); }
+.enosx-icon--plain.is-active { color: var(--bar-accent); }
+
+.enosx-pill {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  height: 36px;
+  padding: 0 12px;
+  border: 1px solid var(--bar-line);
+  border-radius: 18px;
+  background: transparent;
+  color: var(--bar-muted);
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+}
+.enosx-pill:hover { background: var(--bar-chip); }
+.enosx-pill svg { color: var(--bar-text); }
+.enosx-pill--device { color: var(--bar-text); }
+.enosx-pill__logo { display: inline-flex; align-items: center; justify-content: center; }
+.enosx-pill__count { margin-left: 2px; font-size: 12px; font-weight: 600; color: var(--bar-text); }
+.enosx-pill--connectors.is-active { border-color: var(--bar-accent); }
+
+.enosx-send {
+  flex: none;
+  display: flex;
+  align-items: center;
+  height: 36px;
+  border-radius: 18px;
+  background: var(--bar-send);
+  color: var(--bar-send-fg);
+  overflow: hidden;
+  opacity: 0.4;
+  transition: opacity 0.15s ease;
+}
+.enosx-send[data-ready="true"] { opacity: 1; }
+.enosx-send button {
+  display: grid;
+  place-items: center;
+  height: 36px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+}
+.enosx-send button:disabled { cursor: not-allowed; }
+.enosx-send__go { width: 38px; }
+.enosx-send__more { width: 30px; border-left: 1px solid rgba(128, 128, 128, 0.35) !important; }
+
+.enosx-menu {
+  position: absolute;
+  left: 0;
+  bottom: calc(100% + 8px);
+  z-index: 70;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  width: 260px;
+  padding: 8px;
+  border: 1px solid var(--bar-line);
+  border-radius: 16px;
+  background: var(--bar-bg);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.25);
+}
+.enosx-menu--send { left: auto; right: 0; }
+.enosx-menu__label {
+  margin: 4px 10px 6px;
+  color: var(--bar-muted);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.enosx-menu__item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 9px 10px;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  color: var(--bar-text);
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 500;
+  text-align: left;
+  cursor: pointer;
+}
+.enosx-menu__item:hover { background: var(--bar-chip); }
+.enosx-menu__copy { display: flex; flex: 1; min-width: 0; flex-direction: column; gap: 2px; }
+.enosx-menu__title { font-weight: 600; }
+.enosx-menu__hint { color: var(--bar-muted); font-size: 11px; font-weight: 400; }
+.enosx-menu__check { flex: none; color: var(--bar-accent); }
+.enosx-menu__dot { flex: none; width: 10px; height: 10px; border-radius: 50%; }
+.enosx-menu__foot {
+  margin: 6px 10px 2px;
+  padding-top: 8px;
+  border-top: 1px solid var(--bar-line);
+  color: var(--bar-muted);
+  font-size: 11px;
+}
+
+@media (max-width: 520px) {
+  .enosx-pill { padding: 0 10px; }
+  .enosx-pill__label { display: none; }
+}

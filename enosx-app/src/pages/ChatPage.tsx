@@ -1183,7 +1183,8 @@ ${getAdminContext()}` : ""}`,
         </div>
 
         <div className={`premium-composer-dock phone-composer-dock relative z-20 px-4 pb-3 pt-3 ${isCompactMode ? "pb-4" : "md:px-8 lg:px-12 md:pb-4 md:pt-4"} ${isWelcomeState ? "welcome-composer-dock" : ""}`}>
-          <div className={`relative mx-auto w-full ${isWelcomeState ? "max-w-3xl" : "max-w-none"}`}>
+          {/* The bar keeps one fixed width and height before and after a prompt. */}
+          <div className="relative mx-auto w-full max-w-3xl">
             <AnimatePresence>
               {error && (
                 <motion.p
@@ -1237,6 +1238,7 @@ ${getAdminContext()}` : ""}`,
               tightBottom={!activeConversation || activeConversation.messages.length === 0}
               animateEntrance={!isWelcomeState}
               userDisplayName={user?.displayName}
+              onAiModeChange={setActiveMode}
             />
             {(!activeConversation || activeConversation.messages.length === 0) && !hasComposerDraft && (
               <div className="welcome-suggestions-dock pb-1">

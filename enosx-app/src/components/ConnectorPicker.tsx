@@ -9,6 +9,8 @@ import { useGitHub } from "@/hooks/useGitHub";
 interface ConnectorPickerProps {
   selectedConnectorIds: string[];
   onToggleConnector: (connectorId: string) => void;
+  /** "compact" renders the icon-only pill used inside the reference message bar. */
+  trigger?: "default" | "compact";
 }
 
 const KIND_FILTERS: Array<"All" | ConnectorKind> = [
@@ -17,6 +19,9 @@ const KIND_FILTERS: Array<"All" | ConnectorKind> = [
   "MCP",
   "API",
 ];
+
+/** Order shown in the compact bar pill when nothing is selected yet. */
+const DEFAULT_CONNECTOR_IDS = ["github", "email", "vercel"];
 
 function kindColor(kind: ConnectorKind) {
   if (kind === "Built-in") return "#4ade80";
@@ -27,6 +32,7 @@ function kindColor(kind: ConnectorKind) {
 export default function ConnectorPicker({
   selectedConnectorIds,
   onToggleConnector,
+  trigger = "default",
 }: ConnectorPickerProps) {
   const { config } = useTheme();
   const [open, setOpen] = useState(false);
@@ -94,6 +100,14 @@ export default function ConnectorPicker({
   }, [kindFilter, query]);
 
   const selectedCount = selectedConnectorIds.length;
+  const defaultConnectors = useMemo(
+    () =>
+      DEFAULT_CONNECTOR_IDS
+        .map((id) => CONNECTOR_CATALOG.find((connector) => connector.id === id))
+        .filter((connector): connector is (typeof CONNECTOR_CATALOG)[number] => Boolean(connector))
+        .slice(0, 3),
+    [],
+  );
   const selectedConnectors = useMemo(
     () =>
       selectedConnectorIds
@@ -128,6 +142,29 @@ export default function ConnectorPicker({
 
   return (
     <div className="relative" ref={containerRef}>
+      {trigger === "compact" ? (
+        <motion.button
+          type="button"
+          whileTap={{ scale: 0.97 }}
+          onClick={() => setOpen((current) => !current)}
+          aria-expanded={open}
+          aria-haspopup="dialog"
+          aria-label={selectedCount > 0 ? `Connectors (${selectedCount} selected)` : "Connectors"}
+          className={`enosx-pill enosx-pill--connectors${selectedCount > 0 ? " is-active" : ""}`}
+          title="Choose connectors for this chat"
+        >
+          {(selectedConnectors.length > 0 ? selectedConnectors.slice(0, 3) : defaultConnectors).map(
+            (connector) => (
+              <span key={connector.id} className="enosx-pill__logo">
+                <ConnectorLogo name={connector.name} accent={kindColor(connector.kind)} size={16} plain />
+              </span>
+            ),
+          )}
+          <span className="enosx-pill__count">
+            +{selectedCount > 0 ? selectedCount : defaultConnectors.length}
+          </span>
+        </motion.button>
+      ) : (
       <motion.button
         type="button"
         whileHover={{ scale: 1.03 }}
@@ -181,6 +218,7 @@ export default function ConnectorPicker({
           </span>
         )}
       </motion.button>
+      )}
 
       <AnimatePresence>
         {open && (

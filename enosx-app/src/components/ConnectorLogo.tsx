@@ -35,6 +35,8 @@ interface ConnectorLogoProps {
   name: string;
   accent: string;
   size?: number;
+  /** Renders the glyph alone, in the current text color, without the badge. */
+  plain?: boolean;
 }
 
 const LOGO_SLUG_OVERRIDES: Record<string, string> = {
@@ -115,10 +117,29 @@ function getInitials(name: string) {
   return name.slice(0, 2).toUpperCase();
 }
 
-export default function ConnectorLogo({ name, accent, size = 28 }: ConnectorLogoProps) {
+export default function ConnectorLogo({ name, accent, size = 28, plain = false }: ConnectorLogoProps) {
   const slug = toLogoSlug(name);
   const icon = LOCAL_LOGOS[slug];
   const glyph = Math.round(size * 0.57);
+
+  if (plain) {
+    return (
+      <span
+        className="flex shrink-0 items-center justify-center"
+        style={{ width: size, height: size, color: "currentColor" }}
+        aria-hidden="true"
+        title={name}
+      >
+        {icon ? (
+          <svg viewBox="0 0 24 24" style={{ width: size, height: size }} fill="currentColor" role="img" aria-label={`${name} logo`}>
+            <path d={icon.path} />
+          </svg>
+        ) : (
+          <span className="text-[10px] font-semibold leading-none">{getInitials(name)}</span>
+        )}
+      </span>
+    );
+  }
 
   return (
     <span

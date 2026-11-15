@@ -1,20 +1,25 @@
 /*
  * ENOSX AI — CommandBar
- * Focused premium composer with voice visualization and concise mode controls.
- * Features:
- *   - AI mode selector inside the message bar as a three-tier dropdown
- *   - Larger message input area
- *   - Upward arrow send button
- *   - Fixed-height textarea, voice input, glassmorphism
+ * Message bar that mirrors the supplied EnosxAI reference:
+ *   - rounded white/dark bar with the input on top
+ *   - toolbar underneath: attach, connectors, workspace, voice, split send
+ *   - fixed-size input that never grows after a prompt is sent
  */
 
 import { useState, useRef, useEffect, useCallback } from "react";
-import { motion, AnimatePresence } from "framer-motion";
-import { ArrowUp, Mic, MicOff, Square, Clock3, ChevronDown, Plus } from "lucide-react";
+import { AnimatePresence, motion } from "framer-motion";
+import {
+  ArrowUp,
+  Check,
+  ChevronDown,
+  Cloud,
+  Laptop,
+  Mic,
+  MicOff,
+  Plus,
+  Square,
+} from "lucide-react";
 import { VoiceState, type Attachment } from "@/lib/types";
-import { useTheme } from "@/contexts/ThemeContext";
-import { useWallpaper } from "@/contexts/WallpaperContext";
-import VoiceVisualizer from "./VoiceVisualizer";
 import ConnectorPicker from "./ConnectorPicker";
 
 export type AIMode = "ex-core" | "ex-pro" | "enosh-mind";
@@ -88,6 +93,104 @@ export function AIModePicker({ aiMode, onChange }: { aiMode: AIMode; onChange: (
   );
 }
 
+type Workspace = "cloud" | "device";
+
+const WORKSPACES: Array<{ id: Workspace; label: string; hint: string }> = [
+  { id: "cloud", label: "Enosx Cloud", hint: "Runs in the cloud workspace" },
+  { id: "device", label: "This device", hint: "Runs on your machine" },
+];
+
+function readStoredWorkspace(): Workspace {
+  try {
+    return localStorage.getItem("enosx-workspace") === "device" ? "device" : "cloud";
+  } catch {
+    return "cloud";
+  }
+}
+
+interface WorkspacePickerProps {
+  onOpenChange?: (open: boolean) => void;
+}
+
+function WorkspacePicker({ onOpenChange }: WorkspacePickerProps) {
+  const [open, setOpen] = useState(false);
+  const [workspace, setWorkspace] = useState<Workspace>(readStoredWorkspace);
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    onOpenChange?.(open);
+  }, [open, onOpenChange]);
+
+  useEffect(() => {
+    if (!open) return;
+    const handleOutside = (event: MouseEvent) => {
+      if (!containerRef.current?.contains(event.target as Node)) setOpen(false);
+    };
+    document.addEventListener("mousedown", handleOutside);
+    return () => document.removeEventListener("mousedown", handleOutside);
+  }, [open]);
+
+  const current = WORKSPACES.find((item) => item.id === workspace) ?? WORKSPACES[0];
+
+  const choose = (next: Workspace) => {
+    setWorkspace(next);
+    try {
+      localStorage.setItem("enosx-workspace", next);
+    } catch {
+      /* storage can be unavailable in private windows */
+    }
+    setOpen(false);
+  };
+
+  return (
+    <div className="relative shrink-0" ref={containerRef}>
+      <button
+        type="button"
+        onClick={() => setOpen((value) => !value)}
+        className="enosx-pill enosx-pill--device"
+        aria-haspopup="menu"
+        aria-expanded={open}
+        aria-label={`Workspace: ${current.label}`}
+        title={`Workspace: ${current.label}`}
+      >
+        <Cloud size={16} />
+        <span className="enosx-pill__label">{current.label}</span>
+      </button>
+      <AnimatePresence>
+        {open && (
+          <motion.div
+            initial={{ opacity: 0, y: 6, scale: 0.97 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 6, scale: 0.97 }}
+            transition={{ duration: 0.15 }}
+            className="enosx-menu"
+            role="menu"
+            aria-label="Choose workspace"
+          >
+            {WORKSPACES.map((item) => (
+              <button
+                key={item.id}
+                type="button"
+                role="menuitemradio"
+                aria-checked={workspace === item.id}
+                onClick={() => choose(item.id)}
+                className="enosx-menu__item"
+              >
+                {item.id === "cloud" ? <Cloud size={16} /> : <Laptop size={16} />}
+                <span className="enosx-menu__copy">
+                  <span className="enosx-menu__title">{item.label}</span>
+                  <span className="enosx-menu__hint">{item.hint}</span>
+                </span>
+                {workspace === item.id && <Check size={14} className="enosx-menu__check" />}
+              </button>
+            ))}
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+}
+
 interface CommandBarProps {
   onSend: (text: string, aiMode?: AIMode, selectedConnectorIds?: string[]) => void;
   onDraftChange?: (hasDraft: boolean) => void;
@@ -108,6 +211,7 @@ interface CommandBarProps {
   animateEntrance?: boolean;
   userDisplayName?: string;
   aiMode: AIMode;
+  onAiModeChange?: (mode: AIMode) => void;
 }
 
 export default function CommandBar({
@@ -115,14 +219,12 @@ export default function CommandBar({
   onDraftChange,
   isLoading,
   voiceState,
-  audioStream = null,
   transcript,
   isVoiceSupported,
   onStartVoice,
   onStopVoice,
   onStopSpeaking,
   disabled = false,
-  isFreeMode = false,
   onFilesSelected,
   attachments = [],
   waitingCount = 0,
@@ -130,18 +232,18 @@ export default function CommandBar({
   animateEntrance = true,
   userDisplayName,
   aiMode,
+  onAiModeChange,
 }: CommandBarProps) {
-  const { config } = useTheme();
-  const { settings: wallpaperSettings } = useWallpaper();
   const [value, setValue] = useState("");
   const [selectedConnectorIds, setSelectedConnectorIds] = useState<string[]>([]);
+  const [sendMenuOpen, setSendMenuOpen] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const sendRef = useRef<HTMLDivElement>(null);
 
   const isListening = voiceState === "listening";
   const isSpeaking = voiceState === "speaking";
-  const isProcessing = voiceState === "processing";
-  const voiceActive = isListening || isSpeaking || isProcessing;
+  const currentMode = AI_MODES.find((mode) => mode.id === aiMode) ?? AI_MODES[0];
 
   const hasImageAttachment = attachments.some((file) =>
     /image/i.test(`${file.mimeType ?? ""} ${file.type}`) || /\.(png|jpe?g|gif|webp|bmp|avif|heic)$/i.test(file.name),
@@ -152,23 +254,21 @@ export default function CommandBar({
   const firstName = userDisplayName?.trim().split(/\s+/)[0];
   const personalizedPlaceholder = firstName && !/^(guest|user)$/i.test(firstName)
     ? `What can I help you with, ${firstName}?`
-    : "Ask Enosx anything...";
+    : "Ask Enosx AI to do something…";
   const contextualPlaceholder = hasImageAttachment && hasVideoAttachment
-    ? "Analyze your image and video in real time..."
+    ? "Analyze your image and video in real time…"
     : hasVideoAttachment
-      ? "Ask ENOSX to inspect your video in real time..."
+      ? "Ask ENOSX to inspect your video in real time…"
       : hasImageAttachment
-        ? "Ask ENOSX to analyze your image..."
+        ? "Ask ENOSX to analyze your image…"
         : personalizedPlaceholder;
-  const phonePlaceholder = window.innerWidth <= 360
-    ? "Ask..."
-    : hasImageAttachment && hasVideoAttachment
-      ? "Ask about media..."
-      : hasVideoAttachment
-        ? "Ask about video..."
-        : hasImageAttachment
-          ? "Ask about image..."
-          : "Ask ENOSX...";
+  const placeholder = isListening
+    ? "Listening… Speak now."
+    : isSpeaking
+      ? "AI is speaking…"
+      : window.innerWidth < 768 && window.innerWidth <= 360
+        ? "Ask…"
+        : contextualPlaceholder;
 
   // Sync transcript to input
   useEffect(() => {
@@ -177,16 +277,14 @@ export default function CommandBar({
     }
   }, [transcript]);
 
-  // Keep the composer stable while text and streamed replies update around it.
-  // Long drafts remain scrollable inside the fixed-height field instead of
-  // changing the height of the message bar.
   useEffect(() => {
-    const ta = textareaRef.current;
-    if (!ta) return;
-    const fixedHeight = 30;
-    ta.style.height = `${fixedHeight}px`;
-    ta.style.overflowY = ta.scrollHeight > fixedHeight ? "auto" : "hidden";
-  }, [value]);
+    if (!sendMenuOpen) return;
+    const handleOutside = (event: MouseEvent) => {
+      if (!sendRef.current?.contains(event.target as Node)) setSendMenuOpen(false);
+    };
+    document.addEventListener("mousedown", handleOutside);
+    return () => document.removeEventListener("mousedown", handleOutside);
+  }, [sendMenuOpen]);
 
   const handleSend = useCallback(() => {
     const text = value.trim();
@@ -194,12 +292,10 @@ export default function CommandBar({
     onSend(text, aiMode, selectedConnectorIds);
     setValue("");
     onDraftChange?.(false);
-    if (textareaRef.current) {
-      textareaRef.current.style.height = "30px";
-      textareaRef.current.style.overflowY = "hidden";
-      textareaRef.current.scrollTop = 0;
-    }
-  }, [value, disabled, isLoading, onSend, aiMode, selectedConnectorIds]);
+    setSendMenuOpen(false);
+    // The input keeps its fixed height after sending; only the scroll resets.
+    if (textareaRef.current) textareaRef.current.scrollTop = 0;
+  }, [value, disabled, onSend, aiMode, selectedConnectorIds, onDraftChange]);
 
   const handleToggleConnector = useCallback((connectorId: string) => {
     setSelectedConnectorIds((current) =>
@@ -209,7 +305,7 @@ export default function CommandBar({
     );
   }, []);
 
-  const handleKeyDown = (e: React.KeyboardEvent) => {
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
       handleSend();
@@ -233,182 +329,153 @@ export default function CommandBar({
   };
 
   const canSend = value.trim().length > 0 && !disabled;
+  const voiceActive = isListening || isSpeaking;
 
   return (
-    <>
-      {/* Voice overlay removed for seamless input experience */}
+    <div className={`relative ${tightBottom ? "pb-0" : "pb-2"} pt-1 shrink-0`}>
+      {waitingCount > 0 && (
+        <div className="pointer-events-none absolute inset-x-0 bottom-full z-30 mx-auto mb-2 flex max-w-3xl items-center gap-2 rounded-xl border border-cyan-300/15 bg-cyan-300/[0.06] px-3 py-2 text-[11px] text-cyan-100/75" role="status">
+          <span>{waitingCount} waiting message{waitingCount === 1 ? "" : "s"} queued — ENOSX AI will handle them in order.</span>
+        </div>
+      )}
 
-      {/* ── Main command bar ── */}
-      <div className={`relative px-4 ${tightBottom ? "pb-0" : "pb-2"} pt-1 flex-shrink-0`}>
-        {waitingCount > 0 && (
-          <div className="pointer-events-none absolute inset-x-4 bottom-full z-30 mx-auto mb-2 flex max-w-3xl items-center gap-2 rounded-xl border border-cyan-300/15 bg-cyan-300/[0.06] px-3 py-2 text-[11px] text-cyan-100/75" role="status">
-            <Clock3 size={13} className="shrink-0 text-cyan-300" />
-            <span>{waitingCount} waiting message{waitingCount === 1 ? "" : "s"} queued — ENOSX AI will handle them in order.</span>
-          </div>
-        )}
-        <motion.div
-          initial={animateEntrance ? { y: 20, opacity: 0 } : false}
-          animate={{ y: 0, opacity: 1 }}
-          transition={animateEntrance ? { type: "spring", stiffness: 300, damping: 30, delay: 0.1 } : { duration: 0 }}
-          className="mx-auto w-full max-w-none"
+      <motion.div
+        initial={animateEntrance ? { y: 12, opacity: 0 } : false}
+        animate={{ y: 0, opacity: 1 }}
+        transition={animateEntrance ? { type: "spring", stiffness: 300, damping: 30, delay: 0.1 } : { duration: 0 }}
+        className="mx-auto w-full"
+      >
+        <div
+          className={`enosx-composer${isListening ? " enosx-composer--listening" : ""}`}
+          data-mode={aiMode}
         >
-          {/* Main input container */}
-          <motion.div
-            animate={
-              isListening
-                ? {
-                    boxShadow: [
-                      `0 0 0 0 rgba(0,242,255, 0)`,
-                      `0 0 0 3px rgba(0,242,255, 0.35)`,
-                      `0 0 0 0 rgba(0,242,255, 0)`,
-                    ],
-                  }
-                : { boxShadow: "none" }
-            }
-            transition={
-              isListening
-                ? { duration: 1.5, repeat: Infinity, ease: "easeInOut" }
-                : { duration: 0.3 }
-            }
-            className={`phone-command-shell flex flex-col gap-1.5 rounded-[18px] px-3 py-1.5 transition-all duration-300 ${isListening ? 'shadow-[0_0_0_3px_rgba(155,140,255,0.16)]' : ''}`}
-            style={{
-              background: `rgba(21,21,29,${Math.max(wallpaperSettings.panelOpacity, 0.92)})`,
-              backdropFilter: `blur(${wallpaperSettings.blurAmount}px)`,
-              WebkitBackdropFilter: `blur(${wallpaperSettings.blurAmount}px)`,
-              borderWidth: "1px",
-              borderStyle: "solid",
-              borderColor: isListening ? `rgba(${config.accentRgb}, 0.42)` : "rgba(255,255,255,0.09)",
-              transition: "all 0.3s ease",
+          <textarea
+            ref={textareaRef}
+            value={value}
+            onChange={(e) => {
+              const nextValue = e.target.value;
+              setValue(nextValue);
+              onDraftChange?.(nextValue.trim().length > 0);
+              if (/^enosx$/i.test(nextValue.trim())) {
+                window.dispatchEvent(new CustomEvent("enosx-open-onboarding"));
+              }
             }}
-          >
-            {/* Textarea and buttons container */}
-            <div className="flex flex-col gap-1.5">
-                {/* Compact textarea */}
-              <textarea
-                ref={textareaRef}
-                value={value}
-                onChange={(e) => {
-                  const nextValue = e.target.value;
-                  setValue(nextValue);
-                  onDraftChange?.(nextValue.trim().length > 0);
-                  // Let the chat shell open guided setup immediately when the
-                  // user types the wake word, without requiring Send/Enter.
-                  if (/^enosx$/i.test(nextValue.trim())) {
-                    window.dispatchEvent(new CustomEvent("enosx-open-onboarding"));
-                  }
-                }}
-                onKeyDown={handleKeyDown}
-                placeholder={
-                  isListening
-                    ? "Listening... Speak now."
-                    : isSpeaking
-                      ? "AI is speaking..."
-                      : window.innerWidth < 768
-                        ? phonePlaceholder
-                        : contextualPlaceholder
-                }
-                rows={1}
-                disabled={disabled && !isListening}
-                className="min-w-0 w-full bg-transparent outline-none resize-none text-[15px] leading-relaxed"
-                style={{
-                  color: config.text,
-                  caretColor: config.accent,
-                  height: 30,
-                  maxHeight: 30,
-                  minHeight: 30,
-                  paddingTop: "2px",
-                  fontFamily: "var(--font-body)",
-                }}
-              />
+            onKeyDown={handleKeyDown}
+            placeholder={placeholder}
+            rows={1}
+            disabled={disabled && !isListening}
+            aria-label="Message"
+            className="enosx-composer__input"
+          />
 
-              {/* Reference-style toolbar: attach and connectors on the left; voice and send on the right. */}
-              <div className="flex w-full items-center gap-2">
-                <input ref={fileInputRef} type="file" multiple accept="image/*,video/*,.pdf,.docx,.xlsx,.xls,.txt,.md,.csv,.json,.js,.ts,.tsx,.jsx,.py,.html,.css,.xml,.yaml,.yml" className="hidden" onChange={handleFilePickerChange} />
-                {onFilesSelected && (
-                  <motion.button
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
-                    type="button"
-                    onClick={() => fileInputRef.current?.click()}
-                    className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full border transition-colors hover:bg-white/[0.07]"
-                    style={{ background: "transparent", borderColor: "rgba(255,255,255,0.12)", color: config.text }}
-                    title="Add attachment"
-                    aria-label="Add attachment"
-                  >
-                    <Plus size={16} />
-                  </motion.button>
-                )}
-                <ConnectorPicker
-                  selectedConnectorIds={selectedConnectorIds}
-                  onToggleConnector={handleToggleConnector}
-                />
-                <div className="flex-1" />
+          <div className="enosx-composer__tools">
+            <input
+              ref={fileInputRef}
+              type="file"
+              multiple
+              accept="image/*,video/*,.pdf,.docx,.xlsx,.xls,.txt,.md,.csv,.json,.js,.ts,.tsx,.jsx,.py,.html,.css,.xml,.yaml,.yml"
+              className="hidden"
+              onChange={handleFilePickerChange}
+            />
+            {onFilesSelected && (
+              <button
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                className="enosx-icon"
+                title="Add attachment"
+                aria-label="Add attachment"
+              >
+                <Plus size={18} />
+              </button>
+            )}
 
-                {isVoiceSupported && (
-                  <motion.button
-                    type="button"
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
-                    onClick={handleVoiceClick}
-                    className="relative flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-white/65 transition-colors hover:bg-white/[0.07] hover:text-white"
-                    style={isListening || isSpeaking ? {
-                      background: `rgba(${config.accentRgb}, 0.2)`,
-                      border: `1px solid rgba(${config.accentRgb}, 0.32)`,
-                      color: config.accent,
-                    } : { border: "1px solid transparent" }}
-                    title={isListening ? "Stop listening" : isSpeaking ? "Stop speaking" : "Voice input"}
-                    aria-label={isListening ? "Stop listening" : isSpeaking ? "Stop speaking" : "Voice input"}
-                  >
-                    {isSpeaking ? <Square size={16} /> : isListening ? <MicOff size={16} /> : <Mic size={16} />}
-                  </motion.button>
-                )}
+            <ConnectorPicker
+              trigger="compact"
+              selectedConnectorIds={selectedConnectorIds}
+              onToggleConnector={handleToggleConnector}
+            />
 
-                <motion.button
+            <WorkspacePicker />
+
+            <div className="enosx-composer__spacer" />
+
+            {isVoiceSupported && (
+              <button
+                type="button"
+                onClick={handleVoiceClick}
+                className={`enosx-icon enosx-icon--plain${voiceActive ? " is-active" : ""}`}
+                title={isListening ? "Stop listening" : isSpeaking ? "Stop speaking" : "Voice input"}
+                aria-label={isListening ? "Stop listening" : isSpeaking ? "Stop speaking" : "Voice input"}
+              >
+                {isSpeaking ? <Square size={16} /> : isListening ? <MicOff size={18} /> : <Mic size={18} />}
+              </button>
+            )}
+
+            <div className="relative shrink-0" ref={sendRef}>
+              <div className="enosx-send" data-ready={canSend}>
+                <button
                   type="button"
-                  whileHover={canSend ? { scale: 1.04 } : {}}
-                  whileTap={canSend ? { scale: 0.96 } : {}}
                   onClick={handleSend}
                   disabled={!canSend}
-                  className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full transition-all duration-200 disabled:cursor-not-allowed"
-                  style={canSend ? {
-                    background: `rgba(${config.accentRgb}, 0.96)`,
-                    color: "#fff",
-                    boxShadow: `0 4px 12px rgba(${config.accentRgb}, 0.24)`,
-                  } : {
-                    background: "rgba(255,255,255,0.08)",
-                    color: "rgba(255,255,255,0.38)",
-                  }}
-                  title={isLoading ? "Add to waiting list" : "Send"}
+                  className="enosx-send__go"
                   aria-label="Send message"
+                  title={isLoading ? "Add to waiting list" : "Send message"}
                 >
-                  {isLoading ? <Clock3 size={14} /> : <ArrowUp size={16} strokeWidth={2.5} />}
-                </motion.button>
+                  <ArrowUp size={18} strokeWidth={2.6} />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setSendMenuOpen((open) => !open)}
+                  className="enosx-send__more"
+                  aria-label="More send options"
+                  aria-haspopup="menu"
+                  aria-expanded={sendMenuOpen}
+                  title="More send options"
+                >
+                  <ChevronDown size={14} strokeWidth={2.6} />
+                </button>
               </div>
-              <AnimatePresence initial={false}>
-                {isListening && (
+
+              <AnimatePresence>
+                {sendMenuOpen && (
                   <motion.div
-                    key="voice-waveform"
-                    data-testid="voice-waveform-panel"
-                    initial={{ height: 0, opacity: 0, y: -4 }}
-                    animate={{ height: 44, opacity: 1, y: 0 }}
-                    exit={{ height: 0, opacity: 0, y: -4 }}
-                    transition={{ duration: 0.18 }}
-                    className="overflow-hidden"
+                    initial={{ opacity: 0, y: 6, scale: 0.97 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    exit={{ opacity: 0, y: 6, scale: 0.97 }}
+                    transition={{ duration: 0.15 }}
+                    className="enosx-menu enosx-menu--send"
+                    role="menu"
+                    aria-label="Send options"
                   >
-                    <VoiceVisualizer
-                      isActive={isListening}
-                      isListening={isListening}
-                      color={config.accent}
-                      accentRgb={config.accentRgb}
-                      audioStream={audioStream}
-                    />
+                    <p className="enosx-menu__label">Send with</p>
+                    {AI_MODES.map((mode) => (
+                      <button
+                        key={mode.id}
+                        type="button"
+                        role="menuitemradio"
+                        aria-checked={mode.id === aiMode}
+                        onClick={() => {
+                          onAiModeChange?.(mode.id);
+                          setSendMenuOpen(false);
+                        }}
+                        className="enosx-menu__item"
+                      >
+                        <span className="enosx-menu__dot" style={{ background: mode.color }} />
+                        <span className="enosx-menu__copy">
+                          <span className="enosx-menu__title">{mode.label}</span>
+                          <span className="enosx-menu__hint">{mode.description}</span>
+                        </span>
+                        {mode.id === aiMode && <Check size={14} className="enosx-menu__check" />}
+                      </button>
+                    ))}
+                    <p className="enosx-menu__foot">Current: {currentMode.label}</p>
                   </motion.div>
                 )}
               </AnimatePresence>
             </div>
-          </motion.div>
-        </motion.div>
-      </div>
-    </>
+          </div>
+        </div>
+      </motion.div>
+    </div>
   );
 }

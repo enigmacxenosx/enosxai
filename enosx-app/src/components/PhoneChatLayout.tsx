@@ -138,6 +138,11 @@ export default function PhoneChatLayout({
 
       {/* Mobile Command Bar */}
       <div className="phone-composer-dock relative z-30 shrink-0 border-t border-white/10 bg-black/80 px-3 pb-[calc(0.5rem+env(safe-area-inset-bottom))] pt-2 backdrop-blur-xl">
+        {messages.length === 0 && (
+          <div className="phone-welcome-suggestions px-2 pb-1">
+            <WelcomeSuggestions onSuggestion={(p: string) => handleSend(p)} animateEntrance={false} />
+          </div>
+        )}
         <CommandBar
           onSend={handleSend}
           aiMode={aiMode}
@@ -157,11 +162,6 @@ export default function PhoneChatLayout({
           animateEntrance={messages.length > 0}
           userDisplayName={userDisplayName}
         />
-        {messages.length === 0 && (
-          <div className="phone-welcome-suggestions px-2 pb-1">
-            <WelcomeSuggestions onSuggestion={(p: string) => handleSend(p)} animateEntrance={messages.length > 0} />
-          </div>
-        )}
       </div>
 
       {/* Mobile Sidebar Overlay */}

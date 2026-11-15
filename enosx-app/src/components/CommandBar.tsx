@@ -10,7 +10,7 @@
 
 import { useState, useRef, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { ArrowUp, Mic, MicOff, Square, Clock3, ChevronDown, Plus, ListChecks, Languages, Code2, Sparkles } from "lucide-react";
+import { ArrowUp, Mic, MicOff, Square, Clock3, ChevronDown, Plus } from "lucide-react";
 import { VoiceState, type Attachment } from "@/lib/types";
 import { useTheme } from "@/contexts/ThemeContext";
 import { useWallpaper } from "@/contexts/WallpaperContext";
@@ -87,13 +87,6 @@ export function AIModePicker({ aiMode, onChange }: { aiMode: AIMode; onChange: (
     </div>
   );
 }
-
-const PROMPT_RECIPES = [
-  { label: "Summarize", icon: ListChecks, suffix: "Summarize this with the key points, decisions, risks, and next steps." },
-  { label: "Translate", icon: Languages, suffix: "Translate this accurately into [target language] and preserve the tone and formatting." },
-  { label: "Code review", icon: Code2, suffix: "Review this code for correctness, security, maintainability, and performance. Suggest a corrected version." },
-  { label: "Make a plan", icon: Sparkles, suffix: "Turn this into a practical step-by-step plan with assumptions, dependencies, and a clear definition of done." },
-];
 
 interface CommandBarProps {
   onSend: (text: string, aiMode?: AIMode, selectedConnectorIds?: string[]) => void;
@@ -187,7 +180,7 @@ export default function CommandBar({
     const ta = textareaRef.current;
     if (!ta) return;
     ta.style.height = "auto";
-    const maxHeight = 120;
+    const maxHeight = 72;
     const contentHeight = ta.scrollHeight;
     ta.style.height = `${Math.min(contentHeight, maxHeight)}px`;
     ta.style.overflowY = contentHeight > maxHeight ? "auto" : "hidden";
@@ -274,7 +267,7 @@ export default function CommandBar({
                 ? { duration: 1.5, repeat: Infinity, ease: "easeInOut" }
                 : { duration: 0.3 }
             }
-            className={`phone-command-shell flex flex-col gap-2 rounded-[24px] px-4 py-3.5 transition-all duration-300 ${isListening ? 'shadow-[0_0_0_3px_rgba(155,140,255,0.16)]' : ''}`}
+            className={`phone-command-shell flex flex-col gap-2 rounded-[20px] px-3.5 py-2.5 transition-all duration-300 ${isListening ? 'shadow-[0_0_0_3px_rgba(155,140,255,0.16)]' : ''}`}
             style={{
               background: `rgba(21,21,29,${Math.max(wallpaperSettings.panelOpacity, 0.92)})`,
               backdropFilter: `blur(${wallpaperSettings.blurAmount}px)`,
@@ -285,58 +278,8 @@ export default function CommandBar({
               transition: "all 0.3s ease",
             }}
           >
-            <AnimatePresence initial={false} mode="popLayout">
-              {value.trim().length > 0 && !disabled && !isLoading && (
-                <motion.div
-                  initial={{ opacity: 0, y: 6, scale: 0.985 }}
-                  animate={{ opacity: 1, y: 0, scale: 1 }}
-                  exit={{ opacity: 0, y: 3, scale: 0.99 }}
-                  transition={{
-                    duration: 0.2,
-                    ease: [0.23, 1, 0.32, 1],
-                    scale: { duration: 0.24, ease: [0.23, 1, 0.32, 1] },
-                  }}
-                  className="prompt-suggestions-row flex items-center gap-1.5 overflow-x-auto px-1 pt-0.5"
-                  aria-label="Prompt suggestions"
-                >
-                  <motion.span
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    transition={{ duration: 0.14, delay: 0.03 }}
-                    className="mr-0.5 shrink-0 text-[10px] text-white/35"
-                  >
-                    Try
-                  </motion.span>
-                  {PROMPT_RECIPES.map(({ label, icon: Icon, suffix }, index) => (
-                    <motion.button
-                      key={label}
-                      type="button"
-                      initial={{ opacity: 0, x: -3 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      transition={{
-                        duration: 0.16,
-                        delay: 0.04 + index * 0.035,
-                        ease: [0.23, 1, 0.32, 1],
-                      }}
-                      whileHover={{ y: -1 }}
-                      whileTap={{ scale: 0.97, y: 0 }}
-                      onClick={() => setValue((current) => `${current.trimEnd()}\n\n${suffix}`)}
-                      className="composer-chip shrink-0 rounded-full border px-2.5 py-1 text-[10px] leading-none text-white/60 transition-[color,background-color,border-color,transform] duration-150 hover:text-white/90"
-                      style={{
-                        borderColor: `rgba(${config.accentRgb}, 0.2)`,
-                        background: `rgba(${config.accentRgb}, 0.06)`,
-                      }}
-                    >
-                      <Icon size={11} aria-hidden="true" />
-                      {label}
-                    </motion.button>
-                  ))}
-                </motion.div>
-              )}
-            </AnimatePresence>
-
             {/* Textarea and buttons container */}
-            <div className="flex flex-col gap-2">
+            <div className="flex flex-col gap-1.5">
                 {/* Compact textarea */}
               <textarea
                 ref={textareaRef}
@@ -366,8 +309,8 @@ export default function CommandBar({
                 style={{
                   color: config.text,
                   caretColor: config.accent,
-                  maxHeight: 120,
-                  minHeight: 48,
+                  maxHeight: 72,
+                  minHeight: 36,
                   paddingTop: "4px",
                   fontFamily: "var(--font-body)",
                 }}
@@ -382,7 +325,7 @@ export default function CommandBar({
                     whileTap={{ scale: 0.95 }}
                     type="button"
                     onClick={() => fileInputRef.current?.click()}
-                    className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border transition-colors hover:bg-white/[0.07]"
+                    className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border transition-colors hover:bg-white/[0.07]"
                     style={{ background: "transparent", borderColor: "rgba(255,255,255,0.12)", color: config.text }}
                     title="Add attachment"
                     aria-label="Add attachment"
@@ -402,7 +345,7 @@ export default function CommandBar({
                     whileHover={{ scale: 1.05 }}
                     whileTap={{ scale: 0.95 }}
                     onClick={handleVoiceClick}
-                    className="relative flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-white/65 transition-colors hover:bg-white/[0.07] hover:text-white"
+                    className="relative flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-white/65 transition-colors hover:bg-white/[0.07] hover:text-white"
                     style={isListening || isSpeaking ? {
                       background: `rgba(${config.accentRgb}, 0.2)`,
                       border: `1px solid rgba(${config.accentRgb}, 0.32)`,
@@ -421,7 +364,7 @@ export default function CommandBar({
                   whileTap={canSend ? { scale: 0.96 } : {}}
                   onClick={handleSend}
                   disabled={!canSend}
-                  className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full transition-all duration-200 disabled:cursor-not-allowed"
+                  className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full transition-all duration-200 disabled:cursor-not-allowed"
                   style={canSend ? {
                     background: `rgba(${config.accentRgb}, 0.96)`,
                     color: "#fff",

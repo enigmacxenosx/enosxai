@@ -112,7 +112,7 @@ export default function ConnectorPicker({
         aria-expanded={open}
         aria-haspopup="dialog"
         aria-label="Connectors"
-        className="group flex h-9 items-center gap-2 rounded-full px-3 transition-all"
+        className="group flex h-8 items-center gap-1.5 rounded-full px-2.5 transition-all"
         style={{
           background:
             selectedCount > 0

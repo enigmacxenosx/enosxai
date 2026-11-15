@@ -127,9 +127,9 @@ export default function ConnectorLogo({ name, accent, size = 28 }: ConnectorLogo
         width: size,
         height: size,
         borderRadius: Math.round(size * 0.28),
-        background: `${accent}18`,
-        border: `1px solid ${accent}38`,
-        color: accent,
+        background: icon ? "rgba(255,255,255,.94)" : `${accent}18`,
+        border: `1px solid ${icon ? "rgba(255,255,255,.18)" : `${accent}38`}`,
+        color: icon ? `#${icon.hex}` : accent,
         fontSize: Math.round(size * 0.36),
       }}
       aria-hidden="true"

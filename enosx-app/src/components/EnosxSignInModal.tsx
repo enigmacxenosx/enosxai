@@ -154,7 +154,7 @@ export default function EnosxSignInModal({ onClose }: EnosxSignInModalProps) {
 
         <section className="enosx-signin-form-panel">
           <button type="button" className="enosx-signin-close" onClick={onClose} aria-label="Close sign-in"><X size={18} /></button>
-          <div className="enosx-signin-mark" aria-hidden="true">E</div>
+          <img className="enosx-signin-mark" src="/enosx-logo.svg" alt="ENOSX AI" />
           <h1 id="enosx-signin-title">{formTitle}</h1>
           <p className="enosx-signin-subtitle">{formSubtitle}</p>
 

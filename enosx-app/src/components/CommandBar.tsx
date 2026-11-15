@@ -90,6 +90,7 @@ export function AIModePicker({ aiMode, onChange }: { aiMode: AIMode; onChange: (
 
 interface CommandBarProps {
   onSend: (text: string, aiMode?: AIMode, selectedConnectorIds?: string[]) => void;
+  onDraftChange?: (hasDraft: boolean) => void;
   isLoading: boolean;
   voiceState: VoiceState;
   audioStream?: MediaStream | null;
@@ -111,6 +112,7 @@ interface CommandBarProps {
 
 export default function CommandBar({
   onSend,
+  onDraftChange,
   isLoading,
   voiceState,
   audioStream = null,
@@ -179,11 +181,9 @@ export default function CommandBar({
   useEffect(() => {
     const ta = textareaRef.current;
     if (!ta) return;
-    ta.style.height = "auto";
-    const maxHeight = 72;
-    const contentHeight = ta.scrollHeight;
-    ta.style.height = `${Math.min(contentHeight, maxHeight)}px`;
-    ta.style.overflowY = contentHeight > maxHeight ? "auto" : "hidden";
+    const fixedHeight = 36;
+    ta.style.height = `${fixedHeight}px`;
+    ta.style.overflowY = ta.scrollHeight > fixedHeight ? "auto" : "hidden";
   }, [value]);
 
   const handleSend = useCallback(() => {
@@ -191,8 +191,9 @@ export default function CommandBar({
     if (!text || disabled) return;
     onSend(text, aiMode, selectedConnectorIds);
     setValue("");
+    onDraftChange?.(false);
     if (textareaRef.current) {
-      textareaRef.current.style.height = "32px";
+      textareaRef.current.style.height = "36px";
       textareaRef.current.style.overflowY = "hidden";
       textareaRef.current.scrollTop = 0;
     }
@@ -287,6 +288,7 @@ export default function CommandBar({
                 onChange={(e) => {
                   const nextValue = e.target.value;
                   setValue(nextValue);
+                  onDraftChange?.(nextValue.trim().length > 0);
                   // Let the chat shell open guided setup immediately when the
                   // user types the wake word, without requiring Send/Enter.
                   if (/^enosx$/i.test(nextValue.trim())) {
@@ -309,7 +311,8 @@ export default function CommandBar({
                 style={{
                   color: config.text,
                   caretColor: config.accent,
-                  maxHeight: 72,
+                  height: 36,
+                  maxHeight: 36,
                   minHeight: 36,
                   paddingTop: "4px",
                   fontFamily: "var(--font-body)",
@@ -373,7 +376,7 @@ export default function CommandBar({
                     background: "rgba(255,255,255,0.08)",
                     color: "rgba(255,255,255,0.38)",
                   }}
-                  title={isLoading ? "Add to waiting list" : "Send message"}
+                  title={isLoading ? "Add to waiting list" : "Send"}
                   aria-label="Send message"
                 >
                   {isLoading ? <Clock3 size={16} /> : <ArrowUp size={18} strokeWidth={2.5} />}

@@ -227,6 +227,7 @@ export default function ChatPage() {
     return localStorage.getItem(`enosx_active_chat_${owner}`) || (owner === "guest" ? localStorage.getItem("enosx_active_chat") : null);
   });
   const [activeMode, setActiveMode] = useState<AIMode>("ex-core");
+  const [hasComposerDraft, setHasComposerDraft] = useState(false);
 
   // Keep local data account-scoped. A device's guest/local conversations are
   // never automatically copied into another signed-in account.
@@ -1192,10 +1193,11 @@ ${getAdminContext()}` : ""}`,
               onClear={clearFiles}
             />
 
-            <AppAwareSuggestions onSuggestionClick={(suggestion) => void handleSendTracked(suggestion, activeMode)} />
+            {!hasComposerDraft && <AppAwareSuggestions onSuggestionClick={(suggestion) => void handleSendTracked(suggestion, activeMode)} />}
 
             <CommandBar
               onSend={handleSendTracked}
+              onDraftChange={setHasComposerDraft}
               aiMode={activeMode}
               isLoading={isLoading}
               waitingCount={waitingMessages.length}
@@ -1213,7 +1215,7 @@ ${getAdminContext()}` : ""}`,
               animateEntrance={!isWelcomeState}
               userDisplayName={user?.displayName}
             />
-            {(!activeConversation || activeConversation.messages.length === 0) && (
+            {(!activeConversation || activeConversation.messages.length === 0) && !hasComposerDraft && (
               <div className="welcome-suggestions-dock pb-1">
                 <WelcomeSuggestions onSuggestion={(text) => void handleSendTracked(text)} animateEntrance={!isWelcomeState} />
               </div>

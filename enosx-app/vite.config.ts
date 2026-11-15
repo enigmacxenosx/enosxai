@@ -1,4 +1,4 @@
-import { defineConfig } from "vite";
+import { defineConfig } from "vitest/config";
 import react from "@vitejs/plugin-react";
 import tailwindcss from "@tailwindcss/vite";
 import { VitePWA } from "vite-plugin-pwa";
@@ -37,6 +37,12 @@ if (process.env.NODE_ENV !== "production" && process.env.REPL_ID !== undefined) 
 
 export default defineConfig({
   base: basePath,
+  test: {
+    environment: "jsdom",
+    include: ["src/**/*.test.{ts,tsx}"],
+    restoreMocks: true,
+    clearMocks: true,
+  },
   plugins: [
     react(),
     tailwindcss(),

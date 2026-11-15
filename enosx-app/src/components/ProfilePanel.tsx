@@ -16,7 +16,7 @@ import {
   X, User, Mail, LogOut, Settings,
   Bell, Globe, Palette, Sparkles, Check, ChevronRight, ChevronLeft,
   Loader2, AlertCircle, CheckCircle2,
-  Monitor, Shield, Zap, Layers, Mic, ShieldAlert, Cpu,
+  Monitor, Shield, Zap, Layers, Mic, ShieldAlert, Cpu, Cable,
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useTheme, THEMES, type Theme } from '../contexts/ThemeContext';
@@ -24,10 +24,11 @@ import { useWallpaper, WALLPAPER_PRESETS } from '../contexts/WallpaperContext';
 import VoiceSettingsPanel from './VoiceSettingsPanel';
 import { useVoice } from '../hooks/useVoice';
 import LocalModelsPanel from './LocalModelsPanel';
+import ConnectorsSettingsPanel from './ConnectorsSettingsPanel';
 import { ENOSX_LANGUAGES } from '../lib/languageDictionary';
 import EnosxSignInModal from './EnosxSignInModal';
 
-type View = 'profile' | 'preferences' | 'appearance' | 'privacy' | 'voice' | 'models';
+type View = 'profile' | 'preferences' | 'appearance' | 'privacy' | 'voice' | 'models' | 'connectors';
 
 interface ProfilePanelProps {
   isOpen: boolean;
@@ -202,7 +203,7 @@ export default function ProfilePanel({ isOpen, onClose, onOpenAdminConsole, onOp
             {/* Header */}
             <div className="flex items-center justify-between px-5 py-4 flex-shrink-0" style={{ borderBottom: `1px solid rgba(255,255,255,0.06)` }}>
               <div className="flex items-center gap-3">
-                {(view === 'appearance' || view === 'privacy' || view === 'voice' || view === 'models') && (
+                {(view === 'appearance' || view === 'privacy' || view === 'voice' || view === 'models' || view === 'connectors') && (
                   <button onClick={() => setView('preferences')} className="w-7 h-7 rounded-lg flex items-center justify-center hover:bg-white/10 transition-all" style={{ color: 'rgba(255,255,255,0.5)' }}>
                     <ChevronLeft size={14} />
                   </button>
@@ -212,6 +213,7 @@ export default function ProfilePanel({ isOpen, onClose, onOpenAdminConsole, onOp
                     : view === 'appearance' ? <Palette size={15} style={{ color: accentColor }} />
                     : view === 'privacy' ? <Shield size={15} style={{ color: accentColor }} />
                     : view === 'voice' ? <Mic size={15} style={{ color: accentColor }} />
+                    : view === 'connectors' ? <Cable size={15} style={{ color: accentColor }} />
                     : <User size={15} style={{ color: accentColor }} />}
                 </div>
                 <div>
@@ -220,6 +222,7 @@ export default function ProfilePanel({ isOpen, onClose, onOpenAdminConsole, onOp
                       : view === 'appearance' ? 'Appearance & Theme'
                       : view === 'privacy' ? 'Privacy & Security'
                       : view === 'voice' ? 'Voice Assistant'
+                      : view === 'connectors' ? 'Manage connectors'
                       : user?.displayName ?? 'Profile'}
                   </div>
                   <div className="text-xs" style={{ color: 'rgba(255,255,255,0.3)' }}>
@@ -227,6 +230,7 @@ export default function ProfilePanel({ isOpen, onClose, onOpenAdminConsole, onOp
                       : view === 'appearance' ? 'Colors, fonts, and wallpaper'
                       : view === 'privacy' ? 'Data and account security'
                       : view === 'voice' ? 'Speech, speed, and hands-free mode'
+                      : view === 'connectors' ? 'Accounts and connection status'
                       : isAuthenticated ? user?.email : 'Enosx'}
                   </div>
                 </div>
@@ -243,6 +247,11 @@ export default function ProfilePanel({ isOpen, onClose, onOpenAdminConsole, onOp
                       className="w-8 h-8 rounded-lg flex items-center justify-center transition-all"
                       style={{ background: view === 'preferences' ? `rgba(${accentRgb},0.2)` : 'transparent', color: view === 'preferences' ? accentColor : 'rgba(255,255,255,0.4)' }}>
                       <Settings size={14} />
+                    </button>
+                    <button onClick={() => setView('connectors')} aria-label="Manage connectors" title="Manage connectors"
+                      className="w-8 h-8 rounded-lg flex items-center justify-center transition-all"
+                      style={{ background: view === 'connectors' ? `rgba(${accentRgb},0.2)` : 'transparent', color: view === 'connectors' ? accentColor : 'rgba(255,255,255,0.4)' }}>
+                      <Cable size={14} />
                     </button>
                   </>
                 )}
@@ -355,6 +364,18 @@ export default function ProfilePanel({ isOpen, onClose, onOpenAdminConsole, onOp
 
                   {/* Quick links to sub-views */}
                   <div className="space-y-1.5">
+                    <button onClick={() => setView('connectors')}
+                      className="w-full flex items-center gap-3 px-3 py-3 rounded-xl cursor-pointer transition-all hover:bg-white/10"
+                      style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.07)' }}>
+                      <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: `rgba(${accentRgb},0.1)` }}>
+                        <Cable size={14} style={{ color: accentColor }} />
+                      </div>
+                      <div className="flex-1 text-left">
+                        <div className="text-sm font-medium" style={{ color: 'rgba(255,255,255,0.85)' }}>Manage connectors</div>
+                        <div className="text-xs" style={{ color: 'rgba(255,255,255,0.35)' }}>GitHub, Vercel, Shopify, and Email</div>
+                      </div>
+                      <ChevronRight size={14} style={{ color: 'rgba(255,255,255,0.3)' }} />
+                    </button>
                     <button onClick={() => setView('appearance')}
                       className="w-full flex items-center gap-3 px-3 py-3 rounded-xl cursor-pointer transition-all hover:bg-white/10"
                       style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.07)' }}>
@@ -439,6 +460,8 @@ export default function ProfilePanel({ isOpen, onClose, onOpenAdminConsole, onOp
                   </div>
                 </div>
               )}
+
+              {view === 'connectors' && <ConnectorsSettingsPanel accentColor={accentColor} accentRgb={accentRgb} />}
 
               {/* ── LOCAL MODELS VIEW ── */}
               {view === 'models' && <LocalModelsPanel accentColor={accentColor} accentRgb={accentRgb} />}

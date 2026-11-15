@@ -49,6 +49,19 @@ export default function ConnectorPicker({
   const [connectingId, setConnectingId] = useState<string | null>(null);
 
   useEffect(() => {
+    const syncConnected = () => {
+      try { setConnectedIds(JSON.parse(localStorage.getItem("enosx-connector-accounts") || "[]").map((account: any) => account.connector)); }
+      catch { setConnectedIds([]); }
+    };
+    window.addEventListener("storage", syncConnected);
+    window.addEventListener("enosx:connector-accounts-updated", syncConnected);
+    return () => {
+      window.removeEventListener("storage", syncConnected);
+      window.removeEventListener("enosx:connector-accounts-updated", syncConnected);
+    };
+  }, []);
+
+  useEffect(() => {
     if (!open) return;
 
     const handleOutsideClick = (event: MouseEvent) => {
@@ -133,7 +146,13 @@ export default function ConnectorPicker({
       if (message.origin !== window.location.origin || message.data?.type !== "enosx-connector-oauth" || message.data.payload?.connector !== connectorId) return;
       if (message.data.payload?.account) {
         const account = { connector: connectorId, ...message.data.payload.account };
-        setConnectedIds((current) => { const next = [...current.filter((id) => id !== connectorId), connectorId]; localStorage.setItem("enosx-connector-accounts", JSON.stringify([{ ...account }, ...next.filter((id) => id !== connectorId).map((id) => ({ connector: id }))])); return next; });
+        setConnectedIds((current) => {
+          const next = [...current.filter((id) => id !== connectorId), connectorId];
+          const otherAccounts = JSON.parse(localStorage.getItem("enosx-connector-accounts") || "[]").filter((saved: { connector?: string }) => saved.connector !== connectorId);
+          localStorage.setItem("enosx-connector-accounts", JSON.stringify([{ ...account }, ...otherAccounts]));
+          window.dispatchEvent(new Event("enosx:connector-accounts-updated"));
+          return next;
+        });
       }
       window.removeEventListener("message", onMessage); setConnectingId(null);
     };

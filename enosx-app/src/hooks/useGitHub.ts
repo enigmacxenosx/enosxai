@@ -3,7 +3,7 @@
  * Supports multi-account OAuth tokens, repo browsing, file editing,
  * AI-assisted content generation, and pushing commits via GitHub REST API.
  */
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { reportClientError } from '@/lib/errorReporting';
 
 export interface GitHubAccount {
@@ -91,6 +91,21 @@ export function useGitHub() {
       error: null,
     };
   });
+
+  useEffect(() => {
+    const syncAccounts = () => {
+      const accounts = loadAccounts();
+      const activeId = localStorage.getItem(ACTIVE_ACCOUNT_KEY);
+      const activeAccount = accounts.find(account => account.id === activeId) ?? accounts[0] ?? null;
+      setState(prev => ({ ...prev, accounts, activeAccount, ...(activeAccount ? {} : { repos: [], currentRepo: null, branches: [], files: [], currentFile: null }) }));
+    };
+    window.addEventListener('enosx:connector-accounts-updated', syncAccounts);
+    window.addEventListener('storage', syncAccounts);
+    return () => {
+      window.removeEventListener('enosx:connector-accounts-updated', syncAccounts);
+      window.removeEventListener('storage', syncAccounts);
+    };
+  }, []);
 
   const setLoading = useCallback((loading: boolean) => {
     setState(prev => ({ ...prev, isLoading: loading }));

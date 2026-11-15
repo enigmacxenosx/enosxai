@@ -36,6 +36,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method !== "GET") return res.status(405).json({ error: "Method not allowed" });
   const [clientId, clientSecret] = credentials(connector);
   res.setHeader("Cache-Control", "no-store");
+  if (phase === "status") {
+    return res.status(200).json({ connector, configured: Boolean(clientId && clientSecret && getSecret()) });
+  }
   if (phase === "start") {
     if (!clientId || !clientSecret || !getSecret()) return res.status(503).json({ error: `${connector} OAuth is not configured on the server` });
     const shop = typeof req.query.shop === "string" ? req.query.shop.toLowerCase().replace(/^https?:\/\//, "").replace(/\/$/, "") : "";

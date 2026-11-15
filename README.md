@@ -152,10 +152,11 @@ Existing pre-Firebase chats are not automatically copied into a signed-in accoun
 - `NVIDIA_EX_CORE_VISION_MODEL` and `NVIDIA_EX_PRO_VISION_MODEL` — Explicit Muse Glimmer vision routing for EX Core and EX Pro
 - `NVIDIA_ENOSH_MIND_VISION_MODEL` — Explicit Step 5 Preview vision routing for ENOSH MIND
 - `NVIDIA_IMAGE_API_KEY` — Optional image-provider key; falls back to `NVIDIA_API_KEY`
-- `NVIDIA_IMAGE_ENDPOINT` — Required URL for a deployed Stable Diffusion 3.5 Large NIM endpoint
-- `NVIDIA_IMAGE_MODEL` — Optional model identifier; defaults to Stable Diffusion 3.5 Large for model-specific `/v1/infer` endpoints
+- `NVIDIA_IMAGE_ENDPOINT` — Optional image endpoint override; defaults to NVIDIA's hosted FLUX.2 Klein 4B endpoint
+- `NVIDIA_IMAGE_MODEL` — Optional model identifier; defaults to `black-forest-labs/flux.2-klein-4b`
+- `NVIDIA_VIDEO_API_KEY` — Optional video-provider key; falls back to `NVIDIA_API_KEY`
 
-Image provider keys must remain server-side and must not use a `VITE_` prefix. The [NVIDIA Build listing](https://build.nvidia.com/stabilityai/stable-diffusion-3_5-large) currently marks Stable Diffusion 3.5 Large as downloadable; it does not provide a hosted endpoint for the model. Deploy the NIM and set `NVIDIA_IMAGE_ENDPOINT` to its reachable inference route. See [NVIDIA's NIM getting-started guide](https://docs.nvidia.com/nim/visual-genai/latest/getting-started.html). The model listing specifies non-commercial use; contact Stability AI for commercial-use terms.
+Image and video provider keys must remain server-side and must not use a `VITE_` prefix. The image flow uses NVIDIA's hosted [FLUX.2 Klein 4B](https://build.nvidia.com/black-forest-labs/flux_2-klein-4b) endpoint for text-to-image and image editing. The video flow uses NVIDIA's hosted [Cosmos3 Nano](https://build.nvidia.com/nvidia/cosmos3-nano) endpoint for text-to-video and image-to-video. Clips are configured as a short 25-frame, 480p 16:9 preview at 24 fps. Cosmos3 Nano applies its required screening and SynthID watermarking. For Vercel, add `NVIDIA_API_KEY` (or the separate image/video key variables) as encrypted server environment variables and redeploy; never set a `VITE_` copy. The image endpoint/model variables are only needed to override the hosted defaults. Generation requires an NVIDIA API key with access to the selected hosted endpoints; request limits and availability are controlled by NVIDIA.
 
 **Online media search**:
 - `SERPER_API_KEY` — (Optional) server-only Serper.dev key for searching online images and videos. Add it to the Vercel project's environment variables; do not use a `VITE_` prefix. Without it, regular chat continues to work and media search is simply unavailable.

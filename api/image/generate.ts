@@ -1,16 +1,15 @@
 /**
  * ENOSX AI — /api/image/generate (Vercel Serverless Function)
- * Generates images through the configured NVIDIA image endpoint. Credentials
+ * generates images through NVIDIA's hosted FLUX.2 Klein endpoint by default. Credentials
  * remain server-side and the browser receives a self-contained data URL so
  * generated images remain downloadable after a chat is reloaded. The hosted
- * Stable Diffusion 3.5 Large uses a configured, deployed NIM endpoint. NVIDIA's
- * Build catalog currently lists the model as downloadable rather than hosted.
+ * A custom NVIDIA_IMAGE_ENDPOINT can override the hosted default.
  *
  * Server-only environment variables:
  *   - NVIDIA_IMAGE_API_KEY (required for image generation; falls back to NVIDIA_API_KEY)
  *   - NVIDIA_API_KEY (legacy/shared fallback)
- *   - NVIDIA_IMAGE_ENDPOINT (required; URL of the deployed NIM service)
- *   - NVIDIA_IMAGE_MODEL (optional; defaults to stabilityai/stable-diffusion-3.5-large)
+ *   - NVIDIA_IMAGE_ENDPOINT (optional; defaults to NVIDIA's hosted FLUX.2 Klein route)
+ *   - NVIDIA_IMAGE_MODEL (optional; defaults to black-forest-labs/flux.2-klein-4b)
  *
  * Request body:
  *   { prompt: string, image?: string, mode?: string, width?: number,
@@ -55,7 +54,7 @@ function createFlux2Payload(prompt: string, body: any, imagePayload: string) {
     height: 1024,
     width: 1024,
     cfg_scale: 1,
-    image: imagePayload || null,
+    ...(imagePayload ? { image: [imagePayload] } : {}),
     samples: 1,
     seed: asBoundedNumber(body.seed, 0, 0, 2_147_483_647),
     steps: asBoundedNumber(body.steps, 4, 1, 4),
@@ -195,14 +194,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   const configuredEndpoint = process.env.NVIDIA_IMAGE_ENDPOINT?.trim();
-  if (!configuredEndpoint) {
-    console.error("[IMAGE] NVIDIA image credentials are not configured.");
-    return res.status(503).json({
-      error: "Set NVIDIA_IMAGE_ENDPOINT to a deployed Stable Diffusion 3.5 Large NIM endpoint.",
-      status: "CONFIGURATION_ERROR",
-    });
-  }
-  const endpoint = configuredEndpoint;
+  const isLegacyStableDiffusionConfig = Boolean(configuredEndpoint && /stabilityai\/stable-diffusion-3\.5-large|\/v1\/infer\/?$/i.test(configuredEndpoint));
+  const endpoint = configuredEndpoint && !isLegacyStableDiffusionConfig ? configuredEndpoint : NVIDIA_HOSTED_FLUX2_ENDPOINT;
   const apiKey = (process.env.NVIDIA_IMAGE_API_KEY || process.env.NVIDIA_API_KEY)?.trim();
   if (!apiKey) {
     console.error("[IMAGE] NVIDIA image credentials are not configured.");
@@ -229,7 +222,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   const image = typeof body.image === "string" ? body.image.trim() : "";
-  const model = process.env.NVIDIA_IMAGE_MODEL?.trim() || (/stabilityai\/stable-diffusion-3\.5-large|\/v1\/infer\/?$/i.test(endpoint) ? "stabilityai/stable-diffusion-3.5-large" : "");
+  const model = /\/v1\/genai\/black-forest-labs\/flux\.2-klein-4b\/?$/i.test(endpoint)
+    ? "black-forest-labs/flux.2-klein-4b"
+    : process.env.NVIDIA_IMAGE_MODEL?.trim() || (/stabilityai\/stable-diffusion-3\.5-large|\/v1\/infer\/?$/i.test(endpoint) ? "stabilityai/stable-diffusion-3.5-large" : "");
   const usesStableDiffusion35 = /stabilityai\/stable-diffusion-3\.5-large\/?$/i.test(endpoint)
     || /stabilityai\/stable-diffusion-3\.5-large/i.test(model);
   const usesOpenAiImageApi = /\/v1\/images\/generations\/?$/i.test(endpoint);

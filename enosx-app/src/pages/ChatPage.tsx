@@ -48,6 +48,7 @@ import { useCompactMode } from "@/hooks/useCompactMode";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useDeviceType } from "@/hooks/useDeviceType";
 import { useImageGeneration } from "@/hooks/useImageGeneration";
+import { useVideoGeneration } from "@/hooks/useVideoGeneration";
 import PhoneChatLayout from "@/components/PhoneChatLayout";
 import TVChatLayout from "@/components/TVChatLayout";
 import { getAIIdentity } from "@/const";
@@ -94,6 +95,12 @@ const generateTitle = (firstMessage: string): string => {
 function isImageGenerationRequest(text: string): boolean {
   if (/\b(?:online|internet|web)\b/i.test(text) && /\b(?:image|picture|photo|video|clip|movie)s?\b/i.test(text)) return false;
   return /\b(?:generate|create|make|draw|paint|render|illustrate|design)\b.{0,120}\b(?:image|picture|illustration|artwork|logo|icon|avatar)\b/i.test(text);
+}
+
+function isVideoGenerationRequest(text: string): boolean {
+  if (/\b(?:online|internet|web)\b/i.test(text) && /\b(?:video|clip|movie)\b/i.test(text)) return false;
+  return /\b(?:generate|create|make|animate|render|produce|turn|convert|transform)\b.{0,120}\b(?:video|clip|movie)\b/i.test(text)
+    || /\b(?:video|clip|movie)\b.{0,100}\b(?:generate|create|make|animate)\b/i.test(text);
 }
 
 function isImageEditRequest(text: string): boolean {
@@ -331,9 +338,10 @@ export default function ChatPage() {
 
   const { sendMessage, isLoading: isChatLoading, isThinking, error: chatError, isFreeMode } = useAI();
   const { generateImage, isGenerating, error: imageError, clearError: clearImageError } = useImageGeneration();
+  const { generateVideo, isGenerating: isGeneratingVideo, error: videoError, clearError: clearVideoError } = useVideoGeneration();
   const [notificationPermission, setNotificationPermission] = useState<NotificationPermission | "unsupported">(() => getNotificationPermission());
-  const isLoading = isChatLoading || isGenerating;
-  const error = chatError || imageError;
+  const isLoading = isChatLoading || isGenerating || isGeneratingVideo;
+  const error = chatError || imageError || videoError;
 
   const {
     voiceState,
@@ -498,6 +506,7 @@ export default function ChatPage() {
       // Do not keep showing an old image-generation failure after the user
       // starts a normal chat request.
       clearImageError();
+      clearVideoError();
       let convId = activeIdRef.current;
 
       if (!convId) {
@@ -518,7 +527,8 @@ export default function ChatPage() {
         (file.mimeType?.toLowerCase().startsWith("image/") || /^(?:png|jpe?g|webp)$/i.test(file.type))
         && file.content.startsWith("data:image/")
       )?.content;
-      const shouldGenerateImage = isImageGenerationRequest(text) || Boolean(inputImage && isImageEditRequest(text));
+      const shouldGenerateVideo = isVideoGenerationRequest(text);
+      const shouldGenerateImage = !shouldGenerateVideo && (isImageGenerationRequest(text) || Boolean(inputImage && isImageEditRequest(text)));
 
       const userMessage: Message = {
         id: nanoid(),
@@ -545,10 +555,28 @@ export default function ChatPage() {
       const assistantMessage: Message = {
         id: assistantId,
         role: "assistant",
-        content: shouldGenerateImage ? "🖼️ Generating your image..." : "",
+        content: shouldGenerateVideo ? "🎬 Generating your video..." : shouldGenerateImage ? "🖼️ Generating your image..." : "",
         timestamp: new Date(),
-        isStreaming: shouldGenerateImage,
+        isStreaming: shouldGenerateImage || shouldGenerateVideo,
       };
+
+      if (shouldGenerateVideo) {
+        setConversations((prev) =>
+          prev.map((c) => c.id === targetConvId
+            ? { ...c, messages: [...c.messages, userMessage, assistantMessage], updatedAt: new Date() }
+            : c)
+        );
+        const videoResult = await generateVideo(text, inputImage);
+        const content = videoResult?.url
+          ? `Here's the video I generated for you:\n\n[Generated Video](${videoResult.url})`
+          : `Video generation failed: ${videoResult?.error || "NVIDIA returned no video. Please try again later."}`;
+        setConversations((prev) =>
+          prev.map((c) => c.id === targetConvId
+            ? { ...c, messages: c.messages.map((m) => m.id === assistantId ? { ...m, content, isStreaming: false } : m), updatedAt: new Date() }
+            : c)
+        );
+        return videoResult?.url ? "Video generated successfully." : "Video generation did not return a video.";
+      }
 
       // ── Image generation mode ────────────────────────────────────────────────
       if (shouldGenerateImage) {

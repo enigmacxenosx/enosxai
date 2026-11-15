@@ -8,6 +8,7 @@ import historyRouter from "./history";
 import githubOAuthRouter from "./githubOAuth";
 import connectorOAuthRouter from "./connectorOAuth";
 import mediaRouter from "./media";
+import videoRouter from "./video";
 
 const router: IRouter = Router();
 
@@ -18,6 +19,7 @@ router.use("/browser", browserRouter);
 router.use(imageRouter);
 router.use(historyRouter);
 router.use(mediaRouter);
+router.use(videoRouter);
 router.use(githubOAuthRouter);
 router.use(connectorOAuthRouter);
 

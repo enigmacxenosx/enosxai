@@ -1,6 +1,7 @@
 import { Router, Request, Response } from "express";
 
 const imageRouter = Router();
+const NVIDIA_HOSTED_FLUX2_ENDPOINT = "https://ai.api.nvidia.com/v1/genai/black-forest-labs/flux.2-klein-4b";
 const SUPPORTED_SIZES = new Set(["1024x1024", "768x1344", "1344x768", "1216x832"]);
 const MAX_NVIDIA_ATTEMPTS = 3;
 const NVIDIA_TIMEOUT_MS = 30_000;
@@ -72,12 +73,6 @@ imageRouter.post("/image/generate", async (req: Request, res: Response) => {
       return;
     }
 
-    const configuredEndpoint = process.env.NVIDIA_IMAGE_ENDPOINT?.trim();
-    if (!configuredEndpoint) {
-      res.status(503).json({ error: "Set NVIDIA_IMAGE_ENDPOINT to a deployed Stable Diffusion 3.5 Large NIM endpoint.", status: "CONFIGURATION_ERROR" });
-      return;
-    }
-
     const apiKey = (process.env.NVIDIA_IMAGE_API_KEY || process.env.NVIDIA_API_KEY)?.trim();
     if (!apiKey) {
       res.status(503).json({
@@ -87,8 +82,12 @@ imageRouter.post("/image/generate", async (req: Request, res: Response) => {
       return;
     }
 
-    const endpoint = configuredEndpoint;
-    const model = process.env.NVIDIA_IMAGE_MODEL?.trim() || (/stabilityai\/stable-diffusion-3\.5-large|\/v1\/infer\/?$/i.test(endpoint) ? "stabilityai/stable-diffusion-3.5-large" : "");
+    const configuredEndpoint = process.env.NVIDIA_IMAGE_ENDPOINT?.trim();
+    const isLegacyStableDiffusionConfig = Boolean(configuredEndpoint && /stabilityai\/stable-diffusion-3\.5-large|\/v1\/infer\/?$/i.test(configuredEndpoint));
+    const endpoint = configuredEndpoint && !isLegacyStableDiffusionConfig ? configuredEndpoint : NVIDIA_HOSTED_FLUX2_ENDPOINT;
+    const model = /\/v1\/genai\/black-forest-labs\/flux\.2-klein-4b\/?$/i.test(endpoint)
+      ? "black-forest-labs/flux.2-klein-4b"
+      : process.env.NVIDIA_IMAGE_MODEL?.trim() || (/stabilityai\/stable-diffusion-3\.5-large|\/v1\/infer\/?$/i.test(endpoint) ? "stabilityai/stable-diffusion-3.5-large" : "");
     const usesStableDiffusion35 = /stabilityai\/stable-diffusion-3\.5-large\/?$/i.test(endpoint)
       || /stabilityai\/stable-diffusion-3\.5-large/i.test(model);
     const requestedWidth = boundedNumber(req.body?.width, 1024, 64, 2048);
@@ -98,7 +97,18 @@ imageRouter.post("/image/generate", async (req: Request, res: Response) => {
       ? { width: requestedWidth, height: requestedHeight }
       : { width: 1024, height: 1024 };
     const mode = ["base", "canny", "depth"].includes(req.body?.mode) ? req.body.mode : "base";
-    const payload: Record<string, unknown> = usesStableDiffusion35
+    const usesFlux2Klein = /\/v1\/genai\/black-forest-labs\/flux\.2-klein-4b\/?$/i.test(endpoint);
+    const payload: Record<string, unknown> = usesFlux2Klein
+      ? {
+          prompt: trimmedPrompt,
+          width: 1024,
+          height: 1024,
+          cfg_scale: 1,
+          ...(typeof req.body?.image === "string" ? { image: [req.body.image] } : {}),
+          seed: boundedNumber(req.body?.seed, 0, 0, 2_147_483_647),
+          steps: 4,
+        }
+      : usesStableDiffusion35
       ? {
           prompt: trimmedPrompt,
           mode,
@@ -149,7 +159,7 @@ imageRouter.post("/image/generate", async (req: Request, res: Response) => {
     }
 
     const data = (await response.json().catch(() => null)) as any;
-    const imageData = data?.data?.[0] || data?.artifacts?.[0];
+    const imageData = data?.data?.[0] || data?.artifacts?.[0] || data?.images?.[0];
     const base64 = imageData?.b64_json || imageData?.base64 || imageData?.base64_data;
     const url = imageData?.url || (base64 ? `data:image/png;base64,${base64}` : "");
     if (!url) {

@@ -8,6 +8,9 @@
     "api/image/generate.ts": {
       "maxDuration": 120
     },
+    "api/video/generate.ts": {
+      "maxDuration": 120
+    },
     "api/**/*.ts": {
       "maxDuration": 60
     }

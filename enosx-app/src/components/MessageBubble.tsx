@@ -8,7 +8,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import { motion } from "framer-motion";
-import { Volume2, VolumeX, RotateCcw, ExternalLink, FileSearch, ListTree, ShieldCheck } from "lucide-react";
+import { Volume2, VolumeX, RotateCcw, ExternalLink, FileSearch, ListTree, ShieldCheck, Film } from "lucide-react";
 import { Streamdown } from "streamdown";
 import { Message } from "@/lib/types";
 import { useTheme } from "@/contexts/ThemeContext";
@@ -30,8 +30,8 @@ interface MessageBubbleProps {
 
 // ── Safe internet media detection ──────────────────────────────────────────────
 // Markdown image/link URLs and direct public media URLs are rendered inline.
-const MARKDOWN_MEDIA_URL_REGEX = /(!?)\[([^\]]*)\]\(((?:https?:\/\/|data:image\/)[^\s)]+)\)/gi;
-const RAW_MEDIA_URL_REGEX = /(?:https?:\/\/[^\s<>"'\])}]+|data:image\/[a-z0-9.+-]+;base64,[a-z0-9+/=]+)/gi;
+const MARKDOWN_MEDIA_URL_REGEX = /(!?)\[([^\]]*)\]\(((?:https?:\/\/|data:(?:image|video)\/)[^\s)]+)\)/gi;
+const RAW_MEDIA_URL_REGEX = /(?:https?:\/\/[^\s<>"'\])}]+|data:(?:image|video)\/[a-z0-9.+-]+;base64,[a-z0-9+/=]+)/gi;
 const VIDEO_EXTENSIONS = new Set(["mp4", "m4v", "webm", "ogv", "mov"]);
 const IMAGE_EXTENSIONS = new Set(["jpg", "jpeg", "png", "gif", "webp", "svg", "bmp", "avif", "tif", "tiff"]);
 const IMAGE_HOSTS = new Set([
@@ -58,6 +58,7 @@ function isHostOrSubdomain(hostname: string, domain: string) {
 
 function resolveMediaUrl(value: string, explicitImage = false, explicitVideo = false): Pick<ParsedMedia, "type" | "src" | "openUrl"> | null {
   if (/^data:image\//i.test(value)) return { type: "image", src: value, openUrl: value };
+  if (/^data:video\//i.test(value)) return { type: "video", src: value, openUrl: value };
 
   let url: URL;
   try {
@@ -194,7 +195,7 @@ function StreamingCursor({ color }: { color: string }) {
 }
 
 // Image generation loading state for assistant
-function ImageGeneratingIndicator({ accent }: { accent: string }) {
+function ImageGeneratingIndicator({ accent, isVideo = false }: { accent: string; isVideo?: boolean }) {
   return (
     <div className="flex items-center gap-2 py-2 px-3 rounded-xl" style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.06)" }}>
       <div className="flex items-center gap-1.5">
@@ -208,8 +209,9 @@ function ImageGeneratingIndicator({ accent }: { accent: string }) {
           />
         ))}
       </div>
+      {isVideo && <Film size={14} style={{ color: accent }} />}
       <span className="text-xs" style={{ color: accent, opacity: 0.6 }}>
-        Generating image...
+        Generating {isVideo ? "video" : "image"}...
       </span>
     </div>
   );
@@ -231,8 +233,9 @@ export default function MessageBubble({
   const isStreaming = message.isStreaming;
   const isEmpty = !message.content?.trim() && isStreaming;
 
-  // Check if assistant message is generating an image (text starts with image generation indicator)
-  const isGeneratingImage = !isUser && message.content.includes("🖼️") && isStreaming;
+  // Check for an active image or video generation request.
+  const isGeneratingMedia = !isUser && (message.content.includes("🖼️") || message.content.includes("🎬")) && isStreaming;
+  const isGeneratingVideo = message.content.includes("🎬");
 
   const handleProposedAction = async (action: NonNullable<Message["proposedActions"]>[number]) => {
     // Workspace / split-screen mode runs actions in-pane instead of opening new tabs.
@@ -378,8 +381,8 @@ export default function MessageBubble({
                       {actionStatus && <p className="text-[11px] leading-relaxed text-cyan-100/70">{actionStatus}</p>}
                     </div>
                   )}
-                  {isGeneratingImage && (
-                    <ImageGeneratingIndicator accent={config.accent} />
+                  {isGeneratingMedia && (
+                    <ImageGeneratingIndicator accent={config.accent} isVideo={isGeneratingVideo} />
                   )}
                 </div>
               )}

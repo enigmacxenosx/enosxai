@@ -326,15 +326,8 @@ export default function CommandBar({
               )}
             </AnimatePresence>
 
-            <div className="flex items-center gap-2">
-              <ConnectorPicker
-                selectedConnectorIds={selectedConnectorIds}
-                onToggleConnector={handleToggleConnector}
-              />
-            </div>
-
-              {/* Textarea and buttons container */}
-	              <div className="flex items-end gap-2">
+            {/* Textarea and buttons container */}
+            <div className="flex items-end gap-2">
                 {/* Compact textarea */}
               <textarea
                 ref={textareaRef}
@@ -487,6 +480,12 @@ export default function CommandBar({
                   </motion.div>
                 )}
               </AnimatePresence>
+            </div>
+            <div className="flex items-center gap-2 pt-1">
+              <ConnectorPicker
+                selectedConnectorIds={selectedConnectorIds}
+                onToggleConnector={handleToggleConnector}
+              />
             </div>
           </motion.div>
         </motion.div>

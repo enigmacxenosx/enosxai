@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Menu, Plus } from "lucide-react";
 import Sidebar from "./Sidebar";
 import MessageBubble from "./MessageBubble";
-import CommandBar, { AIModePicker, type AIMode } from "./CommandBar";
+import CommandBar, { AI_MODES, type AIMode } from "./CommandBar";
 import WelcomeScreen, { WelcomeSuggestions } from "./WelcomeScreen";
 import { Conversation, Message, VoiceState, type Attachment } from "@/lib/types";
 import { useTheme } from "@/contexts/ThemeContext";
@@ -82,7 +82,6 @@ export default function PhoneChatLayout({
         </button>
         <div className="flex items-center gap-2">
           <div className="text-sm font-bold tracking-tighter text-white/90">ENOSX <span className="text-cyan-400">AI</span></div>
-          <AIModePicker aiMode={aiMode} onChange={onAiModeChange} />
         </div>
         <button
           type="button"
@@ -92,6 +91,29 @@ export default function PhoneChatLayout({
           <Plus size={24} />
         </button>
       </header>
+
+      <nav className="flex flex-shrink-0 items-center gap-1.5 border-b border-white/10 bg-black/35 px-3 py-2" aria-label="ENOSX AI modes">
+        {AI_MODES.map((mode) => {
+          const selected = aiMode === mode.id;
+          return (
+            <button
+              key={mode.id}
+              type="button"
+              onClick={() => onAiModeChange(mode.id)}
+              aria-pressed={selected}
+              className="min-w-0 flex-1 truncate rounded-lg px-2 py-2 text-[10px] font-semibold transition-colors touch-manipulation"
+              style={{
+                color: selected ? mode.color : "rgba(255,255,255,0.72)",
+                background: selected ? mode.bgColor : "rgba(255,255,255,0.035)",
+                border: selected ? `1px solid ${mode.color}66` : "1px solid rgba(255,255,255,0.09)",
+              }}
+              title={mode.description}
+            >
+              {mode.label}
+            </button>
+          );
+        })}
+      </nav>
 
       {/* Main Content Area */}
       <main className="flex-1 min-h-0 overflow-y-auto relative z-10 px-4 py-4 scrollbar-hide">

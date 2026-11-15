@@ -295,7 +295,7 @@ export default function Sidebar({
           className={`neon-dashboard-profile w-full flex items-center ${collapsed ? 'justify-center' : 'justify-start px-3'} py-2.5 rounded-xl transition-all duration-200 gap-3`}
           style={{
             background: `rgba(${config.accentRgb}, 0.07)`,
-            border: `1px solid rgba(${config.accentRgb}, 0.18)`,
+            border: "none",
           }}
           title={collapsed ? (isAuthenticated ? user?.displayName ?? 'Profile' : 'Profile') : undefined}
         >

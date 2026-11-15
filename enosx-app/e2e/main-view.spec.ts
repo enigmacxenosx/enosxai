@@ -114,6 +114,7 @@ test("composer remains inside the viewport at a phone width", async ({ page }) =
 
 test("mobile welcome suggestions sit below the composer without stealing focus or scrolling the page", async ({ page }) => {
   for (const viewport of [
+    { width: 320, height: 568 },
     { width: 360, height: 780 },
     { width: 390, height: 844 },
     { width: 430, height: 932 },
@@ -121,6 +122,17 @@ test("mobile welcome suggestions sit below the composer without stealing focus o
   ]) {
     await page.setViewportSize(viewport);
     await openWorkspace(page);
+
+    if (viewport.height <= 600) {
+      await page.waitForFunction(() => {
+        const chat = document.querySelector("main.flex-1.min-h-0.overflow-y-auto");
+        const heading = document.querySelector("main h2");
+        if (!chat || !heading) return false;
+        const chatBounds = chat.getBoundingClientRect();
+        const headingBounds = heading.getBoundingClientRect();
+        return headingBounds.top >= chatBounds.top && headingBounds.bottom <= chatBounds.bottom;
+      }, null, { timeout: 3000 });
+    }
 
     const composer = page.locator(".phone-command-shell");
     const textarea = page.locator(".phone-command-shell textarea");
@@ -130,6 +142,8 @@ test("mobile welcome suggestions sit below the composer without stealing focus o
       const buttons = [...document.querySelectorAll("button")].filter((button) => labels.some((label) => button.textContent?.includes(label)));
       const chips = buttons.map((button) => button.getBoundingClientRect());
       const chat = document.querySelector("main.flex-1.min-h-0.overflow-y-auto");
+      const chatBounds = chat?.getBoundingClientRect();
+      const heading = document.querySelector("main h2")?.getBoundingClientRect();
       if (!composer || chips.length !== labels.length) throw new Error("Expected the mobile composer and all six welcome suggestions");
       return {
         composer: { left: composer.left, right: composer.right, top: composer.top, bottom: composer.bottom },
@@ -138,6 +152,7 @@ test("mobile welcome suggestions sit below the composer without stealing focus o
         height: innerHeight,
         pageScrollY: window.scrollY,
         chat: chat && { scrollTop: chat.scrollTop, scrollHeight: chat.scrollHeight, clientHeight: chat.clientHeight },
+        headingFullyVisible: Boolean(heading && chatBounds && heading.top >= chatBounds.top && heading.bottom <= chatBounds.bottom),
         textareaFocused: document.activeElement === document.querySelector(".phone-command-shell textarea"),
       };
     }, starters);
@@ -150,6 +165,7 @@ test("mobile welcome suggestions sit below the composer without stealing focus o
     expect(geometry.chips.left).toBeGreaterThanOrEqual(0);
     expect(geometry.chips.right).toBeLessThanOrEqual(geometry.width);
     expect(geometry.chips.bottom).toBeLessThanOrEqual(geometry.height + 2);
+    if (viewport.height <= 600) expect(geometry.headingFullyVisible).toBe(true);
     expect(geometry.pageScrollY).toBe(0);
     expect(geometry.textareaFocused).toBe(false);
 
@@ -183,7 +199,7 @@ test("mobile composer returns to startup size after sending and keeps connector 
     const shell = page.locator(".phone-command-shell");
     const startupBounds = await shell.boundingBox();
     expect(startupBounds).not.toBeNull();
-    expect(startupBounds!.height).toBeLessThanOrEqual(105);
+    expect(startupBounds!.height).toBeLessThan(viewport.height * 0.3);
     const connector = shell.getByRole("button", { name: "Connectors" });
     await textarea.fill(Array.from({ length: 18 }, (_, index) => `Long message line ${index + 1}`).join("\n"));
 

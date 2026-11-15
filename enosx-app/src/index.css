@@ -1440,6 +1440,12 @@ code, pre, kbd, samp, .font-mono {
   outline: 2px solid rgba(155, 140, 255, 0.55);
   outline-offset: 2px;
 }
+/* The composer shell already provides the focus state; avoid a second box
+   being drawn around the textarea while the user is typing. */
+.premium-chat-shell .phone-command-shell textarea:focus-visible {
+  outline: none;
+  outline-offset: 0;
+}
 @media (max-width: 767px) {
   .premium-chat-header { height: 3.5rem; }
   .premium-composer-dock { padding-bottom: max(0.75rem, env(safe-area-inset-bottom)); }

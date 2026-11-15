@@ -165,13 +165,15 @@ export default function CommandBar({
       : hasImageAttachment
         ? "Ask ENOSX to analyze your image..."
         : personalizedPlaceholder;
-  const phonePlaceholder = hasImageAttachment && hasVideoAttachment
-    ? "Ask about media..."
-    : hasVideoAttachment
-      ? "Ask about video..."
-      : hasImageAttachment
-        ? "Ask about image..."
-        : "Ask ENOSX...";
+  const phonePlaceholder = window.innerWidth <= 360
+    ? "Ask..."
+    : hasImageAttachment && hasVideoAttachment
+      ? "Ask about media..."
+      : hasVideoAttachment
+        ? "Ask about video..."
+        : hasImageAttachment
+          ? "Ask about image..."
+          : "Ask ENOSX...";
 
   // Sync transcript to input
   useEffect(() => {

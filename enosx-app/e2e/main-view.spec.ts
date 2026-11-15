@@ -166,6 +166,7 @@ test("mobile welcome suggestions sit below the composer without stealing focus o
 
 test("mobile composer returns to startup size after sending and keeps connector picker in view", async ({ page }) => {
   for (const viewport of [
+    { width: 320, height: 568 },
     { width: 360, height: 780 },
     { width: 390, height: 844 },
     { width: 430, height: 932 },
@@ -182,6 +183,7 @@ test("mobile composer returns to startup size after sending and keeps connector 
     const shell = page.locator(".phone-command-shell");
     const startupBounds = await shell.boundingBox();
     expect(startupBounds).not.toBeNull();
+    expect(startupBounds!.height).toBeLessThanOrEqual(105);
     const connector = shell.getByRole("button", { name: "Connectors" });
     await textarea.fill(Array.from({ length: 18 }, (_, index) => `Long message line ${index + 1}`).join("\n"));
 

@@ -35,6 +35,7 @@ interface PhoneChatLayoutProps {
   attachments?: Attachment[];
   audioStream?: MediaStream | null;
   onSettingsClick?: () => void;
+  userDisplayName?: string;
 }
 
 export default function PhoneChatLayout({
@@ -64,6 +65,7 @@ export default function PhoneChatLayout({
   attachments = [],
   audioStream = null,
   onSettingsClick,
+  userDisplayName,
 }: PhoneChatLayoutProps) {
   const { config } = useTheme();
 
@@ -130,10 +132,12 @@ export default function PhoneChatLayout({
           attachments={attachments}
           audioStream={audioStream}
           tightBottom={messages.length === 0}
+          animateEntrance={messages.length > 0}
+          userDisplayName={userDisplayName}
         />
         {messages.length === 0 && (
-          <div className="px-2 pb-1">
-            <WelcomeSuggestions onSuggestion={(p: string) => handleSend(p)} />
+          <div className="phone-welcome-suggestions px-2 pb-1">
+            <WelcomeSuggestions onSuggestion={(p: string) => handleSend(p)} animateEntrance={messages.length > 0} />
           </div>
         )}
       </div>

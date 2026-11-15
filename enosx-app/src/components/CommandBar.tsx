@@ -112,6 +112,7 @@ interface CommandBarProps {
   waitingCount?: number;
   tightBottom?: boolean;
   animateEntrance?: boolean;
+  userDisplayName?: string;
   aiMode: AIMode;
 }
 
@@ -132,6 +133,7 @@ export default function CommandBar({
   waitingCount = 0,
   tightBottom = false,
   animateEntrance = true,
+  userDisplayName,
   aiMode,
 }: CommandBarProps) {
   const { config } = useTheme();
@@ -152,13 +154,17 @@ export default function CommandBar({
   const hasVideoAttachment = attachments.some((file) =>
     /video/i.test(`${file.mimeType ?? ""} ${file.type}`) || /\.(mp4|m4v|webm|mov|avi|mkv)$/i.test(file.name),
   );
+  const firstName = userDisplayName?.trim().split(/\s+/)[0];
+  const personalizedPlaceholder = firstName && !/^(guest|user)$/i.test(firstName)
+    ? `What can I help you with, ${firstName}?`
+    : "Ask Enosx anything...";
   const contextualPlaceholder = hasImageAttachment && hasVideoAttachment
     ? "Analyze your image and video in real time..."
     : hasVideoAttachment
       ? "Ask ENOSX to inspect your video in real time..."
       : hasImageAttachment
         ? "Ask ENOSX to analyze your image..."
-        : "Ask Enosx anything...";
+        : personalizedPlaceholder;
 
   // Sync transcript to input
   useEffect(() => {

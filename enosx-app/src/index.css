@@ -647,6 +647,10 @@
       padding-bottom: 0;
     }
 
+    .phone-composer-dock .phone-welcome-suggestions {
+      padding-top: 0.75rem;
+    }
+
     .welcome-suggestions {
       display: grid;
       grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -1401,6 +1405,9 @@ code, pre, kbd, samp, .font-mono {
 .premium-composer-dock {
   background: linear-gradient(180deg, transparent 0%, rgba(13, 14, 20, 0.72) 35%, rgba(13, 14, 20, 0.94) 100%);
 }
+.welcome-chat-layout {
+  padding-bottom: 1rem;
+}
 .welcome-chat-layout .welcome-chat-scroll {
   flex: 0 0 auto;
   margin-top: auto;
@@ -1413,6 +1420,9 @@ code, pre, kbd, samp, .font-mono {
   padding-bottom: 0;
   background: transparent;
 }
+.welcome-chat-layout .welcome-suggestions-dock {
+  padding-top: 1rem;
+}
 .premium-chat-shell textarea::placeholder {
   color: rgba(255, 255, 255, 0.34);
 }
@@ -1424,6 +1434,7 @@ code, pre, kbd, samp, .font-mono {
 @media (max-width: 767px) {
   .premium-chat-header { height: 3.5rem; }
   .premium-composer-dock { padding-bottom: max(0.75rem, env(safe-area-inset-bottom)); }
+  .welcome-chat-layout .welcome-suggestions-dock { padding-top: 0.75rem; }
 }
 
 /* Vektor-inspired ENOSX sign-in modal */

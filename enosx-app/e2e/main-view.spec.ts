@@ -29,6 +29,22 @@ test("welcome view keeps the composer inside the viewport", async ({ page }) => 
   expect(geometry.composerBottom).toBeLessThanOrEqual(geometry.viewportHeight + 2);
 });
 
+test("composer placeholder personalizes to the current user's first name", async ({ page }) => {
+  await page.addInitScript(() => {
+    localStorage.setItem("enosx-guest-profile", JSON.stringify({
+      id: "guest-test-user",
+      email: "",
+      displayName: "Maya Chen",
+      provider: "guest",
+    }));
+  });
+  await page.goto("/");
+  await expect(page.getByPlaceholder("What can I help you with, Maya?")).toBeVisible({ timeout: 30_000 });
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.reload();
+  await expect(page.getByPlaceholder("What can I help you with, Maya?")).toBeVisible({ timeout: 30_000 });
+});
+
 test("desktop welcome composer rises into the open space above its suggestions", async ({ page }) => {
   await page.setViewportSize({ width: 1274, height: 619 });
   await openWorkspace(page);
@@ -48,8 +64,8 @@ test("desktop welcome composer rises into the open space above its suggestions",
     };
   });
   expect(geometry.composerTop).toBeLessThan(390);
-  expect(geometry.chipsTop - geometry.composerBottom).toBeGreaterThanOrEqual(-1);
-  expect(geometry.chipsTop - geometry.composerBottom).toBeLessThanOrEqual(1);
+  expect(geometry.chipsTop - geometry.composerBottom).toBeGreaterThanOrEqual(15);
+  expect(geometry.chipsTop - geometry.composerBottom).toBeLessThanOrEqual(17);
   expect(geometry.chipsBottom).toBeLessThanOrEqual(geometry.viewportHeight + 2);
 });
 
@@ -129,7 +145,8 @@ test("mobile welcome suggestions sit below the composer without stealing focus o
     expect(geometry.composer.left).toBeGreaterThanOrEqual(0);
     expect(geometry.composer.right).toBeLessThanOrEqual(geometry.width);
     expect(geometry.composer.top).toBeLessThan(geometry.chips.top);
-    expect(geometry.chips.top - geometry.composer.bottom).toBeLessThanOrEqual(1);
+    expect(geometry.chips.top - geometry.composer.bottom).toBeGreaterThanOrEqual(11);
+    expect(geometry.chips.top - geometry.composer.bottom).toBeLessThanOrEqual(13);
     expect(geometry.chips.left).toBeGreaterThanOrEqual(0);
     expect(geometry.chips.right).toBeLessThanOrEqual(geometry.width);
     expect(geometry.chips.bottom).toBeLessThanOrEqual(geometry.height + 2);

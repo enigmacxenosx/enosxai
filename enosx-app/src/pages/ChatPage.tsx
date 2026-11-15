@@ -1003,6 +1003,7 @@ ${getAdminContext()}` : ""}`,
           attachments={fileContext.files}
           audioStream={microphoneStream}
           onSettingsClick={() => setShowProfilePanel(true)}
+          userDisplayName={user?.displayName}
         />
       </GlobalLayout>
     );
@@ -1210,6 +1211,7 @@ ${getAdminContext()}` : ""}`,
               audioStream={microphoneStream}
               tightBottom={!activeConversation || activeConversation.messages.length === 0}
               animateEntrance={!isWelcomeState}
+              userDisplayName={user?.displayName}
             />
             {(!activeConversation || activeConversation.messages.length === 0) && (
               <div className="welcome-suggestions-dock pb-1">

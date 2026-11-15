@@ -51,7 +51,7 @@ export default function WelcomeScreen({ onSuggestion, isCompact, isComposerFlow 
   const { config } = useTheme();
 
   return (
-    <div className={isComposerFlow ? "flex w-full flex-col items-center px-4 pb-3 pt-5 sm:px-6" : "flex min-h-full flex-col items-center justify-center px-4 py-10 sm:px-6"}>
+    <div className={isComposerFlow ? "flex w-full flex-col items-center px-4 pb-4 pt-5 sm:px-6" : "flex min-h-full flex-col items-center justify-center px-4 py-10 sm:px-6"}>
       <motion.div
         initial={{ opacity: 0, y: 12 }}
         animate={{ opacity: 1, y: 0 }}

@@ -2,7 +2,7 @@ import { expect, test, type Page } from "@playwright/test";
 
 async function openWorkspace(page: Page) {
   await page.goto("/");
-  await expect(page.getByPlaceholder("Ask Enosx anything...")).toBeVisible({ timeout: 30_000 });
+  await expect(page.locator(".phone-command-shell textarea")).toBeVisible({ timeout: 30_000 });
 }
 
 test("welcome view keeps the composer inside the viewport", async ({ page }) => {
@@ -29,7 +29,7 @@ test("welcome view keeps the composer inside the viewport", async ({ page }) => 
   expect(geometry.composerBottom).toBeLessThanOrEqual(geometry.viewportHeight + 2);
 });
 
-test("composer placeholder personalizes to the current user's first name", async ({ page }) => {
+test("composer placeholder personalizes on desktop and stays compact on mobile", async ({ page }) => {
   await page.addInitScript(() => {
     localStorage.setItem("enosx-guest-profile", JSON.stringify({
       id: "guest-test-user",
@@ -42,7 +42,7 @@ test("composer placeholder personalizes to the current user's first name", async
   await expect(page.getByPlaceholder("What can I help you with, Maya?")).toBeVisible({ timeout: 30_000 });
   await page.setViewportSize({ width: 390, height: 844 });
   await page.reload();
-  await expect(page.getByPlaceholder("What can I help you with, Maya?")).toBeVisible({ timeout: 30_000 });
+  await expect(page.getByPlaceholder("Ask ENOSX...")).toBeVisible({ timeout: 30_000 });
 });
 
 test("desktop welcome composer rises into the open space above its suggestions", async ({ page }) => {
@@ -123,7 +123,7 @@ test("mobile welcome suggestions sit below the composer without stealing focus o
     await openWorkspace(page);
 
     const composer = page.locator(".phone-command-shell");
-    const textarea = page.getByPlaceholder("Ask Enosx anything...");
+    const textarea = page.locator(".phone-command-shell textarea");
     const starters = ["Plan my week", "Explain a topic", "Find learning media", "Study a webpage", "Review code", "Draft something"];
     const geometry = await page.evaluate((labels) => {
       const composer = document.querySelector(".phone-command-shell")?.getBoundingClientRect();
@@ -161,5 +161,69 @@ test("mobile welcome suggestions sit below the composer without stealing focus o
       });
       await expect.poll(() => page.evaluate(() => window.scrollY)).toBe(0);
     }
+  }
+});
+
+test("mobile composer returns to startup size after sending and keeps connector picker in view", async ({ page }) => {
+  for (const viewport of [
+    { width: 360, height: 780 },
+    { width: 390, height: 844 },
+    { width: 430, height: 932 },
+  ]) {
+    await page.setViewportSize(viewport);
+    await page.goto("/");
+    await page.evaluate(() => localStorage.clear());
+    await page.reload();
+    await page.route("**/api/chat", (route) => route.abort());
+    await page.route("**/api/error-report", (route) => route.abort());
+
+    const textarea = page.locator(".phone-command-shell textarea");
+    await expect(textarea).toBeVisible({ timeout: 30_000 });
+    const shell = page.locator(".phone-command-shell");
+    const startupBounds = await shell.boundingBox();
+    expect(startupBounds).not.toBeNull();
+    const connector = shell.getByRole("button", { name: "Connectors" });
+    await textarea.fill(Array.from({ length: 18 }, (_, index) => `Long message line ${index + 1}`).join("\n"));
+
+    const expanded = await page.evaluate(() => {
+      const shell = document.querySelector(".phone-command-shell");
+      const textarea = shell?.querySelector("textarea");
+      const connector = shell?.querySelector('button[aria-label="Connectors"]');
+      if (!shell || !textarea || !connector) throw new Error("Composer elements were not found");
+      const textRect = textarea.getBoundingClientRect();
+      const connectorRect = connector.getBoundingClientRect();
+      return {
+        textHeight: textRect.height,
+        textScrollHeight: textarea.scrollHeight,
+        textClientHeight: textarea.clientHeight,
+        connectorTop: connectorRect.top,
+        textBottom: textRect.bottom,
+        connectorInsideShell: shell.contains(connector),
+        shellRight: shell.getBoundingClientRect().right,
+      };
+    });
+    expect(expanded.textHeight).toBeLessThanOrEqual(121);
+    expect(expanded.textScrollHeight).toBeGreaterThan(expanded.textClientHeight);
+    expect(expanded.connectorTop).toBeGreaterThanOrEqual(expanded.textBottom);
+    expect(expanded.connectorInsideShell).toBe(true);
+    expect(expanded.shellRight).toBeLessThanOrEqual(viewport.width);
+
+    await page.getByTitle("Send", { exact: true }).click();
+    await expect(textarea).toHaveValue("");
+    await expect.poll(() => textarea.evaluate((element) => element.getBoundingClientRect().height)).toBeLessThanOrEqual(40);
+    const afterSendBounds = await shell.boundingBox();
+    expect(afterSendBounds).not.toBeNull();
+    expect(afterSendBounds!.height).toBeLessThanOrEqual(startupBounds!.height + 2);
+
+    await connector.click();
+    const picker = page.getByRole("dialog", { name: "Connector picker" });
+    await expect(picker).toBeVisible();
+    const pickerBounds = await picker.boundingBox();
+    expect(pickerBounds).not.toBeNull();
+    expect(pickerBounds!.x).toBeGreaterThanOrEqual(0);
+    expect(pickerBounds!.x + pickerBounds!.width).toBeLessThanOrEqual(viewport.width);
+    expect(pickerBounds!.y).toBeGreaterThanOrEqual(0);
+    expect(pickerBounds!.y + pickerBounds!.height).toBeLessThanOrEqual(viewport.height);
+    await picker.getByRole("button", { name: "Close connector picker" }).click();
   }
 });

@@ -165,6 +165,13 @@ export default function CommandBar({
       : hasImageAttachment
         ? "Ask ENOSX to analyze your image..."
         : personalizedPlaceholder;
+  const phonePlaceholder = hasImageAttachment && hasVideoAttachment
+    ? "Ask about media..."
+    : hasVideoAttachment
+      ? "Ask about video..."
+      : hasImageAttachment
+        ? "Ask about image..."
+        : "Ask ENOSX...";
 
   // Sync transcript to input
   useEffect(() => {
@@ -347,7 +354,9 @@ export default function CommandBar({
                     ? "Listening... Speak now."
                     : isSpeaking
                       ? "AI is speaking..."
-                      : contextualPlaceholder
+                      : window.innerWidth < 768
+                        ? phonePlaceholder
+                        : contextualPlaceholder
                 }
                 rows={1}
                 disabled={disabled && !isListening}

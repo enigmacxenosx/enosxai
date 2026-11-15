@@ -169,7 +169,7 @@ export default function ConnectorPicker({
             aria-label="Connector picker"
             className="absolute bottom-full left-0 mb-2 z-[60] overflow-hidden rounded-2xl"
             style={{
-              width: "min(420px, calc(100vw - 32px))",
+              width: "min(420px, calc(100vw - 48px))",
               background: "linear-gradient(145deg, rgba(24,24,34,0.98), rgba(10,10,16,0.98))",
               border: `1px solid rgba(${config.accentRgb}, 0.26)`,
               backdropFilter: "blur(22px) saturate(140%)",

@@ -687,8 +687,8 @@
     }
 
     .phone-composer-dock textarea {
-      min-height: 36px !important;
-      max-height: 132px !important;
+      min-height: 32px !important;
+      max-height: 120px !important;
       font-size: 16px !important;
       line-height: 1.35 !important;
     }

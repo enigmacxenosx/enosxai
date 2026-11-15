@@ -92,7 +92,7 @@ export default function PhoneChatLayout({
         </button>
       </header>
 
-      <nav className="flex flex-shrink-0 items-center gap-1.5 border-b border-white/10 bg-black/35 px-3 py-2" aria-label="ENOSX AI modes">
+      <nav className="mobile-ai-modes flex flex-shrink-0 items-center gap-1.5 border-b border-white/10 bg-black/35 px-3 py-2" aria-label="ENOSX AI modes">
         {AI_MODES.map((mode) => {
           const selected = aiMode === mode.id;
           return (
@@ -101,7 +101,7 @@ export default function PhoneChatLayout({
               type="button"
               onClick={() => onAiModeChange(mode.id)}
               aria-pressed={selected}
-              className="min-w-0 flex-1 truncate rounded-lg px-2 py-2 text-[10px] font-semibold transition-colors touch-manipulation"
+              className="mobile-ai-mode min-w-0 flex-1 truncate rounded-lg px-2 py-2 text-[10px] font-semibold transition-colors touch-manipulation"
               style={{
                 color: selected ? mode.color : "rgba(255,255,255,0.72)",
                 background: selected ? mode.bgColor : "rgba(255,255,255,0.035)",

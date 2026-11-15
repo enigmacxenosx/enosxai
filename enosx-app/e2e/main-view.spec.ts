@@ -220,11 +220,14 @@ test("mobile composer returns to startup size after sending and keeps connector 
         shellRight: shell.getBoundingClientRect().right,
       };
     });
-    expect(expanded.textHeight).toBeLessThanOrEqual(121);
+    expect(expanded.textHeight).toBeLessThanOrEqual(40);
     expect(expanded.textScrollHeight).toBeGreaterThan(expanded.textClientHeight);
     expect(expanded.connectorTop).toBeGreaterThanOrEqual(expanded.textBottom);
     expect(expanded.connectorInsideShell).toBe(true);
     expect(expanded.shellRight).toBeLessThanOrEqual(viewport.width);
+    const whileDraftingBounds = await shell.boundingBox();
+    expect(whileDraftingBounds).not.toBeNull();
+    expect(whileDraftingBounds!.height).toBeLessThanOrEqual(startupBounds!.height + 2);
 
     await page.getByRole("button", { name: "Send message" }).click();
     await expect(textarea).toHaveValue("");
@@ -244,4 +247,39 @@ test("mobile composer returns to startup size after sending and keeps connector 
     expect(pickerBounds!.y + pickerBounds!.height).toBeLessThanOrEqual(viewport.height);
     await picker.getByRole("button", { name: "Close connector picker" }).click();
   }
+});
+
+test("composer keeps its size while an AI reply is active and another message is queued", async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  let requestCount = 0;
+  let releaseFirstRequest: () => void = () => {};
+  const firstRequestHeld = new Promise<void>((resolve) => { releaseFirstRequest = resolve; });
+
+  await page.route("**/api/chat", async (route) => {
+    requestCount += 1;
+    if (requestCount === 1) await firstRequestHeld;
+    await route.abort();
+  });
+  await page.route("**/api/error-report", (route) => route.abort());
+  await openWorkspace(page);
+
+  const shell = page.locator(".phone-command-shell");
+  const textarea = shell.locator("textarea");
+  await textarea.fill("First message");
+  await page.getByRole("button", { name: "Send message" }).click();
+  await expect.poll(() => requestCount).toBe(1);
+
+  const replyingBounds = await shell.boundingBox();
+  expect(replyingBounds).not.toBeNull();
+
+  await textarea.fill("Next message while replying");
+  await page.getByRole("button", { name: "Send message" }).click();
+  await expect(page.getByRole("status").filter({ hasText: "waiting message" })).toContainText("1 waiting message queued");
+
+  const queuedBounds = await shell.boundingBox();
+  expect(queuedBounds).not.toBeNull();
+  expect(queuedBounds!.height).toBeLessThanOrEqual(replyingBounds!.height + 2);
+
+  releaseFirstRequest();
+  await expect.poll(() => requestCount).toBe(2);
 });

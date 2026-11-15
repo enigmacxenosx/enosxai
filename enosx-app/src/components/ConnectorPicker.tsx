@@ -34,6 +34,7 @@ export default function ConnectorPicker({
   const [kindFilter, setKindFilter] =
     useState<(typeof KIND_FILTERS)[number]>("All");
   const containerRef = useRef<HTMLDivElement>(null);
+  const popoverRef = useRef<HTMLDivElement>(null);
   const searchRef = useRef<HTMLInputElement>(null);
   const { accounts, connectWithOAuth, isLoading: isGitHubLoading } = useGitHub();
   const [connectedIds, setConnectedIds] = useState<string[]>(() => {
@@ -56,6 +57,29 @@ export default function ConnectorPicker({
 
   useEffect(() => {
     if (open) searchRef.current?.focus();
+  }, [open]);
+
+  useEffect(() => {
+    if (!open) return;
+
+    const clampToViewport = () => {
+      const container = containerRef.current;
+      const popover = popoverRef.current;
+      if (!container || !popover) return;
+
+      const margin = 12;
+      const containerLeft = container.getBoundingClientRect().left;
+      const maxLeft = window.innerWidth - margin - popover.offsetWidth;
+      const clampedLeft = Math.max(margin, Math.min(containerLeft, maxLeft));
+      popover.style.left = `${clampedLeft - containerLeft}px`;
+    };
+
+    const frame = requestAnimationFrame(clampToViewport);
+    window.addEventListener("resize", clampToViewport);
+    return () => {
+      cancelAnimationFrame(frame);
+      window.removeEventListener("resize", clampToViewport);
+    };
   }, [open]);
 
   const filteredConnectors = useMemo(() => {
@@ -161,6 +185,7 @@ export default function ConnectorPicker({
       <AnimatePresence>
         {open && (
           <motion.div
+            ref={popoverRef}
             initial={{ opacity: 0, y: 8, scale: 0.97 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 8, scale: 0.97 }}

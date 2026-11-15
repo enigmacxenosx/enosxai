@@ -226,7 +226,7 @@ test("mobile composer returns to startup size after sending and keeps connector 
     expect(expanded.connectorInsideShell).toBe(true);
     expect(expanded.shellRight).toBeLessThanOrEqual(viewport.width);
 
-    await page.getByTitle("Send", { exact: true }).click();
+    await page.getByRole("button", { name: "Send message" }).click();
     await expect(textarea).toHaveValue("");
     await expect.poll(() => textarea.evaluate((element) => element.getBoundingClientRect().height)).toBeLessThanOrEqual(40);
     const afterSendBounds = await shell.boundingBox();

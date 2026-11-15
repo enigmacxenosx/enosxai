@@ -183,7 +183,7 @@ export default function CommandBar({
   useEffect(() => {
     const ta = textareaRef.current;
     if (!ta) return;
-    const fixedHeight = 36;
+    const fixedHeight = 30;
     ta.style.height = `${fixedHeight}px`;
     ta.style.overflowY = ta.scrollHeight > fixedHeight ? "auto" : "hidden";
   }, [value]);
@@ -195,7 +195,7 @@ export default function CommandBar({
     setValue("");
     onDraftChange?.(false);
     if (textareaRef.current) {
-      textareaRef.current.style.height = "36px";
+      textareaRef.current.style.height = "30px";
       textareaRef.current.style.overflowY = "hidden";
       textareaRef.current.scrollTop = 0;
     }

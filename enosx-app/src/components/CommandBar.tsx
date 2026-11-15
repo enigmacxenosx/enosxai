@@ -270,7 +270,7 @@ export default function CommandBar({
                 ? { duration: 1.5, repeat: Infinity, ease: "easeInOut" }
                 : { duration: 0.3 }
             }
-            className={`phone-command-shell flex flex-col gap-2 rounded-[20px] px-3.5 py-2.5 transition-all duration-300 ${isListening ? 'shadow-[0_0_0_3px_rgba(155,140,255,0.16)]' : ''}`}
+            className={`phone-command-shell flex flex-col gap-1.5 rounded-[18px] px-3 py-1.5 transition-all duration-300 ${isListening ? 'shadow-[0_0_0_3px_rgba(155,140,255,0.16)]' : ''}`}
             style={{
               background: `rgba(21,21,29,${Math.max(wallpaperSettings.panelOpacity, 0.92)})`,
               backdropFilter: `blur(${wallpaperSettings.blurAmount}px)`,
@@ -313,10 +313,10 @@ export default function CommandBar({
                 style={{
                   color: config.text,
                   caretColor: config.accent,
-                  height: 36,
-                  maxHeight: 36,
-                  minHeight: 36,
-                  paddingTop: "4px",
+                  height: 30,
+                  maxHeight: 30,
+                  minHeight: 30,
+                  paddingTop: "2px",
                   fontFamily: "var(--font-body)",
                 }}
               />
@@ -330,12 +330,12 @@ export default function CommandBar({
                     whileTap={{ scale: 0.95 }}
                     type="button"
                     onClick={() => fileInputRef.current?.click()}
-                    className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border transition-colors hover:bg-white/[0.07]"
+                    className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full border transition-colors hover:bg-white/[0.07]"
                     style={{ background: "transparent", borderColor: "rgba(255,255,255,0.12)", color: config.text }}
                     title="Add attachment"
                     aria-label="Add attachment"
                   >
-                    <Plus size={18} />
+                    <Plus size={16} />
                   </motion.button>
                 )}
                 <ConnectorPicker
@@ -350,7 +350,7 @@ export default function CommandBar({
                     whileHover={{ scale: 1.05 }}
                     whileTap={{ scale: 0.95 }}
                     onClick={handleVoiceClick}
-                    className="relative flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-white/65 transition-colors hover:bg-white/[0.07] hover:text-white"
+                    className="relative flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-white/65 transition-colors hover:bg-white/[0.07] hover:text-white"
                     style={isListening || isSpeaking ? {
                       background: `rgba(${config.accentRgb}, 0.2)`,
                       border: `1px solid rgba(${config.accentRgb}, 0.32)`,
@@ -369,7 +369,7 @@ export default function CommandBar({
                   whileTap={canSend ? { scale: 0.96 } : {}}
                   onClick={handleSend}
                   disabled={!canSend}
-                  className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full transition-all duration-200 disabled:cursor-not-allowed"
+                  className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full transition-all duration-200 disabled:cursor-not-allowed"
                   style={canSend ? {
                     background: `rgba(${config.accentRgb}, 0.96)`,
                     color: "#fff",
@@ -381,7 +381,7 @@ export default function CommandBar({
                   title={isLoading ? "Add to waiting list" : "Send"}
                   aria-label="Send message"
                 >
-                  {isLoading ? <Clock3 size={16} /> : <ArrowUp size={18} strokeWidth={2.5} />}
+                  {isLoading ? <Clock3 size={14} /> : <ArrowUp size={16} strokeWidth={2.5} />}
                 </motion.button>
               </div>
               <AnimatePresence initial={false}>

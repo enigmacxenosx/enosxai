@@ -178,7 +178,10 @@ export default function CommandBar({
     const ta = textareaRef.current;
     if (!ta) return;
     ta.style.height = "auto";
-    ta.style.height = Math.min(ta.scrollHeight, 200) + "px";
+    const maxHeight = 120;
+    const contentHeight = ta.scrollHeight;
+    ta.style.height = `${Math.min(contentHeight, maxHeight)}px`;
+    ta.style.overflowY = contentHeight > maxHeight ? "auto" : "hidden";
   }, [value]);
 
   const handleSend = useCallback(() => {
@@ -187,7 +190,9 @@ export default function CommandBar({
     onSend(text, aiMode, selectedConnectorIds);
     setValue("");
     if (textareaRef.current) {
-      textareaRef.current.style.height = "auto";
+      textareaRef.current.style.height = "32px";
+      textareaRef.current.style.overflowY = "hidden";
+      textareaRef.current.scrollTop = 0;
     }
   }, [value, disabled, isLoading, onSend, aiMode, selectedConnectorIds]);
 
@@ -353,11 +358,11 @@ export default function CommandBar({
                 }
                 rows={1}
                 disabled={disabled && !isListening}
-                className="flex-1 bg-transparent outline-none resize-none text-sm leading-snug"
+                className="min-w-0 flex-1 bg-transparent outline-none resize-none text-sm leading-snug"
                 style={{
                   color: config.text,
                   caretColor: config.accent,
-                  maxHeight: 144,
+                  maxHeight: 120,
                   minHeight: 32,
                   paddingTop: "5px",
                   fontFamily: "var(--font-body)",

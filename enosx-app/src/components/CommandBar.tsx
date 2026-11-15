@@ -274,7 +274,7 @@ export default function CommandBar({
                 ? { duration: 1.5, repeat: Infinity, ease: "easeInOut" }
                 : { duration: 0.3 }
             }
-            className={`phone-command-shell flex flex-col gap-1 rounded-[20px] px-3.5 py-2 transition-all duration-300 ${isListening ? 'shadow-[0_0_0_3px_rgba(155,140,255,0.16)]' : ''}`}
+            className={`phone-command-shell flex flex-col gap-2 rounded-[24px] px-4 py-3.5 transition-all duration-300 ${isListening ? 'shadow-[0_0_0_3px_rgba(155,140,255,0.16)]' : ''}`}
             style={{
               background: `rgba(21,21,29,${Math.max(wallpaperSettings.panelOpacity, 0.92)})`,
               backdropFilter: `blur(${wallpaperSettings.blurAmount}px)`,
@@ -336,7 +336,7 @@ export default function CommandBar({
             </AnimatePresence>
 
             {/* Textarea and buttons container */}
-            <div className="flex items-end gap-2">
+            <div className="flex flex-col gap-2">
                 {/* Compact textarea */}
               <textarea
                 ref={textareaRef}
@@ -362,19 +362,19 @@ export default function CommandBar({
                 }
                 rows={1}
                 disabled={disabled && !isListening}
-                className="min-w-0 flex-1 bg-transparent outline-none resize-none text-sm leading-snug"
+                className="min-w-0 w-full bg-transparent outline-none resize-none text-[15px] leading-relaxed"
                 style={{
                   color: config.text,
                   caretColor: config.accent,
                   maxHeight: 120,
-                  minHeight: 32,
-                  paddingTop: "5px",
+                  minHeight: 48,
+                  paddingTop: "4px",
                   fontFamily: "var(--font-body)",
                 }}
               />
 
               {/* Action buttons */}
-              <div className="flex items-center gap-1.5 flex-shrink-0">
+              <div className="flex w-full items-center gap-1.5 flex-shrink-0">
                 <input ref={fileInputRef} type="file" multiple accept="image/*,video/*,.pdf,.docx,.xlsx,.xls,.txt,.md,.csv,.json,.js,.ts,.tsx,.jsx,.py,.html,.css,.xml,.yaml,.yml" className="hidden" onChange={handleFilePickerChange} />
                 {onFilesSelected && (
                   <motion.button
@@ -492,7 +492,7 @@ export default function CommandBar({
                 )}
               </AnimatePresence>
             </div>
-            <div className="flex items-center gap-2 pt-1">
+            <div className="flex items-center gap-2 border-t border-white/[0.07] pt-2">
               <ConnectorPicker
                 selectedConnectorIds={selectedConnectorIds}
                 onToggleConnector={handleToggleConnector}

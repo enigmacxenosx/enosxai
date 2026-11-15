@@ -10,7 +10,7 @@
 
 import { useState, useRef, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { ArrowUp, Mic, MicOff, Square, Clock3, ChevronDown, Paperclip, ListChecks, Languages, Code2, Sparkles } from "lucide-react";
+import { ArrowUp, Mic, MicOff, Square, Clock3, ChevronDown, Plus, ListChecks, Languages, Code2, Sparkles } from "lucide-react";
 import { VoiceState, type Attachment } from "@/lib/types";
 import { useTheme } from "@/contexts/ThemeContext";
 import { useWallpaper } from "@/contexts/WallpaperContext";
@@ -373,101 +373,67 @@ export default function CommandBar({
                 }}
               />
 
-              {/* Action buttons */}
-              <div className="flex w-full items-center gap-1.5 flex-shrink-0">
+              {/* Reference-style toolbar: attach and connectors on the left; voice and send on the right. */}
+              <div className="flex w-full items-center gap-2">
                 <input ref={fileInputRef} type="file" multiple accept="image/*,video/*,.pdf,.docx,.xlsx,.xls,.txt,.md,.csv,.json,.js,.ts,.tsx,.jsx,.py,.html,.css,.xml,.yaml,.yml" className="hidden" onChange={handleFilePickerChange} />
                 {onFilesSelected && (
                   <motion.button
-                    whileHover={{ scale: 1.08 }}
-                    whileTap={{ scale: 0.92 }}
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
                     type="button"
                     onClick={() => fileInputRef.current?.click()}
-                    className="min-h-8 min-w-8 w-8 h-8 rounded-full flex items-center justify-center transition-all duration-200 touch-manipulation"
-                    style={{ background: "transparent", border: "1px solid transparent", color: config.textMuted }}
-                    title="Attach any file"
-                    aria-label="Attach any file"
+                    className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border transition-colors hover:bg-white/[0.07]"
+                    style={{ background: "transparent", borderColor: "rgba(255,255,255,0.12)", color: config.text }}
+                    title="Add attachment"
+                    aria-label="Add attachment"
                   >
-                    <Paperclip size={14} />
+                    <Plus size={18} />
                   </motion.button>
                 )}
+                <ConnectorPicker
+                  selectedConnectorIds={selectedConnectorIds}
+                  onToggleConnector={handleToggleConnector}
+                />
+                <div className="flex-1" />
 
-                {/* Voice button */}
                 {isVoiceSupported && (
                   <motion.button
                     type="button"
-                    whileHover={{ scale: 1.08 }}
-                    whileTap={{ scale: 0.92 }}
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
                     onClick={handleVoiceClick}
-                    className="relative min-h-8 min-w-8 w-8 h-8 rounded-full flex items-center justify-center transition-all duration-200 touch-manipulation"
-                    style={
-                      isListening || isSpeaking
-                        ? {
-                            background: `rgba(${config.accentRgb}, 0.2)`,
-                            border: `1px solid rgba(${config.accentRgb}, 0.32)`,
-                            color: config.accent,
-                          }
-                        : {
-                            background: "transparent",
-                            border: "1px solid transparent",
-                            color: config.textMuted,
-                          }
-                    }
+                    className="relative flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-white/65 transition-colors hover:bg-white/[0.07] hover:text-white"
+                    style={isListening || isSpeaking ? {
+                      background: `rgba(${config.accentRgb}, 0.2)`,
+                      border: `1px solid rgba(${config.accentRgb}, 0.32)`,
+                      color: config.accent,
+                    } : { border: "1px solid transparent" }}
                     title={isListening ? "Stop listening" : isSpeaking ? "Stop speaking" : "Voice input"}
+                    aria-label={isListening ? "Stop listening" : isSpeaking ? "Stop speaking" : "Voice input"}
                   >
-                    {isListening && (
-                      <motion.div
-                        animate={{ scale: [1, 1.8], opacity: [0.6, 0] }}
-                        transition={{ duration: 1.2, repeat: Infinity, ease: "easeOut" }}
-                        className="absolute inset-0 rounded-xl"
-                        style={{ border: `2px solid rgba(0,242,255, 0.5)` }}
-                      />
-                    )}
-                    {isSpeaking ? (
-                      <Square size={14} />
-                    ) : isListening ? (
-                      <MicOff size={14} />
-                    ) : (
-                      <Mic size={14} />
-                    )}
+                    {isSpeaking ? <Square size={16} /> : isListening ? <MicOff size={16} /> : <Mic size={16} />}
                   </motion.button>
                 )}
 
-                {/* Send button — upward arrow */}
                 <motion.button
                   type="button"
-                  whileHover={canSend ? { scale: 1.08 } : {}}
-                  whileTap={canSend ? { scale: 0.92 } : {}}
+                  whileHover={canSend ? { scale: 1.04 } : {}}
+                  whileTap={canSend ? { scale: 0.96 } : {}}
                   onClick={handleSend}
                   disabled={!canSend}
-                  className="min-h-8 min-w-8 w-8 h-8 rounded-full flex items-center justify-center transition-all duration-200 touch-manipulation"
-                  style={
-                    canSend
-                      ? {
-                          background: `rgba(${config.accentRgb}, 0.92)`,
-                          border: `1px solid rgba(${config.accentRgb}, 0.72)`,
-                          color: "#fff",
-                          boxShadow: `0 4px 12px rgba(${config.accentRgb}, 0.3)`,
-                        }
-                      : isLoading
-                      ? {
-                          background: `rgba(${config.accentRgb}, 0.12)`,
-                          border: `1px solid rgba(${config.accentRgb}, 0.2)`,
-                          color: config.accent,
-                        }
-                      : {
-                          background: "rgba(255,255,255,0.055)",
-                          border: "1px solid transparent",
-                          color: config.textMuted,
-                          cursor: "not-allowed",
-                        }
-                  }
-                  title={isLoading ? "Add to waiting list" : "Send"}
+                  className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full transition-all duration-200 disabled:cursor-not-allowed"
+                  style={canSend ? {
+                    background: `rgba(${config.accentRgb}, 0.96)`,
+                    color: "#fff",
+                    boxShadow: `0 4px 12px rgba(${config.accentRgb}, 0.24)`,
+                  } : {
+                    background: "rgba(255,255,255,0.08)",
+                    color: "rgba(255,255,255,0.38)",
+                  }}
+                  title={isLoading ? "Add to waiting list" : "Send message"}
+                  aria-label="Send message"
                 >
-                  {isLoading ? (
-                    <Clock3 size={16} />
-                  ) : (
-                    <ArrowUp size={14} strokeWidth={2.5} />
-                  )}
+                  {isLoading ? <Clock3 size={16} /> : <ArrowUp size={18} strokeWidth={2.5} />}
                 </motion.button>
               </div>
               <AnimatePresence initial={false}>
@@ -491,12 +457,6 @@ export default function CommandBar({
                   </motion.div>
                 )}
               </AnimatePresence>
-            </div>
-            <div className="flex items-center gap-2 border-t border-white/[0.07] pt-2">
-              <ConnectorPicker
-                selectedConnectorIds={selectedConnectorIds}
-                onToggleConnector={handleToggleConnector}
-              />
             </div>
           </motion.div>
         </motion.div>

@@ -112,7 +112,7 @@ export default function ConnectorPicker({
         aria-expanded={open}
         aria-haspopup="dialog"
         aria-label="Connectors"
-        className="group flex items-center rounded-xl px-1.5 py-1 transition-all"
+        className="group flex h-9 items-center gap-2 rounded-full px-3 transition-all"
         style={{
           background:
             selectedCount > 0
@@ -130,9 +130,9 @@ export default function ConnectorPicker({
         }}
         title="Choose connectors for this chat"
       >
-        {selectedConnectors.length === 0 ? (
-          <Cable size={16} />
-        ) : (
+        <Cable size={16} />
+        <span className="text-xs font-medium">Connectors</span>
+        {selectedConnectors.length > 0 && (
           <span className="flex items-center">
             {selectedConnectors.slice(0, 3).map((connector, index) => (
               <span

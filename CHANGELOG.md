@@ -1,3 +1,11 @@
+## v0.1.32 — Mobile chat, composer & connected tools
+
+- Improved the phone chat layout across narrow screens, including compact AI mode tabs, clearer touch targets, and a message composer that stays within a 320 px viewport.
+- Moved welcome prompt suggestions above the mobile message bar as a horizontally swipeable row; desktop suggestion layout is unchanged.
+- Refined composer controls, response actions, connector selection, and sign-in presentation.
+- Added hosted image and video generation improvements, connector management, and OAuth readiness status.
+- Sign-in providers require Firebase web-app configuration in the deployment environment and must be enabled in Firebase Authentication.
+
 ## v0.1.30 — Mobile & image-generation fixes, connector composer, safety guard
 
 - Fixed the chat interface breaking on mobile phones: PDF support now loads on demand and degrades gracefully instead of crashing the whole app on phones with older browsers, the phone layout keeps the composer docked even without dynamic viewport units, and phone composer chips (AI mode, prompt suggestions, connectors) size to their labels instead of being squeezed into 40px squares with clipped text.

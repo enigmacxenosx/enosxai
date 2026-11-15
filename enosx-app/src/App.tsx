@@ -8,7 +8,7 @@ import { FounderModeProvider } from "./contexts/FounderModeContext";
 import { WindowContextProvider } from "./contexts/WindowContext";
 import { WallpaperProvider } from "./contexts/WallpaperContext";
 import { AuthProvider } from "./contexts/AuthContext";
-import { Suspense, lazy, useState } from "react";
+import { Suspense, lazy } from "react";
 
 // Lazy load route components to enable code-splitting
 const ChatPage = lazy(() => import("./pages/ChatPage"));
@@ -16,7 +16,6 @@ const AboutPage = lazy(() => import("./pages/AboutPage"));
 const KnowledgeBankPage = lazy(() => import("./pages/KnowledgeBankPage"));
 const MediaLibraryPage = lazy(() => import("./pages/MediaLibraryPage"));
 const VisualStoryPage = lazy(() => import("./pages/VisualStoryPage"));
-const SplashPage = lazy(() => import("./components/SplashPage"));
 
 // Loading fallback component
 function LoadingFallback() {
@@ -31,14 +30,6 @@ function LoadingFallback() {
 }
 
 function Router() {
-  const [showSplash, setShowSplash] = useState(true);
-  if (showSplash) {
-    return (
-      <Suspense fallback={<LoadingFallback />}>
-        <SplashPage onComplete={() => setShowSplash(false)} />
-      </Suspense>
-    );
-  }
   return (
     <Suspense fallback={<LoadingFallback />}>
       <Switch>

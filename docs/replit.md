@@ -23,7 +23,6 @@ An AI assistant web app powered by OpenRouter's model API, with a cyberpunk glas
   - `src/App.tsx` — root app with wouter router + theme/context providers
   - `src/pages/ChatPage.tsx` — main chat interface
   - `src/pages/AboutPage.tsx` — about page
-  - `src/components/SplashPage.tsx` — 3.5s animated splash intro
   - `src/hooks/useEnosxAI.ts` — streaming chat hook (calls `/api/chat`)
   - `src/contexts/ThemeContext.tsx` — theme switching (dark/neon/cyberpunk/minimal/light)
   - `src/index.css` — Tailwind v4 + custom CSS with "Crimson Matrix" design tokens
@@ -35,7 +34,7 @@ An AI assistant web app powered by OpenRouter's model API, with a cyberpunk glas
 
 - The `/api/chat` route proxies to OpenRouter with SSE streaming — API key stays server-side.
 - The app uses wouter for client routing with `BASE_URL` base path for Replit proxy compatibility.
-- `SplashPage` is a 3.5s animated intro — expected behavior, not a hang.
+- The app opens directly into the active chat interface without an intro splash.
 - Tailwind v4 with `@tailwindcss/vite` (no postcss config needed).
 - The app requires `OPENROUTER_API_KEY` on the API server; no provider key is bundled in the frontend.
 
@@ -47,7 +46,7 @@ An AI assistant web app powered by OpenRouter's model API, with a cyberpunk glas
 - God Mode for advanced AI interactions
 - GitHub context awareness (reads repo structure to inform answers)
 - System action chaining (open URLs, launch apps)
-- Animated splash intro, animated AI face/orb, command bar
+- Animated AI face/orb, command bar
 
 ## User preferences
 
@@ -56,7 +55,6 @@ _Populate as you build — explicit user instructions worth remembering across s
 ## Gotchas
 
 - Do NOT run `pnpm dev` at workspace root — it has no dev script.
-- The splash screen lasts 3.5s intentionally — not a bug.
 - `OPENROUTER_API_KEY` env var must be set in Replit Secrets tab — the app will return an error if missing.
 - Vite config requires `PORT` and `BASE_PATH` env vars (provided automatically by Replit workflows).
 

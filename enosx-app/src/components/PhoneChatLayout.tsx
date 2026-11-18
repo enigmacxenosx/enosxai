@@ -35,6 +35,9 @@ interface PhoneChatLayoutProps {
   attachments?: Attachment[];
   audioStream?: MediaStream | null;
   onSettingsClick?: () => void;
+  onProfileClick?: () => void;
+  onLibraryClick?: () => void;
+  onScreenGuiderClick?: () => void;
   userDisplayName?: string;
   totalTokensUsed?: number;
 }
@@ -66,6 +69,9 @@ export default function PhoneChatLayout({
   attachments = [],
   audioStream = null,
   onSettingsClick,
+  onProfileClick,
+  onLibraryClick,
+  onScreenGuiderClick,
   userDisplayName,
   totalTokensUsed = 0,
 }: PhoneChatLayoutProps) {
@@ -83,7 +89,7 @@ export default function PhoneChatLayout({
           type="button"
           onClick={() => setIsMobileSidebarOpen(true)}
           className="phone-reference-menu touch-manipulation"
-          aria-label="Open conversations"
+          aria-label="Open sidebar"
         >
           <Menu size={22} strokeWidth={1.7} />
         </button>
@@ -203,11 +209,23 @@ export default function PhoneChatLayout({
                 collapsed={false}
                 isMobileOpen={true}
                 onMobileClose={() => setIsMobileSidebarOpen(false)}
-                onSettingsClick={() => {
-                  setIsMobileSidebarOpen(false);
-                  onSettingsClick?.();
-                }}
-              />
+          onSettingsClick={() => {
+            setIsMobileSidebarOpen(false);
+            onSettingsClick?.();
+          }}
+          onProfileClick={() => {
+            setIsMobileSidebarOpen(false);
+            onProfileClick?.();
+          }}
+          onLibraryClick={() => {
+            setIsMobileSidebarOpen(false);
+            onLibraryClick?.();
+          }}
+          onScreenGuiderClick={() => {
+            setIsMobileSidebarOpen(false);
+            onScreenGuiderClick?.();
+          }}
+        />
             </motion.div>
           </>
         )}

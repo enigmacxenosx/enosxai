@@ -5,6 +5,11 @@ async function openWorkspace(page: Page) {
   await expect(page.locator(".enosx-composer textarea")).toBeVisible({ timeout: 30_000 });
 }
 
+async function openMobileSidebar(page: Page) {
+  await page.getByRole("button", { name: "Open sidebar" }).click();
+  await expect(page.getByRole("button", { name: "Close sidebar" })).toBeVisible();
+}
+
 test("welcome view keeps the composer inside the viewport", async ({ page }) => {
   await openWorkspace(page);
   await expect(page.getByRole("region", { name: "Live monitoring dashboard" })).toHaveCount(0);
@@ -299,4 +304,57 @@ test("plugins catalog opens quickly and shows the custom asset bundle plugin", a
   await expect(dialog.getByRole("button", { name: "Copy prompt" }).last()).toBeEnabled();
   await dialog.getByRole("button", { name: "Close plugins" }).click();
   await expect(dialog).toHaveCount(0);
+});
+
+test("mobile sidebar buttons work and stay inside the touch viewport", async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.addInitScript(() => localStorage.clear());
+  await openWorkspace(page);
+
+  await openMobileSidebar(page);
+  const sidebar = page.locator(".fixed.inset-0.z-50 .neon-dashboard-sidebar");
+  await expect.poll(async () => (await sidebar.boundingBox())?.x ?? -1, { timeout: 5_000 }).toBeGreaterThanOrEqual(0);
+  const sidebarBounds = await sidebar.boundingBox();
+  expect(sidebarBounds).not.toBeNull();
+  expect(sidebarBounds!.x).toBeGreaterThanOrEqual(0);
+  expect(sidebarBounds!.x + sidebarBounds!.width).toBeLessThanOrEqual(390);
+  for (const label of ["New Chat", "Search", "Library", "Plugins", "Settings", "About ENOSX", "Profile"]) {
+    await expect(page.getByRole("button", { name: label })).toBeVisible();
+  }
+
+  await page.getByRole("button", { name: "New Chat" }).click();
+  await expect(page.getByRole("button", { name: "Close sidebar" })).toHaveCount(0);
+
+  await openMobileSidebar(page);
+  await page.getByRole("button", { name: "Search" }).click();
+  await expect(page.getByPlaceholder("Search all conversations…")).toBeVisible();
+  await page.getByRole("button", { name: "Close", exact: true }).click();
+  await expect(page.getByRole("button", { name: "Close sidebar" })).toHaveCount(0);
+
+  await openMobileSidebar(page);
+  await page.getByRole("button", { name: "Plugins" }).click();
+  await expect(page.getByRole("dialog", { name: "Plugins" })).toBeVisible();
+  await page.getByRole("button", { name: "Close plugins" }).click();
+  await page.getByRole("button", { name: "Close sidebar" }).click();
+  await expect(page.getByRole("button", { name: "Close sidebar" })).toHaveCount(0);
+
+  await openMobileSidebar(page);
+  await page.getByRole("button", { name: "Settings" }).click();
+  await expect(page.getByRole("dialog")).toBeVisible();
+  await page.getByRole("button", { name: "Close sign-in" }).click();
+
+  await openMobileSidebar(page);
+  await page.getByRole("button", { name: "Profile" }).click();
+  await expect(page.getByRole("dialog")).toBeVisible();
+  await page.getByRole("button", { name: "Close sign-in" }).click();
+
+  await openMobileSidebar(page);
+  await page.getByRole("button", { name: "Library" }).click();
+  await expect(page).toHaveURL(/\/media-library$/);
+  await page.goto("/");
+  await expect(page.locator(".enosx-composer textarea")).toBeVisible({ timeout: 30_000 });
+
+  await openMobileSidebar(page);
+  await page.getByRole("button", { name: "About ENOSX" }).click();
+  await expect(page).toHaveURL(/\/about$/);
 });

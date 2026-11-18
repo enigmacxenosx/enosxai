@@ -345,6 +345,7 @@ export default function Sidebar({
           >
             {/* Close button */}
             <button
+              type="button"
               onClick={onMobileClose}
               className="absolute top-4 right-3 z-50 w-8 h-8 rounded-full flex items-center justify-center border transition-all"
               style={{
@@ -352,6 +353,8 @@ export default function Sidebar({
                 borderColor: `rgba(${config.accentRgb}, 0.2)`,
                 color: config.textMuted,
               }}
+              aria-label="Close sidebar"
+              title="Close sidebar"
             >
               <X size={12} />
             </button>

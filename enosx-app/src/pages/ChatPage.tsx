@@ -1127,9 +1127,37 @@ ${getAdminContext()}` : ""}`,
           attachments={fileContext.files}
           audioStream={microphoneStream}
           onSettingsClick={() => setShowProfilePanel(true)}
+          onProfileClick={() => setShowProfilePanel(true)}
+          onLibraryClick={() => conversationSearch.open()}
+          onScreenGuiderClick={toggleScreenGuider}
           userDisplayName={user?.displayName}
           totalTokensUsed={analytics.totalTokensUsed}
         />
+        <ConversationSearchDialog
+          isOpen={conversationSearch.isOpen}
+          query={conversationSearch.query}
+          setQuery={conversationSearch.setQuery}
+          results={conversationSearch.results}
+          conversations={conversations}
+          onClose={conversationSearch.close}
+          onSelect={(id) => {
+            setActiveId(id);
+            conversationSearch.close();
+          }}
+          onOpenLeadCapture={() => { conversationSearch.close(); setShowLeadCapture(true); }}
+        />
+        <AnimatePresence>
+          {showProfilePanel && (
+            <ProfilePanel
+              isOpen={showProfilePanel}
+              onClose={() => setShowProfilePanel(false)}
+              onOpenAdminConsole={() => setShowAdminConsole(true)}
+              onOpenLeadCapture={() => setShowLeadCapture(true)}
+              onEnableNotifications={handleEnableNotifications}
+              notificationPermission={notificationPermission}
+            />
+          )}
+        </AnimatePresence>
       </GlobalLayout>
     );
   }
@@ -1194,7 +1222,9 @@ ${getAdminContext()}` : ""}`,
             {isMobile && (
               <button 
                 onClick={() => setIsMobileSidebarOpen(true)}
-                className="rounded-xl p-2 text-white/60 transition hover:bg-white/[0.06] hover:text-white"
+                type="button"
+                aria-label="Open sidebar"
+                className="min-h-11 min-w-11 rounded-xl p-2 text-white/60 transition hover:bg-white/[0.06] hover:text-white touch-manipulation"
               >
                 <Menu size={20} />
               </button>

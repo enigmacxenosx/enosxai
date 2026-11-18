@@ -149,23 +149,18 @@ export default function Sidebar({
         boxShadow: "18px 0 50px rgba(0,0,0,0.18)",
       }}
     >
-      {/* Logo header — clicking EX logo toggles sidebar */}
+      {/* Logo header — clicking the brand mark toggles sidebar */}
       <div
         className="flex items-center px-3 py-4 flex-shrink-0 relative"
         style={{ borderBottom: "none", minHeight: 72 }}
       >
         <div className={`flex items-center gap-3 ${collapsed ? 'mx-auto' : 'px-2'}`}>
-          {/* EX logo button — toggles sidebar expand/collapse */}
+          {/* Brand mark button — toggles sidebar expand/collapse */}
           <motion.button
-            whileHover={{ scale: 1.08, boxShadow: `0 0 22px rgba(${config.accentRgb}, 0.7)` }}
+            whileHover={{ scale: 1.08 }}
             whileTap={{ scale: 0.94 }}
             onClick={onToggle}
-            className="w-8 h-8 rounded-lg flex-shrink-0 flex items-center justify-center overflow-hidden cursor-pointer select-none"
-            style={{
-              background: 'rgba(255,255,255,0.05)',
-              boxShadow: '0 0 15px rgba(124,111,247,0.2)',
-              border: '1px solid rgba(255,255,255,0.1)',
-            }}
+            className="w-8 h-8 flex-shrink-0 flex items-center justify-center overflow-visible cursor-pointer select-none"
             title={collapsed ? "Expand sidebar" : "Collapse sidebar"}
           >
             <BrandMark size={32} />

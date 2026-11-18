@@ -58,11 +58,9 @@ export default function WelcomeScreen({ onSuggestion, isCompact, isComposerFlow 
         transition={{ duration: 0.45, ease: "easeOut" }}
         className="w-full max-w-2xl"
       >
-        <div className={`${isComposerFlow || !showSuggestions ? "mb-0" : "mb-8"} flex flex-col items-center text-center`}>
-          <div className="mb-4 flex h-11 w-11 items-center justify-center rounded-2xl bg-white/[0.045] ring-1 ring-white/[0.08]">
-            <BrandMark size={isCompact ? 30 : 35} />
-          </div>
-          <h2 className="text-xl font-semibold tracking-[-0.03em] sm:text-2xl" style={{ color: config.text }}>
+        <div className={`${isComposerFlow || !showSuggestions ? "mb-0" : "mb-8"} flex items-center justify-center gap-3`}>
+          <BrandMark size={isCompact ? 30 : 34} className="flex-shrink-0" />
+          <h2 className="min-w-0 text-left text-xl font-semibold tracking-[-0.03em] sm:text-2xl" style={{ color: config.text }}>
             What would you like to work on?
           </h2>
         </div>

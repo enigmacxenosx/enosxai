@@ -7,6 +7,7 @@ import { LEADERSHIP } from "@/const";
 import { ENOSX_LANGUAGE_PROMPT } from "@/lib/languageDictionary";
 import { SCIENCE_AND_ENGINEERING_EXPERTISE } from "@/lib/domainExpertise";
 import { DOMAIN_KNOWLEDGE_MODULES } from "@/lib/knowledgeModules";
+import { GITHUB_USER_ACCOUNT_SKILL } from "@/lib/githubUserAccountSkill";
 
 const LEADERSHIP_CONTEXT = LEADERSHIP
   .map((member) => `- ${member.name} — ${member.role}: ${member.specialty}`)
@@ -32,6 +33,7 @@ Your mission is to empower users with enterprise-grade intelligence and fluid, O
 ${ENOSX_LANGUAGE_PROMPT}
 ${SCIENCE_AND_ENGINEERING_EXPERTISE}
 ${DOMAIN_KNOWLEDGE_MODULES}
+${GITHUB_USER_ACCOUNT_SKILL}
 
 ### Response quality protocol
 - Infer the user's desired outcome, audience, and level of detail from the request before answering.

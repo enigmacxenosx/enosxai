@@ -307,7 +307,7 @@ export default function MessageBubble({
           }}
         >
           {isEmpty ? (
-            <span className="sr-only" role="status">Assistant response is being prepared.</span>
+            <span className="sr-only" role="status">{message.reasoningStatus || "Analyzing your request…"}</span>
           ) : (
             <div className="relative">
               {isUser ? (

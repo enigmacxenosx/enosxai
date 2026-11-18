@@ -992,6 +992,14 @@ ${getAdminContext()}` : ""}`,
 
   const activeConversation = conversations.find((c) => c.id === activeId);
   const messages = activeConversation?.messages || [];
+  const preparingMessage = [...messages].reverse().find((message) => message.role === "assistant" && message.isStreaming);
+  const preparationLabel = preparingMessage?.reasoningStatus === "Drafting answer"
+    ? "Drafting your answer…"
+    : preparingMessage?.reasoningStatus === "Answer ready"
+      ? "Finishing your response…"
+      : preparingMessage?.reasoningStatus === "Preparing response"
+        ? "Preparing your response…"
+        : "Analyzing your request…";
   const handleShareConversation = useCallback(async () => {
     if (!activeConversation || activeConversation.messages.length === 0) return;
     const text = activeConversation.messages.map((message) => `${message.role === "user" ? "You" : "ENOSX AI"}: ${message.content}`).join("\n\n");
@@ -1228,7 +1236,7 @@ ${getAdminContext()}` : ""}`,
                       <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-violet-300/60 [animation-delay:120ms]" />
                       <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-violet-300/40 [animation-delay:240ms]" />
                     </span>
-                    <span>Preparing your answer…</span>
+                    <span>{preparationLabel}</span>
                   </div>
                 )}
                 <div ref={messagesEndRef} className="h-4" />

@@ -2,6 +2,7 @@ import { useState } from "react";
 import { ChevronLeft, ChevronRight, Images, X } from "lucide-react";
 import type { Attachment } from "@/lib/types";
 import MediaAttachment from "./MediaAttachment";
+import ZipDownloadCard from "./ZipDownloadCard";
 
 const IMAGE_EXTENSIONS = /\.(?:jpe?g|png|gif|webp|bmp|avif|heic|svg)$/i;
 function isImage(attachment: Attachment) {
@@ -13,7 +14,8 @@ function sourceFor(attachment: Attachment) {
 
 export default function MediaAttachmentList({ attachments }: { attachments: Attachment[] }) {
   const images = attachments.filter(isImage);
-  const otherFiles = attachments.filter((attachment) => !isImage(attachment));
+  const zipFiles = attachments.filter((attachment) => attachment.mimeType === "application/zip" || attachment.type.toLowerCase() === "zip");
+  const otherFiles = attachments.filter((attachment) => !isImage(attachment) && !zipFiles.includes(attachment));
   const [activeIndex, setActiveIndex] = useState<number | null>(null);
   const activeImage = activeIndex === null ? undefined : images[activeIndex];
   const changeImage = (offset: number) => {
@@ -51,6 +53,7 @@ export default function MediaAttachmentList({ attachments }: { attachments: Atta
           {otherFiles.map((attachment) => <MediaAttachment key={attachment.id} attachment={attachment} />)}
         </div>
       )}
+      {zipFiles.map((attachment) => <ZipDownloadCard key={attachment.id} attachment={attachment} />)}
       {activeImage && activeIndex !== null && (
         <div
           role="dialog"

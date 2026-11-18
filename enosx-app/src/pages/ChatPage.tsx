@@ -38,6 +38,7 @@ import { useContextAwareMessages } from "@/hooks/useContextAwareMessages";
 import { useActiveWindow } from "@/contexts/WindowContext";
 import { useFileContext } from "@/hooks/useFileContext";
 import { analyzeFile } from "@/lib/fileAnalysis";
+import { generateZipArchive, isZipGenerationRequest } from "@/lib/zip";
 import { useClipboardListener } from "@/hooks/useClipboardListener";
 import { useGodMode } from "@/hooks/useGodMode";
 import { useMemoryBank } from "@/hooks/useMemoryBank";
@@ -560,6 +561,7 @@ export default function ChatPage() {
       )?.content;
       const shouldGenerateVideo = isVideoGenerationRequest(text);
       const shouldGenerateImage = !shouldGenerateVideo && (isImageGenerationRequest(text) || Boolean(inputImage && isImageEditRequest(text)));
+      const shouldGenerateZip = !shouldGenerateVideo && !shouldGenerateImage && isZipGenerationRequest(text, fileContext.files.length);
 
       const userMessage: Message = {
         id: nanoid(),
@@ -586,9 +588,9 @@ export default function ChatPage() {
       const assistantMessage: Message = {
         id: assistantId,
         role: "assistant",
-        content: shouldGenerateVideo ? "🎬 Generating your video..." : shouldGenerateImage ? "🖼️ Generating your image..." : "",
+        content: shouldGenerateVideo ? "🎬 Generating your video..." : shouldGenerateImage ? "🖼️ Generating your image..." : shouldGenerateZip ? "📦 Creating your ZIP archive..." : "",
         timestamp: new Date(),
-        isStreaming: shouldGenerateImage || shouldGenerateVideo,
+        isStreaming: shouldGenerateImage || shouldGenerateVideo || shouldGenerateZip,
       };
 
       if (shouldGenerateVideo) {
@@ -660,6 +662,37 @@ export default function ChatPage() {
           );
         }
         return imgResult?.url ? "Image generated successfully." : "Image generation did not return an image."; // Don't continue with normal chat
+      }
+
+      if (shouldGenerateZip) {
+        setConversations((prev) =>
+          prev.map((c) => c.id === targetConvId
+            ? { ...c, messages: [...c.messages, userMessage, assistantMessage], updatedAt: new Date() }
+            : c)
+        );
+        try {
+          const zipAttachment = await generateZipArchive(userMessage.attachments || []);
+          setConversations((prev) =>
+            prev.map((c) => c.id === targetConvId
+              ? {
+                  ...c,
+                  messages: c.messages.map((m) => m.id === assistantId
+                    ? { ...m, content: `I created a ZIP archive containing ${zipAttachment.name}. Use the Download ZIP button below to save it.`, attachments: [zipAttachment], isStreaming: false }
+                    : m),
+                  updatedAt: new Date(),
+                }
+              : c)
+          );
+          return "ZIP archive created successfully.";
+        } catch (error) {
+          const message = error instanceof Error ? error.message : "Unable to create the ZIP archive.";
+          setConversations((prev) =>
+            prev.map((c) => c.id === targetConvId
+              ? { ...c, messages: c.messages.map((m) => m.id === assistantId ? { ...m, content: `ZIP creation failed: ${message}`, isStreaming: false } : m), updatedAt: new Date() }
+              : c)
+          );
+          return "ZIP archive creation failed.";
+        }
       }
 
       const existingUserMessage = conversationsRef.current

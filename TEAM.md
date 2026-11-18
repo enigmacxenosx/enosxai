@@ -4,7 +4,7 @@ This repository is part of the ENOSX Technologies ecosystem. The current team st
 
 | Member | Role | Primary ownership |
 |---|---|---|
-| **Enosh Yeswa** | Founder & Chief Executive Officer | Product direction across ENOSX AI, Enosx Tech Store, and ExLover Coach |
+| **Enosh Yeswa** | Founder & Chief Executive Officer | Product direction across ENOSX AI and Enosx Tech Store |
 | **Eddy** | Product & Engineering Lead | Product development, infrastructure, integrations, and security |
 | **Grace Wangare** | Product Design & User Research Lead | User experience, onboarding, user interviews, and workflow design |
 | **Tracey Ivyone** | Growth, Marketing & Community Lead | Content, social media, community, referrals, and acquisition |

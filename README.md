@@ -2,7 +2,7 @@
 
 **Advanced AI Assistant & Application Platform** — Built with React, TypeScript, and Node.js
 
-ENOSX AI is the flagship AI assistant and application platform from [Enosx Technologies](https://github.com/enigmacxenosx). This monorepo contains the React application, API services, shared libraries, and the standalone ExLover Coach relationship-coaching app.
+ENOSX AI is the flagship AI assistant and application platform from [Enosx Technologies](https://github.com/enigmacxenosx). This monorepo contains the React application, API services, shared libraries.
 
 [![Live Application](https://img.shields.io/badge/🚀_Live-enosxai.vercel.app-22c55e?style=for-the-badge)](https://enosxai.vercel.app) 
 [![Desktop App Available](https://img.shields.io/badge/💻_Desktop-Available-0ea5e9?style=for-the-badge)](https://github.com/enigmacxenosx/enosxai/releases/latest)
@@ -16,7 +16,6 @@ ENOSX AI is the flagship AI assistant and application platform from [Enosx Techn
 | Application | URL | Status |
 |---|---|---|
 | **ENOSX AI** | [enosxai.vercel.app](https://enosxai.vercel.app) | ✅ Live |
-| **ExLover Coach** | [exlover.vercel.app](https://exlover.vercel.app) | ✅ Live |
 | **Desktop App** | [Releases](https://github.com/enigmacxenosx/enosxai/releases/latest) | ✅ Available |
 
 ---
@@ -43,7 +42,6 @@ ENOSX AI combines modern web technologies with powerful AI capabilities:
 | `api-server/` | Main Express API server |
 | `api/` | Vercel serverless functions |
 | `lib/` | Shared schemas, clients, and utilities |
-| `exlover/` | Standalone relationship-coaching application |
 | `docs/` | Setup, design, and maintenance documentation |
 | `scripts/` | Project utilities and automation |
 
@@ -70,13 +68,6 @@ pnpm dev
 ```
 
 For full setup and deployment instructions, see the [Setup Guide](docs/SETUP_GUIDE.md).
-
-### Validate Production Build (ExLover Coach)
-
-```bash
-pnpm --filter @enosx/exlover typecheck
-pnpm --filter @enosx/exlover build
-```
 
 ---
 

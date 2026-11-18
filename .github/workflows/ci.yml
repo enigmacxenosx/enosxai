@@ -54,12 +54,6 @@ jobs:
       - name: Run UI regression suite
         run: pnpm --filter @workspace/enosx-app test:e2e
 
-      - name: Typecheck exlover
-        run: pnpm --filter @enosx/exlover typecheck || true
-
-      - name: Build exlover
-        run: pnpm --filter @enosx/exlover build || true
-
   desktop:
     name: Check desktop shell and local-model bridge
     runs-on: ubuntu-24.04

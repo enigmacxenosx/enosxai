@@ -20,12 +20,6 @@ export const FAQ_TOPICS: FaqTopic[] = [
     prompt: "Tell me about the Enosx Tech Store and how to find current products and offers.",
   },
   {
-    id: "exlover",
-    label: "ExLover Coach",
-    icon: "💬",
-    prompt: "What is ExLover Coach and how does it help users?",
-  },
-  {
     id: "pricing",
     label: "Pricing & Plans",
     icon: "💳",

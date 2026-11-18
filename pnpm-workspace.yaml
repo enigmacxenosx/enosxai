@@ -1,6 +1,5 @@
 packages:
   - enosx-app
-  - exlover
   - api-server
   - lib/*
   - lib/integrations/*

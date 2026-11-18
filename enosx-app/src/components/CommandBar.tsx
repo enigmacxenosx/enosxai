@@ -82,18 +82,19 @@ export function AIModePicker({ aiMode, onChange }: { aiMode: AIMode; onChange: (
       </motion.button>
       <AnimatePresence>
         {modeOpen && (
-          <motion.div initial={{ opacity: 0, y: -4, scale: 0.97 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: -4, scale: 0.97 }} transition={{ duration: 0.15 }} className="absolute left-0 top-full z-[60] mt-2 flex w-[min(276px,calc(100vw-5rem))] flex-col gap-1 rounded-[18px] p-2" style={{ background: "rgba(12,12,18,0.97)", border: "1px solid rgba(255,255,255,0.12)", backdropFilter: "blur(16px)", WebkitBackdropFilter: "blur(16px)", boxShadow: "0 12px 36px rgba(0,0,0,0.56)" }} role="menu" aria-label="Choose AI mode">
-            <p className="px-2.5 pb-1 pt-1 text-[10px] font-semibold uppercase tracking-[0.12em] text-white/50">Send with</p>
+          <motion.div initial={{ opacity: 0, y: -4, scale: 0.97 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: -4, scale: 0.97 }} transition={{ duration: 0.15 }} className="absolute left-0 top-full z-[60] mt-2 flex w-[min(274px,calc(100vw-5rem))] flex-col gap-1.5 rounded-[18px] p-2.5" style={{ background: "rgba(30,31,35,0.98)", border: "1px solid rgba(255,255,255,0.12)", backdropFilter: "blur(16px)", WebkitBackdropFilter: "blur(16px)", boxShadow: "0 12px 36px rgba(0,0,0,0.56)" }} role="menu" aria-label="Choose AI mode">
+            <p className="px-2.5 pb-1 pt-1 text-[11px] font-semibold uppercase tracking-[0.12em] text-white/50">Send with</p>
             {AI_MODES.map((mode) => {
               const selected = aiMode === mode.id;
               return (
-                <motion.button type="button" key={mode.id} whileHover={{ backgroundColor: "rgba(255,255,255,0.07)" }} whileTap={{ scale: 0.98 }} onClick={() => { onChange(mode.id); setModeOpen(false); }} className="flex items-center justify-between gap-4 rounded-xl border px-3 py-2.5 text-left transition-all" style={selected ? { background: mode.bgColor, borderColor: mode.borderColor, color: mode.color } : { background: "rgba(255,255,255,0.025)", borderColor: "transparent", color: "rgba(255,255,255,0.78)" }} role="menuitemradio" aria-checked={selected}>
-                  <span className="flex min-w-0 flex-col gap-0.5"><span className="text-xs font-semibold">{mode.label}</span><span className="text-[10px] font-normal leading-4 text-white/50">{mode.description}</span></span>
+                <motion.button type="button" key={mode.id} whileHover={{ backgroundColor: "rgba(255,255,255,0.06)" }} whileTap={{ scale: 0.98 }} onClick={() => { onChange(mode.id); setModeOpen(false); }} className="flex items-center gap-2.5 rounded-lg border border-transparent px-2.5 py-2.5 text-left transition-all" style={{ background: selected ? "rgba(255,255,255,0.025)" : "transparent" }} role="menuitemradio" aria-checked={selected}>
+                  <span className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ background: mode.color, boxShadow: `0 0 8px ${mode.color}66` }} />
+                  <span className="flex min-w-0 flex-1 flex-col gap-0.5"><span className="text-[13px] font-semibold text-white/90">{mode.label}</span><span className="text-[11px] font-normal leading-4 text-white/50">{mode.description}</span></span>
                   {selected && <Check size={14} className="shrink-0" style={{ color: mode.color }} />}
                 </motion.button>
               );
             })}
-            <p className="mt-1 border-t border-white/10 px-2.5 pt-2 text-[10px] text-white/45">Current: {currentMode.label}</p>
+            <p className="mt-2 border-t border-white/10 px-2.5 pt-2 text-[11px] text-white/45">Current: {currentMode.label}</p>
           </motion.div>
         )}
       </AnimatePresence>

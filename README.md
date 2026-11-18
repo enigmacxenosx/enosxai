@@ -147,10 +147,10 @@ Existing pre-Firebase chats are not automatically copied into a signed-in accoun
 - `NVIDIA_API_KEY` — NVIDIA's OpenAI-compatible API for chat
 - `NVIDIA_MODEL` and `NVIDIA_EX_CORE_MODEL` — Optional default and EX Core text model configuration; the recommended value is `meta/muse-glimmer-30b`
 - `NVIDIA_EX_PRO_MODEL` — EX Pro text model configuration; the recommended value is `meta/muse-glimmer-30b`
-- `NVIDIA_ENOSH_MIND_MODEL` — ENOSH MIND text model configuration; the recommended value is `stepfun-ai/step-5-preview`
+- `NVIDIA_ENOSH_MIND_MODEL` — ENOSH MIND text model configuration; the recommended value is `nvidia/nemotron-3-ultra-550b-a55b`
 - `NVIDIA_VISION_MODEL` — Shared fallback vision model configuration
 - `NVIDIA_EX_CORE_VISION_MODEL` and `NVIDIA_EX_PRO_VISION_MODEL` — Explicit Muse Glimmer vision routing for EX Core and EX Pro
-- `NVIDIA_ENOSH_MIND_VISION_MODEL` — Explicit Step 5 Preview vision routing for ENOSH MIND
+- Image-bearing requests made while ENOSH MIND is selected automatically use EX Pro vision because Nemotron 3 Ultra is text-only
 - `NVIDIA_IMAGE_API_KEY` — Optional image-provider key; falls back to `NVIDIA_API_KEY`
 - `NVIDIA_IMAGE_ENDPOINT` — Optional image endpoint override; defaults to NVIDIA's hosted FLUX.2 Klein 4B endpoint
 - `NVIDIA_IMAGE_MODEL` — Optional model identifier; defaults to `black-forest-labs/flux.2-klein-4b`

@@ -76,7 +76,7 @@ export function AIModePicker({ aiMode, onChange }: { aiMode: AIMode; onChange: (
 
   return (
     <div className="relative" ref={modeRef}>
-      <motion.button type="button" whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }} onClick={() => setModeOpen((open) => !open)} className="flex items-center gap-2 rounded-full border px-3 py-1.5 text-[11px] font-semibold whitespace-nowrap transition-all" style={{ background: currentMode.bgColor, borderColor: currentMode.borderColor, color: currentMode.color }} aria-haspopup="menu" aria-expanded={modeOpen} title={`AI mode: ${currentMode.label}`}>
+      <motion.button type="button" whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }} onClick={() => setModeOpen((open) => !open)} className="flex items-center gap-2 rounded-full px-3 py-1.5 text-[11px] font-semibold whitespace-nowrap transition-all" style={{ background: currentMode.bgColor, color: currentMode.color }} aria-haspopup="menu" aria-expanded={modeOpen} title={`AI mode: ${currentMode.label}`}>
         <span className="h-2 w-2 rounded-full" style={{ background: currentMode.color, boxShadow: `0 0 10px ${currentMode.color}88` }} />
         {currentMode.label}<ChevronDown size={12} style={{ transform: modeOpen ? "rotate(180deg)" : "rotate(0deg)", transition: "transform 0.2s ease" }} />
       </motion.button>

@@ -1,4 +1,4 @@
-import { Download, FileText, Music2, Paperclip, Video } from "lucide-react";
+import { Archive, Download, FileText, Music2, Paperclip, Video } from "lucide-react";
 import { Attachment } from "@/lib/types";
 
 interface MediaAttachmentProps {
@@ -16,6 +16,7 @@ function getKind(attachment: Attachment) {
   if (mime.startsWith("image/") || IMAGE_EXTENSIONS.includes(ext)) return "image";
   if (mime.startsWith("audio/") || AUDIO_EXTENSIONS.includes(ext)) return "audio";
   if (mime.startsWith("video/") || VIDEO_EXTENSIONS.includes(ext)) return "video";
+  if (mime === "application/zip" || ext === "zip" || attachment.name.toLowerCase().endsWith(".zip")) return "zip";
   return "file";
 }
 
@@ -64,6 +65,26 @@ export default function MediaAttachment({ attachment, compact = false }: MediaAt
         <video controls preload="metadata" src={source} className={compact ? "max-h-28 w-48 rounded-lg object-cover" : "max-h-[280px] w-full rounded-xl object-contain"} aria-label={"Play " + attachment.name} />
         <div className="flex items-center gap-2 text-xs text-white/60"><Video size={14} className="text-violet-300" />{attachment.name}</div>
       </div>
+    );
+  }
+
+  if (kind === "zip") {
+    return (
+      <button
+        type="button"
+        className={wrapperClass + " text-left transition-colors hover:border-cyan-300/40 hover:bg-white/[0.08]"}
+        onClick={() => {
+          const link = document.createElement("a");
+          link.href = source;
+          link.download = attachment.name;
+          link.click();
+        }}
+        title={"Download " + attachment.name}
+      >
+        <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-cyan-400/10 text-cyan-300"><Archive size={16} /></span>
+        <span className="min-w-0 flex-1 truncate text-xs font-semibold text-white/85">{attachment.name}</span>
+        <Download size={14} className="shrink-0 text-white/45" />
+      </button>
     );
   }
 

@@ -287,3 +287,16 @@ test("composer keeps its size while an AI reply is active and another message is
   releaseFirstRequest();
   await expect.poll(() => requestCount).toBe(2);
 });
+
+test("plugins catalog opens quickly and shows the custom asset bundle plugin", async ({ page }) => {
+  await openWorkspace(page);
+  const startedAt = Date.now();
+  await page.getByRole("button", { name: "Plugins" }).click();
+  const dialog = page.getByRole("dialog", { name: "Plugins" });
+  await expect(dialog).toBeVisible();
+  await expect(dialog.getByRole("heading", { name: "Asset Bundle Plugin" })).toBeVisible();
+  expect(Date.now() - startedAt).toBeLessThan(1_500);
+  await expect(dialog.getByRole("button", { name: "Copy prompt" }).last()).toBeEnabled();
+  await dialog.getByRole("button", { name: "Close plugins" }).click();
+  await expect(dialog).toHaveCount(0);
+});

@@ -178,6 +178,9 @@ importers:
       framer-motion:
         specifier: 'catalog:'
         version: 12.38.0(react-dom@19.1.0(react@19.1.0))(react@19.1.0)
+      jszip:
+        specifier: ^3.10.2
+        version: 3.10.2
       lucide-react:
         specifier: 'catalog:'
         version: 0.545.0(react@19.1.0)

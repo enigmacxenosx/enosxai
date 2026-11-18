@@ -2,7 +2,7 @@ import { useState } from "react";
 import { ChevronLeft, ChevronRight, Images, X } from "lucide-react";
 import type { Attachment } from "@/lib/types";
 import MediaAttachment from "./MediaAttachment";
-import ZipDownloadCard from "./ZipDownloadCard";
+import ZipDownloadButton from "./ZipDownloadButton";
 
 const IMAGE_EXTENSIONS = /\.(?:jpe?g|png|gif|webp|bmp|avif|heic|svg)$/i;
 function isImage(attachment: Attachment) {
@@ -14,8 +14,7 @@ function sourceFor(attachment: Attachment) {
 
 export default function MediaAttachmentList({ attachments }: { attachments: Attachment[] }) {
   const images = attachments.filter(isImage);
-  const zipFiles = attachments.filter((attachment) => attachment.mimeType === "application/zip" || attachment.type.toLowerCase() === "zip");
-  const otherFiles = attachments.filter((attachment) => !isImage(attachment) && !zipFiles.includes(attachment));
+  const otherFiles = attachments.filter((attachment) => !isImage(attachment));
   const [activeIndex, setActiveIndex] = useState<number | null>(null);
   const activeImage = activeIndex === null ? undefined : images[activeIndex];
   const changeImage = (offset: number) => {
@@ -25,6 +24,12 @@ export default function MediaAttachmentList({ attachments }: { attachments: Atta
 
   return (
     <div className="flex flex-col gap-2">
+      {attachments.length > 1 && (
+        <div className="flex items-center justify-between gap-3 rounded-xl border border-cyan-300/10 bg-cyan-300/[0.035] px-3 py-2">
+          <span className="text-xs text-white/45">Download these files together</span>
+          <ZipDownloadButton attachments={attachments} compact filename={`enosx-chat-${Date.now()}.zip`} />
+        </div>
+      )}
       {images.length > 0 && (
         <section className="w-full max-w-[620px] overflow-hidden rounded-2xl border border-white/10 bg-white/[0.035] p-2.5" aria-label={`${images.length} uploaded image${images.length === 1 ? "" : "s"}`}>
           <div className="mb-2 flex items-center gap-2 px-1 text-xs font-medium text-white/65">
@@ -53,7 +58,6 @@ export default function MediaAttachmentList({ attachments }: { attachments: Atta
           {otherFiles.map((attachment) => <MediaAttachment key={attachment.id} attachment={attachment} />)}
         </div>
       )}
-      {zipFiles.map((attachment) => <ZipDownloadCard key={attachment.id} attachment={attachment} />)}
       {activeImage && activeIndex !== null && (
         <div
           role="dialog"

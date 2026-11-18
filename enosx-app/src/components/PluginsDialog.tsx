@@ -53,6 +53,12 @@ const PLUGINS: PluginDefinition[] = [
     capability: "Data storytelling",
     prompt: "Turn this data into a presentation-ready visual story. Establish the baseline, identify the turning point, and explain the outcome. For each scene, provide a title, narration, recommended visual, exact data emphasis, and restrained animation direction. Do not invent values; label assumptions and include a reduced-motion alternative.",
   },
+  {
+    name: "Asset Bundle Plugin",
+    description: "Organize uploaded images and documents into a downloadable ZIP package.",
+    capability: "Custom plugin",
+    prompt: "Package the uploaded images and documents into a clean downloadable ZIP bundle. Preserve readable filenames, group related assets when useful, list the files included, and call out any unsupported or missing files before creating the archive.",
+  },
 ];
 
 export default function PluginsDialog({ open, onClose }: PluginsDialogProps) {

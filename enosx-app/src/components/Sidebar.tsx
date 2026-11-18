@@ -21,7 +21,7 @@ import {
   Search,
   Library,
   Settings,
-  Sparkles,
+  Puzzle,
 } from "lucide-react";
 import { Conversation } from "@/lib/types";
 import { useTheme } from "@/contexts/ThemeContext";
@@ -111,7 +111,7 @@ export default function Sidebar({
     {
       label: "Plugins",
       description: "Add focused AI capabilities",
-      icon: Sparkles,
+      icon: Puzzle,
       onClick: onPluginsClick || (() => setShowPlugins(true)),
       accent: false,
       danger: false,

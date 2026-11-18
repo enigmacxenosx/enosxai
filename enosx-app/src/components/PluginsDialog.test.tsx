@@ -54,7 +54,7 @@ describe("PluginsDialog connector catalog interactions", () => {
     const connectorsTab = screen.getByRole("tab", { name: "Connectors" });
 
     expect(allTab).toHaveAttribute("aria-selected", "true");
-    expect(screen.getByText("Your plugins")).toBeInTheDocument();
+    expect(screen.queryByText("Your plugins")).not.toBeInTheDocument();
     expect(screen.getByText("Most used")).toBeInTheDocument();
     expect(screen.queryByRole("tab", { name: "Skills" })).not.toBeInTheDocument();
     expect(screen.queryByText(/custom skill|prompt template|copy into a request/i)).not.toBeInTheDocument();
@@ -63,7 +63,7 @@ describe("PluginsDialog connector catalog interactions", () => {
     expect(connectorsTab).toHaveAttribute("aria-selected", "true");
     expect(screen.getByRole("heading", { name: "Connectors" })).toBeInTheDocument();
     expect(screen.getByText("GitHub")).toBeInTheDocument();
-    expect(screen.queryByText("Your plugins")).not.toBeInTheDocument();
+    expect(screen.queryByText("Most used")).not.toBeInTheDocument();
   });
 
   it("limits the connector listing to connected services when the filter is enabled", async () => {

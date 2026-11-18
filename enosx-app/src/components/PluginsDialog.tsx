@@ -70,21 +70,11 @@ export default function PluginsDialog({ open, onClose }: PluginsDialogProps) {
     ? githubAccounts.length > 0
     : savedAccounts.some((account) => account.connector === connector.id);
 
-  const connectedAccountName = (connector: ConnectorCatalogItem) => {
-    if (connector.id === "github") return githubAccounts[0]?.username;
-    const account = savedAccounts.find((item) => item.connector === connector.id);
-    return account?.username || account?.email || account?.name;
-  };
-
   const filteredConnectors = useMemo(
     () => CONNECTOR_CATALOG.filter((connector) =>
       connectorMatches(connector, query) && (!connectedOnly || isConnected(connector)),
     ),
     [connectedOnly, githubAccounts.length, query, savedAccounts],
-  );
-  const connectedPlugins = useMemo(
-    () => CONNECTOR_CATALOG.filter((connector) => isConnected(connector) && connectorMatches(connector, query)),
-    [githubAccounts.length, query, savedAccounts],
   );
 
   useEffect(() => {
@@ -280,29 +270,6 @@ export default function PluginsDialog({ open, onClose }: PluginsDialogProps) {
         </div>
 
         <main className="min-h-0 flex-1 overflow-y-auto px-5 py-5 sm:px-7 sm:py-6">
-          {activeTab === "All" && (
-            <section className="mb-7">
-              {sectionHeader("Your plugins")}
-              <div className="overflow-hidden rounded-xl border border-white/[0.07] bg-white/[0.015]">
-                {connectedPlugins.length > 0 ? connectedPlugins.map((connector, index) => (
-                  <div key={connector.id} className={`flex items-center gap-3 px-3 py-3 ${index ? "border-t border-white/[0.06]" : ""}`}>
-                    <ConnectorLogo name={connector.name} accent="#18181b" size={30} />
-                    <div className="min-w-0 flex-1">
-                      <div className="flex items-center gap-2"><span className="text-sm font-medium">{connectorTitle(connector)}</span><Check size={13} className="text-emerald-400" /></div>
-                      <p className="mt-0.5 truncate text-[11px] text-white/45">Built-in integration · By {CONNECTOR_PROVIDERS[connector.id]}</p>
-                    </div>
-                    {renderConnectorAction(connector, true)}
-                  </div>
-                )) : (
-                  <div className="flex flex-col items-start gap-2 px-4 py-4 sm:flex-row sm:items-center sm:justify-between">
-                    <div><p className="text-sm text-white/75">No connected services yet</p><p className="mt-1 text-[11px] text-white/40">Connect a supported service to see it here.</p></div>
-                    <button type="button" onClick={browseConnectors} className="rounded-lg px-3 py-2 text-xs font-medium transition" style={{ color: config.accent, background: `rgba(${config.accentRgb},.12)` }}>Browse connectors</button>
-                  </div>
-                )}
-              </div>
-            </section>
-          )}
-
           <section>
             {sectionHeader(activeTab === "All" ? "Most used" : "Connectors", activeTab === "All")}
             <div className="grid gap-x-8 sm:grid-cols-2">

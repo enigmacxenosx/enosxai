@@ -1320,7 +1320,7 @@ ${getAdminContext()}` : ""}`,
                 role="status"
               >
                 <Eye size={13} className="shrink-0 text-cyan-300" aria-hidden="true" />
-                <span>Image detected — ENOSH MIND is text-only, so this request will use ENOSX Studio Vision.</span>
+                <span>Image detected — ENOSX Nexus is text-only, so this request will use ENOSX Studio Vision.</span>
               </motion.div>
             )}
             {/* File context badges */}

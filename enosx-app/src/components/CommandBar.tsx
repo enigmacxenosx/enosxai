@@ -53,7 +53,7 @@ export const AI_MODES: AIModeOption[] = [
   },
   {
     id: "enosh-mind",
-    label: "ENOSH MIND",
+    label: "ENOSX Nexus",
     description: "Strategic reasoning and analysis",
     color: "#00f2ff",
     bgColor: "rgba(0,242,255,0.15)",

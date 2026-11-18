@@ -56,7 +56,7 @@ import { CONNECTOR_CATALOG } from "@/lib/connectorCatalog";
 import LeadCaptureDialog from "@/components/LeadCaptureDialog";
 import AdminConsoleDialog from "@/components/AdminConsoleDialog";
 import { deleteConversation as deleteCloudConversation, loadConversations, saveConversation } from "@/lib/firebaseStorage";
-import { ChevronDown, Copy, Gauge, Menu, Share2 } from "lucide-react";
+import { ChevronDown, Copy, Eye, Gauge, Menu, Share2 } from "lucide-react";
 import { copyTranscript } from "@/lib/shareConversation";
 import { getOnlineMediaSearch, getWebsiteStudyUrl, searchOnlineMedia, studyWebsite } from "@/lib/onlineResearch";
 import {
@@ -398,6 +398,10 @@ export default function ChatPage() {
   const { activeWindow } = useActiveWindow();
   const { enrichMessageWithContext } = useContextAwareMessages();
   const { fileContext, getFileContextMessage, clearFiles, loadFile, removeFile } = useFileContext();
+  const hasImageAttachment = fileContext.files.some((file) =>
+    file.mimeType?.toLowerCase().startsWith("image/") || /^(?:avif|bmp|gif|jpe?g|png|webp|svg)$/i.test(file.type)
+  );
+  const usesEnoshMindVisionFallback = activeMode === "enosh-mind" && hasImageAttachment;
   // Signed-in accounts sync their memory bank across sessions and devices.
   const { getMemoryContext, addMemory } = useMemoryBank({
     ownerId: user && user.provider !== "guest" ? user.id : undefined,
@@ -1274,6 +1278,17 @@ ${getAdminContext()}` : ""}`,
                 </motion.p>
               )}
             </AnimatePresence>
+            {usesEnoshMindVisionFallback && (
+              <motion.div
+                initial={{ opacity: 0, y: 5 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="mb-2 flex items-center gap-2 rounded-xl border border-cyan-300/15 bg-cyan-300/[0.06] px-3 py-2 text-[11px] text-cyan-100/75"
+                role="status"
+              >
+                <Eye size={13} className="shrink-0 text-cyan-300" aria-hidden="true" />
+                <span>Image detected — ENOSH MIND is text-only, so this request will use EX Pro Vision.</span>
+              </motion.div>
+            )}
             {/* File context badges */}
             <FileContextBadge
               fileContext={fileContext}

@@ -43,6 +43,10 @@
   ],
   "rewrites": [
     {
+      "source": "/api/zip",
+      "destination": "/api/generate?kind=zip"
+    },
+    {
       "source": "/api/image/generate",
       "destination": "/api/generate?kind=image"
     },

@@ -1578,8 +1578,7 @@ code, pre, kbd, samp, .font-mono {
 @keyframes enosx-signin-fill { to { width: 100%; } }
 @media (prefers-reduced-motion: reduce) { .enosx-signin-progress i.is-active::after { width: 100%; animation: none; } }
 
-/* ===================================================================
-   ENOSX AI message bar — mirrors the supplied EnosxAI reference exactly.
+/* ============================================================   ENOSX AI message bar — mirrors the supplied EnosxAI reference exactly.
    Light theme uses the reference light palette, every dark theme the dark one.
    The input keeps a fixed 52px height so the bar never grows after a prompt.
    ========================================================================== */
@@ -1790,3 +1789,269 @@ body.light .enosx-composer {
 @keyframes live-activity-pulse { 0%, 100% { opacity: .65; transform: scale(.9); } 50% { opacity: 1; transform: scale(1.1); } }
 @media (prefers-reduced-motion: reduce) { .live-activity-pulse.is-active { animation: none; } }
 
+/* ===================================================================   ENOSX AI phone reference layout
+   Mirrors the supplied 390px mobile composition: compact header, centered
+   welcome mark, stacked starter rows, and a low-profile rounded composer.
+   ========================================================================== */
+.phone-reference-shell {
+  --phone-bg: #0b0a12;
+  --phone-text: #f1f1f6;
+  --phone-muted: rgba(229, 229, 239, 0.62);
+  --phone-line: rgba(255, 255, 255, 0.12);
+  background: var(--phone-bg);
+  color: var(--phone-text);
+}
+.phone-reference-header {
+  height: 64px;
+  gap: 8px;
+  padding: 7px 16px 5px;
+  background: var(--phone-bg);
+}
+.phone-reference-menu {
+  display: grid;
+  flex: none;
+  width: 32px;
+  height: 40px;
+  place-items: center;
+  margin-left: -6px;
+  border: 0;
+  border-radius: 12px;
+  color: rgba(255, 255, 255, 0.58);
+  background: transparent;
+  transition: background-color 0.16s ease, color 0.16s ease;
+}
+.phone-reference-menu:hover,
+.phone-reference-menu:focus-visible {
+  color: #fff;
+  background: rgba(255, 255, 255, 0.07);
+}
+.phone-reference-brand {
+  display: flex;
+  flex: 1 1 auto;
+  align-items: center;
+  gap: 7px;
+  overflow: hidden;
+  color: #f2f2f7;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: -0.025em;
+}
+.phone-reference-brand .relative {
+  width: 28px;
+  height: 28px;
+}
+.phone-reference-mode {
+  height: 34px !important;
+  gap: 5px !important;
+  padding: 0 10px !important;
+  border: 1px solid rgba(124, 111, 247, 0.2);
+  border-radius: 18px !important;
+  background: rgba(87, 68, 176, 0.2) !important;
+  color: #b6aaff !important;
+  font-size: 11px !important;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05);
+}
+.phone-reference-mode > span {
+  width: 6px;
+  height: 6px;
+}
+.phone-reference-mode > svg {
+  width: 11px;
+  height: 11px;
+}
+.phone-reference-tokens {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  height: 38px;
+  padding: 0 10px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 20px;
+  color: rgba(241, 241, 247, 0.72);
+  background: rgba(17, 17, 25, 0.66);
+  font-size: 11px;
+  white-space: nowrap;
+}
+.phone-reference-tokens svg {
+  color: rgba(241, 241, 247, 0.66);
+}
+.phone-reference-tokens strong {
+  color: #f5f5f8;
+  font-size: 12px;
+  font-weight: 700;
+}
+.phone-reference-tokens span {
+  color: rgba(241, 241, 247, 0.6);
+}
+.phone-reference-main {
+  background: var(--phone-bg);
+  overscroll-behavior: contain;
+}
+.phone-reference-welcome {
+  min-height: 100%;
+  padding-bottom: 12px;
+}
+.phone-reference-hero {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding-top: 116px;
+  text-align: center;
+}
+.phone-reference-hero h1 {
+  margin: 10px 0 0;
+  color: #f0f0f5;
+  font-size: 21px;
+  font-weight: 650;
+  letter-spacing: -0.035em;
+  line-height: 1.3;
+}
+.phone-reference-suggestions {
+  margin-top: 126px;
+  padding: 0 20px;
+}
+.phone-reference-suggestions__heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 30px;
+}
+.phone-reference-suggestions__heading h2 {
+  margin: 0;
+  color: #f0f0f5;
+  font-size: 16px;
+  font-weight: 550;
+  letter-spacing: -0.025em;
+}
+.phone-reference-suggestions__close {
+  display: grid;
+  width: 32px;
+  height: 32px;
+  place-items: center;
+  margin-right: -7px;
+  border: 0;
+  border-radius: 50%;
+  color: rgba(241, 241, 247, 0.58);
+  background: transparent;
+}
+.phone-reference-suggestions__close:hover,
+.phone-reference-suggestions__close:focus-visible {
+  color: #fff;
+  background: rgba(255, 255, 255, 0.08);
+}
+.welcome-suggestions--list {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  gap: 0 !important;
+}
+.welcome-suggestion--list {
+  display: flex !important;
+  flex: none !important;
+  width: 100% !important;
+  height: 49px !important;
+  min-height: 49px !important;
+  align-items: center;
+  gap: 14px !important;
+  padding: 0 !important;
+  border: 0 !important;
+  border-bottom: 1px solid var(--phone-line) !important;
+  border-radius: 0 !important;
+  color: rgba(235, 235, 242, 0.88) !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  font-size: 16px !important;
+  font-weight: 450 !important;
+  letter-spacing: -0.015em;
+  white-space: nowrap;
+}
+.welcome-suggestion--list:hover,
+.welcome-suggestion--list:focus-visible {
+  color: #fff !important;
+  background: rgba(255, 255, 255, 0.035) !important;
+}
+.welcome-suggestion--list svg {
+  flex: none;
+  width: 20px;
+  height: 20px;
+  stroke-width: 1.7;
+}
+.phone-reference-composer-dock {
+  padding: 0 8px max(8px, env(safe-area-inset-bottom));
+  background: var(--phone-bg);
+}
+.phone-reference-composer-dock .enosx-composer {
+  padding: 15px 14px 12px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 30px;
+  background: rgba(30, 30, 37, 0.97);
+  box-shadow: 0 12px 34px rgba(0, 0, 0, 0.36), inset 0 1px 0 rgba(255, 255, 255, 0.06);
+}
+.phone-reference-composer-dock .enosx-composer__input {
+  height: 36px !important;
+  min-height: 36px !important;
+  max-height: 36px !important;
+  padding: 0 2px;
+  color: #f1f1f5;
+  font-size: 16px !important;
+  line-height: 1.35 !important;
+}
+.phone-reference-composer-dock .enosx-composer__tools {
+  gap: 7px;
+  margin-top: 10px;
+}
+.phone-reference-composer-dock .enosx-icon,
+.phone-reference-composer-dock .enosx-pill {
+  width: 38px;
+  min-width: 38px;
+  height: 38px;
+  padding: 0;
+  justify-content: center;
+}
+.phone-reference-composer-dock .enosx-pill--connectors {
+  width: 76px;
+  min-width: 76px;
+  justify-content: flex-start;
+  padding: 0 8px;
+}
+.phone-reference-composer-dock .enosx-pill--connectors .enosx-pill__count {
+  margin-left: 1px;
+}
+.phone-reference-composer-dock .enosx-send,
+.phone-reference-composer-dock .enosx-send button {
+  height: 38px;
+}
+.phone-reference-composer-dock .enosx-send__go {
+  width: 40px;
+}
+.phone-reference-composer-dock .enosx-send__more {
+  width: 30px;
+}
+.phone-reference-composer-dock .enosx-composer__input::placeholder {
+  color: rgba(224, 224, 235, 0.48) !important;
+}
+@media (max-width: 359px) {
+  .phone-reference-header {
+    gap: 5px;
+    padding-inline: 12px;
+  }
+  .phone-reference-brand {
+    font-size: 12px;
+  }
+  .phone-reference-mode {
+    padding-inline: 8px !important;
+  }
+  .phone-reference-tokens {
+    gap: 3px;
+    padding-inline: 7px;
+  }
+  .phone-reference-tokens span {
+    display: none;
+  }
+  .phone-reference-hero {
+    padding-top: 94px;
+  }
+  .phone-reference-suggestions {
+    margin-top: 94px;
+  }
+}

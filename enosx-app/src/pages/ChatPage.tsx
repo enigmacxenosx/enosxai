@@ -1128,6 +1128,7 @@ ${getAdminContext()}` : ""}`,
           audioStream={microphoneStream}
           onSettingsClick={() => setShowProfilePanel(true)}
           userDisplayName={user?.displayName}
+          totalTokensUsed={analytics.totalTokensUsed}
         />
       </GlobalLayout>
     );

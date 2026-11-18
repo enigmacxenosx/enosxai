@@ -1,12 +1,12 @@
 import React from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Menu, Plus } from "lucide-react";
+import { Gauge, Menu, X } from "lucide-react";
 import Sidebar from "./Sidebar";
 import MessageBubble from "./MessageBubble";
-import CommandBar, { AI_MODES, type AIMode } from "./CommandBar";
-import WelcomeScreen, { WelcomeSuggestions } from "./WelcomeScreen";
+import CommandBar, { AIModePicker, type AIMode } from "./CommandBar";
+import { WelcomeSuggestions } from "./WelcomeScreen";
+import BrandMark from "./BrandMark";
 import { Conversation, Message, VoiceState, type Attachment } from "@/lib/types";
-import { useTheme } from "@/contexts/ThemeContext";
 
 interface PhoneChatLayoutProps {
   conversations: Conversation[];
@@ -36,6 +36,7 @@ interface PhoneChatLayoutProps {
   audioStream?: MediaStream | null;
   onSettingsClick?: () => void;
   userDisplayName?: string;
+  totalTokensUsed?: number;
 }
 
 export default function PhoneChatLayout({
@@ -66,61 +67,77 @@ export default function PhoneChatLayout({
   audioStream = null,
   onSettingsClick,
   userDisplayName,
+  totalTokensUsed = 0,
 }: PhoneChatLayoutProps) {
-  const { config } = useTheme();
+  const [showSuggestions, setShowSuggestions] = React.useState(true);
+
+  React.useEffect(() => {
+    if (messages.length === 0) setShowSuggestions(true);
+  }, [messages.length]);
 
   return (
-    <div className="flex flex-col h-full w-full relative bg-black overflow-hidden">
-      {/* Mobile Header */}
-      <header className="h-14 flex items-center justify-between px-4 border-b border-white/10 z-20 bg-black/50 backdrop-blur-md">
+    <div className="phone-reference-shell flex h-full w-full flex-col overflow-hidden">
+      {/* Reference-style mobile header */}
+      <header className="phone-reference-header z-20 flex shrink-0 items-center">
         <button
           type="button"
           onClick={() => setIsMobileSidebarOpen(true)}
-          className="min-h-11 min-w-11 p-2 -ml-2 text-white/70 hover:text-white transition-colors touch-manipulation"
+          className="phone-reference-menu touch-manipulation"
+          aria-label="Open conversations"
         >
-          <Menu size={24} />
+          <Menu size={22} strokeWidth={1.7} />
         </button>
-        <div className="flex items-center gap-2">
-          <div className="text-sm font-bold tracking-tighter text-white/90">ENOSX <span className="text-cyan-400">AI</span></div>
+        <div className="phone-reference-brand min-w-0">
+          <BrandMark size={28} className="shrink-0" />
+          <span className="truncate">ENOSX AI</span>
         </div>
-        <button
-          type="button"
-          onClick={createNewChat}
-          className="min-h-11 min-w-11 p-2 -mr-2 text-white/70 hover:text-white transition-colors touch-manipulation"
+        <AIModePicker
+          aiMode={aiMode}
+          onChange={onAiModeChange}
+          className="phone-reference-mode shrink-0"
+        />
+        <div
+          className="phone-reference-tokens shrink-0"
+          role="status"
+          aria-label={`${totalTokensUsed.toLocaleString()} tokens used`}
         >
-          <Plus size={24} />
-        </button>
+          <Gauge size={13} strokeWidth={1.7} />
+          <strong>{totalTokensUsed.toLocaleString()}</strong>
+          <span>tokens</span>
+        </div>
       </header>
 
-      <nav className="mobile-ai-modes flex flex-shrink-0 items-center gap-1.5 border-b border-white/10 bg-black/35 px-3 py-2" aria-label="ENOSX AI modes">
-        {AI_MODES.map((mode) => {
-          const selected = aiMode === mode.id;
-          return (
-            <button
-              key={mode.id}
-              type="button"
-              onClick={() => onAiModeChange(mode.id)}
-              aria-pressed={selected}
-              className="mobile-ai-mode min-w-0 flex-1 truncate rounded-lg px-2 py-2 text-[10px] font-semibold transition-colors touch-manipulation"
-              style={{
-                color: selected ? mode.color : "rgba(255,255,255,0.72)",
-                background: selected ? mode.bgColor : "rgba(255,255,255,0.035)",
-                border: selected ? `1px solid ${mode.color}66` : "1px solid rgba(255,255,255,0.09)",
-              }}
-              title={mode.description}
-            >
-              {mode.label}
-            </button>
-          );
-        })}
-      </nav>
-
-      {/* Main Content Area */}
-      <main className="flex-1 min-h-0 overflow-y-auto relative z-10 px-4 py-4 scrollbar-hide">
+      {/* Main content area */}
+      <main className="phone-reference-main relative z-10 min-h-0 flex-1 overflow-y-auto scrollbar-hide">
         {messages.length === 0 ? (
-          <WelcomeScreen onSuggestion={(p: string) => handleSend(p)} showSuggestions={false} />
+          <div className="phone-reference-welcome">
+            <div className="phone-reference-hero">
+              <BrandMark size={46} />
+              <h1>What would you like to work on?</h1>
+            </div>
+            {showSuggestions && (
+              <section className="phone-reference-suggestions" aria-label="Suggested for you">
+                <div className="phone-reference-suggestions__heading">
+                  <h2>Suggested for you</h2>
+                  <button
+                    type="button"
+                    onClick={() => setShowSuggestions(false)}
+                    className="phone-reference-suggestions__close"
+                    aria-label="Hide suggested prompts"
+                  >
+                    <X size={18} strokeWidth={1.7} />
+                  </button>
+                </div>
+                <WelcomeSuggestions
+                  onSuggestion={(p: string) => handleSend(p)}
+                  variant="list"
+                  animateEntrance={false}
+                />
+              </section>
+            )}
+          </div>
         ) : (
-          <div className="flex flex-col gap-6 pb-32">
+          <div className="flex flex-col gap-6 px-4 py-4 pb-32">
             {messages.map((msg, idx) => (
               <MessageBubble
                 key={msg.id}
@@ -136,13 +153,8 @@ export default function PhoneChatLayout({
         )}
       </main>
 
-      {/* Mobile Command Bar */}
-      <div className="phone-composer-dock relative z-30 shrink-0 border-t border-white/10 bg-black/80 px-3 pb-[calc(0.5rem+env(safe-area-inset-bottom))] pt-2 backdrop-blur-xl">
-        {messages.length === 0 && (
-          <div className="phone-welcome-suggestions px-2 pb-1">
-            <WelcomeSuggestions onSuggestion={(p: string) => handleSend(p)} animateEntrance={false} />
-          </div>
-        )}
+      {/* Mobile command bar */}
+      <div className="phone-reference-composer-dock relative z-30 shrink-0">
         <CommandBar
           onSend={handleSend}
           aiMode={aiMode}
@@ -173,14 +185,14 @@ export default function PhoneChatLayout({
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               onClick={() => setIsMobileSidebarOpen(false)}
-              className="fixed inset-0 bg-black/60 backdrop-blur-sm z-40"
+              className="fixed inset-0 z-40 bg-black/60 backdrop-blur-sm"
             />
             <motion.div
               initial={{ x: "-100%" }}
               animate={{ x: 0 }}
               exit={{ x: "-100%" }}
               transition={{ type: "spring", damping: 25, stiffness: 200 }}
-              className="fixed top-0 left-0 bottom-0 w-[80%] max-w-[300px] z-50 bg-[#0c0c10] border-r border-white/10"
+              className="fixed bottom-0 left-0 top-0 z-50 w-[80%] max-w-[300px] border-r border-white/10 bg-[#0c0c10]"
             >
               <Sidebar
                 conversations={conversations}

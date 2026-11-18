@@ -194,6 +194,7 @@ function WorkspacePicker({ onOpenChange }: WorkspacePickerProps) {
 
 interface CommandBarProps {
   onSend: (text: string, aiMode?: AIMode, selectedConnectorIds?: string[]) => void;
+  onQueue?: (text: string, aiMode?: AIMode, selectedConnectorIds?: string[]) => void;
   onDraftChange?: (hasDraft: boolean) => void;
   isLoading: boolean;
   voiceState: VoiceState;
@@ -212,11 +213,11 @@ interface CommandBarProps {
   animateEntrance?: boolean;
   userDisplayName?: string;
   aiMode: AIMode;
-  onAiModeChange?: (mode: AIMode) => void;
 }
 
 export default function CommandBar({
   onSend,
+  onQueue,
   onDraftChange,
   isLoading,
   voiceState,
@@ -234,14 +235,11 @@ export default function CommandBar({
   animateEntrance = true,
   userDisplayName,
   aiMode,
-  onAiModeChange,
 }: CommandBarProps) {
   const [value, setValue] = useState("");
   const [selectedConnectorIds, setSelectedConnectorIds] = useState<string[]>([]);
-  const [sendMenuOpen, setSendMenuOpen] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const sendRef = useRef<HTMLDivElement>(null);
 
   const isListening = voiceState === "listening";
   const isSpeaking = voiceState === "speaking";
@@ -279,25 +277,24 @@ export default function CommandBar({
     }
   }, [transcript]);
 
-  useEffect(() => {
-    if (!sendMenuOpen) return;
-    const handleOutside = (event: MouseEvent) => {
-      if (!sendRef.current?.contains(event.target as Node)) setSendMenuOpen(false);
-    };
-    document.addEventListener("mousedown", handleOutside);
-    return () => document.removeEventListener("mousedown", handleOutside);
-  }, [sendMenuOpen]);
-
   const handleSend = useCallback(() => {
     const text = value.trim();
     if (!text || disabled) return;
     onSend(text, aiMode, selectedConnectorIds);
     setValue("");
     onDraftChange?.(false);
-    setSendMenuOpen(false);
     // The input keeps its fixed height after sending; only the scroll resets.
     if (textareaRef.current) textareaRef.current.scrollTop = 0;
   }, [value, disabled, onSend, aiMode, selectedConnectorIds, onDraftChange]);
+
+  const handleQueue = useCallback(() => {
+    const text = value.trim();
+    if (!text || disabled) return;
+    (onQueue ?? onSend)(text, aiMode, selectedConnectorIds);
+    setValue("");
+    onDraftChange?.(false);
+    if (textareaRef.current) textareaRef.current.scrollTop = 0;
+  }, [value, disabled, onQueue, onSend, aiMode, selectedConnectorIds, onDraftChange]);
 
   const handleToggleConnector = useCallback((connectorId: string) => {
     setSelectedConnectorIds((current) =>
@@ -428,7 +425,7 @@ export default function CommandBar({
               </button>
             )}
 
-            <div className="relative shrink-0" ref={sendRef}>
+            <div className="relative shrink-0">
               <div className="enosx-send" data-ready={canSend}>
                 <button
                   type="button"
@@ -442,53 +439,15 @@ export default function CommandBar({
                 </button>
                 <button
                   type="button"
-                  onClick={() => setSendMenuOpen((open) => !open)}
+                  onClick={handleQueue}
+                  disabled={!canSend}
                   className="enosx-send__more"
-                  aria-label="More send options"
-                  aria-haspopup="menu"
-                  aria-expanded={sendMenuOpen}
-                  title="More send options"
+                  aria-label="Add message to queue"
+                  title="Add message to queue"
                 >
                   <ChevronDown size={14} strokeWidth={2.6} />
                 </button>
               </div>
-
-              <AnimatePresence>
-                {sendMenuOpen && (
-                  <motion.div
-                    initial={{ opacity: 0, y: 6, scale: 0.97 }}
-                    animate={{ opacity: 1, y: 0, scale: 1 }}
-                    exit={{ opacity: 0, y: 6, scale: 0.97 }}
-                    transition={{ duration: 0.15 }}
-                    className="enosx-menu enosx-menu--send"
-                    role="menu"
-                    aria-label="Send options"
-                  >
-                    <p className="enosx-menu__label">Send with</p>
-                    {AI_MODES.map((mode) => (
-                      <button
-                        key={mode.id}
-                        type="button"
-                        role="menuitemradio"
-                        aria-checked={mode.id === aiMode}
-                        onClick={() => {
-                          onAiModeChange?.(mode.id);
-                          setSendMenuOpen(false);
-                        }}
-                        className="enosx-menu__item"
-                      >
-                        <span className="enosx-menu__dot" style={{ background: mode.color }} />
-                        <span className="enosx-menu__copy">
-                          <span className="enosx-menu__title">{mode.label}</span>
-                          <span className="enosx-menu__hint">{mode.description}</span>
-                        </span>
-                        {mode.id === aiMode && <Check size={14} className="enosx-menu__check" />}
-                      </button>
-                    ))}
-                    <p className="enosx-menu__foot">Current: {currentMode.label}</p>
-                  </motion.div>
-                )}
-              </AnimatePresence>
             </div>
           </div>
         </div>

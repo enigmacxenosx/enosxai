@@ -1249,6 +1249,7 @@ ${getAdminContext()}` : ""}`,
 
             <CommandBar
               onSend={handleSendTracked}
+              onQueue={enqueueWaitingMessage}
               onDraftChange={setHasComposerDraft}
               aiMode={activeMode}
               isLoading={isLoading}
@@ -1266,7 +1267,6 @@ ${getAdminContext()}` : ""}`,
               tightBottom={!activeConversation || activeConversation.messages.length === 0}
               animateEntrance={!isWelcomeState}
               userDisplayName={user?.displayName}
-              onAiModeChange={setActiveMode}
             />
             {(!activeConversation || activeConversation.messages.length === 0) && !hasComposerDraft && (
               <div className="welcome-suggestions-dock pb-1">

@@ -125,13 +125,16 @@ When a user message begins with [GOD MODE COMMAND], switch to advanced operator 
 
 // Keep enough recent context for continuity without repeatedly pre-filling
 // very long transcripts on every streamed turn.
-const MAX_HISTORY_MESSAGES = 40;
+// Keep request context small enough for fast first-token latency. The client
+// sends dynamic context while the server supplies the authoritative system
+// prompt, so retaining 40 prior messages needlessly increases prompt work.
+const MAX_HISTORY_MESSAGES = 20;
 const MAX_MESSAGE_CHARS = 20_000;
 // Total character budget for the retained conversation history. This lets long
 // chats keep far more context than the message-count cap alone, while still
 // bounding the payload sent to the provider so a single huge thread cannot
 // overflow the model context window or inflate latency/cost.
-const MAX_HISTORY_CHARS = 120_000;
+const MAX_HISTORY_CHARS = 60_000;
 const PROVIDER_RETRY_STATUSES = new Set([408, 429, 500, 502, 503, 504]);
 
 // --- Response cache -------------------------------------------------------

@@ -901,7 +901,7 @@ ${getAdminContext()}` : ""}`,
         updateReasoningStatus
       );
 
-      return removeActionBlocks(streamedContent) || "ENOSX Core returned an empty response.";
+      return removeActionBlocks(streamedContent) || "ENOSX One returned an empty response.";
       } finally {
         // Release the guard even if something threw mid-flight.
         sendingRef.current = false;
@@ -1320,7 +1320,7 @@ ${getAdminContext()}` : ""}`,
                 role="status"
               >
                 <Eye size={13} className="shrink-0 text-cyan-300" aria-hidden="true" />
-                <span>Image detected — ENOSH MIND is text-only, so this request will use EX Pro Vision.</span>
+                <span>Image detected — ENOSH MIND is text-only, so this request will use ENOSX Studio Vision.</span>
               </motion.div>
             )}
             {/* File context badges */}

@@ -37,7 +37,7 @@ export interface AIModeOption {
 export const AI_MODES: AIModeOption[] = [
   {
     id: "ex-core",
-    label: "EX Core",
+    label: "ENOSX One",
     description: "Fast everyday assistance",
     color: "#7c6ff7",
     bgColor: "rgba(124,111,247,0.15)",
@@ -45,7 +45,7 @@ export const AI_MODES: AIModeOption[] = [
   },
   {
     id: "ex-pro",
-    label: "EX Pro",
+    label: "ENOSX Studio",
     description: "Deeper expert responses",
     color: "#a855f7",
     bgColor: "rgba(168,85,247,0.15)",

@@ -218,82 +218,91 @@ export default function PluginsDialog({ open, onClose }: PluginsDialogProps) {
   );
 
   return (
-    <div className="fixed inset-0 z-[80] flex items-center justify-center bg-black/75 p-3 backdrop-blur-sm sm:p-6" onClick={onClose}>
-      <section
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="plugins-title"
-        className="relative flex max-h-[min(860px,calc(100dvh-24px))] w-full max-w-6xl flex-col overflow-hidden rounded-2xl border text-white shadow-2xl sm:max-h-[min(860px,calc(100dvh-48px))]"
-        style={{
-          background: `linear-gradient(155deg, rgba(${config.accentRgb}, 0.055), transparent 28%), ${config.bg}`,
-          borderColor: `rgba(${config.accentRgb}, 0.2)`,
-          boxShadow: `0 28px 90px rgba(0,0,0,.65), 0 0 40px rgba(${config.accentRgb},.08)`,
-        }}
-        onClick={(event) => event.stopPropagation()}
-      >
-        <header className="flex items-center justify-between px-5 py-4 sm:px-7 sm:py-5">
-          <div className="flex items-center gap-3">
-            <span className="flex h-9 w-9 items-center justify-center rounded-xl border" style={{ color: config.accent, background: `rgba(${config.accentRgb},.12)`, borderColor: `rgba(${config.accentRgb},.25)` }}><Puzzle size={18} /></span>
-            <div>
-              <h2 id="plugins-title" className="font-serif text-[24px] leading-none tracking-tight">Plugins</h2>
-              <p className="mt-1 text-[11px] text-white/40">Your connected services and available integrations.</p>
-            </div>
+    <div className="fixed inset-0 z-[80] flex bg-[#151515] text-white">
+      <section role="dialog" aria-modal="true" aria-labelledby="plugins-title" className="flex min-h-0 w-full">
+        <aside className="hidden w-[252px] shrink-0 flex-col border-r border-white/[0.07] bg-[#191919] px-3 py-4 md:flex">
+          <div className="mb-7 flex items-center justify-between px-2">
+            <div className="flex items-center gap-2 font-serif text-[21px] font-semibold tracking-tight"><Puzzle size={20} style={{ color: config.accent }} />enosx</div>
+            <button type="button" onClick={onClose} aria-label="Close plugins" className="rounded-lg p-2 text-white/40 transition hover:bg-white/[0.07] hover:text-white"><X size={16} /></button>
           </div>
-          <div className="flex items-center gap-1">
-            <button type="button" aria-label="More plugin options" className="rounded-lg p-2 text-white/40 transition hover:bg-white/[0.07] hover:text-white"><span className="text-lg leading-none">···</span></button>
-            <button type="button" onClick={onClose} aria-label="Close plugins" className="rounded-lg p-2 text-white/45 transition hover:bg-white/[0.08] hover:text-white"><X size={18} /></button>
-          </div>
-        </header>
+          <nav aria-label="Main navigation" className="space-y-1">
+            <button type="button" onClick={onClose} className="flex h-10 w-full items-center gap-3 rounded-lg px-3 text-left text-sm text-white/65 transition hover:bg-white/[0.06] hover:text-white"><ExternalLink size={16} />Chat</button>
+            <button type="button" aria-current="page" className="flex h-10 w-full items-center gap-3 rounded-lg bg-white/[0.09] px-3 text-left text-sm font-medium text-white"><Puzzle size={16} style={{ color: config.accent }} />Plugins</button>
+          </nav>
+          <div className="mt-8 px-3 text-xs font-medium text-white/35">Workspace</div>
+          <div className="mt-2 flex items-center gap-2 rounded-lg px-3 py-2 text-sm text-white/65"><span className="grid h-6 w-6 place-items-center rounded-md bg-white/[0.08] text-[10px] font-semibold">E</span>ENOSX AI</div>
+          <div className="mt-auto rounded-xl border border-white/[0.08] bg-white/[0.035] p-3"><div className="text-xs font-semibold">ENOSX STUDIO</div><div className="mt-1 text-[11px] text-white/40">Connected tools, in one place</div></div>
+        </aside>
 
-        <div className="flex flex-col gap-3 border-b border-white/[0.07] px-5 pb-4 sm:flex-row sm:items-center sm:px-7">
-          <label className="flex min-w-0 flex-1 items-center gap-2.5 rounded-xl border border-white/[0.06] bg-white/[0.07] px-3.5 py-2.5 focus-within:border-white/20">
-            <Search size={15} className="shrink-0 text-white/45" />
-            <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search" aria-label="Search plugins" className="min-w-0 flex-1 bg-transparent text-[13px] text-white outline-none placeholder:text-white/35" />
-            {query && <button type="button" aria-label="Clear search" onClick={() => setQuery("")} className="text-white/40 hover:text-white"><X size={14} /></button>}
-          </label>
-
-          <div className="flex items-center gap-2">
-            <div className="flex rounded-xl bg-white/[0.06] p-0.5" role="tablist" aria-label="Plugin categories">
-              {(["All", "Connectors"] as TabName[]).map((tab) => (
-                <button key={tab} id={`plugins-tab-${tab.toLowerCase()}`} type="button" role="tab" aria-selected={activeTab === tab} onClick={() => setActiveTab(tab)} className="rounded-[9px] px-3 py-1.5 text-xs transition" style={activeTab === tab ? { background: `rgba(${config.accentRgb},.18)`, color: config.accent, boxShadow: `inset 0 0 0 1px rgba(${config.accentRgb},.3)` } : { color: "rgba(255,255,255,.62)" }}>{tab}</button>
-              ))}
-            </div>
+        <div className="flex min-w-0 flex-1 flex-col">
+          <header className="flex h-[62px] shrink-0 items-center gap-3 border-b border-white/[0.07] px-4 sm:px-7">
+            <div className="flex-1"><h2 id="plugins-title" className="text-[17px] font-semibold tracking-tight">Plugins</h2></div>
+            <button type="button" onClick={browseConnectors} className="hidden h-9 items-center rounded-lg border border-white/[0.12] px-3 text-xs font-medium text-white/75 transition hover:bg-white/[0.06] sm:inline-flex">Manage Connectors</button>
             <div className="relative">
-              <button type="button" aria-label="Filter plugins" aria-expanded={showFilter} onClick={() => { setShowFilter((value) => !value); setShowAddMenu(false); }} className={`flex h-9 w-9 items-center justify-center rounded-xl border transition ${connectedOnly ? "text-white" : "border-transparent text-white/50 hover:bg-white/[0.06] hover:text-white"}`} style={connectedOnly ? { borderColor: `rgba(${config.accentRgb},.35)`, background: `rgba(${config.accentRgb},.12)` } : undefined}><Filter size={15} /></button>
-              {showFilter && <div className="absolute right-0 top-11 z-10 w-48 rounded-xl border border-white/10 bg-[#202027] p-2 shadow-xl"><button type="button" onClick={() => setConnectedOnly((value) => !value)} className="flex w-full items-center gap-2 rounded-lg px-2 py-2 text-left text-xs text-white/75 hover:bg-white/[0.06]"><span className={`flex h-4 w-4 items-center justify-center rounded border ${connectedOnly ? "border-white/70 bg-white/15" : "border-white/20"}`}>{connectedOnly && <Check size={11} />}</span>Connected only</button></div>}
-            </div>
-            <div className="relative">
-              <button type="button" aria-expanded={showAddMenu} onClick={() => { setShowAddMenu((value) => !value); setShowFilter(false); }} className="flex h-9 items-center gap-1.5 rounded-xl px-3 text-xs font-semibold text-white transition hover:brightness-110" style={{ background: config.accent }}><Plus size={14} /> Add <ChevronDown size={13} /></button>
+              <button type="button" aria-expanded={showAddMenu} onClick={() => { setShowAddMenu((value) => !value); setShowFilter(false); }} className="flex h-9 items-center gap-2 rounded-lg px-3 text-xs font-semibold text-white transition hover:brightness-110" style={{ background: config.accent }}><Plus size={14} />Create<ChevronDown size={13} /></button>
               {showAddMenu && <div className="absolute right-0 top-11 z-10 w-48 rounded-xl border border-white/10 bg-[#202027] p-1.5 shadow-xl"><button type="button" onClick={browseConnectors} className="w-full rounded-lg px-3 py-2.5 text-left text-xs text-white/80 hover:bg-white/[0.07]">Browse connectors</button></div>}
             </div>
-          </div>
-        </div>
+            <button type="button" onClick={onClose} aria-label="Close plugins" className="rounded-lg p-2 text-white/45 transition hover:bg-white/[0.08] hover:text-white md:hidden"><X size={17} /></button>
+          </header>
 
-        <main className="min-h-0 flex-1 overflow-y-auto px-5 py-5 sm:px-7 sm:py-6">
-          <section>
-            {sectionHeader(activeTab === "All" ? "Most used" : "Connectors", activeTab === "All")}
-            <div className="grid gap-x-8 sm:grid-cols-2">
-              {filteredConnectors.map((connector, index) => {
-                const connected = isConnected(connector);
-                const status = oauthStatus[connector.id] || "loading";
-                const indexInRow = index % 2;
-                return (
-                  <article key={connector.id} className={`flex min-w-0 items-start gap-3 border-white/[0.08] py-3.5 ${index > 1 ? "border-t" : ""} ${indexInRow === 1 ? "sm:border-t-0" : ""}`}>
-                    <ConnectorLogo name={connector.name} accent="#18181b" size={32} />
-                    <div className="min-w-0 flex-1">
-                      <div className="flex flex-wrap items-center gap-1.5"><h4 className="text-sm font-medium text-white/90">{connectorTitle(connector)}</h4><span className="text-white/35" aria-hidden="true">◉</span><span className="text-[10px] text-white/40">{connector.kind}</span></div>
-                      <p className="mt-0.5 text-[11px] leading-relaxed text-white/50">{CONNECTOR_DESCRIPTIONS[connector.id]}</p>
-                      <p className="mt-1.5 text-[10px] text-white/35">Connector · By {CONNECTOR_PROVIDERS[connector.id]}</p>
-                    </div>
-                    <div className="pt-0.5">{connected ? renderConnectorAction(connector, true) : status === "ready" ? renderConnectorAction(connector) : <span className="text-[10px] text-white/35">{status === "needs-setup" ? "Setup required" : status === "unavailable" ? "Unavailable" : "Checking"}</span>}</div>
-                  </article>
-                );
-              })}
-              {filteredConnectors.length === 0 && <p className="col-span-full py-8 text-center text-xs text-white/40">No connectors match your search or filter.</p>}
+          <main className="min-h-0 flex-1 overflow-y-auto px-4 pb-10 pt-5 sm:px-7 sm:pt-7">
+            <div className="mx-auto max-w-[980px]">
+              {activeTab === "All" && <section className="mb-7">
+                <div className="mb-3 text-[13px] font-semibold text-white/85">Bring your tools into ENOSX</div>
+                <div className="grid gap-3 sm:grid-cols-3">
+                  {(["github", "vercel", "shopify"] as const).map((id) => {
+                    const connector = CONNECTOR_CATALOG.find((item) => item.id === id);
+                    if (!connector) return null;
+                    const copy = id === "github" ? "Work with your repositories and code." : id === "vercel" ? "Keep deployments and projects close." : "Connect your store and product data.";
+                    return <button key={id} type="button" onClick={() => { setQuery(connector.name); browseConnectors(); }} className="flex min-h-[104px] items-start gap-3 rounded-xl border border-white/[0.09] bg-[#1d1d1d] p-3.5 text-left transition hover:border-white/[0.18] hover:bg-[#222]">
+                      <span className="grid h-9 w-9 shrink-0 place-items-center rounded-lg border border-white/[0.08] bg-white/[0.045]"><ConnectorLogo name={connector.name} accent="#18181b" size={21} /></span>
+                      <span className="min-w-0"><span className="block text-[13px] font-semibold text-white/90">Connect {connector.name}</span><span className="mt-1 block text-xs leading-relaxed text-white/50">{copy}</span></span>
+                    </button>;
+                  })}
+                </div>
+              </section>}
+
+              <label className="mb-4 flex h-10 items-center gap-2.5 rounded-lg border border-white/[0.12] bg-transparent px-3.5 text-white/45 transition focus-within:border-white/25">
+                <Search size={15} className="shrink-0" />
+                <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search plugins" aria-label="Search plugins" className="min-w-0 flex-1 bg-transparent text-[13px] text-white outline-none placeholder:text-white/35" />
+                {query && <button type="button" aria-label="Clear search" onClick={() => setQuery("")} className="text-white/40 hover:text-white"><X size={14} /></button>}
+              </label>
+
+              <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+                <div className="flex items-center gap-1 overflow-x-auto" role="tablist" aria-label="Plugin categories">
+                  {(["All", "Connectors"] as TabName[]).map((tab) => <button key={tab} id={`plugins-tab-${tab.toLowerCase()}`} type="button" role="tab" aria-selected={activeTab === tab} onClick={() => setActiveTab(tab)} className="rounded-lg px-3 py-2 text-[13px] transition" style={activeTab === tab ? { background: "rgba(255,255,255,.09)", color: "white" } : { color: "rgba(255,255,255,.52)" }}>{tab}</button>)}
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="relative">
+                    <button type="button" aria-label="Filter plugins" aria-expanded={showFilter} onClick={() => { setShowFilter((value) => !value); setShowAddMenu(false); }} className={`flex h-9 items-center gap-2 rounded-lg border px-3 text-xs transition ${connectedOnly ? "text-white" : "border-white/[0.1] text-white/60 hover:bg-white/[0.05] hover:text-white"}`} style={connectedOnly ? { borderColor: `rgba(${config.accentRgb},.35)`, background: `rgba(${config.accentRgb},.12)` } : undefined}><Filter size={14} />Filter</button>
+                    {showFilter && <div className="absolute right-0 top-11 z-10 w-48 rounded-xl border border-white/10 bg-[#202027] p-2 shadow-xl"><button type="button" onClick={() => setConnectedOnly((value) => !value)} className="flex w-full items-center gap-2 rounded-lg px-2 py-2 text-left text-xs text-white/75 hover:bg-white/[0.06]"><span className={`flex h-4 w-4 items-center justify-center rounded border ${connectedOnly ? "border-white/70 bg-white/15" : "border-white/20"}`}>{connectedOnly && <Check size={11} />}</span>Connected only</button></div>}
+                  </div>
+                </div>
+              </div>
+
+              <section>
+                {sectionHeader(activeTab === "All" ? "Most used" : "Connectors", activeTab === "All")}
+                <div className="grid gap-3 sm:grid-cols-2">
+                  {filteredConnectors.map((connector) => {
+                    const connected = isConnected(connector);
+                    const status = oauthStatus[connector.id] || "loading";
+                    return <article key={connector.id} className="flex min-h-[90px] min-w-0 items-center gap-3 rounded-xl border border-white/[0.085] bg-[#1c1c1c] p-3 transition hover:border-white/[0.16]">
+                      <span className="grid h-10 w-10 shrink-0 place-items-center rounded-lg border border-white/[0.08] bg-white/[0.045]"><ConnectorLogo name={connector.name} accent="#18181b" size={24} /></span>
+                      <div className="min-w-0 flex-1">
+                        <div className="flex flex-wrap items-center gap-1.5"><h4 className="text-[13px] font-semibold text-white/90">{connectorTitle(connector)}</h4><span className="rounded-full bg-white/[0.06] px-1.5 py-0.5 text-[9px] text-white/45">{connector.kind}</span></div>
+                        <p className="mt-1 line-clamp-2 text-[11px] leading-relaxed text-white/48">{CONNECTOR_DESCRIPTIONS[connector.id]}</p>
+                        <p className="mt-1 text-[10px] text-white/30">By {CONNECTOR_PROVIDERS[connector.id]}</p>
+                      </div>
+                      <div className="shrink-0">{connected ? renderConnectorAction(connector, true) : status === "ready" ? renderConnectorAction(connector) : <span className="text-[10px] text-white/35">{status === "needs-setup" ? "Setup required" : status === "unavailable" ? "Unavailable" : "Checking"}</span>}</div>
+                    </article>;
+                  })}
+                  {filteredConnectors.length === 0 && <p className="col-span-full py-8 text-center text-xs text-white/40">No connectors match your search or filter.</p>}
+                </div>
+                {activeTab === "All" && <p className="mt-4 text-[10px] leading-relaxed text-white/30">Only integrations supported by ENOSX are listed. Google account access provides identity only, not Gmail inbox access.</p>}
+              </section>
             </div>
-            {activeTab === "All" && <p className="mt-3 text-[10px] leading-relaxed text-white/30">Only integrations supported by ENOSX are listed. Google account access provides identity only, not Gmail inbox access.</p>}
-          </section>
-        </main>
+          </main>
+        </div>
       </section>
     </div>
   );

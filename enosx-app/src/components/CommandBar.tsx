@@ -82,7 +82,7 @@ export function AIModePicker({ aiMode, onChange }: { aiMode: AIMode; onChange: (
       </motion.button>
       <AnimatePresence>
         {modeOpen && (
-          <motion.div initial={{ opacity: 0, y: -4, scale: 0.97 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: -4, scale: 0.97 }} transition={{ duration: 0.15 }} className="absolute left-0 top-full z-[60] mt-2 flex w-[min(274px,calc(100vw-5rem))] flex-col gap-1 rounded-[18px] p-2.5" style={{ background: "rgba(30,31,35,0.98)", border: "1px solid rgba(255,255,255,0.12)", backdropFilter: "blur(16px)", WebkitBackdropFilter: "blur(16px)", boxShadow: "0 12px 36px rgba(0,0,0,0.56)" }} role="menu" aria-label="Choose AI mode">
+          <motion.div initial={{ opacity: 0, y: -4, scale: 0.97 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: -4, scale: 0.97 }} transition={{ duration: 0.15 }} className="absolute left-0 top-full z-[60] mt-2 flex w-[min(274px,calc(100vw-5rem))] flex-col gap-1 rounded-[18px] p-2.5" style={{ background: "rgba(30,31,35,0.72)", border: "1px solid rgba(255,255,255,0.14)", backdropFilter: "blur(20px)", WebkitBackdropFilter: "blur(20px)", boxShadow: "0 12px 36px rgba(0,0,0,0.46)" }} role="menu" aria-label="Choose AI mode">
             <p className="px-2.5 pb-1 pt-1 text-[11px] font-semibold uppercase tracking-[0.12em] text-white/50">Send with</p>
             {AI_MODES.map((mode) => {
               const selected = aiMode === mode.id;

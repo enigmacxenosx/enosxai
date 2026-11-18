@@ -21,7 +21,7 @@ function renderCatalog() {
   );
 }
 
-describe("PluginsDialog catalog interactions", () => {
+describe("PluginsDialog connector catalog interactions", () => {
   beforeEach(() => {
     localStorage.clear();
     vi.stubGlobal("fetch", vi.fn(async () => ({
@@ -35,47 +35,38 @@ describe("PluginsDialog catalog interactions", () => {
     vi.unstubAllGlobals();
   });
 
-  it("filters both visible skill cards and connectors by search text", async () => {
+  it("filters connector listings by search text", async () => {
     const user = userEvent.setup();
     renderCatalog();
 
-    await user.type(screen.getByRole("textbox", { name: "Search plugins" }), "repository");
-
-    expect(screen.getByText("Repository review")).toBeInTheDocument();
-    expect(screen.queryByText("Research brief")).not.toBeInTheDocument();
-    expect(screen.queryByText("GitHub")).not.toBeInTheDocument();
-
-    await user.clear(screen.getByRole("textbox", { name: "Search plugins" }));
     await user.type(screen.getByRole("textbox", { name: "Search plugins" }), "github");
-    await user.click(screen.getByRole("tab", { name: "Connectors" }));
 
     expect(screen.getByText("GitHub")).toBeInTheDocument();
     expect(screen.queryByText("Shopify")).not.toBeInTheDocument();
+    expect(screen.queryByText("Vercel")).not.toBeInTheDocument();
   });
 
-  it("switches between All, Connectors, and Skills without mixing categories", async () => {
+  it("switches between All and Connectors without showing unrelated content", async () => {
     const user = userEvent.setup();
     renderCatalog();
 
     const allTab = screen.getByRole("tab", { name: "All" });
     const connectorsTab = screen.getByRole("tab", { name: "Connectors" });
-    const skillsTab = screen.getByRole("tab", { name: "Skills" });
 
     expect(allTab).toHaveAttribute("aria-selected", "true");
-    expect(screen.getByText("Most used skills")).toBeInTheDocument();
+    expect(screen.getByText("Your plugins")).toBeInTheDocument();
+    expect(screen.getByText("Most used")).toBeInTheDocument();
+    expect(screen.queryByRole("tab", { name: "Skills" })).not.toBeInTheDocument();
+    expect(screen.queryByText(/custom skill|prompt template|copy into a request/i)).not.toBeInTheDocument();
 
     await user.click(connectorsTab);
     expect(connectorsTab).toHaveAttribute("aria-selected", "true");
+    expect(screen.getByRole("heading", { name: "Connectors" })).toBeInTheDocument();
     expect(screen.getByText("GitHub")).toBeInTheDocument();
-    expect(screen.queryByText("Research brief")).not.toBeInTheDocument();
-
-    await user.click(skillsTab);
-    expect(skillsTab).toHaveAttribute("aria-selected", "true");
-    expect(screen.getByText("Research brief")).toBeInTheDocument();
-    expect(screen.queryByText("GitHub")).not.toBeInTheDocument();
+    expect(screen.queryByText("Your plugins")).not.toBeInTheDocument();
   });
 
-  it("limits the connector list to connected services when that filter is enabled", async () => {
+  it("limits the connector listing to connected services when the filter is enabled", async () => {
     localStorage.setItem("enosx-connector-accounts", JSON.stringify([
       { connector: "vercel", username: "enosx-workspace" },
     ]));
@@ -87,5 +78,15 @@ describe("PluginsDialog catalog interactions", () => {
 
     expect(screen.getByText("Vercel")).toBeInTheDocument();
     expect(screen.queryByText("GitHub")).not.toBeInTheDocument();
+    expect(screen.queryByText("Shopify")).not.toBeInTheDocument();
+  });
+
+  it("uses official brand colors for supported connector logos", () => {
+    renderCatalog();
+    const githubLogo = document.querySelector('[title="GitHub"]');
+    const shopifyLogo = document.querySelector('[title="Shopify"]');
+
+    expect(githubLogo).toHaveStyle({ color: "#181717" });
+    expect(shopifyLogo).toHaveStyle({ color: "#7AB55C" });
   });
 });

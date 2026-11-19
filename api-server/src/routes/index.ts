@@ -9,6 +9,7 @@ import githubOAuthRouter from "./githubOAuth";
 import connectorOAuthRouter from "./connectorOAuth";
 import mediaRouter from "./media";
 import videoRouter from "./video";
+import searchRouter from "./search";
 
 const router: IRouter = Router();
 
@@ -20,6 +21,7 @@ router.use(imageRouter);
 router.use(historyRouter);
 router.use(mediaRouter);
 router.use(videoRouter);
+router.use(searchRouter);
 router.use(githubOAuthRouter);
 router.use(connectorOAuthRouter);
 

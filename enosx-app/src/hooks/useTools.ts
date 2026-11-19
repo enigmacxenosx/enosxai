@@ -1,34 +1,23 @@
 import { useCallback } from "react";
 
-const SEARCH_API_KEY = import.meta.env.VITE_SERPER_API_KEY || ""; // Using Serper.dev for search
-
 export function useTools() {
   const searchWeb = useCallback(async (query: string) => {
-    if (!SEARCH_API_KEY) {
-      console.warn("Serper API Key is missing. Web search will not work.");
-      return "Search failed: API key missing.";
-    }
-
     try {
-      const response = await fetch("https://google.serper.dev/search", {
+      const response = await fetch("/api/media-search", {
         method: "POST",
-        headers: {
-          "X-API-KEY": SEARCH_API_KEY,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ q: query }),
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ query, type: "web" }),
       });
-
-      const data = await response.json();
-      const results = data.organic?.slice(0, 5).map((res: any) => ({
-        title: res.title,
-        link: res.link,
-        snippet: res.snippet,
+      if (!response.ok) throw new Error(`Tavily search failed (${response.status})`);
+      const data = await response.json() as { results?: Array<{ title?: string; url?: string; snippet?: string }> };
+      const results = (Array.isArray(data.results) ? data.results : []).slice(0, 5).map((result) => ({
+        title: result.title,
+        link: result.url,
+        snippet: result.snippet,
       }));
-
       return JSON.stringify(results, null, 2);
     } catch (error) {
-      console.error("Search error:", error);
+      console.error("Tavily search error:", error);
       return "Search failed due to an error.";
     }
   }, []);

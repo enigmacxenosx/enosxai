@@ -22,4 +22,4 @@
 - [x] Keep website retrieval bounded and SSRF-resistant; treat retrieved page content as untrusted and report unavailable media/pages honestly.
 - [x] Add starter prompts that demonstrate media search and website study.
 - [x] Validate typecheck and production builds; inspect the changed diff before delivery.
-- [ ] Confirm `SERPER_API_KEY` is configured for the Vercel production environment so online image/video search can return live results.
+- [ ] Confirm `TAVILY_API_KEY` is configured in the Vercel production environment so online web, image, and video-platform search can return live results.

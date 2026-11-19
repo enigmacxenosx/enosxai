@@ -1310,8 +1310,8 @@
   --ai-bubble: rgba(23, 25, 38, 0.92);
 }
 
-/* Keep the established theme switcher, while refining the default Manus theme. */
-.manus {
+/* Keep the established theme switcher, while refining the default ENOSX theme. */
+.enosx {
   --background: #0d0e14;
   --foreground: #f1f2f8;
   --card: rgba(23, 25, 37, 0.88);
@@ -1373,117 +1373,117 @@ code, pre, kbd, samp, .font-mono {
   font-family: var(--font-mono);
 }
 
-.manus .glass-panel {
+.enosx .glass-panel {
   background: var(--card);
   border-color: var(--border);
   box-shadow: 0 18px 48px rgba(0, 0, 0, 0.22);
 }
-.manus ::selection { color: #fff; background: rgba(111, 114, 238, 0.42); }
-.manus ::-webkit-scrollbar-thumb { background: rgba(145, 148, 247, 0.24); }
-.manus ::-webkit-scrollbar-thumb:hover { background: rgba(145, 148, 247, 0.42); }
-.manus .prose-crimson { color: #e4e6f1; }
-.manus .prose-crimson h1,
-.manus .prose-crimson h2,
-.manus .prose-crimson h3,
-.manus .prose-crimson h4 { color: #f4f4fb; }
-.manus .prose-crimson strong { color: #fff; }
-.manus .prose-crimson code {
+.enosx ::selection { color: #fff; background: rgba(111, 114, 238, 0.42); }
+.enosx ::-webkit-scrollbar-thumb { background: rgba(145, 148, 247, 0.24); }
+.enosx ::-webkit-scrollbar-thumb:hover { background: rgba(145, 148, 247, 0.42); }
+.enosx .prose-crimson { color: #e4e6f1; }
+.enosx .prose-crimson h1,
+.enosx .prose-crimson h2,
+.enosx .prose-crimson h3,
+.enosx .prose-crimson h4 { color: #f4f4fb; }
+.enosx .prose-crimson strong { color: #fff; }
+.enosx .prose-crimson code {
   color: #c4c6ff;
   background: rgba(111, 114, 238, 0.12);
   border-color: rgba(145, 148, 247, 0.2);
 }
-.manus .prose-crimson ul li::marker { color: #9a9cff; }
-.manus .prose-crimson a { color: #b2b4ff; text-decoration-color: rgba(145, 148, 247, 0.45); }
+.enosx .prose-crimson ul li::marker { color: #9a9cff; }
+.enosx .prose-crimson a { color: #b2b4ff; text-decoration-color: rgba(145, 148, 247, 0.45); }
 
 /* Calm the default sign-in surface without removing its identity or motion cues. */
-.manus .auth-neon-shell {
+.enosx .auth-neon-shell {
   border-color: rgba(145, 148, 247, 0.2);
   border-radius: 24px;
   background: linear-gradient(145deg, rgba(26, 28, 42, 0.96), rgba(12, 13, 21, 0.98));
   box-shadow: 0 28px 80px rgba(0, 0, 0, 0.42), inset 0 1px 0 rgba(255, 255, 255, 0.08);
   animation: none;
 }
-.manus .auth-neon-shell::before { border-color: rgba(145, 148, 247, 0.1); box-shadow: none; animation: none; }
-.manus .auth-primary-button {
+.enosx .auth-neon-shell::before { border-color: rgba(145, 148, 247, 0.1); box-shadow: none; animation: none; }
+.enosx .auth-primary-button {
   background: linear-gradient(135deg, #7478ed, #5c60cf) !important;
   box-shadow: 0 10px 26px rgba(99, 102, 241, 0.22), inset 0 1px 0 rgba(255,255,255,0.2) !important;
   animation: none;
 }
-.manus .auth-primary-button:hover {
+.enosx .auth-primary-button:hover {
   background: linear-gradient(135deg, #8386f7, #666be0) !important;
   box-shadow: 0 12px 30px rgba(99, 102, 241, 0.28) !important;
 }
 
 
 /* Default-theme surface refinements: restrained motion, softer borders, clear focus. */
-.manus .rainbow-glow,
-.manus .rainbow-glow-border,
-.manus .rainbow-thinking-dot {
+.enosx .rainbow-glow,
+.enosx .rainbow-glow-border,
+.enosx .rainbow-thinking-dot {
   animation: none !important;
 }
-.manus .rainbow-glow {
+.enosx .rainbow-glow {
   box-shadow: 0 12px 34px rgba(0, 0, 0, 0.24) !important;
 }
-.manus .rainbow-glow-border {
+.enosx .rainbow-glow-border {
   border-color: rgba(160, 163, 255, 0.18) !important;
 }
-.manus .rainbow-thinking-dot {
+.enosx .rainbow-thinking-dot {
   background: #8588f5 !important;
   box-shadow: 0 0 10px rgba(133, 136, 245, 0.24) !important;
 }
-.manus .phone-command-shell {
+.enosx .phone-command-shell {
   background: rgba(20, 22, 33, 0.9) !important;
   border: 1px solid rgba(193, 197, 255, 0.15) !important;
   box-shadow: 0 16px 40px rgba(0, 0, 0, 0.24), inset 0 1px 0 rgba(255, 255, 255, 0.055) !important;
 }
-.manus .phone-command-shell:focus-within {
+.enosx .phone-command-shell:focus-within {
   border-color: rgba(133, 136, 245, 0.46) !important;
   box-shadow: 0 0 0 3px rgba(111, 114, 238, 0.09), 0 16px 40px rgba(0, 0, 0, 0.26) !important;
 }
-.manus .phone-command-shell textarea:not(.font-mono),
-.manus input:not(.font-mono),
-.manus select:not(.font-mono) {
+.enosx .phone-command-shell textarea:not(.font-mono),
+.enosx input:not(.font-mono),
+.enosx select:not(.font-mono) {
   font-family: var(--font-body) !important;
 }
-.manus .neon-dashboard-stage {
+.enosx .neon-dashboard-stage {
   background:
     radial-gradient(circle at 15% 12%, rgba(111, 114, 238, 0.11), transparent 30%),
     radial-gradient(circle at 86% 82%, rgba(107, 86, 198, 0.08), transparent 34%),
     #0d0e14 !important;
 }
-.manus .neon-dashboard-stage::before { opacity: 0.11; background-size: 72px 72px; }
-.manus .neon-dashboard-sidebar {
+.enosx .neon-dashboard-stage::before { opacity: 0.11; background-size: 72px 72px; }
+.enosx .neon-dashboard-sidebar {
   background: rgba(15, 16, 25, 0.88) !important;
   border-right: none !important;
   box-shadow: 12px 0 42px rgba(0, 0, 0, 0.16) !important;
 }
-.manus .neon-dashboard-nav:hover,
-.manus .neon-dashboard-profile:hover {
+.enosx .neon-dashboard-nav:hover,
+.enosx .neon-dashboard-profile:hover {
   border-color: transparent !important;
   background: rgba(111, 114, 238, 0.1) !important;
   box-shadow: none !important;
 }
-.manus .visual-story-page {
+.enosx .visual-story-page {
   background:
     radial-gradient(circle at 76% 8%, rgba(119, 122, 243, 0.12), transparent 30%),
     radial-gradient(circle at 8% 68%, rgba(111, 114, 238, 0.07), transparent 35%),
     #0d0e14;
 }
-.manus .visual-story-live-dot { background: #8588f5; box-shadow: 0 0 10px rgba(133, 136, 245, 0.35); }
-.manus .story-overline { color: #aaaaff; }
-.manus .story-primary-button {
+.enosx .visual-story-live-dot { background: #8588f5; box-shadow: 0 0 10px rgba(133, 136, 245, 0.35); }
+.enosx .story-overline { color: #aaaaff; }
+.enosx .story-primary-button {
   border-color: rgba(145, 148, 247, 0.28);
   background: linear-gradient(135deg, #7478ed, #5c60cf);
   box-shadow: 0 8px 26px rgba(99, 102, 241, 0.18);
 }
-.manus .story-primary-button:hover { box-shadow: 0 12px 30px rgba(99, 102, 241, 0.24); }
-.manus .story-metric-card-primary,
-.manus .story-metric-primary {
+.enosx .story-primary-button:hover { box-shadow: 0 12px 30px rgba(99, 102, 241, 0.24); }
+.enosx .story-metric-card-primary,
+.enosx .story-metric-primary {
   background: linear-gradient(135deg, rgba(111, 114, 238, 0.18), rgba(111, 114, 238, 0.06));
   border-color: rgba(145, 148, 247, 0.22);
 }
-.manus .story-beat:hover,
-.manus .story-beat.is-active {
+.enosx .story-beat:hover,
+.enosx .story-beat.is-active {
   border-left-color: #8588f5;
   background: linear-gradient(90deg, rgba(111, 114, 238, 0.12), transparent);
 }

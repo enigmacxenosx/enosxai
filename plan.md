@@ -8,7 +8,7 @@ Add a first-class `/visual-story` route in the existing React/Vite app. The rout
 - `enosx-app/src/components/Sidebar.tsx`: navigation entry point.
 - `enosx-app/src/App.tsx`: route registration.
 - `enosx-app/src/index.css`: story-studio layout, chart stage, controls, and reduced-motion styling.
-- `enosx-app/public/manus-routes.json`: route manifest entry.
+- `enosx-app/public/enosx-routes.json`: route manifest entry.
 
 ## Design
 ### Alternative styles

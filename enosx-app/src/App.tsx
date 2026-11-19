@@ -50,7 +50,7 @@ function Router() {
 function App() {
   return (
     <ErrorBoundary>
-      <ThemeProvider defaultTheme="manus">
+      <ThemeProvider defaultTheme="enosx">
         <AuthProvider>
           <WallpaperProvider>
             <FounderModeProvider>

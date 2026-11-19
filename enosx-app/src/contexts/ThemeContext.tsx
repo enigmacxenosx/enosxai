@@ -16,9 +16,9 @@ export interface ThemeConfig {
 }
 
 export const THEMES: Record<Theme, ThemeConfig> = {
-  manus: {
-    name: "manus",
-    label: "Manus",
+  enosx: {
+    name: "enosx",
+    label: "ENOSX",
     bg: "#0d0e14",
     surface: "rgba(23,25,37,0.88)",
     accent: "#777af3",
@@ -103,7 +103,7 @@ const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
 export function ThemeProvider({
   children,
-  defaultTheme = "manus",
+  defaultTheme = "enosx",
 }: {
   children: React.ReactNode;
   defaultTheme?: Theme;
@@ -125,7 +125,7 @@ export function ThemeProvider({
   };
 
   const toggleTheme = () => {
-    const order: Theme[] = ["manus", "dark", "light", "neon", "cyberpunk", "minimal"];
+    const order: Theme[] = ["enosx", "dark", "light", "neon", "cyberpunk", "minimal"];
     const idx = order.indexOf(theme);
     setTheme(order[(idx + 1) % order.length]);
   };
@@ -135,8 +135,8 @@ export function ThemeProvider({
     const body = document.body;
     
     // Remove all theme classes
-    root.classList.remove("dark", "light", "neon", "cyberpunk", "minimal", "manus");
-    body.classList.remove("dark", "light", "neon", "cyberpunk", "minimal", "manus");
+    root.classList.remove("dark", "light", "neon", "cyberpunk", "minimal", "enosx");
+    body.classList.remove("dark", "light", "neon", "cyberpunk", "minimal", "enosx");
     
     // Add current theme class to both html and body
     root.classList.add(theme);

@@ -1,53 +1,58 @@
-import { Check, Circle, Loader2 } from "lucide-react";
+import { Check, Circle, FileText, Github, Globe2, Pencil, Terminal, Wrench, X } from "lucide-react";
+import { Streamdown } from "streamdown";
+import { useTheme } from "@/contexts/ThemeContext";
+import { buildActivityBlocks, summarizeToolCalls } from "@/lib/agentActivity";
+import type { AgentEvent, AgentToolKind } from "@/lib/types";
 
 interface LiveActivityTimelineProps {
-  status?: string;
+  events?: AgentEvent[];
   isStreaming?: boolean;
+  thinking?: boolean;
 }
 
-const STEPS = [
-  { key: "received", label: "Request received" },
-  { key: "analyzing", label: "Analyzing request" },
-  { key: "drafting", label: "Drafting answer" },
-  { key: "ready", label: "Answer ready" },
-] as const;
-
-function activeStep(status?: string) {
-  const normalized = status?.toLowerCase() ?? "";
-  if (normalized.includes("answer ready")) return 3;
-  if (normalized.includes("draft")) return 2;
-  if (normalized.includes("prepar")) return 1;
-  if (normalized.includes("analyz")) return 1;
-  return 0;
+function ToolIcon({ kind }: { kind: AgentToolKind }) {
+  const Icon = kind === "shell" ? Terminal : kind === "read" ? FileText : kind === "write" ? Pencil : kind === "github" ? Github : kind === "web" ? Globe2 : Wrench;
+  return <Icon size={13} aria-hidden="true" />;
 }
 
-export default function LiveActivityTimeline({ status, isStreaming = false }: LiveActivityTimelineProps) {
-  if (!status) return null;
+function middleEllipsis(label: string, maxLength = 48) {
+  if (label.length <= maxLength) return label;
+  const sideLength = Math.floor((maxLength - 1) / 2);
+  return `${label.slice(0, sideLength)}…${label.slice(-sideLength)}`;
+}
 
-  const current = activeStep(status);
-  const complete = !isStreaming && current === 3;
-
+export default function LiveActivityTimeline({ events = [], isStreaming = false, thinking = false }: LiveActivityTimelineProps) {
+  const { config } = useTheme();
+  if (thinking && isStreaming && !events.some((event) => event.type === "message")) {
+    return <div className="activity-thinking" role="status" aria-live="polite" style={{ color: config.textMuted }}><span className="activity-thinking-dot" aria-hidden="true" />Thinking</div>;
+  }
+  const blocks = buildActivityBlocks(events);
+  if (!blocks.length) return null;
   return (
-    <div className="live-activity-timeline" role="status" aria-live="polite" aria-label="ENOSX activity">
-      <div className="live-activity-header">
-        <span className={`live-activity-pulse ${isStreaming ? "is-active" : ""}`} aria-hidden="true" />
-        <span>{isStreaming ? "Working" : complete ? "Complete" : "Activity"}</span>
-      </div>
-      <div className="live-activity-steps">
-        {STEPS.map((step, index) => {
-          const isDone = index < current || (index === current && complete);
-          const isCurrent = index === current && isStreaming;
-          return (
-            <div className={`live-activity-step ${isDone ? "is-done" : ""} ${isCurrent ? "is-current" : ""}`} key={step.key}>
-              <span className="live-activity-icon" aria-hidden="true">
-                {isDone ? <Check size={11} strokeWidth={2.5} /> : isCurrent ? <Loader2 size={11} className="animate-spin" /> : <Circle size={7} />}
-              </span>
-              <span>{step.label}</span>
-              {isCurrent && <span className="live-activity-now">Now</span>}
-            </div>
-          );
-        })}
-      </div>
+    <div className="live-activity-feed" aria-label="Agent activity">
+      {blocks.map((block, index) => block.type === "message" ? (
+        <div className="activity-narration" key={`message-${index}`}><Streamdown className="prose-crimson" mode="static">{block.text}</Streamdown></div>
+      ) : (
+        <details className="activity-tool-group" key={`tools-${index}`} open={isStreaming && block.rows.some((row) => row.ok === undefined)} style={{ color: config.text }}>
+          <summary className="activity-group-summary">
+            <span className="activity-summary-icon" aria-hidden="true"><ToolIcon kind={block.rows[0]?.kind ?? "other"} /></span>
+            <span>{summarizeToolCalls(block.rows)}</span>
+            {isStreaming && block.rows.some((row) => row.ok === undefined) && <span className="activity-running-dot" aria-label="Running" />}
+          </summary>
+          <div className="activity-tool-rows">
+            {block.rows.map((row) => (
+              <div className="activity-tool-row" key={row.id}>
+                <span className="activity-tool-kind"><ToolIcon kind={row.kind} /></span>
+                <span className="activity-tool-label" title={row.label}>{middleEllipsis(row.label)}</span>
+                <span className={`activity-tool-status ${row.ok === false ? "is-error" : row.ok === true ? "is-success" : "is-running"}`} aria-label={row.ok === false ? "Failed" : row.ok === true ? "Succeeded" : "Running"}>
+                  {row.ok === false ? <X size={14} /> : row.ok === true ? <Check size={14} /> : <Circle size={7} className={isStreaming ? "activity-running-dot-icon" : ""} />}
+                </span>
+                {row.output !== undefined && <pre className={`activity-tool-output ${row.ok === false ? "is-error" : ""}`}>{row.output}</pre>}
+              </div>
+            ))}
+          </div>
+        </details>
+      ))}
     </div>
   );
 }

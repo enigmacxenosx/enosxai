@@ -244,7 +244,8 @@ export default function MessageBubble({
   const [hoverRating, setHoverRating] = useState<MessageFeedbackRating | null>(null);
   const isUser = message.role === "user";
   const isStreaming = message.isStreaming;
-  const isEmpty = !message.content?.trim() && isStreaming;
+  const hasToolActivity = message.activityEvents?.some((event) => event.type === "tool_call") ?? false;
+  const isEmpty = !message.content?.trim() && isStreaming && !hasToolActivity;
 
   // Check for an active image or video generation request.
   const isGeneratingMedia = !isUser && (message.content.includes("🖼️") || message.content.includes("🎬")) && isStreaming;
@@ -330,10 +331,7 @@ export default function MessageBubble({
           }}
         >
           {isEmpty ? (
-<>
-              <span className="sr-only" role="status">{message.reasoningStatus || "Analyzing your request…"}</span>
-              <LiveActivityTimeline status={message.reasoningStatus || "Analyzing request"} isStreaming />
-            </>
+            <LiveActivityTimeline events={message.activityEvents} isStreaming thinking />
           ) : (
             <div className="relative">
               {isUser ? (
@@ -351,13 +349,14 @@ export default function MessageBubble({
                 </div>
               ) : (
                 <div className="flex flex-col gap-3">
-                  <LiveActivityTimeline status={message.reasoningStatus} isStreaming={isStreaming} />
                   {/* Assistant media attachments */}
                   {message.attachments && message.attachments.length > 0 && (
                     <MediaAttachmentList attachments={message.attachments} />
                   )}
                   {/* Assistant content with inline image support */}
-                  {renderContentWithMedia(message.content, config.accent, isStreaming)}
+                  {hasToolActivity
+                    ? <LiveActivityTimeline events={message.activityEvents} isStreaming={isStreaming} />
+                    : renderContentWithMedia(message.content, config.accent, isStreaming)}
                   {message.proposedActions && message.proposedActions.length > 0 && (
                     <div className="flex flex-col gap-2 rounded-xl border border-cyan-300/20 bg-cyan-400/[0.06] p-3">
                       <div className="flex items-center gap-2 text-xs font-semibold tracking-wide text-cyan-100">
@@ -411,6 +410,16 @@ export default function MessageBubble({
                   {isGeneratingMedia && (
                     <ImageGeneratingIndicator accent={config.accent} isVideo={isGeneratingVideo} />
                   )}
+                  {message.streamError && (
+                    <div className="stream-error-row" role="alert" style={{ color: config.text }}>
+                      <span>{message.streamError.message}</span>
+                      {message.streamError.retryable && onRedoResponse && (
+                        <button type="button" onClick={() => onRedoResponse(message.id)} disabled={branchDisabled} className="stream-error-retry" aria-label="Retry response">
+                          <RotateCcw size={13} /> Retry
+                        </button>
+                      )}
+                    </div>
+                  )}
                 </div>
               )}
               {isStreaming && message.content && (
@@ -421,7 +430,7 @@ export default function MessageBubble({
         </motion.div>
 
         {/* Action buttons */}
-        {!isStreaming && message.content && (
+        {!isStreaming && message.content && !message.streamError && (
           <>
           <motion.div
             initial={{ opacity: 0, y: 4 }}
@@ -473,7 +482,7 @@ export default function MessageBubble({
           </>
         )}
 
-        {!isUser && !isStreaming && message.content.trim() && (
+        {!isUser && !isStreaming && message.content.trim() && !message.streamError && (
           <div className="mt-2 flex w-full flex-col gap-2">
             <div className="flex min-h-7 flex-wrap items-center gap-x-2 gap-y-1 text-[11px]" aria-label="Assistant response actions">
               <span style={{ color: config.textMuted }}>How was this result?</span>

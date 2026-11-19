@@ -43,7 +43,7 @@ import { useClipboardListener } from "@/hooks/useClipboardListener";
 import { useGodMode } from "@/hooks/useGodMode";
 import { useMemoryBank } from "@/hooks/useMemoryBank";
 import { useKnowledgeBank } from "@/hooks/useKnowledgeBank";
-import { AssistantAction, Conversation, Message } from "@/lib/types";
+import { AgentEvent, AssistantAction, Conversation, Message } from "@/lib/types";
 import { getFollowUpSuggestions } from "@/lib/followUpSuggestions";
 import { createConversationBranch } from "@/lib/conversationBranching";
 import { useTheme } from "@/contexts/ThemeContext";
@@ -122,6 +122,8 @@ function normalizeConversation(raw: any): Conversation | null {
           role: ["user", "assistant", "system"].includes(message.role) ? message.role : "assistant",
           content: String(message.content ?? ""),
           timestamp: new Date(message.timestamp ?? now),
+          activityEvents: Array.isArray(message.activityEvents) ? message.activityEvents : undefined,
+          streamError: message.streamError ?? undefined,
           attachments: message.attachments ?? undefined,
           proposedActions: message.proposedActions ?? message.proposed_actions ?? undefined,
         }))
@@ -365,12 +367,12 @@ export default function ChatPage() {
     return () => window.removeEventListener("enosx-open-onboarding", openOnboarding);
   }, []);
 
-  const { sendMessage, isLoading: isChatLoading, isThinking, error: chatError, isFreeMode } = useAI();
+  const { sendMessage, isLoading: isChatLoading, isFreeMode } = useAI();
   const { generateImage, isGenerating, error: imageError, clearError: clearImageError } = useImageGeneration();
   const { generateVideo, isGenerating: isGeneratingVideo, error: videoError, clearError: clearVideoError } = useVideoGeneration();
   const [notificationPermission, setNotificationPermission] = useState<NotificationPermission | "unsupported">(() => getNotificationPermission());
   const isLoading = isChatLoading || isGenerating || isGeneratingVideo;
-  const error = chatError || imageError || videoError;
+  const error = imageError || videoError;
 
   const {
     voiceState,
@@ -825,8 +827,15 @@ ${getAdminContext()}` : ""}`,
       enrichedMessages = enrichMessageWithContext(enrichedMessages, activeWindow);
 
       let streamedContent = "";
-      const updateReasoningStatus = (status: string) => {
-        setConversations((prev) => prev.map((c) => c.id === targetConvId ? { ...c, messages: c.messages.map((m) => m.id === assistantId ? { ...m, reasoningStatus: status, isStreaming: status !== "Answer ready" } : m) } : c));
+      const recordAgentEvent = (event: AgentEvent) => {
+        setConversations((prev) => prev.map((conversation) => conversation.id === targetConvId ? {
+          ...conversation,
+          messages: conversation.messages.map((message) => message.id === assistantId ? {
+            ...message,
+            activityEvents: [...(message.activityEvents ?? []), event],
+            ...(event.type === "error" ? { streamError: { code: event.code, retryable: event.retryable, message: event.message } } : {}),
+          } : message),
+        } : conversation));
       };
       let pendingRenderChunk = "";
       let renderFrameQueued = false;
@@ -905,8 +914,8 @@ ${getAdminContext()}` : ""}`,
           skillContext,
           attachments: userMessage.attachments,
           onTokenUsage: ({ totalTokens }) => recordTokenUsage(totalTokens),
+          onAgentEvent: recordAgentEvent,
         },
-        updateReasoningStatus
       );
 
       return removeActionBlocks(streamedContent) || "ENOSX One returned an empty response.";
@@ -1053,17 +1062,9 @@ ${getAdminContext()}` : ""}`,
   const messages = activeConversation?.messages || [];
   const latestMessage = messages[messages.length - 1];
   const latestUserMessage = [...messages].reverse().find((message) => message.role === "user");
-  const latestFollowUps = latestMessage?.role === "assistant" && !latestMessage.isStreaming && latestUserMessage
+  const latestFollowUps = latestMessage?.role === "assistant" && !latestMessage.isStreaming && !latestMessage.streamError && latestUserMessage
     ? getFollowUpSuggestions(latestUserMessage.content, latestMessage.content)
     : undefined;
-  const preparingMessage = [...messages].reverse().find((message) => message.role === "assistant" && message.isStreaming);
-  const preparationLabel = preparingMessage?.reasoningStatus === "Drafting answer"
-    ? "Drafting your answer…"
-    : preparingMessage?.reasoningStatus === "Answer ready"
-      ? "Finishing your response…"
-      : preparingMessage?.reasoningStatus === "Preparing response"
-        ? "Preparing your response…"
-        : "Analyzing your request…";
   const handleShareConversation = useCallback(async () => {
     if (!activeConversation || activeConversation.messages.length === 0) return;
     const text = activeConversation.messages.map((message) => `${message.role === "user" ? "You" : "ENOSX AI"}: ${message.content}`).join("\n\n");
@@ -1328,16 +1329,6 @@ ${getAdminContext()}` : ""}`,
                     onFollowUp={(prompt) => void handleSendTracked(prompt, activeMode)}
                   />
                 ))}
-                {isLoading && (
-                  <div className="flex items-center gap-3 py-2 text-xs text-white/40" role="status">
-                    <span className="flex items-center gap-1" aria-hidden="true">
-                      <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-violet-300/80" />
-                      <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-violet-300/60 [animation-delay:120ms]" />
-                      <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-violet-300/40 [animation-delay:240ms]" />
-                    </span>
-                    <span>{preparationLabel}</span>
-                  </div>
-                )}
                 <div ref={messagesEndRef} className="h-4" />
                 
               </motion.div>

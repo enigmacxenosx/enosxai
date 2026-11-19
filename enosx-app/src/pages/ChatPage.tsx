@@ -43,7 +43,7 @@ import { useClipboardListener } from "@/hooks/useClipboardListener";
 import { useGodMode } from "@/hooks/useGodMode";
 import { useMemoryBank } from "@/hooks/useMemoryBank";
 import { useKnowledgeBank } from "@/hooks/useKnowledgeBank";
-import { AssistantAction, Conversation, Message } from "@/lib/types";
+import { AssistantAction, Conversation, Message, MessageStatus, MessageError } from "@/lib/types";
 import { useTheme } from "@/contexts/ThemeContext";
 import { useCompactMode } from "@/hooks/useCompactMode";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -57,7 +57,7 @@ import { CONNECTOR_CATALOG } from "@/lib/connectorCatalog";
 import LeadCaptureDialog from "@/components/LeadCaptureDialog";
 import AdminConsoleDialog from "@/components/AdminConsoleDialog";
 import { deleteConversation as deleteCloudConversation, loadConversations, saveConversation } from "@/lib/firebaseStorage";
-import { ChevronDown, Copy, Eye, Gauge, Menu, Share2 } from "lucide-react";
+import { ChevronDown, Copy, Eye, Gauge, Menu, Share2, AlertCircle, RotateCcw, Loader2 } from "lucide-react";
 import { copyTranscript } from "@/lib/shareConversation";
 import { getOnlineMediaSearch, getWebsiteStudyUrl, searchOnlineMedia, studyWebsite } from "@/lib/onlineResearch";
 import {
@@ -817,8 +817,10 @@ ${getAdminContext()}` : ""}`,
       enrichedMessages = enrichMessageWithContext(enrichedMessages, activeWindow);
 
       let streamedContent = "";
+      let finalStatus: MessageStatus = "streaming";
+      let finalError: MessageError | undefined;
       const updateReasoningStatus = (status: string) => {
-        setConversations((prev) => prev.map((c) => c.id === targetConvId ? { ...c, messages: c.messages.map((m) => m.id === assistantId ? { ...m, reasoningStatus: status, isStreaming: status !== "Answer ready" } : m) } : c));
+        setConversations((prev) => prev.map((c) => c.id === targetConvId ? { ...c, messages: c.messages.map((m) => m.id === assistantId ? { ...m, reasoningStatus: status, isStreaming: status !== "Answer ready", status: "streaming" as MessageStatus } : m) } : c));
       };
       let pendingRenderChunk = "";
       let renderFrameQueued = false;
@@ -833,7 +835,7 @@ ${getAdminContext()}` : ""}`,
               ? {
                   ...c,
                   messages: c.messages.map((m) =>
-                    m.id === assistantId ? { ...m, content: m.content + chunk } : m
+                    m.id === assistantId ? { ...m, content: m.content + chunk, status: "streaming" as MessageStatus } : m
                   ),
                 }
               : c
@@ -853,40 +855,71 @@ ${getAdminContext()}` : ""}`,
           queueStreamRender();
 
         },
-        () => {
+        (status: MessageStatus, partialContent: string, error?: MessageError) => {
+          finalStatus = status;
+          finalError = error;
           // Apply the final buffered chunk before cleaning the streamed reply.
           flushStreamToChat();
-          const proposedActions = parseActions(streamedContent) as AssistantAction[];
-          const cleanContent = removeActionBlocks(streamedContent);
-          setConversations((prev) =>
-            prev.map((conversation) =>
-              conversation.id === targetConvId
-                ? {
-                    ...conversation,
-                    messages: conversation.messages.map((message) =>
-                      message.id === assistantId
-                        ? { ...message, content: cleanContent, isStreaming: false, proposedActions: proposedActions.length ? proposedActions : undefined }
-                        : message,
-                    ),
-                  }
-                : conversation,
-            ),
-          );
-          const notificationReply = cleanContent.replace(/\s+/g, " ").trim();
-          if (notificationReply) {
-            sendEnosxNotification({
-              title: user?.displayName ? `ENOSX AI · ${user.displayName}` : "ENOSX AI",
-              body: notificationReply.slice(0, 240),
-              tag: `enosx-reply-${assistantId}`,
-              data: { url: window.location.href, conversationId: targetConvId, messageId: assistantId },
-            });
-          }
-          if (autoSpeak) {
-            speak(cleanContent);
-            if (speechSettings.continuousConversation) {
-              scheduleListenAgain((text) => {
-                // Continuous conversation: send the captured speech as the next message.
-                void handleSend(text);
+          if (status === "complete") {
+            const proposedActions = parseActions(streamedContent) as AssistantAction[];
+            const cleanContent = removeActionBlocks(streamedContent);
+            setConversations((prev) =>
+              prev.map((conversation) =>
+                conversation.id === targetConvId
+                  ? {
+                      ...conversation,
+                      messages: conversation.messages.map((message) =>
+                        message.id === assistantId
+                          ? { ...message, content: cleanContent, isStreaming: false, status: "complete" as MessageStatus, proposedActions: proposedActions.length ? proposedActions : undefined }
+                          : message,
+                      ),
+                    }
+                  : conversation,
+              ),
+            );
+            const notificationReply = cleanContent.replace(/\s+/g, " ").trim();
+            if (notificationReply) {
+              sendEnosxNotification({
+                title: user?.displayName ? `ENOSX AI · ${user.displayName}` : "ENOSX AI",
+                body: notificationReply.slice(0, 240),
+                tag: `enosx-reply-${assistantId}`,
+                data: { url: window.location.href, conversationId: targetConvId, messageId: assistantId },
+              });
+            }
+            if (autoSpeak) {
+              speak(cleanContent);
+              if (speechSettings.continuousConversation) {
+                scheduleListenAgain((text) => {
+                  // Continuous conversation: send the captured speech as the next message.
+                  void handleSend(text);
+                });
+              }
+            }
+          } else if (status === "failed" || status === "stopped") {
+            // Keep partial content exactly as received, do NOT append error text
+            const cleanContent = removeActionBlocks(streamedContent);
+            const messageError = finalError;
+            setConversations((prev) =>
+              prev.map((conversation) =>
+                conversation.id === targetConvId
+                  ? {
+                      ...conversation,
+                      messages: conversation.messages.map((message) =>
+                        message.id === assistantId
+                          ? { ...message, content: cleanContent, isStreaming: false, status: status as MessageStatus, error: messageError }
+                          : message,
+                      ),
+                    }
+                  : conversation,
+              ),
+            );
+            // Show toast for failed status
+            if (status === "failed" && messageError) {
+              toast.error(messageError.message, {
+                action: messageError.retryable ? {
+                  label: "Retry",
+                  onClick: () => void handleSend(userMessage.content),
+                } : undefined,
               });
             }
           }
@@ -927,17 +960,28 @@ ${getAdminContext()}` : ""}`,
   );
 
   const handleRedoResponse = useCallback(async (messageId: string) => {
+    const isContinueFromHere = messageId.endsWith("-continue");
+    const actualMessageId = isContinueFromHere ? messageId.slice(0, "-continue".length) : messageId;
+    
     const conversation = conversationsRef.current.find((item) => item.id === activeIdRef.current);
     if (!conversation || isLoading || sendingRef.current) return;
-    const messageIndex = conversation.messages.findIndex((message) => message.id === messageId);
+    const messageIndex = conversation.messages.findIndex((message) => message.id === actualMessageId);
+    if (messageIndex === -1) return;
+
+    const targetMessage = conversation.messages[messageIndex];
     const previousUserMessage = messageIndex > 0
       ? [...conversation.messages.slice(0, messageIndex)].reverse().find((message) => message.role === "user")
       : undefined;
     if (!previousUserMessage) return;
 
+    // For "continue from here", use the failed message's partial content as context
+    const prompt = isContinueFromHere && targetMessage.content.trim()
+      ? `${previousUserMessage.content}\n\n[Previous partial response was cut off. Please continue from where it left off:]\n${targetMessage.content.trim()}`
+      : previousUserMessage.content;
+
     const updatedConversation: Conversation = {
       ...conversation,
-      messages: conversation.messages.filter((message) => message.id !== messageId),
+      messages: conversation.messages.filter((message) => message.id !== actualMessageId),
       updatedAt: new Date(),
     };
     const updatedConversations = conversationsRef.current.map((item) =>
@@ -945,7 +989,7 @@ ${getAdminContext()}` : ""}`,
     );
     conversationsRef.current = updatedConversations;
     setConversations(updatedConversations);
-    await handleSend(previousUserMessage.content);
+    await handleSend(prompt);
   }, [handleSend, isLoading]);
 
   useEffect(() => {

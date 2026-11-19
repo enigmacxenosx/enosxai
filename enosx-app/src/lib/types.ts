@@ -10,15 +10,24 @@ export interface Attachment {
   url?: string;
 }
 
+export type MessageStatus = "streaming" | "complete" | "failed" | "stopped";
+
+export interface MessageError {
+  code: "timeout" | "rate_limit" | "upstream" | "network" | "unknown";
+  retryable: boolean;
+  message: string;
+}
+
 export interface Message {
   id: string;
   role: "user" | "assistant" | "system";
   content: string;
   timestamp: Date;
-  isStreaming?: boolean;
+  status: MessageStatus;
   reasoningStatus?: string;
   attachments?: Attachment[];
   proposedActions?: AssistantAction[];
+  error?: MessageError;
 }
 
 export interface AssistantAction {

@@ -8,10 +8,10 @@
 
 import { useState, useEffect, useRef } from "react";
 import { motion } from "framer-motion";
-import { Volume2, VolumeX, RotateCcw, ExternalLink, FileSearch, ListTree, ShieldCheck, Film } from "lucide-react";
+import { Volume2, VolumeX, RotateCcw, ExternalLink, FileSearch, ListTree, ShieldCheck, Film, AlertCircle } from "lucide-react";
 import { Streamdown } from "streamdown";
 import LiveActivityTimeline from "@/components/LiveActivityTimeline";
-import { Message } from "@/lib/types";
+import { Message, MessageStatus, MessageError } from "@/lib/types";
 import { useTheme } from "@/contexts/ThemeContext";
 import { useWallpaper } from "@/contexts/WallpaperContext";
 import ImageDisplay from "./ImageDisplay";
@@ -231,12 +231,19 @@ export default function MessageBubble({
   const { settings: wallpaperSettings } = useWallpaper();
   const [actionStatus, setActionStatus] = useState<string | null>(null);
   const isUser = message.role === "user";
-  const isStreaming = message.isStreaming;
+  const messageStatus: MessageStatus = message.status ?? (message.isStreaming ? "streaming" : "complete");
+  const isStreaming = messageStatus === "streaming";
+  const isFailed = messageStatus === "failed";
+  const isStopped = messageStatus === "stopped";
   const isEmpty = !message.content?.trim() && isStreaming;
 
   // Check for an active image or video generation request.
   const isGeneratingMedia = !isUser && (message.content.includes("🖼️") || message.content.includes("🎬")) && isStreaming;
   const isGeneratingVideo = message.content.includes("🎬");
+
+  // Error message for failed/stopped states
+  const errorMessage = message.error?.message;
+  const isRetryable = message.error?.retryable;
 
   const handleProposedAction = async (action: NonNullable<Message["proposedActions"]>[number]) => {
     // Workspace / split-screen mode runs actions in-pane instead of opening new tabs.
@@ -394,12 +401,61 @@ export default function MessageBubble({
               {isStreaming && message.content && (
                 <StreamingCursor color={config.accent} />
               )}
+              {/* Error row for failed/stopped messages */}
+              {(isFailed || isStopped) && (
+                <motion.div
+                  initial={{ opacity: 0, y: 8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.2 }}
+                  className="flex items-center gap-2 mt-3 p-3 rounded-xl border bg-red-500/10"
+                  style={{ borderColor: "rgba(239,68,68,0.3)" }}
+                  role="alert"
+                >
+                  <AlertCircle size={16} style={{ color: "rgb(239,68,68)" }} aria-hidden="true" />
+                  <span className="text-sm" style={{ color: "rgb(239,68,68)" }}>
+                    {isFailed ? "Failed" : "Stopped"}: {errorMessage}
+                  </span>
+                  {!isUser && isRetryable && (
+                    <motion.button
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
+                      onClick={() => onRedoResponse?.(message.id)}
+                      className="ml-auto px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors"
+                      style={{
+                        background: "rgba(239,68,68,0.2)",
+                        border: "1px solid rgba(239,68,68,0.4)",
+                        color: "rgb(239,68,68)",
+                      }}
+                    >
+                      Retry
+                    </motion.button>
+                  )}
+                  {!isUser && (
+                    <motion.button
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
+                      onClick={() => {
+                        // "Continue from here" - send partial content back to continue
+                        onRedoResponse?.(message.id + "-continue");
+                      }}
+                      className="px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors"
+                      style={{
+                        background: "rgba(255,255,255,0.05)",
+                        border: "1px solid rgba(255,255,255,0.1)",
+                        color: config.textMuted,
+                      }}
+                    >
+                      Continue from here
+                    </motion.button>
+                  )}
+                </motion.div>
+              )}
             </div>
           )}
         </motion.div>
 
         {/* Action buttons */}
-        {!isStreaming && message.content && (
+        {(!isStreaming || isFailed || isStopped) && message.content && (
           <>
           <motion.div
             initial={{ opacity: 0, y: 4 }}
@@ -407,7 +463,7 @@ export default function MessageBubble({
             transition={{ delay: 0.2 }}
             className={`flex items-center gap-1.5 ${isUser ? "flex-row-reverse" : "flex-row"}`}
           >
-            {!isUser && (
+            {!isUser && !isFailed && !isStopped && (
               <>
                 <motion.button
                   whileHover={{ scale: 1.1 }}
@@ -446,6 +502,17 @@ export default function MessageBubble({
                 hour: "2-digit",
                 minute: "2-digit",
               })}
+              {(isFailed || isStopped) && (
+                <span className="ml-2 px-1.5 py-0.5 rounded text-[9px] font-semibold"
+                  style={{
+                    background: isFailed ? "rgba(239,68,68,0.2)" : "rgba(255,255,255,0.1)",
+                    color: isFailed ? "rgb(239,68,68)" : config.textMuted,
+                    border: isFailed ? "1px solid rgba(239,68,68,0.3)" : "1px solid rgba(255,255,255,0.1)",
+                  }}
+                >
+                  {isFailed ? "Failed" : "Stopped"}
+                </span>
+              )}
             </span>
           </motion.div>
           </>

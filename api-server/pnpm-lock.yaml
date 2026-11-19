@@ -1,0 +1,40 @@
+lockfileVersion: '9.0'
+
+settings:
+  autoInstallPeers: true
+  excludeLinksFromLockfile: false
+
+importers:
+
+  .:
+    dependencies:
+      '@types/uuid':
+        specifier: ^11.0.0
+        version: 11.0.0
+      '@workspace/api-zod':
+        specifier: workspace:*
+        version: link:../lib/api-zod
+      '@workspace/db':
+        specifier: workspace:*
+        version: link:../lib/db
+      uuid:
+        specifier: ^14.0.3
+        version: 14.0.3
+
+packages:
+
+  '@types/uuid@11.0.0':
+    resolution: {integrity: sha512-HVyk8nj2m+jcFRNazzqyVKiZezyhDKrGUA3jlEcg/nZ6Ms+qHwocba1Y/AaVaznJTAM9xpdFSh+ptbNrhOGvZA==}
+    deprecated: This is a stub types definition. uuid provides its own type definitions, so you do not need this installed.
+
+  uuid@14.0.3:
+    resolution: {integrity: sha512-Sc5u1VVln93y1Xnz4R+CunOZc7R9LUcTmhj7Rc7Eg3HVcf7rVn2FOoa812fe0W8p3jD7xeoGSYbfqCGGH2B6xw==}
+    hasBin: true
+
+snapshots:
+
+  '@types/uuid@11.0.0':
+    dependencies:
+      uuid: 14.0.3
+
+  uuid@14.0.3: {}

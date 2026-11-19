@@ -63,10 +63,9 @@ function App() {
                       visibleToasts={4}
                       toastOptions={{
                         style: {
-                          background: "rgba(18,18,24,0.95)",
+                          background: "#121218",
                           border: "1px solid rgba(99,102,241,0.3)",
                           color: "#f0f0f4",
-                          backdropFilter: "blur(20px)",
                         },
                       }}
                     />

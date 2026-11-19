@@ -5,7 +5,7 @@
  */
 
 import { useState, useCallback } from "react";
-import { Attachment, Message } from "@/lib/types";
+import { Attachment, Message, MessageError, MessageStatus } from "@/lib/types";
 import { chatWithLocalModel, isDesktopShell, readLocalModelSettings } from "@/lib/localModels";
 import { reportClientError } from "@/lib/errorReporting";
 
@@ -80,7 +80,7 @@ export function useEnosxAI() {
     async (
       messages: Message[],
       onChunk: (chunk: string) => void,
-      onDone: () => void,
+      onDone: (finalStatus: MessageStatus, partialContent: string, error?: MessageError) => void,
       options?: ChatOptions,
       onReasoningStatus?: (status: string) => void,
     ) => {
@@ -111,7 +111,7 @@ export function useEnosxAI() {
             totalTokens: estimateRequestTokens(messages, answer || "The local model returned an empty response. Please try again."),
             estimated: true,
           });
-          onDone();
+          onDone("complete", answer || "");
           return;
         }
 
@@ -227,8 +227,8 @@ export function useEnosxAI() {
         }
 
         if (!sawContent) {
-          onChunk("Sorry, I received an empty response this time. Please try again — I’ll pick right back up where we left off.");
-          generatedText = "Sorry, I received an empty response this time. Please try again — I’ll pick right back up where we left off.";
+          onChunk("Sorry, I received an empty response this time. Please try again — I'll pick right back up where we left off.");
+          generatedText = "Sorry, I received an empty response this time. Please try again — I'll pick right back up where we left off.";
         }
 
         options?.onTokenUsage?.({
@@ -236,16 +236,50 @@ export function useEnosxAI() {
           estimated: providerTokenCount === null,
         });
 
-        onDone();
+        onDone("complete", generatedText);
       } catch (err) {
         const errorMessage = err instanceof Error ? err.message : "Unknown error";
-        const friendlyError = usingLocalModel ? `Local model error: ${errorMessage}` : getFriendlyErrorMessage(errorMessage);
+        const isAbort = err instanceof DOMException && err.name === "AbortError";
+        const friendlyError = usingLocalModel
+          ? `Local model error: ${errorMessage}`
+          : getFriendlyErrorMessage(errorMessage);
+
+        // Determine error code and retryability
+        let code: MessageError["code"] = "unknown";
+        let retryable = false;
+
+        if (isAbort) {
+          code = "stopped";
+          retryable = true;
+        } else if (errorMessage.includes("timeout") || errorMessage.includes("50_000")) {
+          code = "timeout";
+          retryable = true;
+        } else if (errorMessage.includes("429") || /rate limit|high traffic/i.test(errorMessage)) {
+          code = "rate_limit";
+          retryable = true;
+        } else if (errorMessage.includes("503") || /unavailable|configuration|FUNCTION_INVOCATION_FAILED/i.test(errorMessage)) {
+          code = "upstream";
+          retryable = true;
+        } else if (errorMessage.includes("network") || errorMessage.includes("fetch") || errorMessage.includes("Failed to fetch")) {
+          code = "network";
+          retryable = true;
+        } else {
+          code = "unknown";
+          retryable = false;
+        }
+
+        const messageError: MessageError = {
+          code: code as MessageError["code"],
+          retryable,
+          message: isAbort ? "The response was stopped." : friendlyError,
+        };
+
         reportClientError(err, "ai.request");
         setError(friendlyError);
-        console.error("[useEnosxAI] Error:", errorMessage);
+        console.error("[useEnosxAI] Error:", errorMessage, "code:", code, "retryable:", retryable);
 
-        onChunk(friendlyError);
-        onDone();
+        // Do NOT send error text to onChunk - let the caller handle status-based rendering
+        onDone("failed", "", messageError);
       } finally {
         window.clearTimeout(requestTimeout);
         setIsLoading(false);

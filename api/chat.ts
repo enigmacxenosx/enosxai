@@ -136,6 +136,11 @@ const MAX_MESSAGE_CHARS = 20_000;
 // overflow the model context window or inflate latency/cost.
 const MAX_HISTORY_CHARS = 60_000;
 const PROVIDER_RETRY_STATUSES = new Set([408, 429, 500, 502, 503, 504]);
+const STALL_TIMEOUT_MS = 30_000;
+const KEEP_ALIVE_INTERVAL_MS = 15_000;
+// In-memory buffer for Last-Event-ID replay (per-request, short-lived)
+const eventBuffers = new Map<string, { events: string[]; maxSize: number }>();
+const MAX_BUFFER_EVENTS = 200;
 
 // --- Response cache -------------------------------------------------------
 // Identical requests (same mode, model, system context, and message history)
@@ -587,24 +592,98 @@ You are running in ENOSH MIND (highest intelligence) mode. Operate as a rigorous
       res.setHeader("Content-Type", "text/event-stream; charset=utf-8");
       res.setHeader("Cache-Control", "no-cache, no-transform");
       res.setHeader("Connection", "keep-alive");
+      res.setHeader("X-Accel-Buffering", "no"); // Disable nginx buffering
+      res.flushHeaders();
+
       const reader = nvidiaResponse.body.getReader();
       const decoder = new TextDecoder();
       const captured = { text: "", remainder: "", failed: false };
+      let eventId = 0;
+      const requestEventBuffer = cacheKey ? { events: [] as string[], maxSize: MAX_BUFFER_EVENTS } : null;
+      if (cacheKey) eventBuffers.set(cacheKey, requestEventBuffer);
+
+      // Parse Last-Event-ID header for replay
+      const lastEventId = req.headers["last-event-id"] as string | undefined;
+      let resumeFromEventId = lastEventId ? parseInt(lastEventId, 10) : -1;
+      let hasReplayed = false;
+
+      // Stall timeout: fail if no tokens for 30 seconds
+      const stallTimeout = setTimeout(() => {
+        console.error("[API] Stall timeout - no tokens for 30s");
+        const errorEvent = `id:${eventId}\nevent: error\ndata: ${JSON.stringify({ error: { message: "The response stalled before completing. Please try again.", code: "timeout" } })}\n\n`;
+        res.write(errorEvent);
+        if (requestEventBuffer) requestEventBuffer.events.push(errorEvent);
+        reader.cancel().catch(() => {});
+      }, STALL_TIMEOUT_MS);
+
+      // Keep-alive: send comment every 15s to prevent proxy timeouts
+      const keepAliveInterval = setInterval(() => {
+        if (!res.writableEnded) {
+          res.write(`: keep-alive\n\n`);
+        }
+      }, KEEP_ALIVE_INTERVAL_MS);
+
       try {
         while (true) {
           const { done, value } = await reader.read();
           if (done) break;
+
           const chunk = decoder.decode(value, { stream: true });
-          res.write(chunk);
+          
+          // Reset stall timeout on any data
+          if (chunk.trim()) {
+            clearTimeout(stallTimeout);
+            stallTimeout.refresh();
+          }
+
+          eventId++;
+          const event = `id:${eventId}\n${chunk}`;
+          
+          // Store in buffer for potential replay
+          if (requestEventBuffer) {
+            requestEventBuffer.events.push(event);
+            if (requestEventBuffer.events.length > requestEventBuffer.maxSize) {
+              requestEventBuffer.events.shift();
+            }
+          }
+
+          // Handle Last-Event-ID replay
+          if (resumeFromEventId >= 0 && !hasReplayed && requestEventBuffer) {
+            const bufferEvents = requestEventBuffer.events;
+            const startIdx = bufferEvents.findIndex(e => {
+              const idMatch = e.match(/^id:(\d+)/);
+              return idMatch && parseInt(idMatch[1], 10) > resumeFromEventId;
+            });
+            if (startIdx >= 0) {
+              for (let i = startIdx; i < bufferEvents.length; i++) {
+                res.write(bufferEvents[i]);
+              }
+              hasReplayed = true;
+            }
+          }
+
+          res.write(event);
           if (cacheKey) assembleStreamedText(captured, chunk);
         }
       } catch (streamError) {
         console.error("[API] NVIDIA stream timed out or failed:", streamError);
-        res.write(`data: ${JSON.stringify({ error: { message: "The NVIDIA response timed out. Please try again." } })}\n\ndata: [DONE]\n\n`);
+        const errorEvent = `id:${++eventId}\nevent: error\ndata: ${JSON.stringify({ error: { message: "The NVIDIA response timed out. Please try again.", code: "timeout" } })}\n\ndata: [DONE]\n\n`;
+        res.write(errorEvent);
+        if (requestEventBuffer) requestEventBuffer.events.push(errorEvent);
         finishPending(null);
         res.end();
         return;
+      } finally {
+        clearTimeout(stallTimeout);
+        clearInterval(keepAliveInterval);
+        if (cacheKey) eventBuffers.delete(cacheKey);
       }
+
+      // Send explicit done event
+      const doneEvent = `id:${++eventId}\nevent: done\ndata: [DONE]\n\n`;
+      res.write(doneEvent);
+      if (requestEventBuffer) requestEventBuffer.events.push(doneEvent);
+
       if (cacheKey && !captured.failed && captured.text.trim()) {
         writeCachedResponse(cacheKey, captured.text);
         finishPending(captured.text);

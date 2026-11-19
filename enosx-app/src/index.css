@@ -270,12 +270,10 @@
     .container { padding-left: 2rem; padding-right: 2rem; max-width: 1280px; }
   }
 
-  /* ── Glassmorphism Panel ── */
+  /* ── Solid Panel (replaces glass-panel) ── */
   .glass-panel {
-    background: rgba(255, 255, 255, 0.04);
-    backdrop-filter: blur(20px) saturate(180%);
-    -webkit-backdrop-filter: blur(20px) saturate(180%);
-    border: 1px solid rgba(255, 255, 255, 0.08);
+    background: var(--card);
+    border: 1px solid var(--border);
   }
 
   /* ── Shimmer Animation (ENOSX logo) ── */
@@ -1219,12 +1217,12 @@
 .story-deck { max-width: 580px; margin: 24px 0; color: rgba(255,255,255,.58); line-height: 1.7; font-size: 15px; }
 .story-source-line { display: inline-flex; align-items: center; gap: 8px; color: rgba(255,255,255,.42); font-size: 11px; }
 .story-metric-cluster { align-self: end; display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
-.story-metric-card { min-height: 126px; padding: 17px; border: 1px solid rgba(255,255,255,.1); border-radius: 13px; background: linear-gradient(145deg, rgba(255,255,255,.075), rgba(255,255,255,.025)); backdrop-filter: blur(16px); }
+.story-metric-card { min-height: 126px; padding: 17px; border: 1px solid var(--border); border-radius: 13px; background: var(--card); }
 .story-metric-card-primary, .story-metric-primary { grid-column: span 2; background: linear-gradient(135deg, rgba(220,20,60,.22), rgba(124,111,247,.12)); border-color: rgba(220,20,60,.34); }
 .story-metric-card strong { display: block; margin-top: 13px; font-size: 34px; letter-spacing: -.06em; }
 .story-metric-card small { display: block; margin-top: 4px; color: rgba(255,255,255,.42); font-size: 11px; }
 .visual-story-workbench { display: grid; grid-template-columns: 250px minmax(0, 1fr); gap: 16px; }
-.story-beat-rail, .story-stage-wrap, .story-data-panel { border: 1px solid rgba(255,255,255,.1); border-radius: 16px; background: rgba(16,16,23,.76); backdrop-filter: blur(18px); }
+.story-beat-rail, .story-stage-wrap, .story-data-panel { border: 1px solid var(--border); border-radius: 16px; background: var(--card); }
 .story-beat-rail { display: flex; flex-direction: column; min-height: 550px; padding: 17px; }
 .story-rail-heading { display: flex; justify-content: space-between; padding-bottom: 18px; border-bottom: 1px solid rgba(255,255,255,.08); }
 .story-beat-list { flex: 1; padding: 18px 0; }
@@ -1376,9 +1374,9 @@ code, pre, kbd, samp, .font-mono {
 }
 
 .manus .glass-panel {
-  background: linear-gradient(145deg, rgba(255,255,255,0.055), rgba(255,255,255,0.025));
-  border-color: rgba(193, 197, 255, 0.13);
-  box-shadow: 0 18px 48px rgba(0, 0, 0, 0.22), inset 0 1px 0 rgba(255,255,255,0.045);
+  background: var(--card);
+  border-color: var(--border);
+  box-shadow: 0 18px 48px rgba(0, 0, 0, 0.22);
 }
 .manus ::selection { color: #fff; background: rgba(111, 114, 238, 0.42); }
 .manus ::-webkit-scrollbar-thumb { background: rgba(145, 148, 247, 0.24); }
@@ -1544,7 +1542,7 @@ code, pre, kbd, samp, .font-mono {
 }
 
 /* Vektor-inspired ENOSX sign-in modal */
-.enosx-signin-scrim { --signin-accent: var(--enosx-accent, #dc143c); --signin-accent-rgb: var(--enosx-accent-rgb, 220, 20, 60); position: fixed; inset: 0; z-index: 100; display: grid; place-items: center; padding: 16px; overflow: auto; background: rgba(3,4,10,.76); backdrop-filter: blur(14px); }
+.enosx-signin-scrim { --signin-accent: var(--enosx-accent, #dc143c); --signin-accent-rgb: var(--enosx-accent-rgb, 220, 20, 60); position: fixed; inset: 0; z-index: 100; display: grid; place-items: center; padding: 16px; overflow: auto; background: rgba(3,4,10,.96); }
 .enosx-signin-modal { position: relative; display: grid; grid-template-columns: minmax(0, 1fr) minmax(360px, 1fr); width: min(880px, 100%); min-height: 540px; overflow: hidden; border: 1px solid rgba(255,255,255,.12); border-radius: 24px; background: linear-gradient(145deg, rgba(24,25,36,.98), rgba(10,11,17,.99)); color: #f3f3fa; box-shadow: 0 28px 100px rgba(0,0,0,.62), 0 0 42px rgba(var(--signin-accent-rgb),.12); }
 .enosx-signin-story { display: flex; flex-direction: column; justify-content: space-between; gap: 28px; padding: 30px 18px 28px 20px; border-right: 1px solid rgba(255,255,255,.07); background: radial-gradient(circle at 5% 5%, rgba(var(--signin-accent-rgb),.16), transparent 38%), linear-gradient(155deg, rgba(26,28,41,.96), rgba(13,14,22,.96)); }
 .enosx-signin-workflows { display: flex; flex-direction: column; gap: 10px; }

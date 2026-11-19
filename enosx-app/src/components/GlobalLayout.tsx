@@ -51,14 +51,11 @@ export function GlobalLayout({ children }: GlobalLayoutProps) {
         />
       )}
 
-      {/* Blur overlay */}
+      {/* Solid overlay */}
       <div
         className="absolute inset-0 z-0"
         style={{
-          backdropFilter: `blur(${settings.blurAmount}px)`,
-          WebkitBackdropFilter: `blur(${settings.blurAmount}px)`,
           backgroundColor: `rgba(0, 0, 0, ${1 - settings.wallpaperOpacity})`,
-          willChange: "backdrop-filter",
         }}
       />
 

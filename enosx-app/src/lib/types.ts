@@ -10,13 +10,28 @@ export interface Attachment {
   url?: string;
 }
 
+export type AgentToolKind = "shell" | "read" | "write" | "github" | "web" | "other";
+export type AgentEvent =
+  | { type: "status"; state: "thinking" | "working" }
+  | { type: "message"; text: string }
+  | { type: "tool_call"; id: string; kind: AgentToolKind; label: string }
+  | { type: "tool_result"; id: string; output: string; ok: boolean }
+  | { type: "done" }
+  | { type: "error"; code: string; retryable: boolean; message: string };
+export interface MessageStreamError {
+  code: string;
+  retryable: boolean;
+  message: string;
+}
+
 export interface Message {
   id: string;
   role: "user" | "assistant" | "system";
   content: string;
   timestamp: Date;
   isStreaming?: boolean;
-  reasoningStatus?: string;
+  activityEvents?: AgentEvent[];
+  streamError?: MessageStreamError;
   attachments?: Attachment[];
   proposedActions?: AssistantAction[];
 }

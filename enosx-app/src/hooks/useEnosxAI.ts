@@ -5,7 +5,7 @@
  */
 
 import { useState, useCallback } from "react";
-import { Attachment, Message } from "@/lib/types";
+import { AgentEvent, Attachment, Message } from "@/lib/types";
 import { chatWithLocalModel, isDesktopShell, readLocalModelSettings } from "@/lib/localModels";
 import { reportClientError } from "@/lib/errorReporting";
 
@@ -15,6 +15,7 @@ type ChatOptions = {
   skillContext?: string;
   attachments?: Attachment[];
   onTokenUsage?: (usage: { totalTokens: number; estimated: boolean }) => void;
+  onAgentEvent?: (event: AgentEvent) => void;
 };
 
 function estimateTokenCount(text: string): number {
@@ -73,8 +74,6 @@ function getFriendlyErrorMessage(message: string) {
 
 export function useEnosxAI() {
   const [isLoading, setIsLoading] = useState(false);
-  const [isThinking, setIsThinking] = useState(false);
-  const [error, setError] = useState<string | null>(null);
 
   const sendMessage = useCallback(
     async (
@@ -82,13 +81,10 @@ export function useEnosxAI() {
       onChunk: (chunk: string) => void,
       onDone: () => void,
       options?: ChatOptions,
-      onReasoningStatus?: (status: string) => void,
     ) => {
       setIsLoading(true);
-      setError(null);
       // Surface a friendly in-message indicator while the AI is processing.
-      setIsThinking(true);
-      onReasoningStatus?.("Analyzing request");
+      options?.onAgentEvent?.({ type: "status", state: "thinking" });
       const requestController = new AbortController();
       const requestTimeout = window.setTimeout(() => requestController.abort(), 50_000);
       let usingLocalModel = false;
@@ -105,12 +101,15 @@ export function useEnosxAI() {
             localSettings.model,
             messages.map(({ role, content }) => ({ role, content })),
           );
-          if (answer) onChunk(answer);
-          else onChunk("The local model returned an empty response. Please try again.");
+          const localAnswer = answer || "The local model returned an empty response. Please try again.";
+          options?.onAgentEvent?.({ type: "status", state: "working" });
+          options?.onAgentEvent?.({ type: "message", text: localAnswer });
+          onChunk(localAnswer);
           options?.onTokenUsage?.({
             totalTokens: estimateRequestTokens(messages, answer || "The local model returned an empty response. Please try again."),
             estimated: true,
           });
+          options?.onAgentEvent?.({ type: "done" });
           onDone();
           return;
         }
@@ -144,6 +143,7 @@ export function useEnosxAI() {
         if (!response.ok) {
           throw new Error(await getErrorMessage(response));
         }
+        options?.onAgentEvent?.({ type: "status", state: "working" });
 
         const reader = response.body?.getReader();
         if (!reader) {
@@ -154,8 +154,6 @@ export function useEnosxAI() {
         let buffer = "";
         let sawContent = false;
         let streamError: string | null = null;
-        let sawReasoning = false;
-        let sawAnswer = false;
         let generatedText = "";
         let providerTokenCount: number | null = null;
 
@@ -186,19 +184,11 @@ export function useEnosxAI() {
               }
 
               const delta = parsed.choices?.[0]?.delta;
-              const reasoning = delta?.reasoning_content || delta?.reasoning;
-              if (reasoning && !sawReasoning) {
-                sawReasoning = true;
-                onReasoningStatus?.("Analyzing request");
-              }
               const content = delta?.content;
               if (content) {
                 sawContent = true;
                 generatedText += content;
-                if (!sawAnswer) {
-                  sawAnswer = true;
-                  onReasoningStatus?.("Drafting answer");
-                }
+                options?.onAgentEvent?.({ type: "message", text: content });
                 onChunk(content);
               }
             } catch {
@@ -220,41 +210,36 @@ export function useEnosxAI() {
         buffer += decoder.decode();
         if (buffer.trim()) processEvent(buffer);
 
-        onReasoningStatus?.(sawContent ? "Answer ready" : "Preparing response");
-
         if (streamError) {
           throw new Error(streamError);
         }
 
         if (!sawContent) {
-          onChunk("Sorry, I received an empty response this time. Please try again — I’ll pick right back up where we left off.");
-          generatedText = "Sorry, I received an empty response this time. Please try again — I’ll pick right back up where we left off.";
+          throw new Error("The AI service returned an empty response. Please try again.");
         }
 
         options?.onTokenUsage?.({
           totalTokens: providerTokenCount ?? estimateRequestTokens(messages, generatedText),
           estimated: providerTokenCount === null,
         });
-
+        options?.onAgentEvent?.({ type: "done" });
         onDone();
       } catch (err) {
         const errorMessage = err instanceof Error ? err.message : "Unknown error";
         const friendlyError = usingLocalModel ? `Local model error: ${errorMessage}` : getFriendlyErrorMessage(errorMessage);
         reportClientError(err, "ai.request");
-        setError(friendlyError);
         console.error("[useEnosxAI] Error:", errorMessage);
 
-        onChunk(friendlyError);
+        options?.onAgentEvent?.({ type: "error", code: requestController.signal.aborted ? "REQUEST_TIMEOUT" : "REQUEST_FAILED", retryable: true, message: friendlyError });
         onDone();
       } finally {
         window.clearTimeout(requestTimeout);
         setIsLoading(false);
-        setIsThinking(false);
       }
     },
     [],
   );
 
 
-  return { sendMessage, isLoading, isThinking, error, isFreeMode: false };
+  return { sendMessage, isLoading, isFreeMode: false };
 }

@@ -16,6 +16,7 @@ const AboutPage = lazy(() => import("./pages/AboutPage"));
 const KnowledgeBankPage = lazy(() => import("./pages/KnowledgeBankPage"));
 const MediaLibraryPage = lazy(() => import("./pages/MediaLibraryPage"));
 const VisualStoryPage = lazy(() => import("./pages/VisualStoryPage"));
+const ProjectsPage = lazy(() => import("./pages/ProjectsPage"));
 
 // Loading fallback component
 function LoadingFallback() {
@@ -36,6 +37,7 @@ function Router() {
         <Route path={"/"} component={ChatPage} />
         <Route path={"/knowledge-bank"} component={KnowledgeBankPage} />
         <Route path={"/media-library"} component={MediaLibraryPage} />
+        <Route path={"/projects"} component={ProjectsPage} />
         <Route path={"/visual-story"} component={VisualStoryPage} />
         <Route path={"/about"} component={AboutPage} />
         <Route path={"/404"} component={NotFound} />

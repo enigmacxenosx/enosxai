@@ -20,6 +20,7 @@ import {
   NotebookPen,
   Search,
   Library,
+  FolderKanban,
   Settings,
   Puzzle,
 } from "lucide-react";
@@ -105,6 +106,14 @@ export default function Sidebar({
       description: "Your files, folders, and playlists",
       icon: Library,
       onClick: () => { window.location.href = "/media-library"; },
+      accent: false,
+      danger: false,
+    },
+    {
+      label: "Projects",
+      description: "Your project workspace",
+      icon: FolderKanban,
+      onClick: () => { window.location.href = "/projects"; },
       accent: false,
       danger: false,
     },

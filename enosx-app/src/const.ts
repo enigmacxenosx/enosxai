@@ -44,11 +44,6 @@ export const LEADERSHIP = [
     specialty: "Product direction across ENOSX AI and Enosx Tech Store",
   },
   {
-    name: "Eddy",
-    role: "Product & Engineering Lead",
-    specialty: "Product development, infrastructure, integrations, and security",
-  },
-  {
     name: "Grace Wangare",
     role: "Product Design & User Research Lead",
     specialty: "User experience, onboarding, user interviews, and workflow design",
@@ -57,11 +52,6 @@ export const LEADERSHIP = [
     name: "Tracey Ivyone",
     role: "Growth, Marketing & Community Lead",
     specialty: "Content, social media, community, referrals, and acquisition",
-  },
-  {
-    name: "Frank",
-    role: "Sales, Partnerships & Customer Success Lead",
-    specialty: "Customers, demonstrations, partnerships, onboarding, and retention",
   },
   {
     name: "Vince Odhiambo",

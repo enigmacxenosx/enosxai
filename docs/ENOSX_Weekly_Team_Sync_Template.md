@@ -1,117 +1,94 @@
 # ENOSX Technologies — Weekly Team Sync
 ## Progress Tracking and Decision Log
 
-**Week of:** YYYY-MM-DD  
-**Meeting date:** YYYY-MM-DD  
+**Week of:** YYYY-MM-DD
+**Meeting date:** YYYY-MM-DD
 **Facilitator:** Enosh Yeswa
-**Note-taker:** [Name]  
-**Attendees:** Enosh Yeswa, Eddy, Grace Wangare, Tracey Ivyone, Frank, Vince Odhiambo
+**Note-taker:** Vince Odhiambo
+**Attendees:** Enosh Yeswa, Grace Wangare, Tracey Ivyone, Vince Odhiambo
 **Primary company priority:** [One sentence]
 
 ---
+
+## Preparation
+
+Before the sync, role owners update their scorecard measures, completed work, blockers, and proposed next commitments. Vince gathers agenda items and records decisions and actions. The sync is the weekly team-wide review; brief daily founder coordination between Enosh and Vince is for priorities and follow-through, not a second team planning meeting.
 
 ## 1. Opening scorecard
 
 | Metric | Last week | This week | Target | Owner | Notes |
 |---|---:|---:|---:|---|---|
 | Qualified signups |  |  |  | Tracey Ivyone |  |
-| Active users |  |  |  | Eddy |  |
+| Active users |  |  |  | Enosh Yeswa |  |
 | Repeat weekly workflows |  |  |  | Grace Wangare |  |
-| Product demonstrations |  |  |  | Frank |  |
-| Paying users / pilots |  |  |  | Frank |  |
-| Critical bugs or incidents |  |  |  | Eddy |  |
+| Product demonstrations |  |  |  | Enosh Yeswa |  |
+| Paying users / pilots |  |  |  | Enosh Yeswa |  |
+| Critical bugs or incidents |  |  |  | Enosh Yeswa (triage) | Assign an implementation owner per issue |
 | User interviews completed |  |  |  | Grace Wangare |  |
 | Content or community outputs |  |  |  | Tracey Ivyone |  |
+| Priority follow-ups closed |  |  |  | Vince Odhiambo |  |
 
 **Headline:** What changed most since the last meeting?
 
-> [Write one or two sentences.] 
+> [Write one or two sentences.]
 
 ---
 
 ## 2. Company priority check
 
-**This week’s most important outcome:**  
+**This week’s most important outcome:**
 [Describe the single outcome that matters most this week.]
 
-**Why it matters:**  
-[Connect it to building, acquiring, activating, retaining, or monetizing ENOSX AI users.]
+**Why it matters:**
+[Connect it to building, acquiring, activating, retaining, or monetizing ENOSX AI users, or to an explicitly selected company priority.]
 
-**What we will not prioritize this week:**  
+**What we will not prioritize this week:**
 [List distractions or deferred work.]
 
 ---
 
 ## 3. Role-by-role progress
 
-### Enosh Yeswa — Founder and CEO
+### Enosh Yeswa — Founder and Chief Executive Officer
 
 **Completed:**
-- [ ] 
+- [ ]
 
-**Measured result:**  
-[What changed because of the work?]
+**Measured result:**
+[Product direction, priority outcome, customer/partner progress, or company-level result.]
 
-**Next commitment:**  
+**Next commitment:**
 [One or two specific deliverables due before the next meeting.]
 
-**Decision or support needed:**  
-[Write “None” if not applicable.]
-
-### Eddy — Product and Engineering Lead
-
-**Completed:**
-- [ ] 
-
-**Measured result:**  
-[Speed, reliability, feature, integration, security, or cost result.]
-
-**Next commitment:**  
-[Specific deliverable and due date.]
-
-**Decision or support needed:**  
+**Decision or support needed:**
 [Write “None” if not applicable.]
 
 ### Grace Wangare — Product Design and User Research Lead
 
 **Completed:**
-- [ ] 
+- [ ]
 
-**Measured result:**  
-[User interviews, activation, onboarding, workflow, or usability result.]
+**Measured result:**
+[User interviews, activation, onboarding, repeat workflows, or usability result.]
 
-**Next commitment:**  
+**Next commitment:**
 [Specific deliverable and due date.]
 
-**Decision or support needed:**  
+**Decision or support needed:**
 [Write “None” if not applicable.]
 
 ### Tracey Ivyone — Growth, Marketing and Community Lead
 
 **Completed:**
-- [ ] 
+- [ ]
 
-**Measured result:**  
+**Measured result:**
 [Qualified signups, content reach, referrals, ambassadors, or community result.]
 
-**Next commitment:**  
+**Next commitment:**
 [Specific deliverable and due date.]
 
-**Decision or support needed:**  
-[Write “None” if not applicable.]
-
-### Frank — Sales, Partnerships and Customer Success Lead
-
-**Completed:**
-- [ ] 
-
-**Measured result:**  
-[Demos, leads, pilots, paid users, partnerships, onboarding, or retention result.]
-
-**Next commitment:**  
-[Specific deliverable and due date.]
-
-**Decision or support needed:**  
+**Decision or support needed:**
 [Write “None” if not applicable.]
 
 ### Vince Odhiambo — Executive Assistant
@@ -149,7 +126,7 @@
 
 ---
 
-## 5. Product decisions
+## 5. Product and company decisions
 
 | Decision | Rationale | Owner | Due date | Status |
 |---|---|---|---|---|
@@ -157,7 +134,7 @@
 |  |  |  |  | Proposed / Approved / Deferred |
 |  |  |  |  | Proposed / Approved / Deferred |
 
-**Decision rule:** Record the decision, the responsible owner, and the next observable result. Do not leave important decisions as informal chat messages.
+**Decision rule:** Record the decision, the responsible owner, and the next observable result. Enosh confirms company-wide priorities and material commitments. Do not leave important decisions only in informal chat messages.
 
 ---
 
@@ -169,7 +146,7 @@
 |  |  |  |  |  | Open / Monitoring / Resolved |
 |  |  |  |  |  | Open / Monitoring / Resolved |
 
-Escalate immediately when a blocker affects security, user data, a public commitment, a payment, a legal obligation, or the week’s primary outcome.
+Escalate promptly when a blocker affects security, user data, a public commitment, a payment, a legal obligation, a customer incident, or the week’s primary outcome.
 
 ---
 
@@ -178,18 +155,17 @@ Escalate immediately when a blocker affects security, user data, a public commit
 | Owner | Commitment | Expected result | Due date | Priority |
 |---|---|---|---|---|
 | Enosh Yeswa |  |  |  | P0 / P1 / P2 |
-| Eddy |  |  |  | P0 / P1 / P2 |
 | Grace Wangare |  |  |  | P0 / P1 / P2 |
 | Tracey Ivyone |  |  |  | P0 / P1 / P2 |
-| Frank |  |  |  | P0 / P1 / P2 |
+| Vince Odhiambo |  |  |  | P0 / P1 / P2 |
 
-A commitment should be specific enough that the team can decide next week whether it was completed.
+A commitment should be specific enough that the team can decide next week whether it was completed. Give every cross-functional action one accountable owner.
 
 ---
 
 ## 8. Final recap
 
-**Primary outcome for next week:**  
+**Primary outcome for next week:**
 [One sentence]
 
 **Three most important actions:**
@@ -198,5 +174,5 @@ A commitment should be specific enough that the team can decide next week whethe
 2. [Action] — [Owner] — [Due date]
 3. [Action] — [Owner] — [Due date]
 
-**Next meeting:** YYYY-MM-DD at [time]  
-**Meeting notes owner:** [Name]
+**Next meeting:** YYYY-MM-DD at [time]
+**Meeting notes owner:** Vince Odhiambo

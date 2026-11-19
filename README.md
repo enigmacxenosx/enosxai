@@ -14,6 +14,9 @@
 - **Create media:** generate images from prompts and edit images, and generate short videos from text or image input when the configured NVIDIA services allow it.
 - **Search and study online content:** optionally search for web images and videos, or ask the assistant to read a public HTTP(S) webpage. Media search requires `SERPER_API_KEY`. Website reading is limited to public static HTML/text; protected or JavaScript-only pages may not be readable.
 - **Use voice:** microphone speech input where the browser supports it, plus spoken responses through configured speech providers.
+- **Continue after a reply:** get three locally selected follow-up prompt suggestions after a completed answer. The suggestions use the current exchange to choose a helpful prompt set without making another model request.
+- **Rate answer quality:** rate completed assistant replies from one to five stars using **“How was this result?”**. Ratings are saved locally and submitted to the feedback endpoint when delivery is configured; conversation text is not included.
+- **Branch a conversation:** start a separate chat from a completed assistant reply. The new chat copies the conversation only through that reply, preserves the original, and records which conversation/message it branched from.
 - **Keep useful context:** use conversation history, a knowledge bank, and long-term memory. Guest data stays on the device; signed-in users can sync supported profile, chat, and memory data through Firebase.
 - **Connect services:** the chat interface includes GitHub, Shopify, Vercel, and Email connector options. A connector's actual operations require its server-side integration and credentials to be configured; selecting a connector is scoped to that request.
 - **Work with developer tools:** use code review and the developer/GOD MODE lab tools for coding and authorized learning workflows.

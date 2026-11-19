@@ -8,10 +8,12 @@
 
 import { useState, useEffect, useRef } from "react";
 import { motion } from "framer-motion";
-import { Volume2, VolumeX, RotateCcw, ExternalLink, FileSearch, ListTree, ShieldCheck, Film } from "lucide-react";
+import { Volume2, VolumeX, RotateCcw, ExternalLink, FileSearch, ListTree, ShieldCheck, Film, GitBranch, Star } from "lucide-react";
 import { Streamdown } from "streamdown";
 import LiveActivityTimeline from "@/components/LiveActivityTimeline";
 import { Message } from "@/lib/types";
+import { getMessageFeedback, submitMessageFeedback, type MessageFeedbackRating } from "@/lib/feedback";
+import type { FollowUpSuggestion } from "@/lib/followUpSuggestions";
 import { useTheme } from "@/contexts/ThemeContext";
 import { useWallpaper } from "@/contexts/WallpaperContext";
 import ImageDisplay from "./ImageDisplay";
@@ -27,6 +29,10 @@ interface MessageBubbleProps {
   onRedoResponse?: (messageId: string) => void;
   /** Optional handler for proposed actions (e.g. workspace mode runs open_url in-pane). */
   onExecuteProposedAction?: (action: NonNullable<Message["proposedActions"]>[number]) => void;
+  onBranchFromHere?: (messageId: string) => void;
+  branchDisabled?: boolean;
+  followUpPrompts?: FollowUpSuggestion[];
+  onFollowUp?: (prompt: string) => void;
 }
 
 // ── Safe internet media detection ──────────────────────────────────────────────
@@ -226,10 +232,16 @@ export default function MessageBubble({
   isSpeaking,
   onRedoResponse,
   onExecuteProposedAction,
+  onBranchFromHere,
+  branchDisabled,
+  followUpPrompts,
+  onFollowUp,
 }: MessageBubbleProps) {
   const { config } = useTheme();
   const { settings: wallpaperSettings } = useWallpaper();
   const [actionStatus, setActionStatus] = useState<string | null>(null);
+  const [rating, setRating] = useState<MessageFeedbackRating | null>(() => getMessageFeedback(message.id)?.rating ?? null);
+  const [hoverRating, setHoverRating] = useState<MessageFeedbackRating | null>(null);
   const isUser = message.role === "user";
   const isStreaming = message.isStreaming;
   const isEmpty = !message.content?.trim() && isStreaming;
@@ -237,6 +249,16 @@ export default function MessageBubble({
   // Check for an active image or video generation request.
   const isGeneratingMedia = !isUser && (message.content.includes("🖼️") || message.content.includes("🎬")) && isStreaming;
   const isGeneratingVideo = message.content.includes("🎬");
+
+  useEffect(() => {
+    setRating(getMessageFeedback(message.id)?.rating ?? null);
+    setHoverRating(null);
+  }, [message.id]);
+
+  const rateResponse = (value: MessageFeedbackRating) => {
+    const record = submitMessageFeedback(message.id, value);
+    setRating(record.rating);
+  };
 
   const handleProposedAction = async (action: NonNullable<Message["proposedActions"]>[number]) => {
     // Workspace / split-screen mode runs actions in-pane instead of opening new tabs.
@@ -449,6 +471,70 @@ export default function MessageBubble({
             </span>
           </motion.div>
           </>
+        )}
+
+        {!isUser && !isStreaming && message.content.trim() && (
+          <div className="mt-2 flex w-full flex-col gap-2">
+            <div className="flex min-h-7 flex-wrap items-center gap-x-2 gap-y-1 text-[11px]" aria-label="Assistant response actions">
+              <span style={{ color: config.textMuted }}>How was this result?</span>
+              <div className="flex items-center gap-0.5" role="group" aria-label="Rate this response from 1 to 5 stars" onMouseLeave={() => setHoverRating(null)}>
+                {([1, 2, 3, 4, 5] as const).map((value) => {
+                  const active = value <= (hoverRating ?? rating ?? 0);
+                  return (
+                    <button
+                      key={value}
+                      type="button"
+                      onClick={() => rateResponse(value)}
+                      onMouseEnter={() => setHoverRating(value)}
+                      onFocus={() => setHoverRating(value)}
+                      onBlur={() => setHoverRating(null)}
+                      aria-label={`${value} ${value === 1 ? "star" : "stars"}`}
+                      aria-pressed={rating === value}
+                      title={`Rate ${value} out of 5 stars`}
+                      className="rounded-sm p-0.5 transition-colors hover:text-amber-300 focus-visible:outline focus-visible:outline-1 focus-visible:outline-amber-300"
+                      style={{ color: active ? "#fbbf24" : config.textMuted }}
+                    >
+                      <Star size={14} fill={active ? "currentColor" : "none"} />
+                    </button>
+                  );
+                })}
+              </div>
+              {rating && <span className="text-[10px]" style={{ color: config.textMuted }} role="status">Thanks for rating this response.</span>}
+              {onBranchFromHere && (
+                <button
+                  type="button"
+                  onClick={() => onBranchFromHere(message.id)}
+                  disabled={branchDisabled}
+                  aria-label="Branch conversation from this reply"
+                  title="Start a new chat from this reply"
+                  className="ml-auto inline-flex items-center gap-1 rounded-md px-1.5 py-1 transition-colors hover:bg-white/[0.06] disabled:cursor-not-allowed disabled:opacity-40"
+                  style={{ color: config.textMuted }}
+                >
+                  <GitBranch size={13} />
+                  <span className="sr-only">Branch from here</span>
+                </button>
+              )}
+            </div>
+
+            {followUpPrompts && followUpPrompts.length > 0 && onFollowUp && (
+              <div className="flex flex-col gap-1.5" aria-label="Suggested next prompts">
+                <span className="text-[10px] font-medium uppercase tracking-wide" style={{ color: config.textMuted }}>Continue with</span>
+                <div className="flex flex-wrap gap-1.5">
+                  {followUpPrompts.map((suggestion) => (
+                    <button
+                      key={suggestion.id}
+                      type="button"
+                      onClick={() => onFollowUp(suggestion.text)}
+                      className="rounded-full border px-2.5 py-1.5 text-left text-[11px] leading-4 transition-colors hover:bg-white/[0.06]"
+                      style={{ borderColor: `rgba(${config.accentRgb}, 0.24)`, color: config.text }}
+                    >
+                      {suggestion.text}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
         )}
       </div>
     </motion.div>

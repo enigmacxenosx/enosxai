@@ -2,8 +2,8 @@ import type { VercelRequest, VercelResponse } from "@vercel/node";
 
 /**
  * ENOSX AI — /api/feedback
- * Collects thumbs-up / thumbs-down signals and optional notes on assistant
- * responses so the team can measure answer quality over time. Delivered by
+ * Collects 1–5 star ratings and optional notes on assistant responses so the
+ * team can measure answer quality over time. Delivered by
  * email through Resend (RESEND_API_KEY + ERROR_REPORT_FROM). Feedback is
  * rate-limited per IP and never includes the user's full conversation.
  */
@@ -51,10 +51,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(413).json({ ok: false, error: "Feedback is too large" });
   }
 
-  const rating = body.rating === "up" || body.rating === "down" ? body.rating : "";
-  if (!rating) {
-    return res.status(400).json({ ok: false, error: "Rating must be 'up' or 'down'" });
-  }
+  // Keep accepting legacy binary clients while the current UI sends 1–5 stars.
+  const rating = Number.isInteger(body.rating) && body.rating >= 1 && body.rating <= 5
+    ? body.rating
+    : body.rating === "up" ? 5 : body.rating === "down" ? 1 : 0;
+  if (!rating) return res.status(400).json({ ok: false, error: "Rating must be between 1 and 5 stars" });
 
   const ip = String(req.headers["x-forwarded-for"] || "unknown").split(",")[0].trim().slice(0, 80);
   const now = Date.now();
@@ -72,7 +73,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   const details = [
     "ENOSX AI response feedback",
-    `Rating: ${rating === "up" ? "👍 helpful" : "👎 needs improvement"}`,
+    `Rating: ${"★".repeat(rating)}${"☆".repeat(5 - rating)} (${rating}/5)`,
     `Received: ${new Date(now).toISOString()}`,
     `App version: ${text(body.appVersion, 32) || "unknown"}`,
     `Mode: ${text(body.aiMode, 32) || "unknown"}`,
@@ -92,7 +93,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       body: JSON.stringify({
         from: sender,
         to: SUPPORT_RECIPIENTS,
-        subject: `[ENOSX AI] Response feedback (${rating === "up" ? "helpful" : "needs improvement"})`,
+        subject: `[ENOSX AI] Response feedback (${rating}/5 stars)`,
         text: details,
       }),
     });

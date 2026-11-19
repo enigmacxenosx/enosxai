@@ -44,6 +44,8 @@ import { useGodMode } from "@/hooks/useGodMode";
 import { useMemoryBank } from "@/hooks/useMemoryBank";
 import { useKnowledgeBank } from "@/hooks/useKnowledgeBank";
 import { AssistantAction, Conversation, Message } from "@/lib/types";
+import { getFollowUpSuggestions } from "@/lib/followUpSuggestions";
+import { createConversationBranch } from "@/lib/conversationBranching";
 import { useTheme } from "@/contexts/ThemeContext";
 import { useCompactMode } from "@/hooks/useCompactMode";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -115,6 +117,9 @@ function normalizeConversation(raw: any): Conversation | null {
     title: typeof raw.title === "string" && raw.title.trim() ? raw.title : "New Chat",
     createdAt: new Date(raw.createdAt ?? raw.created_at ?? now),
     updatedAt: new Date(raw.updatedAt ?? raw.updated_at ?? now),
+    ...(raw.branchOf && typeof raw.branchOf.conversationId === "string" && typeof raw.branchOf.messageId === "string"
+      ? { branchOf: { conversationId: raw.branchOf.conversationId, messageId: raw.branchOf.messageId } }
+      : {}),
     messages: Array.isArray(raw.messages)
       ? raw.messages.filter(Boolean).map((message: any) => ({
           id: String(message.id ?? nanoid()),
@@ -917,6 +922,20 @@ ${getAdminContext()}` : ""}`,
     if (isMobile) setIsMobileSidebarOpen(false);
   }, [isMobile]);
 
+  const handleBranchFromMessage = useCallback((messageId: string) => {
+    if (isLoading || sendingRef.current) return;
+    const source = conversationsRef.current.find((conversation) => conversation.id === activeIdRef.current);
+    if (!source) return;
+    const branch = createConversationBranch(source, messageId);
+    if (!branch) return;
+    const updated = [branch, ...conversationsRef.current];
+    conversationsRef.current = updated;
+    setConversations(updated);
+    setActiveId(branch.id);
+    if (isMobile) setIsMobileSidebarOpen(false);
+    toast.success("Branch created. Continue from this reply.");
+  }, [isLoading, isMobile]);
+
   // Record outgoing messages for the usage dashboard
   const handleSendTracked = useCallback(
     async (text: string, aiMode?: AIMode, selectedConnectorIds?: string[]): Promise<string> => {
@@ -1029,6 +1048,11 @@ ${getAdminContext()}` : ""}`,
 
   const activeConversation = conversations.find((c) => c.id === activeId);
   const messages = activeConversation?.messages || [];
+  const latestMessage = messages[messages.length - 1];
+  const latestUserMessage = [...messages].reverse().find((message) => message.role === "user");
+  const latestFollowUps = latestMessage?.role === "assistant" && !latestMessage.isStreaming && latestUserMessage
+    ? getFollowUpSuggestions(latestUserMessage.content, latestMessage.content)
+    : undefined;
   const preparingMessage = [...messages].reverse().find((message) => message.role === "assistant" && message.isStreaming);
   const preparationLabel = preparingMessage?.reasoningStatus === "Drafting answer"
     ? "Drafting your answer…"
@@ -1295,6 +1319,10 @@ ${getAdminContext()}` : ""}`,
                     isSpeaking={speakingMessageId === msg.id}
                     onStopSpeak={handleStopSpeak}
                     onRedoResponse={handleRedoResponse}
+                    onBranchFromHere={handleBranchFromMessage}
+                    branchDisabled={isLoading || sendingRef.current}
+                    followUpPrompts={msg.id === latestMessage?.id ? latestFollowUps : undefined}
+                    onFollowUp={(prompt) => void handleSendTracked(prompt, activeMode)}
                   />
                 ))}
                 {isLoading && (

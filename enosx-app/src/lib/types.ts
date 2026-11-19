@@ -37,6 +37,10 @@ export interface Conversation {
   messages: Message[];
   createdAt: Date;
   updatedAt: Date;
+  branchOf?: {
+    conversationId: string;
+    messageId: string;
+  };
 }
 
 export type VoiceState = "idle" | "listening" | "processing" | "speaking";

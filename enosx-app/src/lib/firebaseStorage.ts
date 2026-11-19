@@ -61,6 +61,7 @@ export async function saveConversation(uid: string, conversation: Conversation) 
       title: conversation.title,
       createdAt: conversation.createdAt.toISOString(),
       updatedAt: conversation.updatedAt.toISOString(),
+      branchOf: conversation.branchOf ?? null,
       serverUpdatedAt: serverTimestamp(),
     },
     { merge: true },
@@ -101,6 +102,9 @@ export async function loadConversations(uid: string): Promise<Conversation[]> {
         title: String(chat.title || "New Chat"),
         createdAt: toDate(chat.createdAt),
         updatedAt: toDate(chat.updatedAt),
+        ...(chat.branchOf && typeof chat.branchOf.conversationId === "string" && typeof chat.branchOf.messageId === "string"
+          ? { branchOf: { conversationId: chat.branchOf.conversationId, messageId: chat.branchOf.messageId } }
+          : {}),
         messages,
       };
     }),

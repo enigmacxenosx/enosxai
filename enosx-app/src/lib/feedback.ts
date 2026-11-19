@@ -1,13 +1,11 @@
 /*
  * ENOSX AI — response feedback
- * Thumbs-up / thumbs-down signals on assistant messages. Ratings are stored
- * locally (so the UI can reflect the user's choice) and relayed to the Enosx
- * team through /api/feedback. Submission is best-effort and never includes the
- * conversation text.
+ * Five-star ratings are stored locally and relayed to /api/feedback. Submission
+ * is best-effort and never includes the conversation text.
  */
 import { ENOSX_APP_VERSION } from "@/lib/appVersion";
 
-export type MessageFeedbackRating = "up" | "down";
+export type MessageFeedbackRating = 1 | 2 | 3 | 4 | 5;
 
 export interface MessageFeedback {
   messageId: string;
@@ -19,7 +17,9 @@ export interface MessageFeedback {
 const STORAGE_KEY = "enosx_feedback_records";
 const MAX_RECORDS = 300;
 
-function loadRecords(): Record<string, MessageFeedback> {
+type StoredFeedback = Omit<MessageFeedback, "rating"> & { rating: MessageFeedbackRating | "up" | "down" };
+
+function loadRecords(): Record<string, StoredFeedback> {
   try {
     const stored = localStorage.getItem(STORAGE_KEY);
     if (!stored) return {};
@@ -30,10 +30,9 @@ function loadRecords(): Record<string, MessageFeedback> {
   }
 }
 
-function saveRecords(records: Record<string, MessageFeedback>) {
+function saveRecords(records: Record<string, StoredFeedback>) {
   try {
     const entries = Object.entries(records);
-    // Keep only the newest records so the local store stays bounded.
     if (entries.length > MAX_RECORDS) {
       entries.sort(([, left], [, right]) => Date.parse(right.submittedAt) - Date.parse(left.submittedAt));
       records = Object.fromEntries(entries.slice(0, MAX_RECORDS));
@@ -46,7 +45,11 @@ function saveRecords(records: Record<string, MessageFeedback>) {
 
 export function getMessageFeedback(messageId: string): MessageFeedback | null {
   if (typeof window === "undefined") return null;
-  return loadRecords()[messageId] ?? null;
+  const stored = loadRecords()[messageId];
+  if (!stored) return null;
+  const rating = stored.rating === "up" ? 5 : stored.rating === "down" ? 1 : stored.rating;
+  if (![1, 2, 3, 4, 5].includes(rating)) return null;
+  return { ...stored, rating: rating as MessageFeedbackRating };
 }
 
 /** Record a rating locally and relay it to the team. Returns the stored record. */

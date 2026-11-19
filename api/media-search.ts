@@ -1,7 +1,7 @@
 import type { VercelRequest, VercelResponse } from "@vercel/node";
-import { searchTavily, type TavilySearchType } from "../api-server/src/lib/tavily-search";
 
 const MAX_QUERY_LENGTH = 240;
+type TavilySearchType = "web" | "images" | "videos";
 const allowedTypes = new Set<TavilySearchType>(["web", "images", "videos"]);
 const requestCounts = new Map<string, { count: number; windowStart: number }>();
 const RATE_WINDOW_MS = 60_000;
@@ -48,6 +48,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (!apiKey) return res.status(503).json({ error: "Online search is not configured. Set the server-side TAVILY_API_KEY." });
 
   try {
+    const { searchTavily } = await import("../api-server/src/lib/tavily-search.js");
     const results = await searchTavily(query, type, apiKey);
     return res.status(200).json({ type, results });
   } catch (error) {

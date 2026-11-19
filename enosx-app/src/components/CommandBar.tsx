@@ -13,6 +13,7 @@ import {
   Check,
   ChevronDown,
   Cloud,
+  Expand,
   Laptop,
   Mic,
   MicOff,
@@ -215,6 +216,7 @@ interface CommandBarProps {
   disabled?: boolean;
   isFreeMode?: boolean;
   onFilesSelected?: (files: File[]) => void;
+  onUpscaleVideo?: (file: File) => void;
   attachments?: Attachment[];
   waitingCount?: number;
   tightBottom?: boolean;
@@ -237,6 +239,7 @@ export default function CommandBar({
   onStopSpeaking,
   disabled = false,
   onFilesSelected,
+  onUpscaleVideo,
   attachments = [],
   waitingCount = 0,
   tightBottom = false,
@@ -248,6 +251,7 @@ export default function CommandBar({
   const [selectedConnectorIds, setSelectedConnectorIds] = useState<string[]>([]);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const upscaleInputRef = useRef<HTMLInputElement>(null);
 
   const isListening = voiceState === "listening";
   const isSpeaking = voiceState === "speaking";
@@ -322,6 +326,12 @@ export default function CommandBar({
   const handleFilePickerChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(event.target.files ?? []);
     if (files.length > 0) onFilesSelected?.(files);
+    event.target.value = "";
+  };
+
+  const handleUpscalePickerChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) onUpscaleVideo?.(file);
     event.target.value = "";
   };
 
@@ -409,6 +419,26 @@ export default function CommandBar({
               >
                 <Plus size={18} />
               </button>
+            )}
+            {onUpscaleVideo && import.meta.env.VITE_NVIDIA_VSR_ENABLED === "true" && (
+              <>
+                <input
+                  ref={upscaleInputRef}
+                  type="file"
+                  accept="video/mp4,video/webm,video/quicktime,video/x-m4v,.mp4,.webm,.mov,.m4v"
+                  className="hidden"
+                  onChange={handleUpscalePickerChange}
+                />
+                <button
+                  type="button"
+                  onClick={() => upscaleInputRef.current?.click()}
+                  className="enosx-icon"
+                  title="Upscale a video with NVIDIA VSR"
+                  aria-label="Upscale a video with NVIDIA VSR"
+                >
+                  <Expand size={18} />
+                </button>
+              </>
             )}
 
             <ConnectorPicker

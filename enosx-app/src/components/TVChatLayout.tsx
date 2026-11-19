@@ -27,6 +27,7 @@ interface TVChatLayoutProps {
   messagesEndRef: React.RefObject<HTMLDivElement>;
   isFreeMode?: boolean;
   onFilesSelected?: (files: File[]) => void;
+  onUpscaleVideo?: (file: File) => void;
   attachments?: Attachment[];
   audioStream?: MediaStream | null;
 }
@@ -52,6 +53,7 @@ export default function TVChatLayout({
   messagesEndRef,
   isFreeMode = false,
   onFilesSelected,
+  onUpscaleVideo,
   attachments = [],
   audioStream = null,
 }: TVChatLayoutProps) {
@@ -181,6 +183,7 @@ export default function TVChatLayout({
           onStopSpeaking={stopSpeaking}
           isFreeMode={isFreeMode}
           onFilesSelected={onFilesSelected}
+          onUpscaleVideo={onUpscaleVideo}
           attachments={attachments}
           audioStream={audioStream}
         />

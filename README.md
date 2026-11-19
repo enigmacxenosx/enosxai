@@ -12,6 +12,7 @@
 - **Chat in three modes:** **ENOSX One** for fast everyday assistance, **ENOSX Studio** for deeper responses, and **ENOSX Nexus** for strategic reasoning and analysis. Model routing is configured server-side; the selected model and provider determine actual performance and availability.
 - **Analyze attachments:** work with common documents and PDFs, images, and audio/video files. Image and video analysis uses sampled visual context; audio-file analysis provides available file and waveform details, not an automatic transcript.
 - **Create media:** generate images from prompts and edit images, and generate short videos from text or image input when the configured NVIDIA services allow it.
+- **Upscale video:** optionally send small uploaded clips through an NVIDIA Video Super Resolution NIM bridge. This requires a separately deployed GPU-backed NIM and HTTP-to-gRPC bridge; see the setup guide before enabling it.
 - **Search and study online content:** optionally search the web and find source-linked images, or search YouTube/Vimeo pages for video links. Search requires the server-side `TAVILY_API_KEY`. Tavily does not provide a dedicated video-search endpoint here, so video results are web links filtered to supported video platforms. Website reading is limited to public static HTML/text; protected or JavaScript-only pages may not be readable.
 - **Use voice:** microphone speech input where the browser supports it, plus spoken responses through configured speech providers.
 - **Continue after a reply:** get three locally selected follow-up prompt suggestions after a completed answer. The suggestions use the current exchange to choose a helpful prompt set without making another model request.
@@ -87,6 +88,7 @@ The web UI can load without all optional integrations, but server-backed feature
 | Vision routing | `NVIDIA_VISION_MODEL`, `NVIDIA_EX_CORE_VISION_MODEL`, and `NVIDIA_EX_PRO_VISION_MODEL` |
 | Image creation/editing | `NVIDIA_IMAGE_API_KEY` (falls back to `NVIDIA_API_KEY`); optional `NVIDIA_IMAGE_ENDPOINT` and `NVIDIA_IMAGE_MODEL` |
 | Video generation | `NVIDIA_VIDEO_API_KEY` (falls back to `NVIDIA_API_KEY`) |
+| NVIDIA video upscaling | `VITE_NVIDIA_VSR_ENABLED=true` at build time, plus server-only `NVIDIA_VSR_BRIDGE_URL` and optional `NVIDIA_VSR_BRIDGE_TOKEN`; requires a deployed VSR gRPC bridge. Current Vercel upload cap: 4 MB. |
 | Online web, image, and video-link search | `TAVILY_API_KEY` (server-side only) |
 | Spoken responses | `ELEVEN_LABS_API_KEY` and/or `NVIDIA_MAGPIE_TTS_API_KEY` / `NVIDIA_CHATTERBOX_TTS_API_KEY`; optional `ELEVEN_LABS_VOICE_ID` |
 | Sign-in and cross-device sync | Firebase Web App `VITE_FIREBASE_*` settings; enable the corresponding providers in Firebase Authentication |

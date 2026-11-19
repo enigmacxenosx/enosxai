@@ -32,6 +32,7 @@ interface PhoneChatLayoutProps {
   messagesEndRef: React.RefObject<HTMLDivElement>;
   isFreeMode?: boolean;
   onFilesSelected?: (files: File[]) => void;
+  onUpscaleVideo?: (file: File) => void;
   attachments?: Attachment[];
   audioStream?: MediaStream | null;
   onSettingsClick?: () => void;
@@ -66,6 +67,7 @@ export default function PhoneChatLayout({
   messagesEndRef,
   isFreeMode = false,
   onFilesSelected,
+  onUpscaleVideo,
   attachments = [],
   audioStream = null,
   onSettingsClick,
@@ -174,6 +176,7 @@ export default function PhoneChatLayout({
           onStopSpeaking={stopSpeaking}
           isFreeMode={isFreeMode}
           onFilesSelected={onFilesSelected}
+          onUpscaleVideo={onUpscaleVideo}
           attachments={attachments}
           audioStream={audioStream}
           tightBottom={messages.length === 0}

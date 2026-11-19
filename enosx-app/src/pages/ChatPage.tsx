@@ -52,6 +52,7 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import { useDeviceType } from "@/hooks/useDeviceType";
 import { useImageGeneration } from "@/hooks/useImageGeneration";
 import { useVideoGeneration } from "@/hooks/useVideoGeneration";
+import { useVideoUpscaling } from "@/hooks/useVideoUpscaling";
 import PhoneChatLayout from "@/components/PhoneChatLayout";
 import TVChatLayout from "@/components/TVChatLayout";
 import { getAIIdentity } from "@/const";
@@ -368,8 +369,9 @@ export default function ChatPage() {
   const { sendMessage, isLoading: isChatLoading, isThinking, error: chatError, isFreeMode } = useAI();
   const { generateImage, isGenerating, error: imageError, clearError: clearImageError } = useImageGeneration();
   const { generateVideo, isGenerating: isGeneratingVideo, error: videoError, clearError: clearVideoError } = useVideoGeneration();
+  const { upscaleVideo, isUpscaling } = useVideoUpscaling();
   const [notificationPermission, setNotificationPermission] = useState<NotificationPermission | "unsupported">(() => getNotificationPermission());
-  const isLoading = isChatLoading || isGenerating || isGeneratingVideo;
+  const isLoading = isChatLoading || isGenerating || isGeneratingVideo || isUpscaling;
   const error = chatError || imageError || videoError;
 
   const {
@@ -457,6 +459,50 @@ export default function ChatPage() {
       for (const file of acceptedFiles) await handleFileUpload(file);
     })();
   }, [fileContext.files.length, handleFileUpload]);
+
+  const handleUpscaleVideo = useCallback(async (file: File) => {
+    const allowedTypes = ["video/mp4", "video/webm", "video/quicktime", "video/x-m4v"];
+    if (!allowedTypes.includes(file.type) && !/\.(mp4|webm|mov|m4v)$/i.test(file.name)) {
+      showError("Choose an MP4, WebM, MOV, or M4V video.");
+      return;
+    }
+    if (file.size > 4 * 1024 * 1024) {
+      showError("This Vercel integration currently accepts videos up to 4 MB. Larger files need a direct-to-storage upload service.");
+      return;
+    }
+
+    let targetConvId = activeIdRef.current;
+    if (!targetConvId) {
+      const conversation = createConversation();
+      conversation.title = `Upscale ${file.name}`;
+      setConversations((current) => [conversation, ...current]);
+      setActiveId(conversation.id);
+      activeIdRef.current = conversation.id;
+      targetConvId = conversation.id;
+    }
+    const userMessage: Message = {
+      id: nanoid(), role: "user", content: `Upscale this video with NVIDIA Video Super Resolution: ${file.name}`,
+      timestamp: new Date(),
+    };
+    const assistantMessage: Message = {
+      id: nanoid(), role: "assistant", content: `Enhancing **${file.name}** with NVIDIA Video Super Resolution…`,
+      timestamp: new Date(), isStreaming: true,
+    };
+    const assistantId = assistantMessage.id;
+    setConversations((current) => current.map((conversation) => conversation.id === targetConvId
+      ? { ...conversation, messages: [...conversation.messages, userMessage, assistantMessage], updatedAt: new Date() }
+      : conversation));
+
+    const result = await upscaleVideo(file);
+    const content = result.url
+      ? `Video upscaling complete.\n\n[Download the enhanced video](${result.url})`
+      : `Video upscaling failed: ${result.error || "The NVIDIA VSR service did not return a result."}`;
+    setConversations((current) => current.map((conversation) => conversation.id === targetConvId
+      ? { ...conversation, messages: conversation.messages.map((message) => message.id === assistantId
+        ? { ...message, content, isStreaming: false }
+        : message), updatedAt: new Date() }
+      : conversation));
+  }, [upscaleVideo]);
 
   const [isGodModeActive, setIsGodModeActive] = useState(false);
   const [showGodModeWarning, setShowGodModeWarning] = useState(false);
@@ -1113,6 +1159,7 @@ ${getAdminContext()}` : ""}`,
           messagesEndRef={messagesEndRef as React.RefObject<HTMLDivElement>}
           isFreeMode={isFreeMode}
           onFilesSelected={handleFilesSelected}
+          onUpscaleVideo={handleUpscaleVideo}
           attachments={fileContext.files}
           audioStream={microphoneStream}
         />
@@ -1151,6 +1198,7 @@ ${getAdminContext()}` : ""}`,
           messagesEndRef={messagesEndRef as React.RefObject<HTMLDivElement>}
           isFreeMode={isFreeMode}
           onFilesSelected={handleFilesSelected}
+          onUpscaleVideo={handleUpscaleVideo}
           attachments={fileContext.files}
           audioStream={microphoneStream}
           onSettingsClick={() => setShowProfilePanel(true)}
@@ -1408,6 +1456,7 @@ ${getAdminContext()}` : ""}`,
               transcript={transcript}
               isFreeMode={isFreeMode}
               onFilesSelected={handleFilesSelected}
+              onUpscaleVideo={handleUpscaleVideo}
               attachments={fileContext.files}
               audioStream={microphoneStream}
               tightBottom={!activeConversation || activeConversation.messages.length === 0}

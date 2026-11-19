@@ -38,6 +38,15 @@ ENOSX AI is a Vite/React frontend with Vercel serverless API functions. The chat
 | `NVIDIA_API_BASE_URL` | Override the NVIDIA-compatible API base URL |
 | `GITHUB_TOKEN` | GitHub repository context features |
 | `VITE_FIREBASE_*` | Firebase authentication and cloud history |
+| `VITE_NVIDIA_VSR_ENABLED` | Set to `true` at build time to show the NVIDIA VSR video-upscale tool |
+| `NVIDIA_VSR_BRIDGE_URL` | Server-only HTTPS URL of a bridge that translates multipart uploads to NVIDIA VSR gRPC and returns `{"url":"https://..."}` |
+| `NVIDIA_VSR_BRIDGE_TOKEN` | Optional server-only bearer token for authenticating to that bridge |
+
+### NVIDIA Video Super Resolution
+
+VSR is a separately deployed NVIDIA NIM container, not the hosted NVIDIA video-generation endpoint. The app's `/api/video/upscale` route forwards a video as multipart field `video` to an HTTP bridge; that bridge must call the NIM's gRPC API and return a durable HTTPS result URL in JSON. Keep the bridge URL and token server-side. Enable the toolbar action by setting `VITE_NVIDIA_VSR_ENABLED=true` for the frontend build and configure `NVIDIA_VSR_BRIDGE_URL` in the server environment. The feature remains unavailable until the NIM and bridge are deployed.
+
+NVIDIA documents the compressed-video NIM as requiring an Ada-generation-or-newer NVIDIA GPU, a supported NVDEC/NVENC codec path, Driver 590.33 or later, CUDA 13.1 or later, Docker, and NVIDIA Container Toolkit. The current Vercel proxy accepts videos up to 4 MB and waits up to 110 seconds; larger uploads require a direct-to-object-storage flow and longer-running job/status API instead. Do not enable this feature for production until the bridge, result storage, authentication, and upload policy are in place. See [NVIDIA's compressed video workflow](https://docs.nvidia.com/nim/maxine/vsr/latest/streaming/index.html) and [container requirements](https://catalog.ngc.nvidia.com/orgs/nim/nvidia/containers/vsr-nim/-).
 
 ## Local Development
 

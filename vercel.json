@@ -5,6 +5,9 @@
   "outputDirectory": "enosx-app/dist/public",
   "buildCommand": "pnpm run build",
   "functions": {
+    "api/video/upscale.ts": {
+      "maxDuration": 120
+    },
     "api/generate.ts": {
       "maxDuration": 120
     },

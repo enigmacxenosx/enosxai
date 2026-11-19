@@ -118,8 +118,8 @@ export default function Sidebar({
       danger: false,
     },
     {
-      label: "Plugins",
-      description: "Add focused AI capabilities",
+      label: "Plugins & Skills",
+      description: "Manage AI plugins and skills",
       icon: Puzzle,
       onClick: onPluginsClick || (() => setShowPlugins(true)),
       accent: false,

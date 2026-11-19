@@ -1,3 +1,5 @@
+import type { AgentActivityEvent } from "@/lib/agentActivity";
+
 export interface Attachment {
   id: string;
   name: string;
@@ -17,6 +19,7 @@ export interface Message {
   timestamp: Date;
   isStreaming?: boolean;
   reasoningStatus?: string;
+  activityEvents?: AgentActivityEvent[];
   attachments?: Attachment[];
   proposedActions?: AssistantAction[];
 }

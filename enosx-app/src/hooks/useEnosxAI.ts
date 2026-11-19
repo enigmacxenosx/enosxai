@@ -6,6 +6,7 @@
 
 import { useState, useCallback } from "react";
 import { Attachment, Message } from "@/lib/types";
+import type { AgentActivityEvent } from "@/lib/agentActivity";
 import { chatWithLocalModel, isDesktopShell, readLocalModelSettings } from "@/lib/localModels";
 import { reportClientError } from "@/lib/errorReporting";
 
@@ -15,6 +16,7 @@ type ChatOptions = {
   skillContext?: string;
   attachments?: Attachment[];
   onTokenUsage?: (usage: { totalTokens: number; estimated: boolean }) => void;
+  onActivityEvent?: (event: AgentActivityEvent) => void;
 };
 
 function estimateTokenCount(text: string): number {
@@ -89,6 +91,8 @@ export function useEnosxAI() {
       // Surface a friendly in-message indicator while the AI is processing.
       setIsThinking(true);
       onReasoningStatus?.("Analyzing request");
+      options?.onActivityEvent?.({ type: "status", state: "thinking" });
+      options?.onActivityEvent?.({ type: "message", text: "Request received" });
       const requestController = new AbortController();
       const requestTimeout = window.setTimeout(() => requestController.abort(), 50_000);
       let usingLocalModel = false;
@@ -105,12 +109,15 @@ export function useEnosxAI() {
             localSettings.model,
             messages.map(({ role, content }) => ({ role, content })),
           );
+          options?.onActivityEvent?.({ type: "status", state: "working" });
+          options?.onActivityEvent?.({ type: "message", text: "Writing a response with your local model" });
           if (answer) onChunk(answer);
           else onChunk("The local model returned an empty response. Please try again.");
           options?.onTokenUsage?.({
             totalTokens: estimateRequestTokens(messages, answer || "The local model returned an empty response. Please try again."),
             estimated: true,
           });
+          options?.onActivityEvent?.({ type: "done" });
           onDone();
           return;
         }
@@ -198,6 +205,8 @@ export function useEnosxAI() {
                 if (!sawAnswer) {
                   sawAnswer = true;
                   onReasoningStatus?.("Drafting answer");
+                  options?.onActivityEvent?.({ type: "status", state: "working" });
+                  options?.onActivityEvent?.({ type: "message", text: "Writing your response" });
                 }
                 onChunk(content);
               }
@@ -236,10 +245,12 @@ export function useEnosxAI() {
           estimated: providerTokenCount === null,
         });
 
+        options?.onActivityEvent?.({ type: "done" });
         onDone();
       } catch (err) {
         const errorMessage = err instanceof Error ? err.message : "Unknown error";
         const friendlyError = usingLocalModel ? `Local model error: ${errorMessage}` : getFriendlyErrorMessage(errorMessage);
+        options?.onActivityEvent?.({ type: "error", message: friendlyError });
         reportClientError(err, "ai.request");
         setError(friendlyError);
         console.error("[useEnosxAI] Error:", errorMessage);

@@ -1773,21 +1773,20 @@ body.light .enosx-composer {
   .enosx-pill__label { display: none; }
 }
 
-/* Live activity timeline — summarized work events, never private reasoning. */
-.live-activity-timeline { width: min(100%, 420px); margin: 0 0 2px; padding: 10px 12px 11px; border: 1px solid rgba(255,255,255,.09); border-radius: 12px; background: rgba(17,18,20,.84); box-shadow: 0 10px 28px rgba(0,0,0,.16), inset 0 1px 0 rgba(255,255,255,.035); color: rgba(255,255,255,.72); font-size: 11px; }
-.live-activity-header { display: flex; align-items: center; gap: 7px; margin-bottom: 8px; color: rgba(255,255,255,.86); font-size: 11px; font-weight: 600; }
-.live-activity-pulse { width: 7px; height: 7px; border-radius: 50%; background: #8d8d91; box-shadow: 0 0 0 3px rgba(141,141,145,.1); }
-.live-activity-pulse.is-active { background: #76a9ff; box-shadow: 0 0 0 3px rgba(118,169,255,.12), 0 0 12px rgba(118,169,255,.7); animation: live-activity-pulse 1.4s ease-in-out infinite; }
-.live-activity-steps { display: flex; flex-direction: column; gap: 4px; }
-.live-activity-step { display: flex; align-items: center; gap: 7px; min-height: 18px; color: rgba(255,255,255,.34); }
-.live-activity-step.is-done { color: rgba(255,255,255,.56); }
-.live-activity-step.is-current { color: rgba(255,255,255,.92); }
-.live-activity-icon { display: grid; width: 16px; height: 16px; flex: none; place-items: center; border: 1px solid rgba(255,255,255,.15); border-radius: 5px; color: rgba(255,255,255,.28); }
-.live-activity-step.is-done .live-activity-icon { border-color: rgba(114,195,142,.3); color: #8ed6a7; background: rgba(83,181,116,.11); }
-.live-activity-step.is-current .live-activity-icon { border-color: rgba(118,169,255,.34); color: #8ab7ff; background: rgba(83,133,217,.13); }
-.live-activity-now { margin-left: auto; color: rgba(138,183,255,.76); font-size: 10px; }
-@keyframes live-activity-pulse { 0%, 100% { opacity: .65; transform: scale(.9); } 50% { opacity: 1; transform: scale(1.1); } }
-@media (prefers-reduced-motion: reduce) { .live-activity-pulse.is-active { animation: none; } }
+/* Compact live feed for observable status and narration (not private reasoning). */
+.agent-activity-feed { width: min(100%, 420px); margin: 0 0 2px; overflow: hidden; border: 1px solid var(--border); border-radius: 12px; background: color-mix(in srgb, var(--card) 72%, transparent); color: var(--foreground); font-size: 12px; }
+.agent-activity-feed__events { display: flex; max-height: 112px; flex-direction: column; gap: 6px; overflow-y: auto; padding: 10px 12px 7px; }
+.agent-activity-feed__event { display: flex; min-width: 0; align-items: center; gap: 8px; color: var(--muted-foreground); }
+.agent-activity-feed__event svg { flex: none; color: var(--primary); }
+.agent-activity-feed__event span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.agent-activity-feed__event.is-error, .agent-activity-feed__event.is-error svg { color: var(--destructive); }
+.agent-activity-feed__status { display: flex; min-height: 34px; align-items: center; gap: 8px; border-top: 1px solid var(--border); padding: 0 12px; color: var(--foreground); font-weight: 600; }
+.agent-activity-feed__status svg { margin-left: auto; color: #22a06b; }
+.agent-activity-feed__dot { width: 7px; height: 7px; flex: none; border-radius: 50%; background: var(--muted-foreground); }
+.agent-activity-feed__dot.is-active { background: var(--primary); box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary) 18%, transparent); animation: agent-activity-pulse 1.4s ease-in-out infinite; }
+.agent-activity-feed__dot.is-error { background: var(--destructive); }
+@keyframes agent-activity-pulse { 0%, 100% { opacity: .65; transform: scale(.9); } 50% { opacity: 1; transform: scale(1.1); } }
+@media (prefers-reduced-motion: reduce) { .agent-activity-feed__dot.is-active { animation: none; } }
 
 /* ===================================================================   ENOSX AI phone reference layout
    Mirrors the supplied 390px mobile composition: compact header, centered

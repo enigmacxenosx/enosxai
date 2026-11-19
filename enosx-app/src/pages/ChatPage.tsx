@@ -44,6 +44,7 @@ import { useGodMode } from "@/hooks/useGodMode";
 import { useMemoryBank } from "@/hooks/useMemoryBank";
 import { useKnowledgeBank } from "@/hooks/useKnowledgeBank";
 import { AssistantAction, Conversation, Message } from "@/lib/types";
+import type { AgentActivityEvent } from "@/lib/agentActivity";
 import { useTheme } from "@/contexts/ThemeContext";
 import { useCompactMode } from "@/hooks/useCompactMode";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -820,6 +821,11 @@ ${getAdminContext()}` : ""}`,
       const updateReasoningStatus = (status: string) => {
         setConversations((prev) => prev.map((c) => c.id === targetConvId ? { ...c, messages: c.messages.map((m) => m.id === assistantId ? { ...m, reasoningStatus: status, isStreaming: status !== "Answer ready" } : m) } : c));
       };
+      const appendActivityEvent = (event: AgentActivityEvent) => {
+        setConversations((prev) => prev.map((c) => c.id === targetConvId
+          ? { ...c, messages: c.messages.map((m) => m.id === assistantId ? { ...m, activityEvents: [...(m.activityEvents ?? []), event] } : m) }
+          : c));
+      };
       let pendingRenderChunk = "";
       let renderFrameQueued = false;
       const flushStreamToChat = () => {
@@ -897,6 +903,7 @@ ${getAdminContext()}` : ""}`,
           skillContext,
           attachments: userMessage.attachments,
           onTokenUsage: ({ totalTokens }) => recordTokenUsage(totalTokens),
+          onActivityEvent: appendActivityEvent,
         },
         updateReasoningStatus
       );

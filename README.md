@@ -1,219 +1,125 @@
 # ENOSX AI
 
-**Advanced AI Assistant & Application Platform** — Built with React, TypeScript, and Node.js
+**A multimodal AI assistant by [Enosx Technologies](https://github.com/enigmacxenosx).** ENOSX AI is a responsive web application with a companion Tauri desktop shell, configurable AI services, and optional account sync and integrations.
 
-ENOSX AI is the flagship AI assistant and application platform from [Enosx Technologies](https://github.com/enigmacxenosx). This monorepo contains the React application, API services, shared libraries.
+[![Live app](https://img.shields.io/badge/Live%20app-enosxai.vercel.app-16a34a?style=for-the-badge)](https://enosxai.vercel.app)
+[![Latest release](https://img.shields.io/github/v/release/enigmacxenosx/enosxai?style=for-the-badge)](https://github.com/enigmacxenosx/enosxai/releases/latest)
 
-[![Live Application](https://img.shields.io/badge/🚀_Live-enosxai.vercel.app-22c55e?style=for-the-badge)](https://enosxai.vercel.app) 
-[![Desktop App Available](https://img.shields.io/badge/💻_Desktop-Available-0ea5e9?style=for-the-badge)](https://github.com/enigmacxenosx/enosxai/releases/latest)
-[![Package Manager](https://img.shields.io/badge/📦_pnpm-f69220?style=for-the-badge)](https://pnpm.io)
-[![License](https://img.shields.io/badge/License-Proprietary-red?style=for-the-badge)](LICENSE)
+> The production web app and its `/api/healthz` endpoint were responding successfully when this README was updated. Features that depend on third-party providers are available only when those providers are configured and reachable.
 
----
+## What it can do
 
-## 🌐 Live Applications
+- **Chat in three modes:** **ENOSX One** for fast everyday assistance, **ENOSX Studio** for deeper responses, and **ENOSX Nexus** for strategic reasoning and analysis. Model routing is configured server-side; the selected model and provider determine actual performance and availability.
+- **Analyze attachments:** work with common documents and PDFs, images, and audio/video files. Image and video analysis uses sampled visual context; audio-file analysis provides available file and waveform details, not an automatic transcript.
+- **Create media:** generate images from prompts and edit images, and generate short videos from text or image input when the configured NVIDIA services allow it.
+- **Search and study online content:** optionally search for web images and videos, or ask the assistant to read a public HTTP(S) webpage. Media search requires `SERPER_API_KEY`. Website reading is limited to public static HTML/text; protected or JavaScript-only pages may not be readable.
+- **Use voice:** microphone speech input where the browser supports it, plus spoken responses through configured speech providers.
+- **Keep useful context:** use conversation history, a knowledge bank, and long-term memory. Guest data stays on the device; signed-in users can sync supported profile, chat, and memory data through Firebase.
+- **Connect services:** the chat interface includes GitHub, Shopify, Vercel, and Email connector options. A connector's actual operations require its server-side integration and credentials to be configured; selecting a connector is scoped to that request.
+- **Work with developer tools:** use code review and the developer/GOD MODE lab tools for coding and authorized learning workflows.
+- **Use the desktop app:** the Tauri shell supports local chat models through Ollama, with installers and signed updates published through GitHub Releases when available.
 
-| Application | URL | Status |
-|---|---|---|
-| **ENOSX AI** | [enosxai.vercel.app](https://enosxai.vercel.app) | ✅ Live |
-| **Desktop App** | [Releases](https://github.com/enigmacxenosx/enosxai/releases/latest) | ✅ Available |
+## Live products
 
----
+| Product | Link |
+|---|---|
+| ENOSX AI web app | [enosxai.vercel.app](https://enosxai.vercel.app) |
+| Desktop installers | [Latest GitHub release](https://github.com/enigmacxenosx/enosxai/releases/latest) |
+| Enosx Technologies | [Official website](https://enosxtech.vercel.app) |
+| Enosx e-commerce hub | [enosxtech-hub.vercel.app](https://enosxtech-hub.vercel.app) |
 
-## 📋 Product Overview
+Desktop availability depends on the published release assets for your operating system. Check the release page for current downloads.
 
-ENOSX AI combines modern web technologies with powerful AI capabilities:
+## Technology and repository layout
 
-- **Frontend**: React + Vite with TypeScript (90.6% of codebase)
-- **Backend**: Express API server + Vercel serverless functions
-- **Desktop**: Tauri-based shell for native desktop integration
-- **AI Models**: NVIDIA OpenAI-compatible API + Ollama offline support
-- **Voice**: ElevenLabs integration for spoken responses
-- **Styling**: CSS & modern design patterns (4.7% of codebase)
-
----
-
-## 📁 Repository Structure
+The project is a pnpm monorepo built around React, Vite, and TypeScript. It includes Vercel serverless API functions, shared libraries, and a Tauri desktop shell.
 
 | Path | Purpose |
 |---|---|
-| `enosx-app/` | Vite + React frontend with TypeScript |
-| `desktop-shell/` | Tauri desktop shell with native local-model bridge |
-| `api-server/` | Main Express API server |
-| `api/` | Vercel serverless functions |
-| `lib/` | Shared schemas, clients, and utilities |
-| `docs/` | Setup, design, and maintenance documentation |
-| `scripts/` | Project utilities and automation |
+| `enosx-app/` | React + Vite web application, UI, and frontend tests |
+| `api/` | Vercel serverless endpoints for chat and supporting services |
+| `api-handlers/` | Shared generation and request handlers |
+| `api-server/` | Express API service |
+| `desktop-shell/` | Tauri desktop application and local-model bridge |
+| `lib/` | Shared API clients, schemas, database, and server utilities |
+| `docs/` | Setup, architecture, and operational documentation |
+| `scripts/` | Build and project utility scripts |
 
----
-
-## 🚀 Getting Started
+## Run locally
 
 ### Prerequisites
-- **Node.js** (v16 or later)
-- **pnpm** ([installation guide](https://pnpm.io/installation))
 
-### Development Setup
+- Node.js 22 or later
+- pnpm 9
+- An NVIDIA API key for hosted chat; other features need their corresponding provider configuration
 
 ```bash
-# Clone the repository
 git clone https://github.com/enigmacxenosx/enosxai.git
 cd enosxai
-
-# Install dependencies
 pnpm install
 
-# Start development servers
-pnpm dev
+# Start the web frontend
+pnpm --filter @workspace/enosx-app dev
 ```
 
-For full setup and deployment instructions, see the [Setup Guide](docs/SETUP_GUIDE.md).
+Configure local server environment variables for the API functions if you need hosted AI features. Follow [`docs/SETUP_GUIDE.md`](docs/SETUP_GUIDE.md) and use [`enosx-app/.env.example`](enosx-app/.env.example) as a reference. Do not commit real credentials. The production deployment is configured by [`vercel.json`](vercel.json).
 
----
+### Checks
 
-## 💾 Desktop Application
-
-### Download Installers
-
-Get the latest Windows, macOS, or Linux installers from [GitHub Releases](https://github.com/enigmacxenosx/enosxai/releases/latest).
-
-- **Windows**: `.msi` and `.exe` installers
-- **macOS**: `.dmg` installer  
-- **Linux**: AppImage and `.tar.gz`
-
-Version tags (`v*`) automatically trigger the desktop installer build workflow.
-
-### Features
-
-- **Tray Integration**: Windows system tray icon for quick access
-- **Auto-Updates**: Signed Tauri updater checks for new releases at startup
-- **Offline Models**: Run chat locally via [Ollama](https://ollama.com/)
-- **Active Window Context**: (Planned) OS-aware context awareness
-- **File Integration**: (Planned) File and workspace context support
-
-### Offline Model Setup
-
-1. Install [Ollama](https://ollama.com/)
-2. Pull a model: `ollama pull qwen3:4b` (or your preferred model)
-3. Open **Settings → Offline Models** in the app
-4. Select your model and start chatting locally
-
----
-
-## ⚙️ Configuration & Deployment
-
-### Environment Variables
-
-**Firebase Auth & Firestore** (web account sign-in, profiles, and chat sync):
-- `VITE_FIREBASE_API_KEY`
-- `VITE_FIREBASE_AUTH_DOMAIN`
-- `VITE_FIREBASE_PROJECT_ID`
-- `VITE_FIREBASE_STORAGE_BUCKET`
-- `VITE_FIREBASE_MESSAGING_SENDER_ID`
-- `VITE_FIREBASE_APP_ID`
-
-These are Firebase Web App client settings, not service-account secrets. Configure them in the Vercel project environment and rebuild the frontend after setting them. Do not put a Firebase service-account key in any `VITE_` variable.
-
-#### Firebase setup
-
-1. Create/select a Firebase project and register a Web app in Firebase Console → **Project settings**.
-2. Enable **Email/Password** and **Google** under **Authentication → Sign-in method**. Add the production site and any preview/test hosts to **Authorized domains**.
-3. Create a Cloud Firestore database, then deploy this repository's rules: `firebase deploy --only firestore:rules` (requires Firebase CLI login and project selection).
-4. Add the six `VITE_FIREBASE_*` Web App settings above to the Vercel project's environment variables and redeploy.
-
-Authentication is handled by Firebase Auth; Firestore stores profiles under `users/{uid}` and chats/messages under that user's document tree. The checked-in `firestore.rules` limits reads and writes to the authenticated matching UID. Firebase Auth persists sign-in on the device/browser; the same Firebase account can be used on phone, tablet, or PC. Guest mode remains local to the device.
-
-#### Instagram and WhatsApp provider variables
-
-The sign-in UI includes Instagram and a WhatsApp-style phone option. Keep the following values server-side and never add a `VITE_` prefix or commit real credentials:
-
-- Instagram OAuth: `INSTAGRAM_CLIENT_ID`, `INSTAGRAM_CLIENT_SECRET`, and `INSTAGRAM_OAUTH_REDIRECT_URI`
-- WhatsApp Business OTP: `META_APP_SECRET`, `WHATSAPP_ACCESS_TOKEN`, `WHATSAPP_PHONE_NUMBER_ID`, `WHATSAPP_BUSINESS_ACCOUNT_ID`, and `WHATSAPP_VERIFY_TOKEN`
-
-WhatsApp does not provide a standard consumer “Sign in with WhatsApp” OAuth provider. Its credentials support a separate server-side WhatsApp Business OTP flow. Instagram OAuth also needs a server callback and a redirect URI registered in Meta Developer settings before the button can authenticate users. The current Google and phone/SMS flows remain handled by Firebase Auth.
-
-Existing pre-Firebase chats are not automatically copied into a signed-in account: they may belong to another person who used the same device. Export or review them before any future account migration.
-
-**AI Services**:
-- `NVIDIA_API_KEY` — NVIDIA's OpenAI-compatible API for chat
-- `NVIDIA_MODEL` and `NVIDIA_EX_CORE_MODEL` — Optional default and EX Core text model configuration; the recommended value is `meta/muse-glimmer-30b`
-- `NVIDIA_EX_PRO_MODEL` — EX Pro text model configuration; the recommended value is `meta/muse-glimmer-30b`
-- `NVIDIA_ENOSH_MIND_MODEL` — ENOSH MIND text model configuration; the recommended value is `nvidia/nemotron-3-ultra-550b-a55b`
-- `NVIDIA_VISION_MODEL` — Shared fallback vision model configuration
-- `NVIDIA_EX_CORE_VISION_MODEL` and `NVIDIA_EX_PRO_VISION_MODEL` — Explicit Muse Glimmer vision routing for EX Core and EX Pro
-- Image-bearing requests made while ENOSH MIND is selected automatically use EX Pro vision because Nemotron 3 Ultra is text-only
-- `NVIDIA_IMAGE_API_KEY` — Optional image-provider key; falls back to `NVIDIA_API_KEY`
-- `NVIDIA_IMAGE_ENDPOINT` — Optional image endpoint override; defaults to NVIDIA's hosted FLUX.2 Klein 4B endpoint
-- `NVIDIA_IMAGE_MODEL` — Optional model identifier; defaults to `black-forest-labs/flux.2-klein-4b`
-- `NVIDIA_VIDEO_API_KEY` — Optional video-provider key; falls back to `NVIDIA_API_KEY`
-
-Image and video provider keys must remain server-side and must not use a `VITE_` prefix. The image flow uses NVIDIA's hosted [FLUX.2 Klein 4B](https://build.nvidia.com/black-forest-labs/flux_2-klein-4b) endpoint for text-to-image and image editing. The video flow uses NVIDIA's hosted [Cosmos3 Nano](https://build.nvidia.com/nvidia/cosmos3-nano) endpoint for text-to-video and image-to-video. Clips are configured as a short 25-frame, 480p 16:9 preview at 24 fps. Cosmos3 Nano applies its required screening and SynthID watermarking. For Vercel, add `NVIDIA_API_KEY` (or the separate image/video key variables) as encrypted server environment variables and redeploy; never set a `VITE_` copy. The image endpoint/model variables are only needed to override the hosted defaults. Generation requires an NVIDIA API key with access to the selected hosted endpoints; request limits and availability are controlled by NVIDIA.
-
-**Online media search**:
-- `SERPER_API_KEY` — (Optional) server-only Serper.dev key for searching online images and videos. Add it to the Vercel project's environment variables; do not use a `VITE_` prefix. Without it, regular chat continues to work and media search is simply unavailable.
-
-Chat can search for online learning videos and pictures from natural-language requests, including requests for both types together. Pictures appear inline with a source link; videos embed when the source supports it and otherwise remain clickable. Media search requires `SERPER_API_KEY`.
-
-**Website study**: Ask Enosx AI to read or summarize a public webpage and include its HTTP(S) URL. The reader fetches static HTML/text only, rejects private/internal network targets, validates redirects, and bounds the amount of content returned. JavaScript-only or protected pages may need the relevant text pasted into chat.
-
-**Voice**:
-- `ELEVEN_LABS_API_KEY` — ElevenLabs API key (stored as encrypted secret)
-- `ELEVEN_LABS_VOICE_ID` — (Optional) Custom voice ID
-- `NVIDIA_MAGPIE_TTS_API_KEY` — NVIDIA credential for the Magpie multilingual text-to-speech model (server-side only)
-- `NVIDIA_CHATTERBOX_TTS_API_KEY` — NVIDIA credential for the Chatterbox multilingual male voice (server-side only)
-
-### Production Deployment
-
-ENOSX AI is deployed to **Vercel**. All provider credentials are stored as encrypted deployment secrets and never committed.
-
-**OAuth Callback URL** (Production):
-```
-https://enosxai.vercel.app/api/github/oauth/callback
+```bash
+pnpm run typecheck
+pnpm --filter @workspace/enosx-app test:unit
+pnpm --filter @workspace/enosx-app build
 ```
 
-Review the [Deployment & Security Guide](docs/DEPLOYMENT.md) for the complete checklist.
+The repository's CI workflow also type-checks the API services, runs browser regression tests, and checks the desktop shell. See [`.github/workflows/ci.yml`](.github/workflows/ci.yml).
 
----
+## Configuration
 
-## 🔒 Security & Best Practices
+The web UI can load without all optional integrations, but server-backed features need their provider credentials configured in the server/deployment environment. Names below are configuration keys, not values to publish.
 
-- ✅ Server-side credential management (all API keys encrypted)
-- ✅ Firebase Auth for email/password and Google sign-in
-- ✅ Firestore rules scope profile and chat data to the authenticated Firebase UID
-- ✅ Signed desktop releases via Tauri
-- ✅ No credentials in version control
-- ✅ Automatic desktop app updates with signature verification
+| Capability | Configuration |
+|---|---|
+| Hosted chat and text models | `NVIDIA_API_KEY`; optional model overrides include `NVIDIA_MODEL`, `NVIDIA_EX_CORE_MODEL`, `NVIDIA_EX_PRO_MODEL`, and `NVIDIA_ENOSH_MIND_MODEL` |
+| Vision routing | `NVIDIA_VISION_MODEL`, `NVIDIA_EX_CORE_VISION_MODEL`, and `NVIDIA_EX_PRO_VISION_MODEL` |
+| Image creation/editing | `NVIDIA_IMAGE_API_KEY` (falls back to `NVIDIA_API_KEY`); optional `NVIDIA_IMAGE_ENDPOINT` and `NVIDIA_IMAGE_MODEL` |
+| Video generation | `NVIDIA_VIDEO_API_KEY` (falls back to `NVIDIA_API_KEY`) |
+| Online image/video search | `SERPER_API_KEY` |
+| Spoken responses | `ELEVEN_LABS_API_KEY` and/or `NVIDIA_MAGPIE_TTS_API_KEY` / `NVIDIA_CHATTERBOX_TTS_API_KEY`; optional `ELEVEN_LABS_VOICE_ID` |
+| Sign-in and cross-device sync | Firebase Web App `VITE_FIREBASE_*` settings; enable the corresponding providers in Firebase Authentication |
+| Optional error-report email delivery | `RESEND_API_KEY` and `ERROR_REPORT_FROM` |
+| Other connectors | Configure the corresponding connector in server-side settings; do not expose provider credentials in frontend variables |
 
-See [Deployment & Security Guide](docs/DEPLOYMENT.md) for detailed security practices.
+**Credential safety:** never commit secrets. Keep provider keys on the server and never give them a `VITE_` prefix. The Firebase `VITE_FIREBASE_*` entries are public web-client configuration, not service-account credentials; do not put a Firebase service-account key in the frontend. The checked-in Firestore rules scope user data to the authenticated UID.
 
----
+## Deployment
 
-## 📚 Enosx Portfolio
+The repository is configured for Vercel. Connect the repository to a Vercel project, set the required server-side environment variables for the features you intend to provide, and deploy. Pushing to the configured production branch can trigger deployment according to that Vercel project's settings; deployment and provider availability are separate from a successful GitHub push.
 
-- [E-commerce Hub](https://enosxtech-hub.vercel.app)
-- [Official Website](https://enosxtech.vercel.app)
-- [Enosh Blog](https://github.com/enigmacxenosx/enosh-blog)
+Check the non-secret health endpoint after deployment:
 
----
+```bash
+curl https://enosxai.vercel.app/api/healthz
+```
 
-## 📄 License
+A healthy response includes `ok` and an `aiConfigured` status flag; it never returns the API key. See [`docs/SETUP_GUIDE.md`](docs/SETUP_GUIDE.md) for additional setup and troubleshooting information.
 
-**Proprietary** — © 2024–2026 Enosx Technologies. All rights reserved.
+## Security notes
 
----
+- Provider credentials are intended to remain in server-side environment variables.
+- Firebase sign-in and Firestore security rules restrict account data to the authenticated user.
+- The public webpage reader rejects private/internal network destinations and validates redirects.
+- Developer security-learning flows are intended for authorized lab contexts.
+- Optional error reports contain technical diagnostics, not conversation text or uploaded file contents.
 
-## 🤝 Support & Documentation
+## License
 
-- 📖 [Setup Guide](docs/SETUP_GUIDE.md)
-- 🚀 [Deployment Guide](docs/DEPLOYMENT.md)
-- 🏗️ [Architecture Documentation](docs/)
-- 🐛 [GitHub Issues](https://github.com/enigmacxenosx/enosxai/issues)
+**Proprietary.** © 2024–2026 Enosx Technologies. All rights reserved. See repository terms before reuse or redistribution.
 
----
+## Support and further reading
 
-**Made with ❤️ by [Enosx Technologies](https://enosxtech.vercel.app)**
-
-
-## Automatic error reporting
-
-Errors shown to users, uncaught browser exceptions, and React rendering failures are automatically submitted to `/api/error-report`. To deliver reports to `enosxtech@gmail.com` and `enosxservices@gmail.com`, set the **server-only** Vercel environment variables `RESEND_API_KEY` and `ERROR_REPORT_FROM`, using a sender verified with Resend, then redeploy. These credentials must not use a `VITE_` prefix. Reports include technical error details, app version, browser, and page path; they exclude conversation text, uploaded files, credentials, and the user's IP address. Delivery is best-effort and duplicate reports from the same client are suppressed for one minute.
+- [Setup guide](docs/SETUP_GUIDE.md)
+- [Architecture and technical documentation](docs/)
+- [Changelog](CHANGELOG.md)
+- [GitHub Issues](https://github.com/enigmacxenosx/enosxai/issues)
+- [Enosx Technologies on GitHub](https://github.com/enigmacxenosx)

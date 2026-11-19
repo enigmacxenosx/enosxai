@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useEffect, useState } from "react";
 
-export type Theme = "dark" | "light" | "neon" | "cyberpunk" | "minimal" | "manus";
+export type Theme = "dark" | "light" | "neon" | "cyberpunk" | "minimal" | "enosx";
 
 export interface ThemeConfig {
   name: Theme;

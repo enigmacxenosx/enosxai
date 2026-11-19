@@ -59,6 +59,7 @@ import { CONNECTOR_CATALOG } from "@/lib/connectorCatalog";
 import LeadCaptureDialog from "@/components/LeadCaptureDialog";
 import AdminConsoleDialog from "@/components/AdminConsoleDialog";
 import { deleteConversation as deleteCloudConversation, loadConversations, saveConversation } from "@/lib/firebaseStorage";
+import { generateConversationTitle } from "@/lib/conversationTitle";
 import { ChevronDown, Copy, Eye, Gauge, Menu, Share2 } from "lucide-react";
 import { copyTranscript } from "@/lib/shareConversation";
 import { getOnlineMediaSearch, getWebsiteStudyUrl, searchOnlineMedia, studyWebsite } from "@/lib/onlineResearch";
@@ -88,11 +89,6 @@ interface WaitingMessage {
   aiMode?: AIMode;
   selectedConnectorIds?: string[];
 }
-
-const generateTitle = (firstMessage: string): string => {
-  const words = firstMessage.trim().split(/\s+/).slice(0, 6);
-  return words.join(" ") + (firstMessage.split(/\s+/).length > 6 ? "..." : "");
-};
 
 function isImageGenerationRequest(text: string): boolean {
   if (/\b(?:online|internet|web)\b/i.test(text) && /\b(?:image|picture|photo|video|clip|movie)s?\b/i.test(text)) return false;
@@ -548,7 +544,7 @@ export default function ChatPage() {
 
       if (!convId) {
         const conv = createConversation();
-        conv.title = generateTitle(text);
+        conv.title = generateConversationTitle(text);
         setConversations((prev) => [conv, ...prev]);
         setActiveId(conv.id);
         convId = conv.id;
@@ -556,6 +552,13 @@ export default function ChatPage() {
       }
 
       const targetConvId = convId;
+      setConversations((prev) => prev.map((conversation) =>
+        conversation.id === targetConvId
+          && conversation.title.trim().toLocaleLowerCase() === "new chat"
+          && !conversation.messages.some((message) => message.role === "user")
+          ? { ...conversation, title: generateConversationTitle(text) }
+          : conversation,
+      ));
       let messageContent = text;
       if (fileContext.isLoaded) {
         messageContent += getFileContextMessage();

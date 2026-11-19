@@ -14,6 +14,12 @@ import {
   Trash2,
   MessageSquare,
   Crown,
+  BriefcaseBusiness,
+  Code2,
+  GraduationCap,
+  MapPin,
+  Palette,
+  Search as SearchIcon,
   Info,
   X,
   User,
@@ -48,6 +54,19 @@ interface SidebarProps {
   isPro?: boolean;
   isMobileOpen?: boolean;
   onMobileClose?: () => void;
+}
+
+function getConversationIcon(conversation: Conversation) {
+  if (/^GOD MODE\b/i.test(conversation.title)) return Crown;
+  const firstUserMessage = conversation.messages.find((message) => message.role === "user")?.content || "";
+  const topic = `${conversation.title} ${firstUserMessage}`.toLocaleLowerCase();
+  if (/\b(code|coding|program|software|website|web app|api|bug|script|developer|debug)\b/.test(topic)) return Code2;
+  if (/\b(business|company|startup|marketing|sales|customer|client|strategy|finance|brand)\b/.test(topic)) return BriefcaseBusiness;
+  if (/\b(learn|lesson|study|school|teach|tutorial|explain|course|homework)\b/.test(topic)) return GraduationCap;
+  if (/\b(travel|trip|flight|hotel|itinerary|vacation|visit)\b/.test(topic)) return MapPin;
+  if (/\b(image|logo|design|draw|illustration|artwork|creative|poster|visual)\b/.test(topic)) return Palette;
+  if (/\b(research|compare|summarize|summary|analyze|analysis|find|search|review)\b/.test(topic)) return SearchIcon;
+  return MessageSquare;
 }
 
 export default function Sidebar({
@@ -223,7 +242,8 @@ export default function Sidebar({
         <AnimatePresence initial={false}>
           {conversations.map((conv, i) => {
             const isGodModeConversation = /^GOD MODE\b/i.test(conv.title);
-            const ConversationIcon = isGodModeConversation ? Crown : MessageSquare;
+            const ConversationIcon = getConversationIcon(conv);
+            const isWorking = conv.messages.some((message) => message.role === "assistant" && message.isStreaming);
             const modeAccent = isGodModeConversation ? "#fbbf24" : config.accent;
             const section = conversationSection(conv);
             const previousSection = i > 0 ? conversationSection(conversations[i - 1]) : null;
@@ -244,7 +264,7 @@ export default function Sidebar({
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
                 onClick={() => onSelect(conv.id)}
-                className={`w-full flex items-center ${collapsed ? 'justify-center' : 'justify-start px-4'} py-2.5 rounded-xl text-left transition-all duration-200 gap-3`}
+                className={`w-full flex items-center ${collapsed ? 'justify-center' : 'justify-start px-4 pr-9'} py-2.5 rounded-xl text-left transition-all duration-200 gap-3`}
                 style={
                   activeId === conv.id
                     ? {
@@ -261,10 +281,20 @@ export default function Sidebar({
                 }
                 title={collapsed ? conv.title : undefined}
               >
-                <ConversationIcon
-                  size={10}
-                  style={{ color: activeId === conv.id || isGodModeConversation ? modeAccent : config.textMuted, flexShrink: 0 }}
-                />
+                <span className="relative flex-shrink-0">
+                  <ConversationIcon
+                    size={14}
+                    style={{ color: activeId === conv.id || isGodModeConversation ? modeAccent : config.textMuted }}
+                  />
+                  {isWorking && (
+                    <span
+                      role="status"
+                      aria-label="AI is working on this chat"
+                      title="AI is working on this chat"
+                      className="absolute -right-1 -top-1 h-2 w-2 animate-pulse rounded-full bg-sky-400 ring-2 ring-[#0a0a0f]"
+                    />
+                  )}
+                </span>
                 {!collapsed && (
                   <span className="text-sm truncate flex-1">
                     {conv.title}
@@ -276,10 +306,11 @@ export default function Sidebar({
                   type="button"
                   whileHover={{ scale: 1.2, color: "#ff6b8a" }}
                   onClick={() => onDelete(conv.id)}
-                  className="absolute right-2 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity p-1"
+                  title={`Delete ${conv.title}`}
+                  className="absolute right-1 top-1/2 -translate-y-1/2 rounded-md p-1.5 text-white/60 transition-opacity hover:bg-white/10 hover:text-rose-300 sm:opacity-0 sm:group-hover:opacity-100 sm:group-focus-within:opacity-100"
                   aria-label={`Delete ${conv.title}`}
                 >
-                  <Trash2 size={9} />
+                  <Trash2 size={12} />
                 </motion.button>
               )}
                 </div>

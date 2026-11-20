@@ -58,6 +58,10 @@
       "destination": "/api/generate?kind=video"
     },
     {
+      "source": "/api/error-report",
+      "destination": "/api/feedback?mode=error-report"
+    },
+    {
       "source": "/api/connectors/:connector/oauth/:phase",
       "destination": "/api/connectors/oauth?route=:connector/:phase"
     },

@@ -1,4 +1,5 @@
 import type { VercelRequest, VercelResponse } from "@vercel/node";
+import errorReportHandler from "../api-handlers/error-report";
 
 /**
  * ENOSX AI — /api/feedback
@@ -34,6 +35,10 @@ function isAllowedOrigin(value: string) {
 }
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
+  const rawMode = req.query.mode;
+  const mode = Array.isArray(rawMode) ? rawMode[0] : rawMode;
+  if (mode === "error-report") return errorReportHandler(req, res);
+
   if (req.method !== "POST") {
     res.setHeader("Allow", "POST");
     return res.status(405).json({ ok: false, error: "Method not allowed" });

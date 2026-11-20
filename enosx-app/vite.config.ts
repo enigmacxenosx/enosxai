@@ -13,10 +13,10 @@ const projectRoot = __dirname;
 const port = Number(process.env.PORT || 5173);
 const basePath = process.env.BASE_PATH || "/";
 
-// Replit-specific plugins are only loaded when running inside Replit
-// (detected by the REPL_ID environment variable)
+// Optional hosted-editor plugins are loaded only in their development environment.
+// The REPL_ID flag is used solely to detect that environment.
 // Use dynamic require-style imports to avoid TS module resolution errors
-let replitPlugins: any[] = [];
+let optionalDevPlugins: any[] = [];
 if (process.env.NODE_ENV !== "production" && process.env.REPL_ID !== undefined) {
   try {
     // eslint-disable-next-line @typescript-eslint/no-require-imports
@@ -25,13 +25,13 @@ if (process.env.NODE_ENV !== "production" && process.env.REPL_ID !== undefined) 
     const { cartographer } = require("@replit/vite-plugin-cartographer");
     // eslint-disable-next-line @typescript-eslint/no-require-imports
     // const { devBanner } = require("@replit/vite-plugin-dev-banner");
-    replitPlugins = [
+    optionalDevPlugins = [
       runtimeErrorOverlay(),
       cartographer({ root: projectRoot }),
       // devBanner(),
     ];
   } catch {
-    // Replit plugins not available outside Replit
+    // Optional editor plugins may be unavailable outside their hosted environment.
   }
 }
 
@@ -86,7 +86,7 @@ export default defineConfig({
         globPatterns: ['**/*.html', '**/*.css', '**/assets/index-*.js', '**/favicon*', '**/manifest.webmanifest']
       }
     }),
-    ...replitPlugins,
+    ...optionalDevPlugins,
   ],
   resolve: {
     alias: {

@@ -1,8 +1,8 @@
 from __future__ import annotations
-import asyncio, base64, json, os, time
+import asyncio, base64, json, os, time, uuid
 from pathlib import Path
 from urllib.request import Request, urlopen
-from config import ALL_WORKERS, KEYS, RETRY_ATTEMPTS, REQUEST_TIMEOUT_SECONDS, endpoint_chain, OUTPUT_DIR
+from config import ALL_WORKERS, KEYS, RETRY_ATTEMPTS, REQUEST_TIMEOUT_SECONDS, endpoint_chain, OUTPUT_DIR, NVIDIA_IMAGE_BASE_URL
 
 async def _http_json(url: str, payload: dict, headers: dict) -> dict:
     def call():
@@ -32,7 +32,20 @@ class Worker:
                     if attempt < RETRY_ATTEMPTS - 1: await asyncio.sleep(2 ** attempt)
         return {"worker": self.name, "model": self.spec.model, "ok": False, "error": "; ".join(errors[-3:])}
     async def _image(self, task: str) -> dict:
-        return {"worker": self.name, "model": self.spec.model, "ok": False, "error": "Image generation requires a configured NVIDIA image endpoint; use --mock to verify routing."}
+        endpoint = os.getenv("NVIDIA_IMAGE_ENDPOINT", NVIDIA_IMAGE_BASE_URL + "/v1/images/generations")
+        payload = {"model": self.spec.model, "prompt": task, "response_format": "b64_json"}
+        try:
+            data = await _http_json(endpoint, payload, {"Authorization": f"Bearer {KEYS.next()}"})
+            item = (data.get("data") or [{}])[0]
+            encoded = item.get("b64_json") or item.get("base64")
+            if not encoded: return {"worker": self.name, "model": self.spec.model, "ok": False, "error": "Image endpoint returned no base64 image"}
+            path = OUTPUT_DIR / "images" / f"{self.name}-{uuid.uuid4().hex[:10]}.png"
+            path.parent.mkdir(parents=True, exist_ok=True); path.write_bytes(base64.b64decode(encoded))
+            result = {"worker": self.name, "model": self.spec.model, "ok": True, "image_url": f"/output/images/{path.name}"}
+            if os.getenv("RETURN_BASE64_MEDIA", "false").lower() == "true": result["data_uri"] = "data:image/png;base64," + encoded
+            return result
+        except Exception as exc:
+            return {"worker": self.name, "model": self.spec.model, "ok": False, "error": str(exc)}
 
 class DepartmentRouter:
     def __init__(self, department: str):

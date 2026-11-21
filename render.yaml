@@ -1,0 +1,23 @@
+services:
+  - type: web
+    name: enosx-orchestrator
+    runtime: docker
+    plan: starter
+    healthCheckPath: /healthz
+    envVars:
+      - key: PORT
+        value: 8080
+      - key: RETURN_BASE64_MEDIA
+        value: "false"
+      - key: MEMORY_PATH
+        value: /app/data/enosx_memory
+      - key: NVIDIA_API_KEYS
+        sync: false
+      - key: OPENROUTER_API_KEY
+        sync: false
+      - key: TAVILY_API_KEY
+        sync: false
+    disk:
+      name: enosx-memory
+      mountPath: /app/data
+      sizeGB: 10

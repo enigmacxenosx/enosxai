@@ -251,6 +251,22 @@ async function fetchNvidiaWithRetry(url: string, apiKey: string, body: unknown) 
   throw new Error("The AI provider did not return a response.");
 }
 
+async function fetchOrchestrator(url: string, body: unknown, aiMode: string) {
+  const endpoint = `${url.replace(/\/$/, "")}/v1/chat/completions`;
+  const headers: Record<string, string> = {
+    "Content-Type": "application/json",
+    "X-Enosx-AI-Mode": aiMode,
+  };
+  const secret = process.env.ENOSX_ORCHESTRATOR_SECRET?.trim();
+  if (secret) headers.Authorization = `Bearer ${secret}`;
+  return fetch(endpoint, {
+    method: "POST",
+    signal: AbortSignal.timeout(50_000),
+    headers,
+    body: JSON.stringify(body),
+  });
+}
+
 function trimMessageContent(content: unknown) {
   if (typeof content === "string") return content.slice(0, MAX_MESSAGE_CHARS);
   if (!Array.isArray(content)) return "";
@@ -437,19 +453,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   try {
-    // Server-side key only. A browser-exposed key (VITE_ prefix) must never
-    // be forwarded to NVIDIA API; if only the legacy VITE_ variable is set,
-    // treat the configuration as missing.
-    const apiKey = process.env.NVIDIA_API_KEY?.trim();
-
-    if (!apiKey) {
-      console.error("[API] NVIDIA_API_KEY is not configured.");
-      return res.status(503).json({
-        error: "NVIDIA_API_KEY is not configured on the server",
-        status: "CONFIGURATION_ERROR",
-      });
-    }
-
     let body: any = {};
     try {
       body = typeof req.body === "string" ? JSON.parse(req.body) : req.body || {};
@@ -469,6 +472,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       return res.status(400).json({ error: "Messages array is required and must not be empty" });
     }
     const ctxStr = typeof githubContext === "string" ? githubContext.slice(0, 20000) : "";
+    const lastUserIndex = messages.length - 1;
+    const messagesWithAttachments = messages.map((message: any, index: number) =>
+      index === lastUserIndex && message?.role === "user" && !Array.isArray(message.attachments) && Array.isArray(requestAttachments)
+        ? { ...message, attachments: requestAttachments }
+        : message,
+    );
 
     // Deterministic safety guard. Only the newest user turn is inspected so
     // historical, educational, or professional discussion is not misclassified.
@@ -482,6 +491,51 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     if (guardedResponse) {
       console.log("[API] Safety guard served a protected response:", guardedResponse.category);
       return sendMockResponse(res, guardedResponse.response);
+    }
+
+    const orchestratorUrl = process.env.ENOSX_ORCHESTRATOR_URL?.trim();
+    if (orchestratorUrl) {
+      try {
+        const orchestratorResponse = await fetchOrchestrator(orchestratorUrl, {
+          ...body,
+          messages: messagesWithAttachments,
+          stream: true,
+          metadata: { ...(body.metadata || {}), aiMode },
+        }, aiMode);
+        if (orchestratorResponse.ok && orchestratorResponse.body) {
+          res.setHeader("Content-Type", orchestratorResponse.headers.get("content-type") || "text/event-stream; charset=utf-8");
+          res.setHeader("Cache-Control", "no-cache, no-transform");
+          res.setHeader("Connection", "keep-alive");
+          const reader = orchestratorResponse.body.getReader();
+          while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+            res.write(value);
+          }
+          res.end();
+          return;
+        }
+        if (![502, 503, 504].includes(orchestratorResponse.status)) {
+          const detail = await orchestratorResponse.text().catch(() => "");
+          return res.status(orchestratorResponse.status).send(detail || "The Enosx orchestrator rejected the request.");
+        }
+        console.warn("[API] Orchestrator unavailable; falling back to the TypeScript NVIDIA handler:", orchestratorResponse.status);
+      } catch (error) {
+        console.warn("[API] Orchestrator bridge failed; falling back to the TypeScript NVIDIA handler:", error);
+      }
+    }
+
+    // Server-side key only. A browser-exposed key (VITE_ prefix) must never
+    // be forwarded to NVIDIA API; if only the legacy VITE_ variable is set,
+    // treat the configuration as missing.
+    const apiKey = process.env.NVIDIA_API_KEY?.trim();
+
+    if (!apiKey) {
+      console.error("[API] NVIDIA_API_KEY is not configured.");
+      return res.status(503).json({
+        error: "NVIDIA_API_KEY is not configured on the server",
+        status: "CONFIGURATION_ERROR",
+      });
     }
 
     // Keep the public mode contract aligned with the three-tier selector.
@@ -507,12 +561,6 @@ You are running in ENOSH MIND (highest intelligence) mode. Operate as a rigorous
     };
     const modeNote = modeNotes[aiMode] || modeNotes["ex-core"];
 
-    const lastUserIndex = messages.length - 1;
-    const messagesWithAttachments = messages.map((message: any, index: number) =>
-      index === lastUserIndex && message?.role === "user" && !Array.isArray(message.attachments) && Array.isArray(requestAttachments)
-        ? { ...message, attachments: requestAttachments }
-        : message,
-    );
     const shapedMessages = shapeMessages(messagesWithAttachments);
     const hasImages = shapedMessages.some((message: any) =>
       Array.isArray(message.content) && message.content.some((part: any) => part.type === "image_url")

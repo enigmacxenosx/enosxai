@@ -1,0 +1,15 @@
+.git
+.gitignore
+node_modules
+.pnpm-store
+.venv
+__pycache__
+*.pyc
+.env
+.env.*
+enosx-app/node_modules
+enosx-app/dist
+output/images
+output/charts
+data/enosx_memory
+*.log

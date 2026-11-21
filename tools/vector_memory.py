@@ -13,7 +13,10 @@ class VectorMemory:
         self._collection = None
         try:
             import chromadb
-            self._collection = chromadb.PersistentClient(path=str(self.path)).get_or_create_collection("enosx_memory")
+            remote_host = os.getenv("CHROMA_SERVER_HOST", "").strip()
+            remote_port = int(os.getenv("CHROMA_SERVER_PORT", "8000"))
+            client = chromadb.HttpClient(host=remote_host, port=remote_port) if remote_host else chromadb.PersistentClient(path=str(self.path))
+            self._collection = client.get_or_create_collection("enosx_memory")
         except Exception: pass
     def _save(self): self.file.write_text(json.dumps(self.items[-500:], indent=2))
     @staticmethod

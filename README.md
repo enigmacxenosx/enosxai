@@ -141,6 +141,14 @@ Run the direct SDK from Python with `from orchestrator import EnosxNemotronBrain
 
 The Python service files are `config.py`, `orchestrator.py`, `mcp_server.py`, `api_server.py`, `tools/`, and `workers/`. The existing ENOSX web application and its provider routes remain unchanged.
 
+### Production deployment topology
+
+For production, deploy the Python service as the container defined by `Dockerfile` on Railway, Render, or Fly.io. `render.yaml` is included as a template and mounts a persistent disk at `/app/data`, preserving Chroma memory across restarts. Set `NVIDIA_API_KEYS`, `OPENROUTER_API_KEY`, and `TAVILY_API_KEY` as platform secrets, never in the image. Set `RETURN_BASE64_MEDIA=true` when the client cannot access shared `/output` storage; generated media then includes both a static `/output/...` URL and an optional `data:image/png;base64,...` URI.
+
+The Vercel `/api/chat` handler supports an optional server-side `ENOSX_ORCHESTRATOR_URL` and `ENOSX_ORCHESTRATOR_SECRET`. When configured, it forwards ENOSX One (`ex-core`), ENOSX Studio (`ex-pro`), and ENOSX Nexus (`enosh-mind`) requests to the Python `/v1/chat/completions` endpoint with the selected mode in the `X-Enosx-AI-Mode` header and metadata. Successful SSE responses pass through to the existing frontend. If the bridge is absent, unreachable, or returns 502, 503, or 504, the existing TypeScript NVIDIA handler runs unchanged. This provides a safe Vercel → Railway/Render deployment flow without making the frontend depend on the new service.
+
+Remote Chroma is enabled with `CHROMA_SERVER_HOST` and `CHROMA_SERVER_PORT`; without them, memory defaults to local persistent `./data/enosx_memory` or the configured `MEMORY_PATH`.
+
 ## License
 
 **Proprietary.** © 2024–2026 Enosx Technologies. All rights reserved. See repository terms before reuse or redistribution.

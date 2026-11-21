@@ -11,7 +11,7 @@ import { toast } from "sonner";
 import { showError } from "@/lib/errorReporting";
 import Sidebar from "@/components/Sidebar";
 import MessageBubble from "@/components/MessageBubble";
-import CommandBar, { AIModePicker, type AIMode } from "@/components/CommandBar";
+import CommandBar, { AI_MODES, AIModePicker, type AIMode } from "@/components/CommandBar";
 import AppAwareSuggestions from "@/components/AppAwareSuggestions";
 import WelcomeScreen, { WelcomeSuggestions } from "@/components/WelcomeScreen";
 import ConversationSearchDialog from "@/components/ConversationSearchDialog";
@@ -65,6 +65,7 @@ import { ChevronDown, Copy, Eye, Gauge, Menu, Share2 } from "lucide-react";
 import { copyTranscript } from "@/lib/shareConversation";
 import { getOnlineMediaSearch, getWebsiteStudyUrl, searchOnlineMedia, studyWebsite } from "@/lib/onlineResearch";
 import { isImageGenerationRequest } from "@/lib/mediaIntent";
+import { recommendModelTierForPrompt } from "@/lib/modelTierPolicy";
 import { hasActiveActionActivity, normalizeActionActivities, upsertActionActivity } from "@/lib/actionActivity";
 import { isGitHubActionsStatusRequest, loadGitHubActionsDiagnostic } from "@/lib/githubActions";
 import { installBrowserExtensionBridge, queueBrowserAction, type SharedBrowserPage } from "@/lib/browserExtension";
@@ -645,6 +646,22 @@ export default function ChatPage() {
         (file.mimeType?.toLowerCase().startsWith("image/") || /^(?:png|jpe?g|webp)$/i.test(file.type))
         && file.content.startsWith("data:image/")
       )?.content;
+      const tierRecommendation = recommendModelTierForPrompt(text, {
+        hasAttachments: fileContext.files.length > 0,
+        hasImageAttachment: Boolean(inputImage),
+      });
+      const selectedMode = aiMode ?? activeMode;
+      if (tierRecommendation && tierRecommendation.mode !== selectedMode) {
+        const selectedModeLabel = AI_MODES.find((mode) => mode.id === selectedMode)?.label ?? selectedMode;
+        const message = `This request may work best with ${tierRecommendation.label}. ${tierRecommendation.reason} You are currently using ${selectedModeLabel}.`;
+        toast.info(message, { duration: 6500 });
+        sendEnosxNotification({
+          title: "Model tier suggestion",
+          body: message,
+          tag: "enosx-model-tier-suggestion",
+          data: { recommendedMode: tierRecommendation.mode, selectedMode },
+        });
+      }
       const shouldGenerateVideo = isVideoGenerationRequest(text);
       const shouldGenerateImage = !shouldGenerateVideo && (isImageGenerationRequest(text) || Boolean(inputImage && isImageEditRequest(text)));
       const shouldGenerateZip = !shouldGenerateVideo && !shouldGenerateImage && isZipGenerationRequest(text, fileContext.files.length);

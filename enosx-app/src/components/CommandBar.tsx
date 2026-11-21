@@ -23,6 +23,7 @@ import {
 import { VoiceState, type Attachment } from "@/lib/types";
 import ConnectorPicker from "./ConnectorPicker";
 import VoiceVisualizer from "./VoiceVisualizer";
+import { getModelTierRecommendation } from "@/lib/modelTierPolicy";
 
 export type AIMode = "ex-core" | "ex-pro" | "enosh-mind";
 
@@ -62,6 +63,12 @@ export const AI_MODES: AIModeOption[] = [
   },
 ];
 
+const TIER_GUIDE = {
+  everyday: getModelTierRecommendation("everyday_chat")?.label ?? "ENOSX One",
+  technical: getModelTierRecommendation("coding_debugging")?.label ?? "ENOSX Studio",
+  strategic: getModelTierRecommendation("architecture_strategy")?.label ?? "ENOSX Nexus",
+} as const;
+
 export function AIModePicker({ aiMode, onChange, className = "" }: { aiMode: AIMode; onChange: (mode: AIMode) => void; className?: string }) {
   const [modeOpen, setModeOpen] = useState(false);
   const modeRef = useRef<HTMLDivElement>(null);
@@ -95,6 +102,15 @@ export function AIModePicker({ aiMode, onChange, className = "" }: { aiMode: AIM
                 </motion.button>
               );
             })}
+            <div className="mt-1 border-t border-white/10 px-2.5 pt-2">
+              <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-white/40">Best tier by action</p>
+              <div className="mt-1.5 grid grid-cols-2 gap-x-3 gap-y-1 text-[10px] leading-4 text-white/50">
+                <span>Everyday, summary, draft</span><strong className="font-semibold text-violet-300">{TIER_GUIDE.everyday}</strong>
+                <span>Code, research, GitHub, files</span><strong className="font-semibold text-fuchsia-300">{TIER_GUIDE.technical}</strong>
+                <span>Strategy, science, high-risk</span><strong className="font-semibold text-cyan-300">{TIER_GUIDE.strategic}</strong>
+              </div>
+              <p className="mt-1.5 text-[10px] leading-4 text-white/35">Guidance is configurable product policy, not a guarantee of correctness.</p>
+            </div>
             <p className="mt-1.5 border-t border-white/10 px-2.5 pt-2 text-[11px] text-white/45">Current: {currentMode.label}</p>
           </motion.div>
         )}

@@ -10,6 +10,7 @@
 ## What it can do
 
 - **Chat in three modes:** **ENOSX One** for fast everyday assistance, **ENOSX Studio** for deeper responses, and **ENOSX Nexus** for strategic reasoning and analysis. Model routing is configured server-side; the selected model and provider determine actual performance and availability.
+- **Action-aware tier guidance:** the app recommends the most suitable tier for coding, research, images, strategy, science, and other high-confidence request categories, then notifies the user without silently changing the selected mode. See [the model tier policy](docs/model-tier-policy.md).
 - **Analyze attachments:** work with common documents and PDFs, images, and audio/video files. Image and video analysis uses sampled visual context; audio-file analysis provides available file and waveform details, not an automatic transcript.
 - **Create media:** generate images from prompts and edit images, and generate short videos from text or image input when the configured NVIDIA services allow it.
 - **Upscale video:** optionally send small uploaded clips through an NVIDIA Video Super Resolution NIM bridge. This requires a separately deployed GPU-backed NIM and HTTP-to-gRPC bridge; see the setup guide before enabling it.

@@ -431,6 +431,29 @@ const sendMockResponse = (res: VercelResponse, message: string) => {
   return res.status(200).send(`data: ${data}\n\ndata: [DONE]\n\n`);
 };
 
+function normalizeOrchestratorSseEvent(event: string) {
+  const lines = event.split("\n");
+  return lines.map((line) => {
+    if (!line.startsWith("data: ")) return line;
+    const raw = line.slice(6).trim();
+    if (!raw || raw === "[DONE]") return line;
+    try {
+      const parsed = JSON.parse(raw);
+      const choice = parsed?.choices?.[0];
+      const legacyContent = choice?.message?.content;
+      if (typeof legacyContent !== "string" || !legacyContent.trim()) return line;
+      return `data: ${JSON.stringify({
+        id: parsed.id || "enosx-chat",
+        object: "chat.completion.chunk",
+        model: parsed.model,
+        choices: [{ index: choice.index ?? 0, delta: { role: "assistant", content: legacyContent }, finish_reason: null }],
+      })}`;
+    } catch {
+      return line;
+    }
+  }).join("\n");
+}
+
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   const requestStartedAt = Date.now();
   let pendingCacheKey = "";
@@ -509,10 +532,21 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             res.setHeader("Cache-Control", "no-cache, no-transform");
             res.setHeader("Connection", "keep-alive");
             const reader = orchestratorResponse.body.getReader();
+            const decoder = new TextDecoder();
+            let buffer = "";
             while (true) {
               const { done, value } = await reader.read();
-              if (done) break;
-              res.write(value);
+              if (done) {
+                buffer += decoder.decode();
+                if (buffer.trim()) res.write(normalizeOrchestratorSseEvent(buffer));
+                break;
+              }
+              buffer += decoder.decode(value, { stream: true });
+              const events = buffer.split("\n\n");
+              buffer = events.pop() ?? "";
+              for (const event of events) {
+                if (event.trim()) res.write(`${normalizeOrchestratorSseEvent(event)}\n\n`);
+              }
             }
             res.end();
             return;

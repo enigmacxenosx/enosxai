@@ -913,6 +913,9 @@ ${leadershipInfo}
 Verified Company Facts:
 ${companyFacts}
 
+Verified ENOSX AI capabilities and mode tiers:
+${identity.aiTierFacts.map((fact) => `- ${fact}`).join("\n")}
+
 Verified Company FAQ:
 ${companyFaqs}
 

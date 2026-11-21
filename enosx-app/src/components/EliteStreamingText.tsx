@@ -34,18 +34,15 @@ export default function EliteStreamingText({
   const wordVariants = {
     hidden: {
       opacity: 0,
-      y: 8,
-      scale: 0.95,
+      y: 0,
+      scale: 1,
     },
     visible: {
       opacity: 1,
       y: 0,
       scale: 1,
       transition: {
-        type: "spring",
-        stiffness: 120,
-        damping: 14,
-        duration: 0.4,
+        duration: 0.2,
       } as any,
     },
   };

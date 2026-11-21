@@ -346,9 +346,9 @@ export default function MessageBubble({
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 18, scale: 0.97 }}
+      initial={isUser ? { opacity: 0, y: 18, scale: 0.97 } : { opacity: 0, y: 0, scale: 1 }}
       animate={{ opacity: 1, y: 0, scale: 1 }}
-      exit={{ opacity: 0, y: -10, scale: 0.97 }}
+      exit={isUser ? { opacity: 0, y: -10, scale: 0.97 } : { opacity: 0, y: 0, scale: 1 }}
       transition={{
         type: "spring",
         stiffness: 400,
@@ -361,7 +361,7 @@ export default function MessageBubble({
       <div className={`flex min-w-0 max-w-[92%] flex-col gap-1 ${isUser ? "items-end" : "items-start"}`}>
         <motion.div
           transition={{ type: "spring", stiffness: 400, damping: 30 }}
-          className={`relative w-full transition-all duration-300 ${!isUser && (isEmpty || isStreaming) ? 'rainbow-glow' : ''}`}
+          className="relative w-full"
           style={{
             background: "transparent",
             border: "0",

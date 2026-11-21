@@ -23,10 +23,10 @@ export default function ThemeSwitcher() {
         style={{
           background: open
             ? `rgba(${config.accentRgb}, 0.15)`
-            : "rgba(255,255,255,0.05)",
+            : `rgba(${config.isDark ? "255,255,255" : "21,25,35"},0.05)`,
           border: open
             ? `1px solid rgba(${config.accentRgb}, 0.3)`
-            : "1px solid rgba(255,255,255,0.08)",
+            : `1px solid ${config.border}`,
           color: open ? config.accent : config.textMuted,
         }}
         title="Change theme"
@@ -57,7 +57,9 @@ export default function ThemeSwitcher() {
                 backdropFilter: "blur(24px)",
                 WebkitBackdropFilter: "blur(24px)",
                 border: `1px solid rgba(${config.accentRgb}, 0.2)`,
-                boxShadow: `0 16px 48px rgba(0,0,0,0.5), 0 0 0 1px rgba(${config.accentRgb},0.05)`,
+                boxShadow: config.isDark
+                  ? `0 16px 48px rgba(0,0,0,0.5), 0 0 0 1px rgba(${config.accentRgb},0.05)`
+                  : `0 16px 48px rgba(33,43,68,0.16), 0 0 0 1px rgba(${config.accentRgb},0.08)`,
               }}
             >
               <p

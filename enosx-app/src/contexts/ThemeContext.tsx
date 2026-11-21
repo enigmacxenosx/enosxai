@@ -13,6 +13,7 @@ export interface ThemeConfig {
   textMuted: string;
   border: string;
   glow: string;
+  isDark: boolean;
 }
 
 export const THEMES: Record<Theme, ThemeConfig> = {
@@ -27,6 +28,7 @@ export const THEMES: Record<Theme, ThemeConfig> = {
     textMuted: "rgba(255,255,255,0.56)",
     border: "rgba(193,197,255,0.14)",
     glow: "rgba(119,122,243,0.22)",
+    isDark: true,
   },
   dark: {
     name: "dark",
@@ -39,18 +41,20 @@ export const THEMES: Record<Theme, ThemeConfig> = {
     textMuted: "rgba(255,255,255,0.4)",
     border: "rgba(220,20,60,0.2)",
     glow: "rgba(220,20,60,0.3)",
+    isDark: true,
   },
   light: {
     name: "light",
     label: "Light",
-    bg: "#f5f5f7",
-    surface: "rgba(255,255,255,0.85)",
+    bg: "#f4f6fb",
+    surface: "rgba(255,255,255,0.88)",
     accent: "#dc143c",
     accentRgb: "220,20,60",
-    text: "#1a1a1a",
-    textMuted: "rgba(0,0,0,0.45)",
-    border: "rgba(220,20,60,0.2)",
-    glow: "rgba(220,20,60,0.2)",
+    text: "#151923",
+    textMuted: "rgba(21,25,35,0.58)",
+    border: "rgba(21,25,35,0.12)",
+    glow: "rgba(220,20,60,0.16)",
+    isDark: false,
   },
   neon: {
     name: "neon",
@@ -63,6 +67,7 @@ export const THEMES: Record<Theme, ThemeConfig> = {
     textMuted: "rgba(0,242,255,0.45)",
     border: "rgba(0,242,255,0.25)",
     glow: "rgba(0,242,255,0.4)",
+    isDark: true,
   },
   cyberpunk: {
     name: "cyberpunk",
@@ -75,6 +80,7 @@ export const THEMES: Record<Theme, ThemeConfig> = {
     textMuted: "rgba(255,0,255,0.45)",
     border: "rgba(255,0,255,0.25)",
     glow: "rgba(255,0,255,0.4)",
+    isDark: true,
   },
   minimal: {
     name: "minimal",
@@ -87,6 +93,7 @@ export const THEMES: Record<Theme, ThemeConfig> = {
     textMuted: "rgba(255,255,255,0.35)",
     border: "rgba(255,255,255,0.1)",
     glow: "rgba(255,255,255,0.1)",
+    isDark: true,
   },
 };
 
@@ -103,7 +110,7 @@ const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
 export function ThemeProvider({
   children,
-  defaultTheme = "manus",
+  defaultTheme = "light",
 }: {
   children: React.ReactNode;
   defaultTheme?: Theme;
@@ -125,9 +132,7 @@ export function ThemeProvider({
   };
 
   const toggleTheme = () => {
-    const order: Theme[] = ["manus", "dark", "light", "neon", "cyberpunk", "minimal"];
-    const idx = order.indexOf(theme);
-    setTheme(order[(idx + 1) % order.length]);
+    setTheme(theme === "light" ? "dark" : "light");
   };
 
   useEffect(() => {
@@ -141,6 +146,7 @@ export function ThemeProvider({
     // Add current theme class to both html and body
     root.classList.add(theme);
     body.classList.add(theme);
+    root.style.colorScheme = config.isDark ? "dark" : "light";
     
     // Set ENOSX custom properties
     root.style.setProperty("--enosx-accent", config.accent);
@@ -151,6 +157,7 @@ export function ThemeProvider({
     root.style.setProperty("--enosx-text-muted", config.textMuted);
     root.style.setProperty("--enosx-border", config.border);
     root.style.setProperty("--enosx-glow", config.glow);
+    root.style.setProperty("--enosx-is-dark", config.isDark ? "1" : "0");
     
     // Also set background color directly on body for immediate effect
     body.style.backgroundColor = config.bg;

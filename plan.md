@@ -1,5 +1,31 @@
 # ENOSX AI Visual Story Studio
 
+# ENOSX AI Light and Dark Theme System
+
+## Implementation approach
+Promote light and dark to first-class ENOSX modes backed by shared semantic CSS tokens. Persist the selected mode, respect the active color scheme for browser controls and toasts, expose the switcher in the primary sidebar, and make the wallpaper/shell overlays adapt so light mode is readable without changing the existing advanced visual themes.
+
+## Project structure
+- `enosx-app/src/contexts/ThemeContext.tsx`: persisted mode state, semantic theme metadata, and light/dark toggle behavior.
+- `enosx-app/src/components/Sidebar.tsx`: always-visible appearance control in the primary shell.
+- `enosx-app/src/components/GlobalLayout.tsx`: theme-aware wallpaper overlay and root surface.
+- `enosx-app/src/App.tsx`: theme-aware toast presentation.
+- `enosx-app/src/index.css`: light palette tokens, shell styling, scrollbar and reduced-motion rules.
+
+## Design
+- **Design movement:** Editorial aero-glass: bright paper-like surfaces in light mode and quiet graphite glass in dark mode.
+- **Core principles:** readable contrast, calm hierarchy, restrained crimson accents, and instant reversible switching.
+- **Color philosophy:** preserve ENOSX crimson as the signature action color; use cool blue-gray neutrals for light mode and warm graphite neutrals for dark mode.
+- **Layout paradigm:** keep the existing command-center shell and let the surface system, not a duplicated layout, express the mode.
+- **Signature elements:** soft radial light fields, translucent sidebar, and crimson active-state signal.
+- **Interaction philosophy:** switching is one click, persisted locally, and available from the main shell without opening settings.
+- **Animation:** short 260ms surface transitions; all new transitions yield to reduced-motion preferences.
+- **Typography system:** retain the existing Plus Jakarta Sans interface system and current ENOSX display treatment.
+- **Brand essence:** ENOSX AI is a focused workspace that stays legible in any environment. Clear, capable, composed.
+- **Brand voice:** direct and confident. Example lines: “Light when you need clarity.” / “Dark when you need focus.”
+- **Wordmark & logo:** retain the existing ENOSX mark; the active accent and surface contrast carry the mode identity.
+- **Signature brand color:** ENOSX crimson `#dc143c`.
+
 ## Implementation approach
 Add a first-class `/visual-story` route in the existing React/Vite app. The route is a self-contained storytelling workspace that turns a small table of labeled values into animated data scenes using the repository's existing `recharts` and `framer-motion` dependencies. It will support a chart mode switch, a three-beat narrative sequence, autoplay, a lightweight CSV editor, and visible summary metrics. No server or credential changes are required for the first release; the component is designed to accept real data later through the existing file/import flows.
 

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useWallpaper } from "@/contexts/WallpaperContext";
 import { BackgroundPicker } from "./BackgroundPicker";
+import { useTheme } from "@/contexts/ThemeContext";
 
 interface GlobalLayoutProps {
   children: React.ReactNode;
@@ -8,6 +9,7 @@ interface GlobalLayoutProps {
 
 export function GlobalLayout({ children }: GlobalLayoutProps) {
   const { settings, activeWallpaperUrl } = useWallpaper();
+  const { config } = useTheme();
   const [showBackgroundPicker, setShowBackgroundPicker] = useState(false);
   const [isLoaded, setIsLoaded] = useState(false);
 
@@ -33,7 +35,7 @@ export function GlobalLayout({ children }: GlobalLayoutProps) {
     <div
       className="neon-dashboard-stage w-screen h-dvh overflow-hidden relative"
       style={{
-        backgroundColor: "#0a0a0a",
+        backgroundColor: config.bg,
       }}
     >
       {/* Main wallpaper with smooth fade-in */}
@@ -57,7 +59,9 @@ export function GlobalLayout({ children }: GlobalLayoutProps) {
         style={{
           backdropFilter: `blur(${settings.blurAmount}px)`,
           WebkitBackdropFilter: `blur(${settings.blurAmount}px)`,
-          backgroundColor: `rgba(0, 0, 0, ${1 - settings.wallpaperOpacity})`,
+          backgroundColor: config.isDark
+            ? `rgba(0, 0, 0, ${1 - settings.wallpaperOpacity})`
+            : `rgba(244, 246, 251, ${Math.min(0.94, 1 - settings.wallpaperOpacity + 0.18)})`,
           willChange: "backdrop-filter",
         }}
       />

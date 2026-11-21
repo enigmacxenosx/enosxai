@@ -2039,3 +2039,48 @@ body.light .enosx-composer {
     margin-top: 94px;
   }
 }
+
+
+/* Theme-aware app chrome. Component-level dark palettes remain intentionally
+   available for media previews and terminal surfaces, while the app shell uses
+   these semantic rules in both modes. */
+.neon-dashboard-stage {
+  background:
+    radial-gradient(circle at 12% 8%, rgba(var(--enosx-accent-rgb), 0.07), transparent 28%),
+    var(--enosx-bg);
+  transition: background 260ms ease, color 260ms ease;
+}
+.light .neon-dashboard-stage {
+  background:
+    radial-gradient(circle at 10% 0%, rgba(220, 20, 60, 0.07), transparent 24%),
+    radial-gradient(circle at 90% 100%, rgba(92, 111, 191, 0.08), transparent 30%),
+    var(--enosx-bg);
+}
+.neon-dashboard-nav:hover {
+  background: rgba(var(--enosx-accent-rgb), 0.08) !important;
+  color: var(--enosx-text) !important;
+}
+.light .neon-dashboard-nav:hover {
+  background: rgba(21, 25, 35, 0.055) !important;
+}
+.light input,
+.light textarea,
+.light select {
+  color: var(--foreground);
+}
+.light input::placeholder,
+.light textarea::placeholder {
+  color: var(--muted-foreground);
+}
+.light ::-webkit-scrollbar-thumb {
+  background: rgba(21, 25, 35, 0.16);
+}
+.light ::-webkit-scrollbar-thumb:hover {
+  background: rgba(220, 20, 60, 0.48);
+}
+@media (prefers-reduced-motion: reduce) {
+  .neon-dashboard-stage,
+  .neon-dashboard-nav {
+    transition: none !important;
+  }
+}

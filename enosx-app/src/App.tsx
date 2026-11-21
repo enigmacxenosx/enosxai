@@ -9,6 +9,7 @@ import { WindowContextProvider } from "./contexts/WindowContext";
 import { WallpaperProvider } from "./contexts/WallpaperContext";
 import { AuthProvider } from "./contexts/AuthContext";
 import { Suspense, lazy } from "react";
+import { useTheme } from "./contexts/ThemeContext";
 
 // Lazy load route components to enable code-splitting
 const ChatPage = lazy(() => import("./pages/ChatPage"));
@@ -47,25 +48,26 @@ function Router() {
   );
 }
 
-function App() {
+function AppContent() {
+  const { config } = useTheme();
+
   return (
     <ErrorBoundary>
-      <ThemeProvider defaultTheme="manus">
-        <AuthProvider>
+      <AuthProvider>
           <WallpaperProvider>
             <FounderModeProvider>
               <WindowContextProvider>
                 <TooltipProvider>
                   <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, "")}>
                     <Toaster
-                      theme="dark"
+                      theme={config.isDark ? "dark" : "light"}
                       position="top-right"
                       visibleToasts={4}
                       toastOptions={{
                         style: {
-                          background: "rgba(18,18,24,0.95)",
-                          border: "1px solid rgba(99,102,241,0.3)",
-                          color: "#f0f0f4",
+                          background: config.surface,
+                          border: `1px solid rgba(${config.accentRgb},0.24)`,
+                          color: config.text,
                           backdropFilter: "blur(20px)",
                         },
                       }}
@@ -77,8 +79,15 @@ function App() {
             </FounderModeProvider>
           </WallpaperProvider>
         </AuthProvider>
-      </ThemeProvider>
     </ErrorBoundary>
+  );
+}
+
+function App() {
+  return (
+    <ThemeProvider defaultTheme="light">
+      <AppContent />
+    </ThemeProvider>
   );
 }
 

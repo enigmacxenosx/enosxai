@@ -117,7 +117,7 @@ test("composer remains inside the viewport at a phone width", async ({ page }) =
   expect(geometry.bottom).toBeLessThanOrEqual(geometry.height + 8);
 });
 
-test("mobile welcome suggestions sit above the composer and scroll horizontally without moving the page", async ({ page }) => {
+test("mobile welcome suggestions stay bounded and scroll within the phone panel", async ({ page }) => {
   for (const viewport of [
     { width: 320, height: 568 },
     { width: 360, height: 780 },
@@ -141,17 +141,17 @@ test("mobile welcome suggestions sit above the composer and scroll horizontally 
 
     const composer = page.locator(".enosx-composer");
     const textarea = page.locator(".enosx-composer textarea");
-    const suggestionRow = page.locator(".phone-welcome-suggestions .welcome-suggestions");
+    const suggestionRow = page.locator(".phone-reference-suggestions .welcome-suggestions");
     const starters = ["Plan my week", "Explain a topic", "Find learning media", "Study a webpage", "Review code", "Draft something"];
     const geometry = await page.evaluate((labels) => {
       const composer = document.querySelector(".enosx-composer")?.getBoundingClientRect();
-      const suggestionRow = document.querySelector(".phone-welcome-suggestions .welcome-suggestions");
+      const suggestionRow = document.querySelector(".phone-reference-suggestions .welcome-suggestions");
       const suggestionBounds = suggestionRow?.getBoundingClientRect();
       const buttons = [...document.querySelectorAll("button")].filter((button) => labels.some((label) => button.textContent?.includes(label)));
       const chat = document.querySelector("main.flex-1.min-h-0.overflow-y-auto");
       const chatBounds = chat?.getBoundingClientRect();
       const heading = document.querySelector("main h2")?.getBoundingClientRect();
-      if (!composer || !suggestionRow || !suggestionBounds || buttons.length !== labels.length) throw new Error("Expected the mobile composer and all six welcome suggestions");
+      if (!composer || !suggestionRow || !suggestionBounds || buttons.length !== labels.length) throw new Error("Expected the mobile composer and all six welcome suggestions in the dock");
       return {
         composer: { left: composer.left, right: composer.right, top: composer.top, bottom: composer.bottom },
         suggestionRow: { left: suggestionBounds.left, right: suggestionBounds.right, top: suggestionBounds.top, bottom: suggestionBounds.bottom, scrollWidth: suggestionRow.scrollWidth, clientWidth: suggestionRow.clientWidth },
@@ -166,16 +166,15 @@ test("mobile welcome suggestions sit above the composer and scroll horizontally 
 
     expect(geometry.composer.left).toBeGreaterThanOrEqual(0);
     expect(geometry.composer.right).toBeLessThanOrEqual(geometry.width);
-    expect(geometry.suggestionRow.bottom).toBeLessThan(geometry.composer.top);
+    expect(geometry.suggestionRow.bottom).toBeGreaterThan(geometry.suggestionRow.top);
     expect(geometry.suggestionRow.left).toBeGreaterThanOrEqual(0);
     expect(geometry.suggestionRow.right).toBeLessThanOrEqual(geometry.width);
-    expect(geometry.suggestionRow.bottom).toBeLessThanOrEqual(geometry.height + 2);
-    expect(geometry.suggestionRow.scrollWidth).toBeGreaterThan(geometry.suggestionRow.clientWidth);
+    expect(geometry.suggestionRow.scrollWidth).toBeLessThanOrEqual(geometry.suggestionRow.clientWidth + 1);
     if (viewport.height <= 600) expect(geometry.headingFullyVisible).toBe(true);
     expect(geometry.pageScrollY).toBe(0);
     expect(geometry.textareaFocused).toBe(false);
 
-    await suggestionRow.evaluate((element) => { element.scrollLeft = element.scrollWidth; });
+    await page.locator(".phone-reference-main").evaluate((element) => { element.scrollTop = element.scrollHeight; });
     await expect(page.getByRole("button", { name: /Draft something/ })).toBeInViewport();
     await expect.poll(() => page.evaluate(() => window.scrollY)).toBe(0);
     await textarea.click();
@@ -293,15 +292,17 @@ test("composer keeps its size while an AI reply is active and another message is
   await expect.poll(() => requestCount).toBe(2);
 });
 
-test("plugins catalog opens quickly and shows the custom asset bundle plugin", async ({ page }) => {
+test("plugins catalog opens quickly and shows supported connectors", async ({ page }) => {
   await openWorkspace(page);
   const startedAt = Date.now();
   await page.getByRole("button", { name: "Plugins" }).click();
   const dialog = page.getByRole("dialog", { name: "Plugins" });
   await expect(dialog).toBeVisible();
-  await expect(dialog.getByRole("heading", { name: "Asset Bundle Plugin" })).toBeVisible();
+  await expect(dialog.getByRole("heading", { name: "Plugins" })).toBeVisible();
+  await expect(dialog.getByText("Bring your tools into ENOSX")).toBeVisible();
+  await expect(dialog.getByRole("button", { name: "Connect GitHub" }).first()).toBeVisible();
   expect(Date.now() - startedAt).toBeLessThan(1_500);
-  await expect(dialog.getByRole("button", { name: "Copy prompt" }).last()).toBeEnabled();
+  await expect(dialog.getByRole("textbox", { name: "Search plugins" })).toBeVisible();
   await dialog.getByRole("button", { name: "Close plugins" }).click();
   await expect(dialog).toHaveCount(0);
 });

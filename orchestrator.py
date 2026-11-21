@@ -1,6 +1,6 @@
 """Async Enosx Master Orchestrator (direct Python SDK)."""
 from __future__ import annotations
-import asyncio, json, os
+import asyncio, json, os, re
 from urllib.request import Request, urlopen
 from config import KEYS, MAX_CONCURRENT_REQUESTS, RETRY_ATTEMPTS, REQUEST_TIMEOUT_SECONDS, endpoint_chain
 from tools.code_sandbox import python_code_sandbox
@@ -27,6 +27,15 @@ class EnosxNemotronBrain:
         self.tools = {**self.department_tools, "live_web_search": live_web_search, "memory_store_and_recall": memory_store_and_recall, "python_code_sandbox": python_code_sandbox}
     async def _limited(self, fn, *args, **kwargs):
         async with self.semaphore: return await fn(*args, **kwargs)
+    @staticmethod
+    def _search_query(task: str) -> str:
+        """Keep a compound request's news clause separate from other subtasks."""
+        match = re.search(
+            r"\b(?:search|look\s+up|find|fetch)\s+(?:for\s+)?(.+?)(?:\s+and\s+(?:run|calculate|write|generate|analy[sz]e|analyze)\b|$)",
+            task,
+            flags=re.IGNORECASE,
+        )
+        return (match.group(1) if match else task).strip()
     def _departments_for(self, task: str, force_all: bool) -> list[str]:
         if force_all: return list(self.department_tools)
         t = task.lower(); selected=[]
@@ -39,7 +48,7 @@ class EnosxNemotronBrain:
         memory_task = asyncio.create_task(self._limited(memory_store_and_recall, "recall", task, 5))
         search_task = None
         if any(x in task.lower() for x in ("latest", "current", "today", "recent", "live", "documentation")):
-            search_task = asyncio.create_task(self._limited(live_web_search, task, False))
+            search_task = asyncio.create_task(self._limited(live_web_search, self._search_query(task), False))
         code_task = None
         if any(x in task.lower() for x in ("calculate", "csv", "data analysis", "plot", "chart")):
             code_task = asyncio.create_task(self._limited(python_code_sandbox, "print('Sandbox ready: provide a Python snippet for this request')"))

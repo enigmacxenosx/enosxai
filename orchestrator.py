@@ -16,7 +16,7 @@ class EnosxNemotronBrain:
         self.mock = mock
         self.semaphore = asyncio.Semaphore(MAX_CONCURRENT_REQUESTS)
         self.model = os.getenv("ENOSX_BRAIN_MODEL", "nvidia/nemotron-3.5-super-vl-120b-a12b")
-        self.endpoint = os.getenv("NVIDIA_API_BASE_URL", "https://nvidia.com").rstrip("/")
+        self.endpoint = os.getenv("NVIDIA_API_BASE_URL", "https://integrate.api.nvidia.com/v1").rstrip("/")
         self.department_tools = {
             "reasoning_coding_router": reasoning_coding.dispatch,
             "documents_vision_image_router": documents_vision_image.dispatch,

@@ -244,7 +244,6 @@ export function useEnosxAI() {
         setError(friendlyError);
         console.error("[useEnosxAI] Error:", errorMessage);
 
-        onChunk(friendlyError);
         onDone({ success: false, error: friendlyError });
       } finally {
         window.clearTimeout(requestTimeout);

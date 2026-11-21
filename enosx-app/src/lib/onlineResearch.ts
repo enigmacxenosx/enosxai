@@ -4,6 +4,7 @@ type SearchableMediaType = Exclude<OnlineMediaType, "both">;
 export interface OnlineMediaRequest {
   type: OnlineMediaType;
   query: string;
+  purpose?: "music";
 }
 
 export interface OnlineMediaResult {
@@ -31,24 +32,32 @@ function isHttpUrl(value: string): string | null {
 export function getOnlineMediaSearch(text: string): OnlineMediaRequest | null {
   const imageIntent = /\b(?:image|images|picture|pictures|photo|photos)\b/i.test(text);
   const videoIntent = /\b(?:video|videos|clip|clips|movie|movies)\b/i.test(text);
-  if (!imageIntent && !videoIntent) return null;
+  const musicIntent = /\b(?:music|songs?|tracks?|albums?|playlists?)\b/i.test(text)
+    || /^\s*(?:please\s+)?(?:play|listen\s+to|put\s+on)\s+/i.test(text);
+  const musicAction = /\b(?:play|listen\s+to|put\s+on|search|find|show|recommend|suggest)\b/i.test(text);
+  const wantsMusic = musicIntent && musicAction;
+  if (!imageIntent && !videoIntent && !wantsMusic) return null;
 
   const explicitlyOnline = /\b(?:online|internet|web|youtube|vimeo)\b/i.test(text);
-  const searchAction = /\b(?:search|find|show|display|look\s+up|recommend|suggest|watch|give\s+me|get\s+me)\b/i.test(text);
+  const searchAction = /\b(?:search|find|show|display|look\s+up|recommend|suggest|watch|give\s+me|get\s+me|play|listen\s+to|put\s+on)\b/i.test(text);
   const learningIntent = /\b(?:tutorial|tutorials|lesson|lessons|walkthrough|how\s+to|teach\s+me|learn\s+how)\b/i.test(text);
-  if (!explicitlyOnline && !searchAction && !learningIntent) return null;
+  if (!wantsMusic && !explicitlyOnline && !searchAction && !learningIntent) return null;
 
   const generationRequest = /\b(?:generate|create|draw|paint|render|illustrate|design)\b.{0,120}\b(?:image|picture|photo|artwork|video)\b/i.test(text);
   if (generationRequest && !explicitlyOnline && !/\b(?:search|find|recommend|suggest|watch)\b/i.test(text)) return null;
 
-  const type: OnlineMediaType = imageIntent && videoIntent ? "both" : videoIntent ? "videos" : "images";
-  const query = text
+  const type: OnlineMediaType = wantsMusic ? "videos" : imageIntent && videoIntent ? "both" : videoIntent ? "videos" : "images";
+  let query = text
+    .replace(/^\s*(?:please\s+)?(?:can\s+you\s+|could\s+you\s+|would\s+you\s+)?(?:play|listen\s+to|put\s+on)\s+/i, " ")
     .replace(/\b(?:please|can you|could you|would you|online|on the internet|from the internet|from online|from the web|on the web|search(?:\s+for)?|find|show(?:\s+me)?|display|look\s+up|recommend|suggest|watch|give\s+me|get\s+me)\b/gi, " ")
+    .replace(/\b(?:some|music|songs?|tracks?|albums?|playlists?)\b/gi, " ")
+    .replace(/^\s*(?:a|an|the|by|from)\s+/i, " ")
     .replace(/[?!.,]+/g, " ")
     .replace(/\s+/g, " ")
     .trim();
 
-  return { type, query: (query || text).slice(0, 240) };
+  if (!query && wantsMusic) query = "popular music videos";
+  return { type, query: (query || text).slice(0, 240), ...(wantsMusic ? { purpose: "music" as const } : {}) };
 }
 
 function safeMarkdownUrl(value: unknown): string | null {
@@ -62,7 +71,7 @@ function cleanLabel(value: unknown, fallback: string): string {
   return value.replace(/[\r\n\[\]]/g, " ").replace(/\s+/g, " ").trim().slice(0, 150) || fallback;
 }
 
-async function searchMediaType(query: string, type: SearchableMediaType): Promise<{
+async function searchMediaType(query: string, type: SearchableMediaType, purpose?: "music"): Promise<{
   type: SearchableMediaType;
   markdown: string;
   failed: boolean;
@@ -90,7 +99,7 @@ async function searchMediaType(query: string, type: SearchableMediaType): Promis
       }
       return [`[${title}${source ? ` — ${source}` : ""}](${mediaUrl})`];
     });
-    const heading = type === "images" ? "Online image results" : "Online tutorial video results";
+    const heading = type === "images" ? "Online image results" : purpose === "music" ? "Online music video results" : "Online video results";
     return { type, markdown: lines.length ? `### ${heading}\n${lines.join("\n\n")}` : "", failed: false, empty: lines.length === 0 };
   } catch {
     return { type, markdown: "", failed: true, empty: false };
@@ -99,7 +108,7 @@ async function searchMediaType(query: string, type: SearchableMediaType): Promis
 
 export async function searchOnlineMedia(request: OnlineMediaRequest): Promise<OnlineMediaResult> {
   const types: SearchableMediaType[] = request.type === "both" ? ["videos", "images"] : [request.type];
-  const results = await Promise.all(types.map((type) => searchMediaType(request.query, type)));
+  const results = await Promise.all(types.map((type) => searchMediaType(request.query, type, request.purpose)));
   const context = results.map((result) => result.markdown).filter(Boolean).join("\n\n");
   const failedTypes = results.filter((result) => result.failed).map((result) => result.type);
   const emptyTypes = results.filter((result) => result.empty).map((result) => result.type);

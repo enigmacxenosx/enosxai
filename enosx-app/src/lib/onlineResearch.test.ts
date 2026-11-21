@@ -16,6 +16,26 @@ describe("getOnlineMediaSearch", () => {
   it("does not mistake direct image creation for online search", () => {
     expect(getOnlineMediaSearch("Generate an image of a red fox")).toBeNull();
   });
+
+  it("routes a general music request to playable video search", () => {
+    expect(getOnlineMediaSearch("Play some music")).toEqual({
+      type: "videos",
+      query: "popular music videos",
+      purpose: "music",
+    });
+  });
+
+  it("preserves a requested track and artist in a music search", () => {
+    expect(getOnlineMediaSearch("Play Here Comes the Sun by The Beatles")).toEqual({
+      type: "videos",
+      query: "Here Comes the Sun by The Beatles",
+      purpose: "music",
+    });
+  });
+
+  it("does not search when the user is only asking about music", () => {
+    expect(getOnlineMediaSearch("Explain music theory")).toBeNull();
+  });
 });
 
 describe("searchOnlineMedia", () => {
@@ -41,6 +61,17 @@ describe("searchOnlineMedia", () => {
 
     expect(result.context).toBe("");
     expect(result.issue).toMatch(/unavailable|not configured/i);
+  });
+
+  it("labels music searches distinctly and keeps the source URL for inline playback", async () => {
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(new Response(JSON.stringify({
+      results: [{ title: "Here Comes the Sun — official video", url: "https://www.youtube.com/watch?v=abcdefghijk", source: "youtube.com" }],
+    }), { status: 200 })));
+
+    const result = await searchOnlineMedia({ type: "videos", query: "Here Comes the Sun", purpose: "music" });
+
+    expect(result.context).toContain("### Online music video results");
+    expect(result.context).toContain("https://www.youtube.com/watch?v=abcdefghijk");
   });
 
   it("reports an empty search result distinctly from a provider failure", async () => {

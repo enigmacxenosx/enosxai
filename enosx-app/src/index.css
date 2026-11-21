@@ -2119,6 +2119,16 @@ body.light .enosx-composer {
 .light .premium-chat-shell [class*="text-white/"] {
   color: var(--enosx-text-muted, rgba(21, 25, 35, 0.58)) !important;
 }
+.light .premium-chat-shell .welcome-suggestion {
+  background: rgba(255, 255, 255, 0.86) !important;
+  border-color: rgba(21, 25, 35, 0.12) !important;
+  color: var(--enosx-text, #151923) !important;
+  box-shadow: 0 4px 16px rgba(28, 35, 56, 0.08);
+}
+.light .premium-chat-shell .welcome-suggestion:hover {
+  background: #ffffff !important;
+  border-color: rgba(220, 20, 60, 0.24) !important;
+}
 .light .premium-composer-dock {
   background: linear-gradient(
     180deg,

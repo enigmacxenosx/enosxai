@@ -197,12 +197,19 @@ export default function MessageBubble({
     return Date.parse(activity.updatedAt || "") >= Date.parse(latest.updatedAt || "") ? activity : latest;
   }, undefined as (typeof actionActivities)[number] | undefined);
   const visibleActivity = activeActivity || latestActivity;
-  const activityIcon = visibleActivity?.status === "running" ? Loader2
-    : visibleActivity?.status === "waiting_for_approval" ? Clock3
-      : visibleActivity?.status === "succeeded" ? CheckCircle2
-        : visibleActivity?.status === "cancelled" ? XCircle : CircleAlert;
-  const activityText = visibleActivity?.detail?.trim()
-    || (visibleActivity?.status === "failed" ? `${visibleActivity.label} failed.` : visibleActivity?.status === "succeeded" ? `${visibleActivity.label} completed.` : visibleActivity?.label || "Working…");
+  const activityStatements = actionActivities.length > 1
+    ? actionActivities.slice(-4)
+    : visibleActivity
+      ? [visibleActivity]
+      : [];
+  const getActivityStatement = (activity: (typeof actionActivities)[number]) => {
+    const isResponse = /prepare and write response|write response/i.test(activity.label);
+    if (activity.status === "running") return isResponse ? "Writing your response…" : `${activity.label}…`;
+    if (activity.status === "waiting_for_approval") return `Waiting for your approval: ${activity.label}`;
+    if (activity.status === "failed") return `${activity.label} could not be completed`;
+    if (activity.status === "cancelled") return `${activity.label} cancelled`;
+    return isResponse ? "Response ready" : `${activity.label} complete`;
+  };
   const githubDiagnosticTrace = !isUser && message.reasoningSteps?.length ? (
     <details className="w-full max-w-xl rounded-lg border border-white/10 bg-white/[0.02] text-xs text-white/65">
       <summary className="cursor-pointer px-3 py-2 transition-colors hover:text-white/90">
@@ -215,22 +222,30 @@ export default function MessageBubble({
   ) : null;
   const actionActivityTimeline = (
     <AnimatePresence initial={false}>
-      {visibleActivity && isActivityVisible && <motion.div
-        key={visibleActivity.id + visibleActivity.updatedAt}
-        initial={{ opacity: 0, y: 3 }}
-        animate={{ opacity: 1, y: 0 }}
-        exit={{ opacity: 0, y: -3 }}
-        transition={{ duration: 0.2 }}
-        role="status"
-        aria-live="polite"
-        className="flex items-center gap-2 py-0.5 text-[11px] leading-relaxed text-white/55"
-      >
-        {(() => {
-          const Icon = activityIcon;
-          return <Icon size={12} className={`shrink-0 ${visibleActivity.status === "running" ? "animate-spin text-cyan-200" : visibleActivity.status === "succeeded" ? "text-emerald-300" : visibleActivity.status === "failed" ? "text-rose-300" : "text-amber-200"}`} />;
-        })()}
-        <span>{activityText}</span>
-      </motion.div>}
+      {activityStatements.length > 0 && isActivityVisible && <div className="flex flex-col gap-1 py-1" role="status" aria-live="polite">
+        {activityStatements.map((activity) => {
+          const Icon = activity.status === "running" ? Loader2
+            : activity.status === "waiting_for_approval" ? Clock3
+              : activity.status === "succeeded" ? CheckCircle2
+                : activity.status === "cancelled" ? XCircle : CircleAlert;
+          const iconColor = activity.status === "running" ? "text-cyan-200"
+            : activity.status === "succeeded" ? "text-emerald-300"
+              : activity.status === "failed" ? "text-rose-300" : "text-amber-200";
+          return (
+            <motion.div
+              key={activity.id + activity.updatedAt}
+              initial={{ opacity: 0, y: 3 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -3 }}
+              transition={{ duration: 0.2 }}
+              className="flex items-center gap-2 text-[11px] leading-relaxed text-white/55"
+            >
+              <Icon size={12} className={`shrink-0 ${iconColor} ${activity.status === "running" ? "animate-spin" : ""}`} />
+              <span>{getActivityStatement(activity)}</span>
+            </motion.div>
+          );
+        })}
+      </div>}
     </AnimatePresence>
   );
 

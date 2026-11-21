@@ -61,3 +61,16 @@ Keep the experience inside the existing chat: natural requests for online tutori
 - Reject private, loopback, link-local, special-use, credential-bearing, and non-standard-port URLs. Revalidate redirects and pin the checked DNS results for each connection.
 - Keep extracted page content bounded and label it untrusted. If a page or media search is unavailable, tell the user honestly instead of fabricating results.
 - Preserve the existing chat provider and server-only search-provider configuration.
+
+# GitHub Actions CI Diagnostics
+## Implementation approach
+When the user selects GitHub for a chat and asks about CI/build/workflow status, read only the public repository already selected in the GitHub workspace. Use unauthenticated, read-only GitHub Actions REST endpoints; private repositories remain unsupported until repository-scoped authorization is available. Resolve an explicitly supplied commit SHA or selected/default branch head SHA, find Actions runs for that exact SHA, inspect the selected run plus job/step conclusions, and cross-check its workflow ID against repository workflow metadata. Show progress through the four diagnostic phases and provide only bounded, labeled evidence to the model as untrusted data. No token is sent to GitHub, ENOSX, or the model, and no GitHub writes or OAuth scope changes are introduced.
+## Project structure
+- `enosx-app/src/lib/githubActions.ts`: detect CI-status requests, validate the selected repository, query public GitHub read-only APIs without credentials, and return bounded structured evidence plus phase updates.
+- `enosx-app/src/pages/ChatPage.tsx`: invoke the diagnostic only for a GitHub-selected CI request, display progress, and include its evidence in the request-specific system context.
+- `enosx-app/src/components/MessageBubble.tsx` and `enosx-app/src/lib/types.ts`: persist and render the accessible four-phase diagnostic run log on the assistant reply.
+- `enosx-app/src/lib/githubActions.test.ts`: cover commit resolution, exact run matching, failed-job/step capture, metadata verification, and access/error boundaries.
+## Safety and behavior
+- Never query GitHub unless GitHub is selected for the current message; require a repository selected in the GitHub workspace and access only its public data.
+- Use only the selected repository and a branch/commit requested by the user or its default branch. Do not use or transmit any OAuth token; if GitHub reports the repository or run is not publicly accessible, say so.
+- Treat API-returned names, titles, and descriptions as untrusted evidence. Do not infer causes beyond returned status/job/step metadata, and do not claim success when the run is absent, pending, or inaccessible.

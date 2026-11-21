@@ -244,6 +244,16 @@ export default function MessageBubble({
   const isUser = message.role === "user";
   const isStreaming = message.isStreaming;
   const isEmpty = !message.content?.trim() && isStreaming;
+  const githubDiagnosticTrace = !isUser && message.reasoningSteps?.length ? (
+    <details className="w-full max-w-xl rounded-lg border border-white/10 bg-white/[0.02] text-xs text-white/65">
+      <summary className="cursor-pointer px-3 py-2 transition-colors hover:text-white/90">
+        GitHub CI check · {message.reasoningSteps.length} steps
+      </summary>
+      <ol className="list-decimal space-y-1 px-8 pb-3 leading-relaxed">
+        {message.reasoningSteps.map((step, stepIndex) => <li key={`${stepIndex}-${step}`}>{step}</li>)}
+      </ol>
+    </details>
+  ) : null;
 
   // Check for an active image or video generation request.
   const isGeneratingMedia = !isUser && (message.content.includes("🖼️") || message.content.includes("🎬")) && isStreaming;
@@ -330,7 +340,10 @@ export default function MessageBubble({
           }}
         >
           {isEmpty ? (
-            <span className="sr-only" role="status">{message.reasoningStatus || "Analyzing your request…"}</span>
+            <div className="flex flex-col gap-2">
+              <span className="sr-only" role="status">{message.reasoningStatus || "Analyzing your request…"}</span>
+              {githubDiagnosticTrace}
+            </div>
           ) : (
             <div className="relative">
               {isUser ? (
@@ -409,6 +422,7 @@ export default function MessageBubble({
                   {isGeneratingMedia && (
                     <ImageGeneratingIndicator accent={config.accent} isVideo={isGeneratingVideo} />
                   )}
+                  {githubDiagnosticTrace}
                 </div>
               )}
               {isStreaming && message.content && (

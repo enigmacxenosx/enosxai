@@ -23,3 +23,10 @@
 - [x] Add starter prompts that demonstrate media search and website study.
 - [x] Validate typecheck and production builds; inspect the changed diff before delivery.
 - [ ] Confirm `TAVILY_API_KEY` is configured in the Vercel production environment so online web, image, and video-platform search can return live results.
+
+## GitHub Actions CI Diagnostics
+- [x] When GitHub is selected for the current chat and the user asks about CI, builds, or workflow status, inspect only the public repository already selected in the GitHub workspace using unauthenticated read-only requests; if GitHub is not selected, no Actions request is made, and private-repo results are reported unavailable.
+- [x] Resolve the requested commit SHA or the selected/default branch head SHA, find runs that match that exact SHA, report the exact run ID/status/conclusion/link, and inspect its job and step conclusions.
+- [x] Cross-check the run's workflow ID against repository workflow metadata and clearly distinguish successful, failed, queued/in-progress, missing, and inaccessible runs without inventing a cause.
+- [x] Display diagnostic progress through commit resolution, run matching, job/step inspection, and workflow metadata verification; do not send any GitHub token and never perform GitHub writes or change OAuth scopes.
+- [x] Keep GitHub API content bounded and explicitly labeled untrusted; validate the helper's matching, result-shaping, and failure behavior with focused tests.

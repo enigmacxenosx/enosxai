@@ -17,6 +17,7 @@ export interface Message {
   timestamp: Date;
   isStreaming?: boolean;
   reasoningStatus?: string;
+  reasoningSteps?: string[];
   attachments?: Attachment[];
   proposedActions?: AssistantAction[];
 }

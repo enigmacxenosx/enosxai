@@ -1,8 +1,8 @@
 import type { VercelRequest, VercelResponse } from "@vercel/node";
 
 const MAX_QUERY_LENGTH = 240;
-type TavilySearchType = "web" | "images" | "videos";
-const allowedTypes = new Set<TavilySearchType>(["web", "images", "videos"]);
+type TavilySearchType = "web" | "images" | "videos" | "music";
+const allowedTypes = new Set<TavilySearchType>(["web", "images", "videos", "music"]);
 const requestCounts = new Map<string, { count: number; windowStart: number }>();
 const RATE_WINDOW_MS = 60_000;
 const MAX_REQUESTS_PER_WINDOW = 12;

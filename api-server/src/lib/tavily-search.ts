@@ -1,4 +1,4 @@
-export type TavilySearchType = "web" | "images" | "videos";
+export type TavilySearchType = "web" | "images" | "videos" | "music";
 
 export type NormalizedSearchResult = {
   title: string;
@@ -9,6 +9,7 @@ export type NormalizedSearchResult = {
 };
 
 const VIDEO_DOMAINS = ["youtube.com", "youtu.be", "vimeo.com"];
+const MUSIC_DOMAINS = ["youtube.com", "youtu.be", "soundcloud.com", "spotify.com"];
 
 function safeHttpUrl(value: unknown): string | null {
   if (typeof value !== "string" || value.length > 2_000) return null;
@@ -44,6 +45,7 @@ export async function searchTavily(query: string, type: TavilySearchType, apiKey
     safe_search: true,
   };
   if (type === "videos") payload.include_domains = VIDEO_DOMAINS;
+  if (type === "music") payload.include_domains = MUSIC_DOMAINS;
 
   const response = await fetch("https://api.tavily.com/search", {
     method: "POST",
@@ -83,10 +85,10 @@ export async function searchTavily(query: string, type: TavilySearchType, apiKey
     });
   }
 
-  return (Array.isArray(data.results) ? data.results : []).slice(0, 6).flatMap((result) => {
+  return (Array.isArray(data.results) ? data.results : []).slice(0, 20).flatMap((result) => {
     const url = safeHttpUrl(result.url);
     if (!url) return [];
-    const title = cleanText(result.title, 180) || (type === "videos" ? "Video result" : "Web result");
+    const title = cleanText(result.title, 180) || (type === "videos" ? "Video result" : type === "music" ? "Music track" : "Web result");
     const snippet = cleanText(result.content, 500);
     return [{ title, url, source: sourceName(url), ...(snippet ? { snippet } : {}) }];
   });

@@ -9,7 +9,7 @@ describe("getOnlineMediaSearch", () => {
   it("detects combined online picture and video requests", () => {
     expect(getOnlineMediaSearch("Show me online pictures and videos of the Northern Lights")).toEqual({
       type: "both",
-      query: "pictures and videos of the Northern Lights",
+      query: "pictures of the Northern Lights",
     });
   });
 
@@ -26,22 +26,34 @@ describe("getOnlineMediaSearch", () => {
 
   it("routes a general music request to playable video search", () => {
     expect(getOnlineMediaSearch("Play some music")).toEqual({
-      type: "videos",
-      query: "popular music videos",
-      purpose: "music",
+      type: "music",
+      query: "popular music",
     });
   });
 
   it("preserves a requested track and artist in a music search", () => {
     expect(getOnlineMediaSearch("Play Here Comes the Sun by The Beatles")).toEqual({
-      type: "videos",
+      type: "music",
       query: "Here Comes the Sun by The Beatles",
-      purpose: "music",
     });
   });
 
   it("does not search when the user is only asking about music", () => {
     expect(getOnlineMediaSearch("Explain music theory")).toBeNull();
+  });
+
+  it("detects online music track searches", () => {
+    expect(getOnlineMediaSearch("Find online music tracks by Enya")).toEqual({
+      type: "music",
+      query: "Enya",
+    });
+  });
+
+  it("searches videos and music together", () => {
+    expect(getOnlineMediaSearch("Search for online videos and songs about space")).toEqual({
+      type: "videos-and-music",
+      query: "about space",
+    });
   });
 });
 
@@ -88,5 +100,18 @@ describe("searchOnlineMedia", () => {
 
     expect(result.context).toBe("");
     expect(result.issue).toContain("returned no images");
+  });
+
+  it("formats music results as inline audio previews with source links", async () => {
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(new Response(JSON.stringify({
+      results: [{ title: "Only Time", url: "https://open.spotify.com/track/0123456789abcdef", source: "spotify.com" }],
+    }), { status: 200 })));
+
+    const result = await searchOnlineMedia({ type: "music", query: "Only Time Enya" });
+
+    expect(result.issue).toBeNull();
+    expect(result.context).toContain("### Online music track results");
+    expect(result.context).toContain("[Audio preview: Only Time](https://open.spotify.com/track/0123456789abcdef)");
+    expect(result.context).toContain("[Source: Only Time — spotify.com](https://open.spotify.com/track/0123456789abcdef)");
   });
 });

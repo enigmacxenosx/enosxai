@@ -7,7 +7,7 @@
  */
 
 import { useState, useEffect, useRef } from "react";
-import { motion } from "framer-motion";
+import { AnimatePresence, motion } from "framer-motion";
 import { Volume2, VolumeX, RotateCcw, ExternalLink, FileSearch, ListTree, ShieldCheck, Film, GitBranch, Star, CheckCircle2, CircleAlert, Clock3, Loader2, XCircle } from "lucide-react";
 import { Streamdown } from "streamdown";
 import { Message, type ActionActivityStatus } from "@/lib/types";
@@ -15,7 +15,9 @@ import { getMessageFeedback, submitMessageFeedback, type MessageFeedbackRating }
 import type { FollowUpSuggestion } from "@/lib/followUpSuggestions";
 import { useTheme } from "@/contexts/ThemeContext";
 import { useWallpaper } from "@/contexts/WallpaperContext";
+import { isImageUrl, resolveMediaUrl, type ResolvedMediaKind } from "@/lib/mediaUrls";
 import ImageDisplay from "./ImageDisplay";
+import AudioDisplay from "./AudioDisplay";
 import VideoDisplay from "./VideoDisplay";
 import MediaAttachmentList from "./MediaAttachmentList";
 
@@ -37,84 +39,16 @@ interface MessageBubbleProps {
 
 // ── Safe internet media detection ──────────────────────────────────────────────
 // Markdown image/link URLs and direct public media URLs are rendered inline.
-const MARKDOWN_MEDIA_URL_REGEX = /(!?)\[([^\]]*)\]\(((?:https?:\/\/|data:(?:image|video)\/)[^\s)]+)\)/gi;
-const RAW_MEDIA_URL_REGEX = /(?:https?:\/\/[^\s<>"'\])}]+|data:(?:image|video)\/[a-z0-9.+-]+;base64,[a-z0-9+/=]+)/gi;
-const VIDEO_EXTENSIONS = new Set(["mp4", "m4v", "webm", "ogv", "mov"]);
-const IMAGE_EXTENSIONS = new Set(["jpg", "jpeg", "png", "gif", "webp", "svg", "bmp", "avif", "tif", "tiff"]);
-const IMAGE_HOSTS = new Set([
-  "images.unsplash.com", "i.imgur.com", "i.redd.it", "preview.redd.it",
-  "media.giphy.com", "images.giphy.com", "media.tenor.com", "images.pexels.com",
-  "cdn.pixabay.com", "lh3.googleusercontent.com", "pbs.twimg.com", "upload.wikimedia.org",
-  "raw.githubusercontent.com", "cdn.discordapp.com", "images.ctfassets.net",
-  "res.cloudinary.com", "images.prismic.io", "imagedelivery.net",
-]);
-
-type MediaKind = "image" | "video" | "embed";
+const MARKDOWN_MEDIA_URL_REGEX = /(!?)\[([^\]]*)\]\(((?:https?:\/\/|data:(?:image|video|audio)\/)[^\s)]+)\)/gi;
+const RAW_MEDIA_URL_REGEX = /(?:https?:\/\/[^\s<>"'\])}]+|data:(?:image|video|audio)\/[a-z0-9.+-]+;base64,[a-z0-9+/=]+)/gi;
 interface ParsedMedia {
-  type: MediaKind;
+  type: ResolvedMediaKind;
   src: string;
   openUrl: string;
   alt: string;
   position: number;
   length: number;
-}
-
-function isHostOrSubdomain(hostname: string, domain: string) {
-  return hostname === domain || hostname.endsWith("." + domain);
-}
-
-function resolveMediaUrl(value: string, explicitImage = false, explicitVideo = false): Pick<ParsedMedia, "type" | "src" | "openUrl"> | null {
-  if (/^data:image\//i.test(value)) return { type: "image", src: value, openUrl: value };
-  if (/^data:video\//i.test(value)) return { type: "video", src: value, openUrl: value };
-
-  let url: URL;
-  try {
-    url = new URL(value);
-  } catch {
-    return null;
-  }
-  if ((url.protocol !== "https:" && url.protocol !== "http:") || url.username || url.password) return null;
-
-  const hostname = url.hostname.toLowerCase();
-  const openUrl = url.toString();
-  const youtubeHost = isHostOrSubdomain(hostname, "youtube.com") || isHostOrSubdomain(hostname, "youtube-nocookie.com") || hostname === "youtu.be";
-  if (youtubeHost) {
-    let videoId = "";
-    if (hostname === "youtu.be") {
-      videoId = url.pathname.split("/").filter(Boolean)[0] || "";
-    } else if (url.pathname === "/watch") {
-      videoId = url.searchParams.get("v") || "";
-    } else {
-      videoId = url.pathname.match(/^\/(?:embed|shorts|live)\/([a-zA-Z0-9_-]{11})(?:\/|$)/)?.[1] || "";
-    }
-    if (/^[a-zA-Z0-9_-]{11}$/.test(videoId)) {
-      return { type: "embed", src: "https://www.youtube-nocookie.com/embed/" + videoId, openUrl };
-    }
-  }
-
-  if (isHostOrSubdomain(hostname, "vimeo.com")) {
-    const videoId = url.pathname.match(/(?:^|\/)(?:video\/)?([0-9]{6,})(?:\/|$)/)?.[1];
-    if (videoId) return { type: "embed", src: "https://player.vimeo.com/video/" + videoId, openUrl };
-  }
-
-  const extension = url.pathname.match(/\.([a-z0-9]+)$/i)?.[1]?.toLowerCase() || "";
-  const contentHint = [url.searchParams.get("mime"), url.searchParams.get("type"), url.searchParams.get("format"), url.searchParams.get("fm")]
-    .filter(Boolean).join(" ").toLowerCase();
-  const hintedVideo = /video\//.test(contentHint) || /\b(mp4|m4v|webm|ogv|mov)\b/.test(contentHint);
-  if (VIDEO_EXTENSIONS.has(extension) || hintedVideo || explicitVideo) {
-    return { type: "video", src: openUrl, openUrl };
-  }
-
-  const hintedImage = /image\//.test(contentHint) || /\b(jpg|jpeg|png|gif|webp|svg|bmp|avif|tif|tiff)\b/.test(contentHint);
-  const isKnownImageHost = Array.from(IMAGE_HOSTS).some((domain) => isHostOrSubdomain(hostname, domain));
-  if (IMAGE_EXTENSIONS.has(extension) || hintedImage || isKnownImageHost || explicitImage) {
-    return { type: "image", src: openUrl, openUrl };
-  }
-  return null;
-}
-
-function isImageUrl(value?: string): value is string {
-  return Boolean(value && resolveMediaUrl(value)?.type === "image");
+  embedded?: boolean;
 }
 
 function extractMediaFromText(text: string): ParsedMedia[] {
@@ -126,9 +60,9 @@ function extractMediaFromText(text: string): ParsedMedia[] {
   while ((match = MARKDOWN_MEDIA_URL_REGEX.exec(text)) !== null) {
     markdownRanges.push({ start: match.index, end: match.index + match[0].length });
     const alt = match[2] || "";
-    const resolved = resolveMediaUrl(match[3], match[1] === "!", /\b(video|watch|clip|movie)\b/i.test(alt));
+    const resolved = resolveMediaUrl(match[3], match[1] === "!", /\b(video|watch|clip|movie)\b/i.test(alt), /\b(audio|music|track|song|podcast)\b/i.test(alt));
     if (resolved) {
-      media.push({ ...resolved, alt: alt || (resolved.type === "image" ? "Internet image" : "Internet video"), position: match.index, length: match[0].length });
+      media.push({ ...resolved, alt: alt || (resolved.type === "image" ? "Internet image" : resolved.type === "audio" ? "Internet audio" : "Internet video"), position: match.index, length: match[0].length });
     }
   }
 
@@ -138,7 +72,7 @@ function extractMediaFromText(text: string): ParsedMedia[] {
     const source = match[0].replace(/[.,!?;:]+$/, "");
     const resolved = resolveMediaUrl(source);
     if (resolved && !media.some((item) => item.position === match!.index)) {
-      media.push({ ...resolved, alt: resolved.type === "image" ? "Internet image" : "Internet video", position: match.index, length: source.length });
+      media.push({ ...resolved, alt: resolved.type === "image" ? "Internet image" : resolved.type === "audio" ? "Internet audio" : "Internet video", position: match.index, length: source.length });
     }
   }
 
@@ -182,6 +116,9 @@ function renderContentWithMedia(text: string, _accentColor: string, isStreaming 
         }
         if (segment.item.type === "image") {
           return <ImageDisplay key={index} src={segment.item.src} alt={segment.item.alt} watermark={/^generated image$/i.test(segment.item.alt)} />;
+        }
+        if (segment.item.type === "audio") {
+          return <AudioDisplay key={index} src={segment.item.src} openUrl={segment.item.openUrl} title={segment.item.alt} embedded={segment.item.embedded} />;
         }
         return <VideoDisplay key={index} src={segment.item.src} openUrl={segment.item.openUrl} title={segment.item.alt} embedded={segment.item.type === "embed"} />;
       })}
@@ -241,11 +178,31 @@ export default function MessageBubble({
   const { config } = useTheme();
   const { settings: wallpaperSettings } = useWallpaper();
   const [actionStatus, setActionStatus] = useState<string | null>(null);
+  const [isActivityVisible, setIsActivityVisible] = useState(Boolean(message.actionActivities?.length));
   const [rating, setRating] = useState<MessageFeedbackRating | null>(() => getMessageFeedback(message.id)?.rating ?? null);
   const [hoverRating, setHoverRating] = useState<MessageFeedbackRating | null>(null);
   const isUser = message.role === "user";
   const isStreaming = message.isStreaming;
   const isEmpty = !message.content?.trim() && isStreaming;
+  const actionActivities = isUser ? [] : message.actionActivities ?? [];
+  const latestActivity = actionActivities.reduce((latest, activity) => {
+    if (!latest) return activity;
+    const latestTime = Date.parse(latest.updatedAt || "");
+    const activityTime = Date.parse(activity.updatedAt || "");
+    return Number.isFinite(activityTime) && (!Number.isFinite(latestTime) || activityTime >= latestTime) ? activity : latest;
+  }, actionActivities[0]);
+  const activeActivity = actionActivities.reduce((latest, activity) => {
+    if (activity.status !== "running" && activity.status !== "waiting_for_approval") return latest;
+    if (!latest) return activity;
+    return Date.parse(activity.updatedAt || "") >= Date.parse(latest.updatedAt || "") ? activity : latest;
+  }, undefined as (typeof actionActivities)[number] | undefined);
+  const visibleActivity = activeActivity || latestActivity;
+  const activityIcon = visibleActivity?.status === "running" ? Loader2
+    : visibleActivity?.status === "waiting_for_approval" ? Clock3
+      : visibleActivity?.status === "succeeded" ? CheckCircle2
+        : visibleActivity?.status === "cancelled" ? XCircle : CircleAlert;
+  const activityText = visibleActivity?.detail?.trim()
+    || (visibleActivity?.status === "failed" ? `${visibleActivity.label} failed.` : visibleActivity?.status === "succeeded" ? `${visibleActivity.label} completed.` : visibleActivity?.label || "Working…");
   const githubDiagnosticTrace = !isUser && message.reasoningSteps?.length ? (
     <details className="w-full max-w-xl rounded-lg border border-white/10 bg-white/[0.02] text-xs text-white/65">
       <summary className="cursor-pointer px-3 py-2 transition-colors hover:text-white/90">
@@ -256,30 +213,26 @@ export default function MessageBubble({
       </ol>
     </details>
   ) : null;
-  const actionActivityTimeline = !isUser && message.actionActivities?.length ? (
-    <section className="w-full max-w-xl rounded-lg border border-white/10 bg-white/[0.025] px-3 py-2" aria-label="Live action progress" aria-live="polite">
-      <h3 className="mb-1 text-[10px] font-semibold uppercase tracking-wider text-white/55">Workflow activity</h3>
-      <ol className="space-y-1.5">
-        {message.actionActivities.map((activity) => {
-          const Icon = activity.status === "running" ? Loader2
-            : activity.status === "waiting_for_approval" ? Clock3
-              : activity.status === "succeeded" ? CheckCircle2
-                : activity.status === "cancelled" ? XCircle : CircleAlert;
-          const statusLabel = activity.status === "waiting_for_approval" ? "Waiting for approval" : activity.status.replaceAll("_", " ");
-          return (
-            <li key={activity.id} className="flex items-start gap-2 text-[11px] leading-relaxed text-white/75">
-              <Icon size={13} className={`mt-0.5 shrink-0 ${activity.status === "running" ? "animate-spin text-cyan-200" : activity.status === "succeeded" ? "text-emerald-300" : activity.status === "failed" ? "text-rose-300" : "text-amber-200"}`} />
-              <span className="min-w-0 flex-1">
-                <span className="font-medium text-white/85">{activity.label}</span>
-                <span className="ml-1.5 capitalize text-white/45">{statusLabel}</span>
-                {activity.detail && <span className="block text-white/50">{activity.detail}</span>}
-              </span>
-            </li>
-          );
-        })}
-      </ol>
-    </section>
-  ) : null;
+  const actionActivityTimeline = (
+    <AnimatePresence initial={false}>
+      {visibleActivity && isActivityVisible && <motion.div
+        key={visibleActivity.id + visibleActivity.updatedAt}
+        initial={{ opacity: 0, y: 3 }}
+        animate={{ opacity: 1, y: 0 }}
+        exit={{ opacity: 0, y: -3 }}
+        transition={{ duration: 0.2 }}
+        role="status"
+        aria-live="polite"
+        className="flex items-center gap-2 py-0.5 text-[11px] leading-relaxed text-white/55"
+      >
+        {(() => {
+          const Icon = activityIcon;
+          return <Icon size={12} className={`shrink-0 ${visibleActivity.status === "running" ? "animate-spin text-cyan-200" : visibleActivity.status === "succeeded" ? "text-emerald-300" : visibleActivity.status === "failed" ? "text-rose-300" : "text-amber-200"}`} />;
+        })()}
+        <span>{activityText}</span>
+      </motion.div>}
+    </AnimatePresence>
+  );
 
   // Check for an active image or video generation request.
   const isGeneratingMedia = !isUser && (message.content.includes("🖼️") || message.content.includes("🎬")) && isStreaming;
@@ -289,6 +242,17 @@ export default function MessageBubble({
     setRating(getMessageFeedback(message.id)?.rating ?? null);
     setHoverRating(null);
   }, [message.id]);
+
+  useEffect(() => {
+    if (!actionActivities.length) {
+      setIsActivityVisible(false);
+      return;
+    }
+    setIsActivityVisible(true);
+    if (actionActivities.some((activity) => activity.status === "running" || activity.status === "waiting_for_approval")) return;
+    const timeout = window.setTimeout(() => setIsActivityVisible(false), 2_400);
+    return () => window.clearTimeout(timeout);
+  }, [actionActivities, message.id]);
 
   const rateResponse = (value: MessageFeedbackRating) => {
     const record = submitMessageFeedback(message.id, value);

@@ -177,7 +177,7 @@ export default function Sidebar({
       transition={{ type: "spring", stiffness: 300, damping: 30 }}
       className="neon-dashboard-sidebar relative flex-shrink-0 flex flex-col h-full overflow-hidden"
         style={{
-        background: "#0f1014",
+        background: config.bg,
         borderRight: `1px solid ${config.border}`,
         boxShadow: "18px 0 50px rgba(0,0,0,0.28)",
       }}

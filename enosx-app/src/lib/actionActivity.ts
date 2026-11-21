@@ -11,6 +11,10 @@ const MAX_ACTIVITIES = 30;
 const MAX_LABEL_LENGTH = 160;
 const MAX_DETAIL_LENGTH = 240;
 
+export function hasActiveActionActivity(activities: ActionActivity[] | undefined): boolean {
+  return Boolean(activities?.some((activity) => activity.status === "running" || activity.status === "waiting_for_approval"));
+}
+
 export function normalizeActionActivities(value: unknown): ActionActivity[] | undefined {
   if (!Array.isArray(value)) return undefined;
   const normalized = value.flatMap((item): ActionActivity[] => {

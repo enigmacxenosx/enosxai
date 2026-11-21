@@ -65,7 +65,7 @@ import { ChevronDown, Copy, Eye, Gauge, Menu, Share2 } from "lucide-react";
 import { copyTranscript } from "@/lib/shareConversation";
 import { getOnlineMediaSearch, getWebsiteStudyUrl, searchOnlineMedia, studyWebsite } from "@/lib/onlineResearch";
 import { isImageGenerationRequest } from "@/lib/mediaIntent";
-import { normalizeActionActivities, upsertActionActivity } from "@/lib/actionActivity";
+import { hasActiveActionActivity, normalizeActionActivities, upsertActionActivity } from "@/lib/actionActivity";
 import { isGitHubActionsStatusRequest, loadGitHubActionsDiagnostic } from "@/lib/githubActions";
 import { installBrowserExtensionBridge, queueBrowserAction, type SharedBrowserPage } from "@/lib/browserExtension";
 import {
@@ -1236,6 +1236,8 @@ ${getAdminContext()}` : ""}`,
   const activeConversation = conversations.find((c) => c.id === activeId);
   const messages = activeConversation?.messages || [];
   const latestMessage = messages[messages.length - 1];
+  const latestAssistantMessage = [...messages].reverse().find((message) => message.role === "assistant");
+  const hasActiveWorkflow = hasActiveActionActivity(latestAssistantMessage?.actionActivities);
   const latestUserMessage = [...messages].reverse().find((message) => message.role === "user");
   const latestFollowUps = latestMessage?.role === "assistant" && !latestMessage.isStreaming && latestUserMessage
     ? getFollowUpSuggestions(latestUserMessage.content, latestMessage.content)
@@ -1520,7 +1522,7 @@ ${getAdminContext()}` : ""}`,
                     onActionActivity={handleActionActivity}
                   />
                 ))}
-                {isLoading && (
+                {isLoading && !hasActiveWorkflow && (
                   <div className="flex items-center gap-3 py-2 text-xs text-white/40" role="status">
                     <span className="flex items-center gap-1" aria-hidden="true">
                       <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-violet-300/80" />

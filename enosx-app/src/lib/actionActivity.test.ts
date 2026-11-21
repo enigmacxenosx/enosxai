@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { normalizeActionActivities, upsertActionActivity } from "./actionActivity";
+import { hasActiveActionActivity, normalizeActionActivities, upsertActionActivity } from "./actionActivity";
 import type { ActionActivity } from "./types";
 
 describe("normalizeActionActivities", () => {
@@ -32,5 +32,17 @@ describe("upsertActionActivity", () => {
     expect(updated).toHaveLength(2);
     expect(updated[0]).toMatchObject({ id: "image", status: "succeeded", detail: "Finished" });
     expect(updated[1]).toMatchObject({ id: "browser", status: "waiting_for_approval" });
+  });
+});
+
+describe("hasActiveActionActivity", () => {
+  it("returns true while work is running or awaiting approval", () => {
+    expect(hasActiveActionActivity([{ id: "run", label: "Search", status: "running" }])).toBe(true);
+    expect(hasActiveActionActivity([{ id: "approval", label: "Review", status: "waiting_for_approval" }])).toBe(true);
+  });
+
+  it("returns false when no activity is active", () => {
+    expect(hasActiveActionActivity(undefined)).toBe(false);
+    expect(hasActiveActionActivity([{ id: "done", label: "Search", status: "succeeded" }])).toBe(false);
   });
 });

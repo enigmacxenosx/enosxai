@@ -503,17 +503,24 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           metadata: { ...(body.metadata || {}), aiMode },
         }, aiMode);
         if (orchestratorResponse.ok && orchestratorResponse.body) {
-          res.setHeader("Content-Type", orchestratorResponse.headers.get("content-type") || "text/event-stream; charset=utf-8");
-          res.setHeader("Cache-Control", "no-cache, no-transform");
-          res.setHeader("Connection", "keep-alive");
-          const reader = orchestratorResponse.body.getReader();
-          while (true) {
-            const { done, value } = await reader.read();
-            if (done) break;
-            res.write(value);
+          const contentType = orchestratorResponse.headers.get("content-type") || "";
+          if (/text\/event-stream/i.test(contentType)) {
+            res.setHeader("Content-Type", contentType || "text/event-stream; charset=utf-8");
+            res.setHeader("Cache-Control", "no-cache, no-transform");
+            res.setHeader("Connection", "keep-alive");
+            const reader = orchestratorResponse.body.getReader();
+            while (true) {
+              const { done, value } = await reader.read();
+              if (done) break;
+              res.write(value);
+            }
+            res.end();
+            return;
           }
-          res.end();
-          return;
+          const orchestratorJson = await orchestratorResponse.json().catch(() => null);
+          const orchestratorText = orchestratorJson?.choices?.[0]?.message?.content;
+          if (typeof orchestratorText === "string" && orchestratorText.trim()) return sendMockResponse(res, orchestratorText);
+          return res.status(502).json({ error: "The orchestrator returned an empty response.", code: "EMPTY_ORCHESTRATOR_RESPONSE" });
         }
         if (![502, 503, 504].includes(orchestratorResponse.status)) {
           const detail = await orchestratorResponse.text().catch(() => "");

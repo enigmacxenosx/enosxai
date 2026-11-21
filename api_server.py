@@ -38,7 +38,11 @@ async def chat(request: Request, payload: ChatRequest):
     body = {"id":"enosx-chat", "object":"chat.completion", "model":payload.model or result["model"], "choices":[{"index":0,"message":{"role":"assistant","content":result["answer"]},"finish_reason":"stop"}], "enosx":result}
     if not payload.stream: return body
     async def events():
-        yield f"data: {json.dumps(body)}\n\ndata: [DONE]\n\n"
+        chunk = {"id": body["id"], "object": "chat.completion.chunk", "model": body["model"], "choices": [{"index": 0, "delta": {"role": "assistant", "content": result["answer"]}, "finish_reason": None}]}
+        finish = {"id": body["id"], "object": "chat.completion.chunk", "model": body["model"], "choices": [{"index": 0, "delta": {}, "finish_reason": "stop"}]}
+        yield f"data: {json.dumps(chunk)}\n\n"
+        yield f"data: {json.dumps(finish)}\n\n"
+        yield "data: [DONE]\n\n"
     return StreamingResponse(events(), media_type="text/event-stream")
 @app.post("/v1/memory/ingest")
 async def ingest(request: Request, file: UploadFile = File(...)):

@@ -65,13 +65,44 @@ class EnosxNemotronBrain:
             count = sum(len(r.get("results", [])) for r in results if isinstance(r, dict))
             return f"Mock Enosx synthesis complete for: {task}\nParallel department results: {count} worker outputs. Memory, routing, and failure isolation verified."
         prompt = json.dumps({"request":task,"memory":context.get("memory"),"department_results":results}, default=str)
-        payload = {"model": self.model, "messages":[{"role":"system","content":SYSTEM_PROMPT},{"role":"user","content":prompt}], "parallel_tool_calls":True, "temperature":0.2}
+        payload = {"model": self.model, "messages":[{"role":"system","content":SYSTEM_PROMPT},{"role":"user","content":prompt}], "parallel_tool_calls":True, "temperature":0.2, "max_tokens":8192}
         for endpoint in endpoint_chain():
             try:
                 req = Request(endpoint+"/chat/completions", data=json.dumps(payload).encode(), headers={"Content-Type":"application/json","Authorization":f"Bearer {KEYS.next()}"}, method="POST")
                 with urlopen(req, timeout=REQUEST_TIMEOUT_SECONDS) as response: data=json.loads(response.read())
-                return data["choices"][0]["message"]["content"]
+                message = data.get("choices", [{}])[0].get("message", {})
+                content = _clean_synthesis_text(message.get("content"))
+                if content: return content
+                reasoning = _clean_synthesis_text(message.get("reasoning_content"))
+                if reasoning: return reasoning
             except Exception: continue
-        return "Enosx completed the available routing steps, but synthesis is unavailable until a live model endpoint is configured."
+        return _fallback_synthesis(results)
+
+
+def _clean_synthesis_text(value) -> str:
+    """Return usable text from provider content or a tagged reasoning summary."""
+    if not isinstance(value, str): return ""
+    text = value.strip()
+    if "</think>" in text: text = text.rsplit("</think>", 1)[1]
+    text = text.replace("<think>", "").replace("</think>", "").strip()
+    return text
+
+
+def _fallback_synthesis(results) -> str:
+    """Guarantee a concise answer even when every synthesis endpoint is empty."""
+    outputs = []
+    failures = 0
+    for department in results:
+        if not isinstance(department, dict): continue
+        for worker in department.get("results", []):
+            if not isinstance(worker, dict): continue
+            if worker.get("ok"):
+                text = _clean_synthesis_text(worker.get("output") or worker.get("answer"))
+                if text and len(outputs) < 5: outputs.append(f"{worker.get('worker', 'worker')}: {text[:240]}")
+            else: failures += 1
+    if outputs:
+        suffix = f" {failures} worker(s) reported an error." if failures else ""
+        return "Synthesis fallback completed from worker results:\n" + "\n".join(outputs) + suffix
+    return "Enosx completed the routing steps, but no provider returned usable synthesis text. Please try again."
 
 async def run(task: str, **kwargs): return await EnosxNemotronBrain(**{k:v for k,v in kwargs.items() if k == "mock"}).dispatch(task, **{k:v for k,v in kwargs.items() if k != "mock"})

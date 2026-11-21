@@ -10,7 +10,6 @@ import { useState, useEffect, useRef } from "react";
 import { motion } from "framer-motion";
 import { Volume2, VolumeX, RotateCcw, ExternalLink, FileSearch, ListTree, ShieldCheck, Film, GitBranch, Star } from "lucide-react";
 import { Streamdown } from "streamdown";
-import LiveActivityTimeline from "@/components/LiveActivityTimeline";
 import { Message } from "@/lib/types";
 import { getMessageFeedback, submitMessageFeedback, type MessageFeedbackRating } from "@/lib/feedback";
 import type { FollowUpSuggestion } from "@/lib/followUpSuggestions";
@@ -331,10 +330,7 @@ export default function MessageBubble({
           }}
         >
           {isEmpty ? (
-<>
-              <span className="sr-only" role="status">{message.reasoningStatus || "Analyzing your request…"}</span>
-              <LiveActivityTimeline status={message.reasoningStatus || "Analyzing request"} isStreaming />
-            </>
+            <span className="sr-only" role="status">{message.reasoningStatus || "Analyzing your request…"}</span>
           ) : (
             <div className="relative">
               {isUser ? (
@@ -352,7 +348,6 @@ export default function MessageBubble({
                 </div>
               ) : (
                 <div className="flex flex-col gap-3">
-                  <LiveActivityTimeline status={message.reasoningStatus} isStreaming={isStreaming} />
                   {/* Assistant media attachments */}
                   {message.attachments && message.attachments.length > 0 && (
                     <MediaAttachmentList attachments={message.attachments} />

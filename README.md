@@ -87,7 +87,7 @@ The web UI can load without all optional integrations, but server-backed feature
 |---|---|
 | Hosted chat and text models | `NVIDIA_API_KEY`; optional model overrides include `NVIDIA_MODEL`, `NVIDIA_EX_CORE_MODEL`, `NVIDIA_EX_PRO_MODEL`, and `NVIDIA_ENOSH_MIND_MODEL` |
 | Vision routing | `NVIDIA_VISION_MODEL`, `NVIDIA_EX_CORE_VISION_MODEL`, and `NVIDIA_EX_PRO_VISION_MODEL` |
-| Image creation/editing | `NVIDIA_IMAGE_API_KEY` (falls back to `NVIDIA_API_KEY`); optional `NVIDIA_IMAGE_ENDPOINT` and `NVIDIA_IMAGE_MODEL` |
+| Image creation/editing | `NVIDIA_IMAGE_API_KEY` (falls back to `NVIDIA_API_KEY`); the web API supports `NVIDIA_IMAGE_ENDPOINT` and `NVIDIA_IMAGE_MODEL`, while Python workers use `NVIDIA_IMAGE_BASE_URL` (defaults to NVIDIA’s hosted GenAI route) |
 | Video generation | `NVIDIA_VIDEO_API_KEY` (falls back to `NVIDIA_API_KEY`) |
 | NVIDIA video upscaling | `VITE_NVIDIA_VSR_ENABLED=true` at build time, plus server-only `NVIDIA_VSR_BRIDGE_URL` and optional `NVIDIA_VSR_BRIDGE_TOKEN`; requires a deployed VSR gRPC bridge. Current Vercel upload cap: 4 MB. |
 | Online web, image, and video-link search | `TAVILY_API_KEY` (server-side only) |

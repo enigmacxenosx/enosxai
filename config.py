@@ -30,7 +30,11 @@ NVIDIA_STANDARD_BASE_URL = _normalized_url(
     "https://integrate.api.nvidia.com/v1",
     {"https://nvidia.com"},
 )
-NVIDIA_IMAGE_BASE_URL = _normalized_url("NVIDIA_IMAGE_BASE_URL", "https://nvidia.com")
+NVIDIA_IMAGE_BASE_URL = _normalized_url(
+    "NVIDIA_IMAGE_BASE_URL",
+    "https://ai.api.nvidia.com/v1/genai",
+    {"https://nvidia.com"},
+)
 OPENROUTER_BASE_URL = _normalized_url("OPENROUTER_BASE_URL", "https://openrouter.ai")
 
 

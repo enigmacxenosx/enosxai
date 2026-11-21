@@ -129,12 +129,32 @@ class Worker:
         }
 
     async def _image(self, task: str) -> dict:
-        endpoint = os.getenv("NVIDIA_IMAGE_ENDPOINT", NVIDIA_IMAGE_BASE_URL + "/v1/images/generations")
-        payload = {"model": self.spec.model, "prompt": task, "response_format": "b64_json"}
+        endpoint = os.getenv("NVIDIA_IMAGE_ENDPOINT", "").strip() or (
+            f"{NVIDIA_IMAGE_BASE_URL}/{self.spec.model}"
+        )
+        is_schnell = self.spec.model.endswith("flux.1-schnell")
+        payload = {
+            "prompt": task,
+            "height": 1024,
+            "width": 1024,
+            "mode": "base",
+            "samples": 1,
+            "steps": 4 if is_schnell else 50,
+        }
+        if not is_schnell:
+            payload["cfg_scale"] = 3.5
         try:
             data = await _http_json(endpoint, payload, {"Authorization": f"Bearer {KEYS.next()}"})
-            item = (data.get("data") or [{}])[0]
-            encoded = item.get("b64_json") or item.get("base64")
+            item = (data.get("artifacts") or data.get("data") or [{}])[0]
+            encoded = item.get("base64") or item.get("b64_json")
+            if not encoded and isinstance(item.get("url"), str):
+                return {
+                    "worker": self.name,
+                    "model": self.spec.model,
+                    "modality": self.spec.modality,
+                    "ok": False,
+                    "error": "Image endpoint returned a URL instead of base64 image data",
+                }
             if not encoded:
                 return {
                     "worker": self.name,

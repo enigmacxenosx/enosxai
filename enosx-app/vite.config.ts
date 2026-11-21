@@ -11,6 +11,8 @@ const srcDir = path.resolve(__dirname, "src");
 const projectRoot = __dirname;
 
 const port = Number(process.env.PORT || 5173);
+const apiPort = Number(process.env.API_PORT || 8080);
+const apiTarget = process.env.API_URL || `http://127.0.0.1:${apiPort}`;
 const basePath = process.env.BASE_PATH || "/";
 
 // Optional hosted-editor plugins are loaded only in their development environment.
@@ -111,7 +113,7 @@ export default defineConfig({
     },
     proxy: {
       "/api": {
-        target: `http://localhost:8080`,
+        target: apiTarget,
         changeOrigin: true,
       },
     },

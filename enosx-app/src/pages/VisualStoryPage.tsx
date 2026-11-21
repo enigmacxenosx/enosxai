@@ -43,11 +43,16 @@ import {
   { label: "Jul", value: 128 },
  ];
 
- const STORY_BEATS = [
-  { eyebrow: "01 / THE SIGNAL", title: "A quiet beginning", description: "The first movement is small, but the direction is already visible. Establish the baseline before the momentum arrives.", focus: 1 },
-  { eyebrow: "02 / THE TURN", title: "Momentum changes the shape", description: "A brief dip gives way to a stronger climb. This is where the pattern stops being noise and starts becoming a story.", focus: 4 },
-  { eyebrow: "03 / THE PROOF", title: "The signal compounds", description: "The final stretch carries the narrative: focused effort turns into measurable lift, with 3× the opening value.", focus: 6 },
- ];
+ function buildStoryBeats(data: StoryDatum[]) {
+  const safe = data.length ? data : SAMPLE_DATA;
+  const peakIndex = safe.reduce((best, item, index) => item.value > safe[best].value ? index : best, 0);
+  const change = safe[0]?.value ? Math.round(((safe[safe.length - 1].value - safe[0].value) / safe[0].value) * 100) : 0;
+  return [
+    { eyebrow: "01 / THE SIGNAL", title: `The story starts at ${safe[0]?.label ?? "the baseline"}`, description: `The opening point establishes the baseline at ${formatValue(safe[0]?.value ?? 0)}. This is the reference point for every movement that follows.`, focus: Math.min(1, safe.length - 1) },
+    { eyebrow: "02 / THE TURN", title: `${safe[peakIndex]?.label ?? "The peak"} becomes the pivot`, description: `The strongest visible moment arrives at ${safe[peakIndex]?.label ?? "the peak"}. This is where the pattern becomes meaningful rather than incidental.`, focus: peakIndex },
+    { eyebrow: "03 / THE PROOF", title: `${change >= 0 ? "Momentum compounds" : "The signal resets"}`, description: `The final point lands at ${formatValue(safe[safe.length - 1]?.value ?? 0)}, a ${Math.abs(change)}% ${change >= 0 ? "rise" : "change"} from the opening value.`, focus: safe.length - 1 },
+  ];
+ }
 
  function parseCsv(input: string): StoryDatum[] {
   return input
@@ -56,6 +61,7 @@ import {
     .filter(Boolean)
     .slice(0, 24)
     .map((line) => line.split(","))
+    .filter(([label, rawValue]) => !(label?.trim().toLowerCase() === "label" && rawValue?.trim().toLowerCase() === "value"))
     .map(([label, rawValue]) => ({ label: (label || "Point").trim().slice(0, 18), value: Number(rawValue) }))
     .filter((item) => item.label && Number.isFinite(item.value));
  }
@@ -73,8 +79,10 @@ import {
   const [beat, setBeat] = useState(0);
   const [playing, setPlaying] = useState(false);
   const [showData, setShowData] = useState(false);
+  const [reducedMotion, setReducedMotion] = useState(false);
 
-  const activeStory = STORY_BEATS[beat];
+  const storyBeats = useMemo(() => buildStoryBeats(data), [data]);
+  const activeStory = storyBeats[Math.min(beat, storyBeats.length - 1)];
   const first = data[0]?.value ?? 0;
   const last = data[data.length - 1]?.value ?? 0;
   const total = data.reduce((sum, item) => sum + item.value, 0);
@@ -82,10 +90,33 @@ import {
   const focusedLabel = data[Math.min(activeStory.focus, Math.max(data.length - 1, 0))]?.label;
 
   useEffect(() => {
-    if (!playing) return;
-    const timer = window.setInterval(() => setBeat((current) => (current + 1) % STORY_BEATS.length), 4200);
+    const query = window.matchMedia("(prefers-reduced-motion: reduce)");
+    const update = () => setReducedMotion(query.matches);
+    update();
+    query.addEventListener("change", update);
+    return () => query.removeEventListener("change", update);
+  }, []);
+
+  useEffect(() => {
+    if (!playing || reducedMotion) return;
+    const timer = window.setInterval(() => setBeat((current) => (current + 1) % storyBeats.length), 4200);
     return () => window.clearInterval(timer);
-  }, [playing]);
+  }, [playing, reducedMotion, storyBeats.length]);
+
+  useEffect(() => {
+    if (beat >= storyBeats.length) setBeat(0);
+  }, [beat, storyBeats.length]);
+
+  useEffect(() => {
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.target instanceof HTMLTextAreaElement || event.target instanceof HTMLInputElement) return;
+      if (event.key === "ArrowLeft") goToBeat(beat - 1);
+      if (event.key === "ArrowRight") goToBeat(beat + 1);
+      if (event.key === " ") { event.preventDefault(); setPlaying((value) => !value); }
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [beat]);
 
   const chartData = useMemo(() => data.map((item, index) => ({ ...item, active: index <= activeStory.focus })), [data, activeStory.focus]);
 
@@ -98,7 +129,7 @@ import {
     }
   };
 
-  const goToBeat = (nextBeat: number) => setBeat((nextBeat + STORY_BEATS.length) % STORY_BEATS.length);
+  const goToBeat = (nextBeat: number) => setBeat((nextBeat + storyBeats.length) % storyBeats.length);
 
   return (
     <main className="visual-story-page">
@@ -129,9 +160,9 @@ import {
 
       <section className="visual-story-workbench">
         <aside className="story-beat-rail" aria-label="Story beats">
-          <div className="story-rail-heading"><span>THE NARRATIVE</span><span>{String(beat + 1).padStart(2, "0")} / 03</span></div>
+          <div className="story-rail-heading"><span>THE NARRATIVE</span><span>{String(beat + 1).padStart(2, "0")} / {String(storyBeats.length).padStart(2, "0")}</span></div>
           <div className="story-beat-list">
-            {STORY_BEATS.map((item, index) => (
+            {storyBeats.map((item, index) => (
               <button key={item.eyebrow} className={`story-beat ${index === beat ? "is-active" : ""}`} onClick={() => goToBeat(index)}>
                 <span className="story-beat-index">0{index + 1}</span>
                 <span className="story-beat-copy"><b>{item.title}</b><small>{item.description}</small></span>
@@ -156,7 +187,7 @@ import {
             </AnimatePresence>
             <div className="story-stage-footnote">{activeStory.description}</div>
           </div>
-          <div className="story-stage-controls"><button className="icon-control" onClick={() => goToBeat(beat - 1)} aria-label="Previous beat"><ChevronLeft size={17} /></button><div className="story-progress"><span style={{ width: `${((beat + 1) / STORY_BEATS.length) * 100}%` }} /></div><button className="icon-control" onClick={() => goToBeat(beat + 1)} aria-label="Next beat"><ChevronRight size={17} /></button><span className="story-timecode">0{beat + 1} · 04.2s</span></div>
+          <div className="story-stage-controls"><button className="icon-control" onClick={() => goToBeat(beat - 1)} aria-label="Previous beat"><ChevronLeft size={17} /></button><div className="story-progress"><span style={{ width: `${((beat + 1) / storyBeats.length) * 100}%` }} /></div><button className="icon-control" onClick={() => goToBeat(beat + 1)} aria-label="Next beat"><ChevronRight size={17} /></button><span className="story-timecode">0{beat + 1} · {reducedMotion ? "reduced motion" : "04.2s"}</span></div>
         </div>
       </section>
 

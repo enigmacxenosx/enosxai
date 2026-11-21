@@ -6,14 +6,20 @@
 - [ ] Route image and video requests through one shared Vercel function while preserving `/api/image/generate` and `/api/video/generate`, keeping deployments within the Hobby limit of 12 serverless functions.
 - [ ] Document required Vercel secrets and model choices, and validate the frontend and API packages with typecheck/build.
 
-- [ ] Add a `/visual-story` page that lets users turn labeled numeric data into a visual narrative with a large animated chart stage.
+- [x] Add a `/visual-story` page that lets users turn labeled numeric data into a visual narrative with a large animated chart stage.
   - The page must include a narrative heading, supporting explanation, summary metrics, and at least three story beats.
   - Story beat changes must update the visual state with purposeful animation and must work with reduced-motion preferences.
-- [ ] Add chart mode controls for area, bar, and line views using the existing charting dependencies.
-- [ ] Add a compact CSV editor/import surface so users can replace the sample data without leaving the story page.
-- [ ] Add play/pause autoplay and beat navigation so the story can be presented as an animated sequence.
-- [ ] Add the Visual Story Studio to ENOSX navigation and the static route manifest.
-- [ ] Validate the ENOSX app with typecheck and production build; resolve actionable errors before delivery.
+- [x] Add chart mode controls for area, bar, and line views using the existing charting dependencies.
+- [x] Add a compact CSV editor/import surface so users can replace the sample data without leaving the story page.
+- [x] Add play/pause autoplay and beat navigation so the story can be presented as an animated sequence.
+- [x] Add the Visual Story Studio to ENOSX navigation and the static route manifest.
+- [x] Validate ENOSX app with typecheck and production build; resolve actionable errors before delivery.
+
+## Product coherence and agent workflows
+- [x] Replace user-facing assistant terminology with agent terminology while preserving API-compatible role values.
+- [x] Add onboarding use-case selection for chat, coding/GitHub, research, data stories, media, and memory workflows.
+- [x] Show GitHub account/repository/branch scope and default repository work to read-only until explicit write mode and action confirmation.
+- [x] Persist image/video generation jobs locally with running, succeeded, and failed states and expose recent jobs in Media Library.
 
 
 ## Online Learning Media and Website Study

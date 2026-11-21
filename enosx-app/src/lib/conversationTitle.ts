@@ -15,7 +15,7 @@ export function generateConversationTitle(firstMessage: string): string {
   if (!title) return "New Chat";
 
   title = title
-    .replace(/^(?:hey|hi|hello)\s+(?:enosx(?:\s+ai)?|assistant)[,\s:!-]*/i, "")
+    .replace(/^(?:hey|hi|hello)\s+(?:enosx(?:\s+ai)?|agent)[,\s:!-]*/i, "")
     .replace(/^(?:please\s+)?(?:can|could|would)\s+you\s+(?:please\s+)?/i, "")
     .replace(/^(?:please\s+)?(?:i want to|i need to|i would like to|i'd like to|help me to|help me)\s+/i, "")
     .replace(/^(?:how do i|how can i|how should i)\s+/i, "")

@@ -4,7 +4,7 @@ Maintained by **Enosx Tech**. This guide covers local setup and verification for
 
 ## Requirements
 
-- Node.js 22 or later
+- Node.js 24 or later
 - pnpm 9
 
 ## Local setup

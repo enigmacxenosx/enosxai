@@ -37,7 +37,7 @@
     ],
     "publisher": "Enosx Technologies",
     "copyright": "Copyright \u00a9 2026 Enosx Technologies",
-    "shortDescription": "ENOSX AI desktop assistant",
+    "shortDescription": "ENOSX AI desktop agent",
     "homepage": "https://github.com/enigmacxenosx/enosxai",
     "windows": {
       "nsis": {

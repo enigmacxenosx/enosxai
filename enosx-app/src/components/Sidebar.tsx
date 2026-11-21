@@ -27,6 +27,7 @@ import {
   Search,
   Library,
   FolderKanban,
+  BarChart3,
   Settings,
   Puzzle,
 } from "lucide-react";
@@ -133,6 +134,14 @@ export default function Sidebar({
       description: "Your project workspace",
       icon: FolderKanban,
       onClick: () => { window.location.href = "/projects"; },
+      accent: false,
+      danger: false,
+    },
+    {
+      label: "Visual Story Studio",
+      description: "Turn data into an animated narrative",
+      icon: BarChart3,
+      onClick: () => { window.location.href = "/visual-story"; },
       accent: false,
       danger: false,
     },

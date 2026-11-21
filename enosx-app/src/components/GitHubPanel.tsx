@@ -45,6 +45,7 @@ export default function GitHubPanel({ isOpen, onClose }: GitHubPanelProps) {
   const [pathStack, setPathStack] = useState<string[]>([]);
   const [newFilePath, setNewFilePath] = useState('');
   const [showNewFile, setShowNewFile] = useState(false);
+  const [writeMode, setWriteMode] = useState(() => localStorage.getItem("enosx-github-write-mode") === "enabled");
   const editorRef = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
@@ -126,6 +127,7 @@ export default function GitHubPanel({ isOpen, onClose }: GitHubPanelProps) {
   };
 
   const handlePush = async () => {
+    if (!writeMode) { window.alert("GitHub is in read-only mode. Enable write mode in this panel before preparing a commit."); return; }
     if (!commitMessage.trim() || !currentRepo || !currentFile) return;
     const approved = window.confirm(
       `Confirm GitHub commit\n\nRepository: ${currentRepo.fullName}\nBranch: ${currentRepo.branch ?? 'default'}\nFile: ${currentFile.path}\nCommit message: ${commitMessage.trim()}\n\nThe edited file will be committed to this repository. Continue?`,
@@ -138,6 +140,7 @@ export default function GitHubPanel({ isOpen, onClose }: GitHubPanelProps) {
   };
 
   const handleCreateFile = async () => {
+    if (!writeMode) { window.alert("GitHub is in read-only mode. Enable write mode in this panel before creating a file."); return; }
     if (!newFilePath.trim() || !currentRepo) return;
     const approved = window.confirm(
       `Confirm GitHub file creation\n\nRepository: ${currentRepo.fullName}\nBranch: ${currentRepo.branch ?? 'default'}\nNew file: ${newFilePath.trim()}\n\nThis will create and commit an empty file. Continue?`,
@@ -188,7 +191,7 @@ export default function GitHubPanel({ isOpen, onClose }: GitHubPanelProps) {
                     GitHub{view === 'repos' && activeAccount ? ` — ${activeAccount.username}` : ''}{view === 'files' && currentRepo ? ` — ${currentRepo.name}` : ''}{view === 'editor' && currentFile ? ` — ${currentFile.name}` : ''}
                   </div>
                   <div className="text-xs" style={{ color: 'rgba(255,255,255,0.3)' }}>
-                    {view === 'accounts' ? 'Manage accounts' : view === 'repos' ? 'Select repository' : view === 'files' ? 'Browse files' : 'AI-powered editor'}
+                    {view === 'accounts' ? 'Manage accounts' : view === 'repos' ? 'Select repository' : view === 'files' ? 'Browse files' : 'Agent-powered editor'}
                   </div>
                 </div>
               </div>
@@ -207,6 +210,14 @@ export default function GitHubPanel({ isOpen, onClose }: GitHubPanelProps) {
                 </motion.div>
               )}
             </AnimatePresence>
+
+            {currentRepo && (
+              <div className="mx-4 mt-3 rounded-xl border px-3 py-2 text-[11px]" style={{ borderColor: `rgba(${accentRgb},0.22)`, background: `rgba(${accentRgb},0.06)` }}>
+                <div className="flex items-center justify-between gap-3"><span className="font-bold uppercase tracking-wider" style={{ color: accentColor }}>Active scope</span><span className="font-mono text-white/70">{currentRepo.fullName} · {currentRepo.branch}</span></div>
+                <div className="mt-2 flex items-center justify-between gap-3"><span className="text-white/45">Browsing is read-only by default.</span><button type="button" onClick={() => { const next = !writeMode; setWriteMode(next); localStorage.setItem("enosx-github-write-mode", next ? "enabled" : "disabled"); }} className="rounded-lg border px-2 py-1 font-semibold" style={{ borderColor: writeMode ? `rgba(251,191,36,.35)` : `rgba(255,255,255,.14)`, color: writeMode ? "#fbbf24" : "rgba(255,255,255,.7)" }}>{writeMode ? "Write mode on" : "Enable write mode"}</button></div>
+                {writeMode && <div className="mt-2 flex items-center gap-1 text-amber-200/75"><Lock size={11} /> Every commit still requires an action-specific confirmation.</div>}
+              </div>
+            )}
 
             {/* Content */}
             <div className="flex-1 overflow-y-auto px-4 py-4 space-y-4">
@@ -418,7 +429,7 @@ export default function GitHubPanel({ isOpen, onClose }: GitHubPanelProps) {
                   {/* AI agent */}
                   <div className="space-y-2 p-3 rounded-xl" style={{ background: `rgba(${accentRgb},0.06)`, border: `1px solid rgba(${accentRgb},0.15)` }}>
                     <div className="flex items-center gap-1.5 text-xs font-semibold" style={{ color: accentColor }}>
-                      <Sparkles size={12} />AI Edit Assistant
+                      <Sparkles size={12} />Agent edit
                     </div>
                     <div className="flex gap-2">
                       <input type="text" value={aiPrompt} onChange={e => setAiPrompt(e.target.value)} onKeyDown={e => e.key === 'Enter' && handleAiEdit()}

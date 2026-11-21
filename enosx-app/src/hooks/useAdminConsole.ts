@@ -1,7 +1,7 @@
 /*
  * ENOSX AI — useAdminConsole
  * Optional admin console stored locally (enosx_admin). Lets the team tune
- * the assistant's behavior by appending extra instructions and verified
+ * the agent's behavior by appending extra instructions and verified
  * company facts without redeploying. Values are additive only: they can never
  * remove the core verified identity, support routing, or accuracy guardrails.
  */

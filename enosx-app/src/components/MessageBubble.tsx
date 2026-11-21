@@ -138,7 +138,7 @@ function StreamingCursor({ color }: { color: string }) {
   );
 }
 
-// Image generation loading state for assistant
+// Image generation loading state for agent
 function ImageGeneratingIndicator({ accent, isVideo = false }: { accent: string; isVideo?: boolean }) {
   return (
     <div className="flex items-center gap-2 py-2 px-3 rounded-xl" style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.06)" }}>
@@ -395,11 +395,11 @@ export default function MessageBubble({
                 </div>
               ) : (
                 <div className="flex flex-col gap-3">
-                  {/* Assistant media attachments */}
+                  {/* Agent media attachments */}
                   {message.attachments && message.attachments.length > 0 && (
                     <MediaAttachmentList attachments={message.attachments} />
                   )}
-                  {/* Assistant content with inline image support */}
+                  {/* Agent content with inline image support */}
                   {renderContentWithMedia(message.content, config.accent, isStreaming)}
                   {message.proposedActions && message.proposedActions.length > 0 && (
                     <div className="flex flex-col gap-2 rounded-xl border border-cyan-300/20 bg-cyan-400/[0.06] p-3">

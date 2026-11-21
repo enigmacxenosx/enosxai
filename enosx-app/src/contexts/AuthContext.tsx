@@ -29,6 +29,7 @@ export interface UserProfile {
   theme?: string;
   wallpaper?: string;
   aiPersonality?: string;
+  useCase?: string;
   language?: string;
   gender?: string;
   notifications?: boolean;
@@ -74,6 +75,7 @@ function userFromFirebase(user: FirebaseUser, saved: Record<string, unknown> | n
     theme: typeof saved?.theme === "string" ? saved.theme : undefined,
     wallpaper: typeof saved?.wallpaper === "string" ? saved.wallpaper : undefined,
     aiPersonality: typeof saved?.aiPersonality === "string" ? saved.aiPersonality : undefined,
+    useCase: typeof saved?.useCase === "string" ? saved.useCase : undefined,
     language: typeof saved?.language === "string" ? saved.language : undefined,
     gender: typeof saved?.gender === "string" ? saved.gender : undefined,
     notifications: typeof saved?.notifications === "boolean" ? saved.notifications : undefined,

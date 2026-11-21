@@ -18,7 +18,7 @@
 - **Use voice:** microphone speech input where the browser supports it, plus spoken responses through configured speech providers.
 - **Continue after a reply:** get three locally selected follow-up prompt suggestions after a completed answer. The suggestions use the current exchange to choose a helpful prompt set without making another model request.
 - **Rate answer quality:** rate completed agent replies from one to five stars using **“How was this result?”**. Ratings are saved locally and submitted to the feedback endpoint when delivery is configured; conversation text is not included.
-- **Branch a conversation:** start a separate chat from a completed assistant reply. The new chat copies the conversation only through that reply, preserves the original, and records which conversation/message it branched from.
+- **Branch a conversation:** start a separate chat from a completed agent reply. The new chat copies the conversation only through that reply, preserves the original, and records which conversation/message it branched from.
 - **Keep useful context:** use conversation history, a knowledge bank, and long-term memory. Guest data stays on the device; signed-in users can sync supported profile, chat, and memory data through Firebase.
 - **Connect services:** the chat interface includes GitHub, Shopify, Vercel, and Email connector options. A connector's actual operations require its server-side integration and credentials to be configured; selecting a connector is scoped to that request.
 - **Work with developer tools:** use code review and the developer/GOD MODE lab tools for coding and authorized learning workflows.
@@ -54,7 +54,7 @@ The project is a pnpm monorepo built around React, Vite, and TypeScript. It incl
 
 ### Prerequisites
 
-- Node.js 22 or later
+- Node.js 24 or later
 - pnpm 9
 - An NVIDIA API key for hosted chat; other features need their corresponding provider configuration
 

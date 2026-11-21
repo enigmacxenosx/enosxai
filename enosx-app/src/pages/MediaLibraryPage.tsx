@@ -5,6 +5,7 @@ import { showError } from "@/lib/errorReporting";
 import { useAuth } from "@/contexts/AuthContext";
 import { useTheme } from "@/contexts/ThemeContext";
 import { GlobalLayout } from "@/components/GlobalLayout";
+import { listMediaJobs, type MediaJob } from "@/lib/mediaJobs";
 
 type MediaAsset = { id: string; name: string; mimeType: string; sizeBytes: number; folderId: string | null; createdAt: string; contentUrl: string };
 type Folder = { id: string; name: string };
@@ -53,6 +54,7 @@ export default function MediaLibraryPage() {
   const [addPlaylistId, setAddPlaylistId] = useState("");
   const [isLoading, setIsLoading] = useState(true);
   const [isUploading, setIsUploading] = useState(false);
+  const [jobs, setJobs] = useState<MediaJob[]>(() => listMediaJobs());
   const inputRef = useRef<HTMLInputElement>(null);
   const userId = user?.id || "";
 
@@ -77,6 +79,12 @@ export default function MediaLibraryPage() {
   useEffect(() => {
     if (!authLoading && !user) continueAsGuest();
   }, [authLoading, continueAsGuest, user]);
+
+  useEffect(() => {
+    const refreshJobs = () => setJobs(listMediaJobs());
+    window.addEventListener("enosx:media-jobs-updated", refreshJobs);
+    return () => window.removeEventListener("enosx:media-jobs-updated", refreshJobs);
+  }, []);
 
   useEffect(() => { void loadLibrary(); }, [loadLibrary]);
 
@@ -159,6 +167,11 @@ export default function MediaLibraryPage() {
           <div><div className="mb-2 flex items-center gap-2 text-xs font-bold uppercase tracking-[0.22em] text-cyan-300"><HardDrive size={15} /> ENOSX Storage</div><h1 className="text-3xl font-bold tracking-tight">Media Library</h1><p className="mt-1 text-sm text-white/50">Your files, folders, playlists, and playable media in one place.</p></div>
           <label className="flex cursor-pointer items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-bold transition hover:brightness-110" style={{ background: config.accent, color: "#05070c" }}><Upload size={17} />{isUploading ? "Uploading…" : "Upload files"}<input ref={inputRef} type="file" multiple className="sr-only" onChange={(event) => void uploadFiles(Array.from(event.target.files || []))} /></label>
         </header>
+
+        {jobs.length > 0 && <section className="mb-5 rounded-2xl border border-violet-300/15 bg-violet-300/[0.04] p-4">
+          <div className="mb-3 flex items-center justify-between gap-3"><div><p className="text-[10px] font-bold uppercase tracking-[0.18em] text-violet-200/70">Generation activity</p><h2 className="mt-1 text-lg font-semibold text-white">Recent media jobs</h2></div><span className="text-xs text-white/35">Saved on this device</span></div>
+          <div className="grid gap-2 md:grid-cols-2">{jobs.slice(0, 6).map((job) => <article key={job.id} className="rounded-xl border border-white/10 bg-black/15 p-3"><div className="flex items-start gap-3"><div className="mt-0.5 rounded-lg bg-white/10 px-2 py-1 text-[10px] font-bold uppercase text-white/60">{job.kind}</div><div className="min-w-0 flex-1"><p className="truncate text-sm text-white/80" title={job.prompt}>{job.prompt}</p><p className="mt-1 text-[11px] text-white/35">{new Date(job.updatedAt).toLocaleString()} · {job.status}</p>{job.error && <p className="mt-2 text-xs text-red-200/70">{job.error}</p>}{job.assetUrl && <a href={job.assetUrl} target="_blank" rel="noreferrer" className="mt-2 inline-block text-xs font-semibold text-cyan-200 hover:text-cyan-100">Open generated asset →</a>}</div><span className={`text-xs font-semibold ${job.status === "succeeded" ? "text-emerald-300" : job.status === "failed" ? "text-red-300" : "text-amber-200"}`}>{job.status === "running" ? "Working…" : job.status}</span></div></article>)}</div>
+        </section>}
 
         <div className="grid gap-4 lg:grid-cols-[230px_minmax(0,1fr)]">
           <aside className="space-y-4">

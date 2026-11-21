@@ -68,6 +68,7 @@ import { isImageGenerationRequest } from "@/lib/mediaIntent";
 import { recommendModelTierForPrompt } from "@/lib/modelTierPolicy";
 import { hasActiveActionActivity, normalizeActionActivities, upsertActionActivity } from "@/lib/actionActivity";
 import { isGitHubActionsStatusRequest, loadGitHubActionsDiagnostic } from "@/lib/githubActions";
+import { createMediaJob, updateMediaJob } from "@/lib/mediaJobs";
 import { installBrowserExtensionBridge, queueBrowserAction, type SharedBrowserPage } from "@/lib/browserExtension";
 import {
   getNotificationPermission,
@@ -693,6 +694,8 @@ export default function ChatPage() {
       const primaryActivityLabel = shouldGenerateVideo ? "Generate video"
         : shouldGenerateImage ? "Generate image"
           : shouldGenerateZip ? "Create ZIP archive" : "Prepare and write response";
+      const mediaJobId = shouldGenerateVideo || shouldGenerateImage ? nanoid() : null;
+      if (mediaJobId) createMediaJob(shouldGenerateVideo ? "video" : "image", text, mediaJobId);
       const assistantMessage: Message = {
         id: assistantId,
         role: "assistant",
@@ -722,6 +725,7 @@ export default function ChatPage() {
             : c)
         );
         const videoResult = await generateVideo(text, inputImage);
+        if (mediaJobId) updateMediaJob(mediaJobId, videoResult?.url ? { status: "succeeded", assetUrl: videoResult.url } : { status: "failed", error: videoResult?.error || "No video was returned." });
         updateActivity(primaryActivityId, primaryActivityLabel, videoResult?.url ? "succeeded" : "failed", videoResult?.url ? "Video generation completed." : videoResult?.error || "No video was returned.");
         const content = videoResult?.url
           ? `Here's the video I generated for you:\n\n[Generated Video](${videoResult.url})`
@@ -751,6 +755,7 @@ export default function ChatPage() {
 
         // FLUX Kontext accepts a prompt alone or a prompt plus one optional input image.
         const imgResult = await generateImage(text, inputImage);
+        if (mediaJobId) updateMediaJob(mediaJobId, imgResult?.url ? { status: "succeeded", assetUrl: imgResult.url } : { status: "failed", error: imgResult?.error || "No image was returned." });
         updateActivity(primaryActivityId, primaryActivityLabel, imgResult?.url ? "succeeded" : "failed", imgResult?.url ? "Image generation completed." : imgResult?.error || "No image was returned.");
         if (imgResult && imgResult.url) {
           const imageMarkdown = imgResult.revised_prompt
@@ -907,7 +912,7 @@ export default function ChatPage() {
       const companyFacts = identity.companyFacts.map(fact => `- ${fact}`).join('\n');
       const companyFaqs = identity.companyFaqs.map(faq => `- Q: ${faq.question}\n  A: ${faq.answer}`).join('\n');
       const userPersonalization = user
-        ? `### Signed-in user context\n- Name: ${user.displayName || "Not provided"}\n- Email: ${user.email || "Not provided"}\n- Preferred language: ${user.language || "Not specified"}\n- AI personality preference: ${user.aiPersonality || "Not specified"}\n- Theme preference: ${user.theme || "Not specified"}\n\nUse this profile and personalization context to make relevant answers more helpful. Address the user by name naturally when appropriate, respect their language and personality preferences, and use their email only when directly relevant. Do not unnecessarily repeat or expose personal details.`
+        ? `### Signed-in user context\n- Name: ${user.displayName || "Not provided"}\n- Email: ${user.email || "Not provided"}\n- Preferred language: ${user.language || "Not specified"}\n- Primary workflow: ${user.useCase || "Not specified"}\n- AI personality preference: ${user.aiPersonality || "Not specified"}\n- Theme preference: ${user.theme || "Not specified"}\n\nUse this profile and personalization context to make relevant answers more helpful. Address the user by name naturally when appropriate, respect their language and personality preferences, and use their email only when directly relevant. Do not unnecessarily repeat or expose personal details.`
         : "### User context\nThe user is not signed in; do not assume personal profile details.";
       
             const systemPrompt: Message = {

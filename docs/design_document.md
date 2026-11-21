@@ -2,7 +2,7 @@
 
 ## 1. Introduction
 
-This document outlines the proposed enhancements to the Enosx AI project, focusing on improving GitHub editing and connection capabilities, expanding browser interaction, and ensuring consistent AI identity and branding. The goal is to evolve Enosx AI into a more powerful and versatile assistant capable of complex development and web-based tasks.
+This document outlines the proposed enhancements to the Enosx AI project, focusing on improving GitHub editing and connection capabilities, expanding browser interaction, and ensuring consistent AI identity and branding. The goal is to evolve Enosx AI into a more powerful and versatile agent capable of complex development and web-based tasks.
 
 ## 2. AI Identity and Branding
 

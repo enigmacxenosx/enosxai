@@ -32,7 +32,7 @@ export default function AboutPage() {
     {
       icon: Cpu,
       title: "Architecture",
-      description: "Powered by NVIDIA NIM and DALL-E 3 for multi-modal orchestration.",
+      description: "Powered by configurable NVIDIA NIM text, vision, image, and video services.",
       color: "#7000FF",
     },
     {
@@ -202,7 +202,7 @@ export default function AboutPage() {
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {[
-              { title: "Imagine Mode", desc: "Native DALL-E 3 integration for instant artistic generation." },
+              { title: "Imagine Mode", desc: "Server-side NVIDIA image generation for fast visual exploration." },
               { title: "Web Intelligence", desc: "Real-time search and deep-scraping for factual precision." },
               { title: "Document Engine", desc: "Export complex insights to professional PDF or Markdown." },
               { title: "Glass UI v2", desc: "Spacious, unboxed chat interface designed for focus." }

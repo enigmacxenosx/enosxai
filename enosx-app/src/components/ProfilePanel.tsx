@@ -452,7 +452,7 @@ export default function ProfilePanel({ isOpen, onClose, onOpenAdminConsole, onOp
                         </div>
                         <div className="flex-1 text-left">
                           <div className="text-sm font-medium" style={{ color: 'rgba(255,255,255,0.85)' }}>Admin Console</div>
-                          <div className="text-xs" style={{ color: 'rgba(255,255,255,0.35)' }}>Tune assistant behavior (this browser)</div>
+                          <div className="text-xs" style={{ color: 'rgba(255,255,255,0.35)' }}>Tune agent behavior (this browser)</div>
                         </div>
                         <ChevronRight size={14} style={{ color: 'rgba(255,255,255,0.3)' }} />
                       </button>

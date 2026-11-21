@@ -1,6 +1,6 @@
 /*
  * ENOSX AI — AdminConsoleDialog
- * Optional admin console for tuning the assistant without redeploying.
+ * Optional admin console for tuning the agent without redeploying.
  * All changes are additive: verified identity, support routing, and accuracy
  * guardrails can never be removed from the local config. A simple unlock
  * gate prevents casual visitors from editing the settings.
@@ -25,7 +25,7 @@ function Gate() {
       </span>
       <p className="text-sm font-medium text-white mb-1.5">Admin console</p>
       <p className="text-xs text-white/50 leading-relaxed mb-4 max-w-xs mx-auto">
-        This area adjusts how the assistant behaves in this browser. Unlock to make changes.
+        This area adjusts how the agent behaves in this browser. Unlock to make changes.
       </p>
     </div>
   );

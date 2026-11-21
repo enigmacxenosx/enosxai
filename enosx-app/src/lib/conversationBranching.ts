@@ -1,7 +1,7 @@
 import { nanoid } from "nanoid";
 import type { Conversation } from "@/lib/types";
 
-/** Create an independent conversation prefix ending at a completed assistant reply. */
+/** Create an independent conversation prefix ending at a completed agent reply. */
 export function createConversationBranch(
   source: Conversation,
   messageId: string,

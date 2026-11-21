@@ -13,7 +13,7 @@ This directory is the desktop-integration boundary for ENOSX AI. It is intention
 
 ## Implementation Choice
 
-Use **Tauri 2** for the packaged desktop release. It offers a small native shell around the current `enosx-app` Vite frontend, uses explicit Rust-side commands for privileged work, and keeps the assistant’s public web deployment free from OS automation privileges. No desktop command should run directly from model output; the frontend must render each command as an explicit, user-reviewed proposal first.
+Use **Tauri 2** for the packaged desktop release. It offers a small native shell around the current `enosx-app` Vite frontend, uses explicit Rust-side commands for privileged work, and keeps the agent’s public web deployment free from OS automation privileges. No desktop command should run directly from model output; the frontend must render each command as an explicit, user-reviewed proposal first.
 
 ## Downloadable installers
 
@@ -21,7 +21,7 @@ Download published installers from [GitHub Releases](https://github.com/enigmacx
 
 ## Windows toolbar companion
 
-The packaged desktop app adds an **ENOSX AI icon to the Windows notification area** (system tray). A left click brings the app to the front; the context menu provides **Show ENOSX AI**, **Hide to tray**, and **Quit ENOSX AI**. Closing the window hides it to the tray so the assistant remains available without keeping the full window open. The same tray behavior is included in macOS and Linux packages.
+The packaged desktop app adds an **ENOSX AI icon to the Windows notification area** (system tray). A left click brings the app to the front; the context menu provides **Show ENOSX AI**, **Hide to tray**, and **Quit ENOSX AI**. Closing the window hides it to the tray so the agent remains available without keeping the full window open. The same tray behavior is included in macOS and Linux packages.
 
 ## Offline models
 

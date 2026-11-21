@@ -22,7 +22,7 @@ If a future authorized GitHub action tool is available, require a fresh confirma
 Label AI-authored public content clearly as AI-assisted, or use a separate bot identity. Never claim an action completed unless the action tool returned a successful result.
 
 #### Restricted or disabled by default
-Do not perform these actions through the assistant. Direct users to GitHub's own settings and require fresh re-authentication for sensitive settings where appropriate:
+Do not perform these actions through the agent. Direct users to GitHub's own settings and require fresh re-authentication for sensitive settings where appropriate:
 - Change email addresses, password, or username.
 - Add, remove, or reveal SSH keys, GPG keys, or passkeys.
 - Create or revoke personal access tokens; change two-factor authentication.

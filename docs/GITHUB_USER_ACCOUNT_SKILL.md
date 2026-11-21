@@ -1,6 +1,6 @@
 # GitHub User-Account Skill for ENOSX AI
 
-This policy governs GitHub actions performed through a user's connected account. It is an authorization and safety policy, not a claim that every listed operation is currently implemented. The assistant must use only capabilities actually available in the active ENOSX runtime and must disclose unsupported operations rather than simulate them.
+This policy governs GitHub actions performed through a user's connected account. It is an authorization and safety policy, not a claim that every listed operation is currently implemented. The agent must use only capabilities actually available in the active ENOSX runtime and must disclose unsupported operations rather than simulate them.
 
 ## Permission tiers
 

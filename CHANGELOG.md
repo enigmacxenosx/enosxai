@@ -22,7 +22,7 @@
 - Expanded ENOSX AI's system prompt so it knows and accurately reports its capabilities and Enosx Technologies details.
 - Includes the previously unpushed context-window and long-term memory selection improvements.
 - Added a shared safety guard to both chat services: crisis and self-harm messages receive immediate guidance with local emergency contacts, requests sexualizing minors are refused with child-protection pointers, and weapon/explosive synthesis requests are declined with safer alternatives. Education, history, and professional questions on these topics remain answerable.
-- Added domain knowledge modules for finance, law, and medicine plus a fairness and bias section, injected into the assistant's system prompt so answers follow each field's standards and state scope disclaimers.
+- Added domain knowledge modules for finance, law, and medicine plus a fairness and bias section, injected into the agent's system prompt so answers follow each field's standards and state scope disclaimers.
 - Added response feedback: thumbs up/down with an optional improvement note in chat, stored on-device and relayed to ENOSX support through a new rate-limited feedback endpoint.
 - Added a code-review endpoint (`POST /api/code-review`) that reviews diffs with NVIDIA's code model and returns a structured findings report for developer workflows.
 - Made the hosted chat endpoint faster under load: a 10-minute response cache and in-flight request de-duplication for identical prompts, NVIDIA retry with timeout handling, and per-mode token budgets for enosh-mind, ex-pro, and ex-core.
@@ -51,7 +51,7 @@
 ## v0.1.25 — Voice, Monitoring & Release QA
 
 - Added real-time microphone waveform visualization to the composer, sharing the active microphone stream with speech recognition.
-- Added a live monitoring dashboard to the main welcome view with message, conversation, voice, file-context, and assistant-status widgets.
+- Added a live monitoring dashboard to the main welcome view with message, conversation, voice, file-context, and agent-status widgets.
 - Added persisted widget visibility and ordering controls for dashboard customization.
 - Added Playwright UI regression tests to CI and made the desktop release workflow gate release asset publishing on UI tests, type checking, and a production build.
 
@@ -88,7 +88,7 @@
 - Passed visual attachment context consistently through desktop, phone, and TV chat layouts.
 
 ## v0.1.16 — Personalized replies & notifications
-- Added signed-in name, email, language, personality, and theme preferences to the assistant's private per-request context, with guidance to use personal details only when relevant.
+- Added signed-in name, email, language, personality, and theme preferences to the agent's private per-request context, with guidance to use personal details only when relevant.
 - Completed agent replies now generate a reply-specific system notification using the response text.
 - Improved the synthesized EX notification chime so it resumes suspended browser audio contexts before playing.
 

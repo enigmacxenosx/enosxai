@@ -31,7 +31,7 @@ The interface keeps ENOSX AI's layered glass identity but makes it more restrain
 
 ## 4. AI Personality and Modes
 
-ENOSX AI offers a highly customizable personality system, allowing users to tailor the assistant's tone and approach to their specific needs.
+ENOSX AI offers a highly customizable personality system, allowing users to tailor the agent's tone and approach to their specific needs.
 
 ### 4.1. Core Personality Modes
 Users can select from four distinct personality presets within the Profile Panel:

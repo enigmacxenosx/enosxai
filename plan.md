@@ -68,7 +68,7 @@ When the user selects GitHub for a chat and asks about CI/build/workflow status,
 ## Project structure
 - `enosx-app/src/lib/githubActions.ts`: detect CI-status requests, validate the selected repository, query public GitHub read-only APIs without credentials, and return bounded structured evidence plus phase updates.
 - `enosx-app/src/pages/ChatPage.tsx`: invoke the diagnostic only for a GitHub-selected CI request, display progress, and include its evidence in the request-specific system context.
-- `enosx-app/src/components/MessageBubble.tsx` and `enosx-app/src/lib/types.ts`: persist and render the accessible four-phase diagnostic run log on the assistant reply.
+- `enosx-app/src/components/MessageBubble.tsx` and `enosx-app/src/lib/types.ts`: persist and render the accessible four-phase diagnostic run log on the agent reply.
 - `enosx-app/src/lib/githubActions.test.ts`: cover commit resolution, exact run matching, failed-job/step capture, metadata verification, and access/error boundaries.
 ## Safety and behavior
 - Never query GitHub unless GitHub is selected for the current message; require a repository selected in the GitHub workspace and access only its public data.

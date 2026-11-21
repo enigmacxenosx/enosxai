@@ -76,7 +76,7 @@ def sidebar_image():
     draw.rectangle((12, 168, width - 12, 169), fill=(20, 190, 255, 170))
     labels = [
         ("ENOSX AI", FONT_BOLD, 13, 184, WHITE),
-        ("DESKTOP ASSISTANT", FONT_REGULAR, 8, 204, CYAN),
+        ("DESKTOP AGENT", FONT_REGULAR, 8, 204, CYAN),
         ("from Enosx Technologies", FONT_REGULAR, 9, 228, MUTED),
     ]
     for text, face, size, y, color in labels:

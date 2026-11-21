@@ -28,7 +28,10 @@ test("agent replies offer follow-ups, star ratings, and independent conversation
 
   await page.goto("/");
   await expect(page.getByText("Keep the previous release ready for rollback.")).toBeVisible({ timeout: 30_000 });
-  await expect(page.getByLabel("Suggested next prompts")).toBeVisible();
+  const suggestions = page.getByLabel("Suggested next prompts");
+  await expect(suggestions).toBeVisible();
+  await expect(suggestions.getByRole("button")).toHaveCount(3);
+  await expect.poll(() => suggestions.evaluate((element) => getComputedStyle(element).flexDirection)).toBe("column");
   await expect(page.getByRole("button", { name: "What would be a useful next step?" })).toBeVisible();
 
   await page.getByRole("group", { name: "Rate this response from 1 to 5 stars" }).last().getByRole("button", { name: "4 stars" }).click();

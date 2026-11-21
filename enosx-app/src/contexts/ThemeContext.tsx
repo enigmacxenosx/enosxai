@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, useState } from "react";
+import React, { createContext, useContext, useEffect, useRef, useState } from "react";
 
 export type Theme = "dark" | "light" | "neon" | "cyberpunk" | "minimal" | "manus";
 
@@ -115,6 +115,7 @@ export function ThemeProvider({
   children: React.ReactNode;
   defaultTheme?: Theme;
 }) {
+  const transitionTimer = useRef<number | undefined>(undefined);
   const [theme, setThemeState] = useState<Theme>(() => {
     try {
       const stored = localStorage.getItem("enosx-theme") as Theme | null;
@@ -127,6 +128,20 @@ export function ThemeProvider({
   const config = THEMES[theme];
 
   const setTheme = (t: Theme) => {
+    if (t !== theme && typeof document !== "undefined") {
+      const root = document.documentElement;
+      const reduceMotion = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
+      if (!reduceMotion) {
+        root.classList.add("theme-transitioning");
+        // Commit the transition rule before React applies the new theme colors.
+        void root.offsetWidth;
+        window.clearTimeout(transitionTimer.current);
+        transitionTimer.current = window.setTimeout(() => {
+          root.classList.remove("theme-transitioning");
+          transitionTimer.current = undefined;
+        }, 360);
+      }
+    }
     setThemeState(t);
     try { localStorage.setItem("enosx-theme", t); } catch {}
   };
@@ -163,6 +178,11 @@ export function ThemeProvider({
     body.style.backgroundColor = config.bg;
     body.style.color = config.text;
   }, [theme, config]);
+
+  useEffect(() => () => {
+    window.clearTimeout(transitionTimer.current);
+    document.documentElement.classList.remove("theme-transitioning");
+  }, []);
 
   return (
     <ThemeContext.Provider value={{ theme, config, setTheme, toggleTheme, switchable: true }}>

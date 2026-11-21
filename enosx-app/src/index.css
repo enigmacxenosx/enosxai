@@ -2078,7 +2078,28 @@ body.light .enosx-composer {
 .light ::-webkit-scrollbar-thumb:hover {
   background: rgba(220, 20, 60, 0.48);
 }
+/* Animate theme colors only during an explicit switch; preserve menu/control motion. */
+@media (prefers-reduced-motion: no-preference) {
+  html.theme-transitioning,
+  html.theme-transitioning body,
+  html.theme-transitioning body *,
+  html.theme-transitioning body *::before,
+  html.theme-transitioning body *::after {
+    transition-property: color, background-color, border-color, outline-color, box-shadow, fill, stroke !important;
+    transition-duration: 280ms !important;
+    transition-timing-function: cubic-bezier(0.22, 1, 0.36, 1) !important;
+  }
+}
 @media (prefers-reduced-motion: reduce) {
+  html.theme-transitioning,
+  html.theme-transitioning body,
+  html.theme-transitioning body *,
+  html.theme-transitioning body *::before,
+  html.theme-transitioning body *::after {
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+  }
   .neon-dashboard-stage,
   .neon-dashboard-nav {
     transition: none !important;

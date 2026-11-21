@@ -8,7 +8,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import { Volume2, VolumeX, RotateCcw, ExternalLink, FileSearch, ListTree, ShieldCheck, Film, GitBranch, Star, CheckCircle2, CircleAlert, Clock3, Loader2, XCircle } from "lucide-react";
+import { Volume2, VolumeX, RotateCcw, ExternalLink, FileSearch, ListTree, ShieldCheck, Film, GitBranch, Star, CheckCircle2, CircleAlert, Clock3, Loader2, XCircle, CornerDownRight, Sparkles } from "lucide-react";
 import { Streamdown } from "streamdown";
 import { Message, type ActionActivityStatus } from "@/lib/types";
 import { getMessageFeedback, submitMessageFeedback, type MessageFeedbackRating } from "@/lib/feedback";
@@ -522,6 +522,32 @@ export default function MessageBubble({
 
         {!isUser && !isStreaming && message.content.trim() && (
           <div className="mt-2 flex w-full flex-col gap-2">
+            {followUpPrompts && followUpPrompts.length > 0 && onFollowUp && (
+              <div
+                className="mt-1 flex w-full flex-col gap-1 border-t pt-2"
+                style={{ borderColor: `rgba(${config.accentRgb}, 0.16)` }}
+                aria-label="Suggested next prompts"
+              >
+                <div className="flex items-center gap-1.5 px-1 pb-0.5">
+                  <Sparkles size={12} style={{ color: config.accent }} aria-hidden="true" />
+                  <span className="text-[10px] font-semibold uppercase tracking-[0.12em]" style={{ color: config.textMuted }}>
+                    Suggested next steps
+                  </span>
+                </div>
+                {followUpPrompts.map((suggestion) => (
+                  <button
+                    key={suggestion.id}
+                    type="button"
+                    onClick={() => onFollowUp(suggestion.text)}
+                    className="group flex min-h-9 w-full items-center gap-3 rounded-lg border border-transparent px-2 text-left text-[13px] leading-5 transition-all duration-200 hover:translate-x-0.5 hover:border-[rgba(var(--enosx-accent-rgb),0.16)] hover:bg-[rgba(var(--enosx-accent-rgb),0.06)] focus-visible:outline focus-visible:outline-1 focus-visible:outline-offset-1 focus-visible:outline-current"
+                    style={{ color: config.textMuted }}
+                  >
+                    <CornerDownRight size={14} className="shrink-0 transition-transform group-hover:translate-x-0.5" style={{ color: config.accent }} aria-hidden="true" />
+                    <span className="min-w-0">{suggestion.text}</span>
+                  </button>
+                ))}
+              </div>
+            )}
             <div className="flex min-h-7 flex-wrap items-center gap-x-2 gap-y-1 text-[11px]" aria-label="Agent response actions">
               <span style={{ color: config.textMuted }}>How was this result?</span>
               <div className="flex items-center gap-0.5" role="group" aria-label="Rate this response from 1 to 5 stars" onMouseLeave={() => setHoverRating(null)}>
@@ -563,24 +589,6 @@ export default function MessageBubble({
               )}
             </div>
 
-            {followUpPrompts && followUpPrompts.length > 0 && onFollowUp && (
-              <div className="flex flex-col gap-1.5" aria-label="Suggested next prompts">
-                <span className="text-[10px] font-medium uppercase tracking-wide" style={{ color: config.textMuted }}>Continue with</span>
-                <div className="flex flex-wrap gap-1.5">
-                  {followUpPrompts.map((suggestion) => (
-                    <button
-                      key={suggestion.id}
-                      type="button"
-                      onClick={() => onFollowUp(suggestion.text)}
-                      className="rounded-full border px-2.5 py-1.5 text-left text-[11px] leading-4 transition-colors hover:bg-white/[0.06]"
-                      style={{ borderColor: `rgba(${config.accentRgb}, 0.24)`, color: config.text }}
-                    >
-                      {suggestion.text}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            )}
           </div>
         )}
       </div>

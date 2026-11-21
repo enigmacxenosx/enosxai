@@ -18,11 +18,20 @@ DATA_DIR = ROOT / "data"
 MAX_CONCURRENT_REQUESTS = int(os.getenv("MAX_CONCURRENT_REQUESTS", "10"))
 REQUEST_TIMEOUT_SECONDS = float(os.getenv("REQUEST_TIMEOUT_SECONDS", "90"))
 RETRY_ATTEMPTS = int(os.getenv("RETRY_ATTEMPTS", "3"))
-NVIDIA_STANDARD_BASE_URL = os.getenv(
-    "NVIDIA_STANDARD_BASE_URL", "https://integrate.api.nvidia.com/v1"
-).rstrip("/")
-NVIDIA_IMAGE_BASE_URL = os.getenv("NVIDIA_IMAGE_BASE_URL", "https://nvidia.com").rstrip("/")
-OPENROUTER_BASE_URL = os.getenv("OPENROUTER_BASE_URL", "https://openrouter.ai").rstrip("/")
+def _normalized_url(name: str, default: str, aliases: set[str] | None = None) -> str:
+    value = os.getenv(name, "").strip().rstrip("/")
+    if not value or value in (aliases or set()):
+        return default.rstrip("/")
+    return value
+
+
+NVIDIA_STANDARD_BASE_URL = _normalized_url(
+    "NVIDIA_STANDARD_BASE_URL",
+    "https://integrate.api.nvidia.com/v1",
+    {"https://nvidia.com"},
+)
+NVIDIA_IMAGE_BASE_URL = _normalized_url("NVIDIA_IMAGE_BASE_URL", "https://nvidia.com")
+OPENROUTER_BASE_URL = _normalized_url("OPENROUTER_BASE_URL", "https://openrouter.ai")
 
 
 @dataclass(frozen=True)
@@ -117,8 +126,14 @@ KEYS = KeyRotator()
 
 
 def endpoint_chain() -> list[str]:
-    chain = [os.getenv("NVIDIA_API_BASE_URL", NVIDIA_STANDARD_BASE_URL).rstrip("/")]
+    standard = _normalized_url(
+        "NVIDIA_API_BASE_URL",
+        NVIDIA_STANDARD_BASE_URL,
+        {"https://nvidia.com"},
+    )
+    chain = [standard]
     if os.getenv("OPENROUTER_API_KEY", "").strip():
         chain.append(os.getenv("OPENROUTER_API_BASE_URL", OPENROUTER_BASE_URL).rstrip("/"))
-    chain.append(os.getenv("LOCAL_API_BASE_URL", "http://localhost:8000/v1").rstrip("/"))
+    if os.getenv("ENABLE_LOCAL_FALLBACK", "false").strip().lower() == "true":
+        chain.append(os.getenv("LOCAL_API_BASE_URL", "http://localhost:8000/v1").rstrip("/"))
     return list(dict.fromkeys(chain))

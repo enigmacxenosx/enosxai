@@ -2,16 +2,19 @@ from __future__ import annotations
 
 import asyncio
 import base64
+import html
 import json
 import os
 import time
 import uuid
+from urllib.error import HTTPError
 from urllib.request import Request, urlopen
 
 from config import (
     ALL_WORKERS,
     KEYS,
     NVIDIA_IMAGE_BASE_URL,
+    NVIDIA_STANDARD_BASE_URL,
     OUTPUT_DIR,
     REQUEST_TIMEOUT_SECONDS,
     RETRY_ATTEMPTS,
@@ -154,6 +157,8 @@ class Worker:
                 result["data_uri"] = "data:image/png;base64," + encoded
             return result
         except Exception as exc:
+            if isinstance(exc, HTTPError) and exc.code in {403, 404} and not os.getenv("OPENROUTER_API_KEY", "").strip():
+                return await self._image_fallback(task, exc)
             return {
                 "worker": self.name,
                 "model": self.spec.model,
@@ -161,6 +166,61 @@ class Worker:
                 "ok": False,
                 "error": str(exc),
             }
+
+    async def _image_fallback(self, task: str, cause: Exception) -> dict:
+        """Return a usable SVG when the unavailable image tier rejects Flux."""
+        svg = ""
+        prompt = (
+            "Create a standalone SVG illustration for this request. Return SVG markup only, "
+            "with a 1200x800 viewBox, readable typography, strong composition, and no external assets.\n\n"
+            f"Request: {task}"
+        )
+        try:
+            data = await _http_json(
+                NVIDIA_STANDARD_BASE_URL + "/chat/completions",
+                {
+                    "model": "nvidia/nemotron-3.5-super-vl-120b-a12b",
+                    "messages": [{"role": "user", "content": prompt}],
+                    "temperature": 0.2,
+                    "max_tokens": 4096,
+                },
+                {"Authorization": f"Bearer {KEYS.next()}"},
+            )
+            svg = data.get("choices", [{}])[0].get("message", {}).get("content", "")
+            if "<svg" in svg:
+                svg = svg[svg.find("<svg"):]
+                if "</svg>" in svg:
+                    svg = svg[:svg.rfind("</svg>") + len("</svg>")]
+        except Exception:
+            svg = ""
+        if not svg:
+            safe_task = html.escape(task[:500])
+            svg = (
+                '<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="800" viewBox="0 0 1200 800">'
+                '<defs><linearGradient id="bg" x1="0" x2="1" y1="0" y2="1">'
+                '<stop stop-color="#171b3d"/><stop offset="1" stop-color="#6d2047"/></linearGradient></defs>'
+                '<rect width="1200" height="800" fill="url(#bg)"/><circle cx="930" cy="210" r="150" fill="#ff6b8a" opacity=".35"/>'
+                '<circle cx="260" cy="620" r="220" fill="#6be7ff" opacity=".2"/>'
+                '<text x="80" y="150" fill="white" font-family="sans-serif" font-size="48" font-weight="700">ENOSX Visual Fallback</text>'
+                f'<foreignObject x="80" y="240" width="1040" height="360"><div xmlns="http://www.w3.org/1999/xhtml" style="color:white;font:30px sans-serif;line-height:1.35">{safe_task}</div></foreignObject>'
+                '</svg>'
+            )
+        path = OUTPUT_DIR / "images" / f"{self.name}-{uuid.uuid4().hex[:10]}.svg"
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(svg, encoding="utf-8")
+        result = {
+            "worker": self.name,
+            "model": "nvidia/nemotron-3.5-super-vl-120b-a12b",
+            "modality": "image",
+            "ok": True,
+            "fallback": True,
+            "output": "Generated an SVG visual fallback because the configured NVIDIA image tier returned HTTP 403/404.",
+            "image_url": f"/output/images/{path.name}",
+            "source_error": str(cause),
+        }
+        if os.getenv("RETURN_BASE64_MEDIA", "false").lower() == "true":
+            result["data_uri"] = "data:image/svg+xml;base64," + base64.b64encode(svg.encode()).decode()
+        return result
 
 
 class DepartmentRouter:

@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { Cable, Check, Loader2, Search, SlidersHorizontal, X } from "lucide-react";
-import { useTheme } from "@/contexts/ThemeContext";
+import { useDarkMode } from "@/contexts/DarkModeContext";
 import { CONNECTOR_CATALOG, ConnectorKind } from "@/lib/connectorCatalog";
 import ConnectorLogo from "./ConnectorLogo";
 import { useGitHub } from "@/hooks/useGitHub";
@@ -34,7 +34,7 @@ export default function ConnectorPicker({
   onToggleConnector,
   trigger = "default",
 }: ConnectorPickerProps) {
-  const { config } = useTheme();
+  const { config } = useDarkMode();
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
   const [kindFilter, setKindFilter] =
@@ -254,8 +254,6 @@ export default function ConnectorPicker({
               width: "min(420px, calc(100vw - 48px))",
               background: "linear-gradient(145deg, rgba(24,24,34,0.98), rgba(10,10,16,0.98))",
               border: `1px solid rgba(${config.accentRgb}, 0.26)`,
-              backdropFilter: "blur(22px) saturate(140%)",
-              WebkitBackdropFilter: "blur(22px) saturate(140%)",
               boxShadow: `0 22px 60px rgba(0,0,0,0.68), 0 0 0 1px rgba(255,255,255,0.04), 0 0 32px rgba(${config.accentRgb}, 0.12)`,
             }}
           >

@@ -6,7 +6,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { motion } from "framer-motion";
-import { useTheme } from "@/contexts/ThemeContext";
+import { useDarkMode } from "@/contexts/DarkModeContext";
 
 interface AIHeartbeatProps {
   isActive: boolean; // true when AI is speaking or listening
@@ -21,7 +21,7 @@ export default function AIHeartbeat({
   audioContext,
   analyser,
 }: AIHeartbeatProps) {
-  const { config } = useTheme();
+  const { config } = useDarkMode();
   const [frequencies, setFrequencies] = useState<number[]>(Array(BAR_COUNT).fill(0));
   const animationFrameRef = useRef<number | undefined>(undefined);
 

@@ -1,8 +1,7 @@
-/* ===================================================================   ENOSX AI agent — Premium Aero-Glass Design System
+/* ===================================================================   ENOSX AI agent — Dark ENOSX Design System
    Philosophy: Refined graphite surfaces, clear hierarchy, restrained motion
    - Background: #0d0e14 graphite
-   - Glass surfaces: subtle translucency and controlled backdrop blur
-   - Accent: refined indigo with theme-aware alternatives
+   - Accent: crimson on graphite surfaces
    - Borders: soft cool-toned separators and restrained highlights
    - Typography: Manrope display, Plus Jakarta Sans interface and body
    ========================================================================== */
@@ -50,7 +49,7 @@
 }
 
 :root {
-  /* ENOSX Theme Custom Properties (set dynamically by ThemeContext) */
+  /* ENOSX Dark-mode custom properties */
   --enosx-accent: #dc143c;
   --enosx-accent-rgb: 220, 20, 60;
   --enosx-bg: #0a0a0a;
@@ -268,14 +267,6 @@
   }
   @media (min-width: 1024px) {
     .container { padding-left: 2rem; padding-right: 2rem; max-width: 1280px; }
-  }
-
-  /* ── Glassmorphism Panel ── */
-  .glass-panel {
-    background: rgba(255, 255, 255, 0.04);
-    backdrop-filter: blur(20px) saturate(180%);
-    -webkit-backdrop-filter: blur(20px) saturate(180%);
-    border: 1px solid rgba(255, 255, 255, 0.08);
   }
 
   /* ── Shimmer Animation (ENOSX logo) ── */
@@ -1219,12 +1210,12 @@
 .story-deck { max-width: 580px; margin: 24px 0; color: rgba(255,255,255,.58); line-height: 1.7; font-size: 15px; }
 .story-source-line { display: inline-flex; align-items: center; gap: 8px; color: rgba(255,255,255,.42); font-size: 11px; }
 .story-metric-cluster { align-self: end; display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
-.story-metric-card { min-height: 126px; padding: 17px; border: 1px solid rgba(255,255,255,.1); border-radius: 13px; background: linear-gradient(145deg, rgba(255,255,255,.075), rgba(255,255,255,.025)); backdrop-filter: blur(16px); }
+.story-metric-card { min-height: 126px; padding: 17px; border: 1px solid rgba(255,255,255,.1); border-radius: 13px; background: linear-gradient(145deg, rgba(255,255,255,.075), rgba(255,255,255,.025)); }
 .story-metric-card-primary, .story-metric-primary { grid-column: span 2; background: linear-gradient(135deg, rgba(220,20,60,.22), rgba(124,111,247,.12)); border-color: rgba(220,20,60,.34); }
 .story-metric-card strong { display: block; margin-top: 13px; font-size: 34px; letter-spacing: -.06em; }
 .story-metric-card small { display: block; margin-top: 4px; color: rgba(255,255,255,.42); font-size: 11px; }
 .visual-story-workbench { display: grid; grid-template-columns: 250px minmax(0, 1fr); gap: 16px; }
-.story-beat-rail, .story-stage-wrap, .story-data-panel { border: 1px solid rgba(255,255,255,.1); border-radius: 16px; background: rgba(16,16,23,.76); backdrop-filter: blur(18px); }
+.story-beat-rail, .story-stage-wrap, .story-data-panel { border: 1px solid rgba(255,255,255,.1); border-radius: 16px; background: rgba(16,16,23,.76); }
 .story-beat-rail { display: flex; flex-direction: column; min-height: 550px; padding: 17px; }
 .story-rail-heading { display: flex; justify-content: space-between; padding-bottom: 18px; border-bottom: 1px solid rgba(255,255,255,.08); }
 .story-beat-list { flex: 1; padding: 18px 0; }
@@ -1312,7 +1303,7 @@
   --ai-bubble: rgba(23, 25, 38, 0.92);
 }
 
-/* Keep the established theme switcher, while refining the default Manus theme. */
+/* Dark-only application surface refinements. */
 .manus {
   --background: #0d0e14;
   --foreground: #f1f2f8;
@@ -1375,11 +1366,6 @@ code, pre, kbd, samp, .font-mono {
   font-family: var(--font-mono);
 }
 
-.manus .glass-panel {
-  background: linear-gradient(145deg, rgba(255,255,255,0.055), rgba(255,255,255,0.025));
-  border-color: rgba(193, 197, 255, 0.13);
-  box-shadow: 0 18px 48px rgba(0, 0, 0, 0.22), inset 0 1px 0 rgba(255,255,255,0.045);
-}
 .manus ::selection { color: #fff; background: rgba(111, 114, 238, 0.42); }
 .manus ::-webkit-scrollbar-thumb { background: rgba(145, 148, 247, 0.24); }
 .manus ::-webkit-scrollbar-thumb:hover { background: rgba(145, 148, 247, 0.42); }
@@ -1496,8 +1482,6 @@ code, pre, kbd, samp, .font-mono {
 }
 .premium-chat-header {
   background: transparent;
-  backdrop-filter: none;
-  -webkit-backdrop-filter: none;
 }
 .premium-chat-scroll {
   scrollbar-gutter: stable;
@@ -1544,7 +1528,7 @@ code, pre, kbd, samp, .font-mono {
 }
 
 /* Vektor-inspired ENOSX sign-in modal */
-.enosx-signin-scrim { --signin-accent: var(--enosx-accent, #dc143c); --signin-accent-rgb: var(--enosx-accent-rgb, 220, 20, 60); position: fixed; inset: 0; z-index: 100; display: grid; place-items: center; padding: 16px; overflow: auto; background: rgba(3,4,10,.76); backdrop-filter: blur(14px); }
+.enosx-signin-scrim { --signin-accent: var(--enosx-accent, #dc143c); --signin-accent-rgb: var(--enosx-accent-rgb, 220, 20, 60); position: fixed; inset: 0; z-index: 100; display: grid; place-items: center; padding: 16px; overflow: auto; background: rgba(3,4,10,.76); }
 .enosx-signin-modal { position: relative; display: grid; grid-template-columns: minmax(0, 1fr) minmax(360px, 1fr); width: min(880px, 100%); min-height: 540px; overflow: hidden; border: 1px solid rgba(255,255,255,.12); border-radius: 24px; background: linear-gradient(145deg, rgba(24,25,36,.98), rgba(10,11,17,.99)); color: #f3f3fa; box-shadow: 0 28px 100px rgba(0,0,0,.62), 0 0 42px rgba(var(--signin-accent-rgb),.12); }
 .enosx-signin-story { display: flex; flex-direction: column; justify-content: space-between; gap: 28px; padding: 30px 18px 28px 20px; border-right: 1px solid rgba(255,255,255,.07); background: radial-gradient(circle at 5% 5%, rgba(var(--signin-accent-rgb),.16), transparent 38%), linear-gradient(155deg, rgba(26,28,41,.96), rgba(13,14,22,.96)); }
 .enosx-signin-workflows { display: flex; flex-direction: column; gap: 10px; }
@@ -1579,7 +1563,7 @@ code, pre, kbd, samp, .font-mono {
 @media (prefers-reduced-motion: reduce) { .enosx-signin-progress i.is-active::after { width: 100%; animation: none; } }
 
 /* ============================================================   ENOSX AI message bar — mirrors the supplied EnosxAI reference exactly.
-   Light theme uses the reference light palette, every dark theme the dark one.
+   The composer uses the fixed dark palette.
    The input keeps a fixed 52px height so the bar never grows after a prompt.
    ========================================================================== */
 .enosx-composer {
@@ -2041,7 +2025,7 @@ body.light .enosx-composer {
 }
 
 
-/* Theme-aware app chrome. Component-level dark palettes remain intentionally
+/* Dark app chrome. Component-level dark palettes remain intentionally
    available for media previews and terminal surfaces, while the app shell uses
    these semantic rules in both modes. */
 .neon-dashboard-stage {
@@ -2078,65 +2062,5 @@ body.light .enosx-composer {
 .light ::-webkit-scrollbar-thumb:hover {
   background: rgba(220, 20, 60, 0.48);
 }
-/* Animate theme colors only during an explicit switch; preserve menu/control motion. */
-@media (prefers-reduced-motion: no-preference) {
-  html.theme-transitioning,
-  html.theme-transitioning body,
-  html.theme-transitioning body *,
-  html.theme-transitioning body *::before,
-  html.theme-transitioning body *::after {
-    transition-property: color, background-color, border-color, outline-color, box-shadow, fill, stroke !important;
-    transition-duration: 280ms !important;
-    transition-timing-function: cubic-bezier(0.22, 1, 0.36, 1) !important;
-  }
-}
-@media (prefers-reduced-motion: reduce) {
-  html.theme-transitioning,
-  html.theme-transitioning body,
-  html.theme-transitioning body *,
-  html.theme-transitioning body *::before,
-  html.theme-transitioning body *::after {
-    transition-duration: 0.01ms !important;
-    animation-duration: 0.01ms !important;
-    animation-iteration-count: 1 !important;
-  }
-  .neon-dashboard-stage,
-  .neon-dashboard-nav {
-    transition: none !important;
-  }
-}
 
-/* The main chat shell predates the semantic theme tokens and hard-coded a
-   dark surface and white text. Keep its existing dark styling, but let the
-   selected light theme provide readable surfaces and foregrounds. */
-.light .premium-chat-shell {
-  background: var(--enosx-bg, #f4f6fb);
-  color: var(--enosx-text, #151923);
-}
-.light .premium-chat-shell .text-white {
-  color: var(--enosx-text, #151923) !important;
-}
-.light .premium-chat-shell [class*="text-white/"] {
-  color: var(--enosx-text-muted, rgba(21, 25, 35, 0.58)) !important;
-}
-.light .premium-chat-shell .welcome-suggestion {
-  background: rgba(255, 255, 255, 0.86) !important;
-  border-color: rgba(21, 25, 35, 0.12) !important;
-  color: var(--enosx-text, #151923) !important;
-  box-shadow: 0 4px 16px rgba(28, 35, 56, 0.08);
-}
-.light .premium-chat-shell .welcome-suggestion:hover {
-  background: #ffffff !important;
-  border-color: rgba(220, 20, 60, 0.24) !important;
-}
-.light .premium-composer-dock {
-  background: linear-gradient(
-    180deg,
-    transparent 0%,
-    color-mix(in srgb, var(--enosx-bg, #f4f6fb) 72%, transparent) 35%,
-    color-mix(in srgb, var(--enosx-bg, #f4f6fb) 96%, transparent) 100%
-  );
-}
-.light .premium-chat-shell textarea::placeholder {
-  color: rgba(21, 25, 35, 0.48);
-}
+/* The main chat shell uses the fixed dark palette above. */

@@ -7,7 +7,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { X, Crown, Cpu, BrainCircuit } from "lucide-react";
-import { useTheme } from "@/contexts/ThemeContext";
+import { useDarkMode } from "@/contexts/DarkModeContext";
 
 function buildSimulatedWifiAuditReport(command: string): string {
   const targetMatch = command.match(/--target(?:=|\s+)([^\s]+)/i);
@@ -91,7 +91,7 @@ interface GodModeTerminalProps {
 }
 
 export default function GodModeTerminal({ isOpen, onClose, onOpenQuiz, onOpenCEOProfile, onExecute }: GodModeTerminalProps) {
-  const { config } = useTheme();
+  const { config } = useDarkMode();
   const [history, setHistory] = useState<TerminalLine[]>([
     {
       id: "init",
@@ -214,7 +214,6 @@ export default function GodModeTerminal({ isOpen, onClose, onOpenQuiz, onOpenCEO
             style={{
               background: "rgba(5, 5, 10, 0.92)",
               borderColor: "rgba(0, 242, 255, 0.3)",
-              backdropFilter: "blur(20px)",
               boxShadow: "0 0 40px rgba(0, 242, 255, 0.15), 0 20px 50px rgba(0,0,0,0.8)",
             }}
           >

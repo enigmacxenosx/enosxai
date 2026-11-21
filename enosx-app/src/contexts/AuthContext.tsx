@@ -26,8 +26,6 @@ export interface UserProfile {
   displayName: string;
   avatarUrl?: string;
   provider: "google" | "email" | "github" | "guest";
-  theme?: string;
-  wallpaper?: string;
   aiPersonality?: string;
   useCase?: string;
   language?: string;
@@ -72,8 +70,6 @@ function userFromFirebase(user: FirebaseUser, saved: Record<string, unknown> | n
     displayName: user.displayName || String(saved?.displayName || "User"),
     avatarUrl: user.photoURL || (typeof saved?.avatarUrl === "string" ? saved.avatarUrl : undefined),
     provider: providerFor(user),
-    theme: typeof saved?.theme === "string" ? saved.theme : undefined,
-    wallpaper: typeof saved?.wallpaper === "string" ? saved.wallpaper : undefined,
     aiPersonality: typeof saved?.aiPersonality === "string" ? saved.aiPersonality : undefined,
     useCase: typeof saved?.useCase === "string" ? saved.useCase : undefined,
     language: typeof saved?.language === "string" ? saved.language : undefined,

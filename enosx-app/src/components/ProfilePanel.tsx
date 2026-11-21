@@ -1,14 +1,14 @@
 /**
  * ProfilePanel — Full-featured profile panel.
  * Guest profile editing and preferences.
- * preferences (theme, wallpaper, AI personality, language, privacy).
+ * preferences (AI personality, language, privacy).
  *
  * Features:
  *  - Profile picture selection (upload from device or URL)
  *  - Language selection (functional, persisted)
- *  - Appearance & Theme (live theme switching)
+ *  - Dark appearance
  *  - Privacy & Security settings
- *  - 4 featured wallpapers to choose from
+ *  - Fixed dark appearance
  */
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -19,8 +19,7 @@ import {
   Monitor, Shield, Zap, Layers, Mic, ShieldAlert, Cpu, Cable,
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
-import { useTheme, THEMES, type Theme } from '../contexts/ThemeContext';
-import { useWallpaper, WALLPAPER_PRESETS } from '../contexts/WallpaperContext';
+import { useDarkMode } from '../contexts/DarkModeContext';
 import VoiceSettingsPanel from './VoiceSettingsPanel';
 import { useVoice } from '../hooks/useVoice';
 import LocalModelsPanel from './LocalModelsPanel';
@@ -28,7 +27,7 @@ import ConnectorsSettingsPanel from './ConnectorsSettingsPanel';
 import { ENOSX_LANGUAGES } from '../lib/languageDictionary';
 import EnosxSignInModal from './EnosxSignInModal';
 
-type View = 'profile' | 'preferences' | 'appearance' | 'privacy' | 'voice' | 'models' | 'connectors';
+type View = 'profile' | 'preferences' | 'privacy' | 'voice' | 'models' | 'connectors';
 
 interface ProfilePanelProps {
   isOpen: boolean;
@@ -42,38 +41,10 @@ interface ProfilePanelProps {
 
 const LANGUAGES = ENOSX_LANGUAGES;
 
-// 4 featured wallpapers for quick selection
-const FEATURED_WALLPAPERS = [
-  {
-    id: 'lavender',
-    label: 'Lavender Field',
-    url: '/lavender-field-optimized.webp',
-    thumbnail: '/lavender-field-optimized.webp',
-  },
-  {
-    id: 'enosx-neon-city',
-    label: 'Neon City',
-    url: '/wallpapers/enosx-neon-city.png',
-    thumbnail: '/wallpapers/enosx-neon-city.png',
-  },
-  {
-    id: 'enosx-galaxy-tech',
-    label: 'Galaxy Tech',
-    url: '/wallpapers/enosx-galaxy-tech.png',
-    thumbnail: '/wallpapers/enosx-galaxy-tech.png',
-  },
-  {
-    id: 'enosx-ex-circuits',
-    label: 'EX Circuits',
-    url: '/wallpapers/enosx-ex-circuits.png',
-    thumbnail: '/wallpapers/enosx-ex-circuits.png',
-  },
-];
 
 export default function ProfilePanel({ isOpen, onClose, onOpenAdminConsole, onOpenLeadCapture, onEnableNotifications, notificationPermission = "default" }: ProfilePanelProps) {
   const { settings: speechSettings, updateSettings: updateSpeechSettings } = useVoice();
-  const { config, theme, setTheme } = useTheme();
-  const { settings, setPreset: setActivePreset, setBlurAmount } = useWallpaper();
+  const { config } = useDarkMode();
   const { user, isLoading, error, isAuthenticated, continueAsGuest, signOut, updateProfile } = useAuth();
 
   const [view, setView] = useState<View>('profile');
@@ -173,7 +144,7 @@ export default function ProfilePanel({ isOpen, onClose, onOpenAdminConsole, onOp
           <motion.div
             initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
             onClick={onClose} className="fixed inset-0 z-40"
-            style={{ background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(3px)' }}
+            style={{ background: 'rgba(0,0,0,0.5)',}}
           />
           <motion.div
             initial={{ opacity: 0, scale: 0.86, y: 28, rotateX: 8 }} animate={{ opacity: 1, scale: 1, y: 0, rotateX: 0 }} exit={{ opacity: 0, scale: 0.9, y: 24, rotateX: -5 }}
@@ -188,9 +159,7 @@ export default function ProfilePanel({ isOpen, onClose, onOpenAdminConsole, onOp
               className="auth-modal-frame flex h-[min(900px,calc(100vh-2rem))] w-full max-w-[520px] flex-col overflow-hidden rounded-[32px]"
               style={{
                 pointerEvents: 'auto',
-                background: `rgba(8,8,14,${settings.panelOpacity * 0.99})`,
-                backdropFilter: `blur(${settings.blurAmount}px)`,
-                WebkitBackdropFilter: `blur(${settings.blurAmount}px)`,
+                background: '#101116',
                 border: `1px solid rgba(${accentRgb},0.22)`,
                 boxShadow: `0 30px 100px rgba(0,0,0,0.72), 0 0 55px rgba(${accentRgb},0.16)`,
               }}
@@ -203,14 +172,14 @@ export default function ProfilePanel({ isOpen, onClose, onOpenAdminConsole, onOp
             {/* Header */}
             <div className="flex items-center justify-between px-5 py-4 flex-shrink-0" style={{ borderBottom: `1px solid rgba(255,255,255,0.06)` }}>
               <div className="flex items-center gap-3">
-                {(view === 'appearance' || view === 'privacy' || view === 'voice' || view === 'models' || view === 'connectors') && (
+                {(view === 'privacy' || view === 'voice' || view === 'models' || view === 'connectors') && (
                   <button onClick={() => setView('preferences')} className="w-7 h-7 rounded-lg flex items-center justify-center hover:bg-white/10 transition-all" style={{ color: 'rgba(255,255,255,0.5)' }}>
                     <ChevronLeft size={14} />
                   </button>
                 )}
                 <div className="w-8 h-8 rounded-xl flex items-center justify-center" style={{ background: `rgba(${accentRgb},0.15)` }}>
                   {view === 'models' ? <Cpu size={15} style={{ color: accentColor }} />
-                    : view === 'appearance' ? <Palette size={15} style={{ color: accentColor }} />
+
                     : view === 'privacy' ? <Shield size={15} style={{ color: accentColor }} />
                     : view === 'voice' ? <Mic size={15} style={{ color: accentColor }} />
                     : view === 'connectors' ? <Cable size={15} style={{ color: accentColor }} />
@@ -219,7 +188,7 @@ export default function ProfilePanel({ isOpen, onClose, onOpenAdminConsole, onOp
                 <div>
                   <div className="text-sm font-bold" style={{ color: 'rgba(255,255,255,0.9)' }}>
                     {view === 'models' ? 'Offline models'
-                      : view === 'appearance' ? 'Appearance & Theme'
+
                       : view === 'privacy' ? 'Privacy & Security'
                       : view === 'voice' ? 'Voice Agent'
                       : view === 'connectors' ? 'Manage connectors'
@@ -227,7 +196,7 @@ export default function ProfilePanel({ isOpen, onClose, onOpenAdminConsole, onOp
                   </div>
                   <div className="text-xs" style={{ color: 'rgba(255,255,255,0.3)' }}>
                     {view === 'models' ? 'Private chat on this device'
-                      : view === 'appearance' ? 'Colors, fonts, and wallpaper'
+
                       : view === 'privacy' ? 'Data and account security'
                       : view === 'voice' ? 'Speech, speed, and hands-free mode'
                       : view === 'connectors' ? 'Accounts and connection status'
@@ -236,7 +205,7 @@ export default function ProfilePanel({ isOpen, onClose, onOpenAdminConsole, onOp
                 </div>
               </div>
               <div className="flex items-center gap-1">
-                {isAuthenticated && view !== 'appearance' && view !== 'privacy' && (
+                {isAuthenticated && view !== 'privacy' && (
                   <>
                     <button onClick={() => setView('profile')}
                       className="w-8 h-8 rounded-lg flex items-center justify-center transition-all"
@@ -376,18 +345,6 @@ export default function ProfilePanel({ isOpen, onClose, onOpenAdminConsole, onOp
                       </div>
                       <ChevronRight size={14} style={{ color: 'rgba(255,255,255,0.3)' }} />
                     </button>
-                    <button onClick={() => setView('appearance')}
-                      className="w-full flex items-center gap-3 px-3 py-3 rounded-xl cursor-pointer transition-all hover:bg-white/10"
-                      style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.07)' }}>
-                      <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: `rgba(${accentRgb},0.1)` }}>
-                        <Palette size={14} style={{ color: accentColor }} />
-                      </div>
-                      <div className="flex-1 text-left">
-                        <div className="text-sm font-medium" style={{ color: 'rgba(255,255,255,0.85)' }}>Appearance & Theme</div>
-                        <div className="text-xs" style={{ color: 'rgba(255,255,255,0.35)' }}>Colors, fonts, and wallpaper</div>
-                      </div>
-                      <ChevronRight size={14} style={{ color: 'rgba(255,255,255,0.3)' }} />
-                    </button>
 
                     <button onClick={() => setView('privacy')}
                       className="w-full flex items-center gap-3 px-3 py-3 rounded-xl cursor-pointer transition-all hover:bg-white/10"
@@ -478,88 +435,6 @@ export default function ProfilePanel({ isOpen, onClose, onOpenAdminConsole, onOp
                   </p>
                 </div>
               )}
-
-              {/* ── APPEARANCE VIEW ── */}
-              {view === 'appearance' && (
-                <div className="px-5 py-5 space-y-6">
-
-                  {/* Theme selector */}
-                  <div>
-                    <label style={labelStyle}>THEME</label>
-                    <div className="grid grid-cols-2 gap-2">
-                      {(Object.values(THEMES) as typeof THEMES[Theme][]).map((t) => (
-                        <button key={t.name} onClick={() => setTheme(t.name)}
-                          className="p-3 rounded-xl text-left transition-all"
-                          style={{ background: theme === t.name ? `rgba(${t.accentRgb},0.18)` : 'rgba(255,255,255,0.04)', border: theme === t.name ? `1px solid rgba(${t.accentRgb},0.5)` : '1px solid rgba(255,255,255,0.07)', boxShadow: theme === t.name ? `0 0 12px rgba(${t.accentRgb},0.2)` : 'none' }}>
-                          <div className="flex items-center gap-2 mb-1">
-                            <div className="w-4 h-4 rounded-full flex-shrink-0" style={{ background: t.accent, boxShadow: `0 0 6px ${t.accent}` }} />
-                            <span className="text-xs font-bold" style={{ color: theme === t.name ? t.accent : 'rgba(255,255,255,0.7)' }}>{t.label}</span>
-                            {theme === t.name && <Check size={10} style={{ color: t.accent, marginLeft: 'auto' }} />}
-                          </div>
-                          <div className="w-full h-1.5 rounded-full" style={{ background: t.bg, border: `1px solid rgba(${t.accentRgb},0.3)` }} />
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* Blur intensity control */}
-                  <div>
-                    <div className="flex items-center justify-between mb-2">
-                      <label style={labelStyle} className="mb-0">BLUR INTENSITY</label>
-                      <span className="text-[10px] font-bold" style={{ color: accentColor }}>{settings.blurAmount}px</span>
-                    </div>
-                    <input
-                      type="range"
-                      min="0"
-                      max="40"
-                      value={settings.blurAmount}
-                      onChange={(e) => setBlurAmount(parseInt(e.target.value))}
-                      className="w-full h-1.5 bg-white/10 rounded-lg appearance-none cursor-pointer accent-red-600 mb-2"
-                      style={{ accentColor: accentColor }}
-                    />
-                    <div className="flex justify-between text-[8px] opacity-40 uppercase font-bold tracking-widest">
-                      <span>Clear</span>
-                      <span>Frosted</span>
-                    </div>
-                  </div>
-
-                  {/* Wallpaper selector — 4 featured */}
-                  <div>
-                    <label style={labelStyle}>WALLPAPER</label>
-                    <div className="grid grid-cols-2 gap-2">
-                      {FEATURED_WALLPAPERS.map((wp) => {
-                        const isActive = settings.activePresetId === wp.id;
-                        return (
-                          <button key={wp.id} onClick={() => setActivePreset(wp.id)}
-                            className="relative rounded-xl overflow-hidden transition-all"
-                            style={{ aspectRatio: '16/9', border: isActive ? `2px solid rgba(${accentRgb},0.7)` : '2px solid rgba(255,255,255,0.08)', boxShadow: isActive ? `0 0 14px rgba(${accentRgb},0.4)` : 'none' }}>
-                            <img src={wp.thumbnail} alt={wp.label} className="w-full h-full object-cover" />
-                            <div className="absolute inset-0 flex flex-col justify-end p-1.5" style={{ background: 'linear-gradient(to top, rgba(0,0,0,0.7) 0%, transparent 60%)' }}>
-                              <span className="text-[10px] font-semibold text-white">{wp.label}</span>
-                            </div>
-                            {isActive && (
-                              <div className="absolute top-1.5 right-1.5 w-5 h-5 rounded-full flex items-center justify-center" style={{ background: `rgba(${accentRgb},0.9)` }}>
-                                <Check size={10} color="#fff" />
-                              </div>
-                            )}
-                          </button>
-                        );
-                      })}
-                    </div>
-                    <button
-                      onClick={() => setActivePreset('none')}
-                      className="mt-2 w-full py-2 rounded-xl text-xs font-medium transition-all"
-                      style={{ background: settings.activePresetId === 'none' ? `rgba(${accentRgb},0.12)` : 'rgba(255,255,255,0.04)', border: settings.activePresetId === 'none' ? `1px solid rgba(${accentRgb},0.3)` : '1px solid rgba(255,255,255,0.07)', color: settings.activePresetId === 'none' ? accentColor : 'rgba(255,255,255,0.5)' }}>
-                      No Wallpaper
-                    </button>
-                  </div>
-
-                  <div className="text-xs text-center" style={{ color: 'rgba(255,255,255,0.25)' }}>
-                    Theme and wallpaper changes apply instantly and are saved automatically.
-                  </div>
-                </div>
-              )}
-
               {/* ── PRIVACY VIEW ── */}
               {view === 'privacy' && (
                 <div className="px-5 py-5 space-y-5">

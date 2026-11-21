@@ -3,7 +3,7 @@ import { FolderPlus, HardDrive, ListMusic, Music2, Play, Search, Trash2, Upload,
 import { toast } from "sonner";
 import { showError } from "@/lib/errorReporting";
 import { useAuth } from "@/contexts/AuthContext";
-import { useTheme } from "@/contexts/ThemeContext";
+import { useDarkMode } from "@/contexts/DarkModeContext";
 import { GlobalLayout } from "@/components/GlobalLayout";
 import { listMediaJobs, type MediaJob } from "@/lib/mediaJobs";
 
@@ -42,7 +42,7 @@ function readAsDataUrl(file: File) {
 
 export default function MediaLibraryPage() {
   const { user, isLoading: authLoading, continueAsGuest } = useAuth();
-  const { config } = useTheme();
+  const { config } = useDarkMode();
   const [assets, setAssets] = useState<MediaAsset[]>([]);
   const [folders, setFolders] = useState<Folder[]>([]);
   const [playlists, setPlaylists] = useState<Playlist[]>([]);

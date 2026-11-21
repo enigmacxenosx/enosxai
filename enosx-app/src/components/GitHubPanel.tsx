@@ -13,8 +13,7 @@ import {
   ChevronLeft,
 } from 'lucide-react';
 import { useGitHub, GitHubRepo, GitHubFile } from '../hooks/useGitHub';
-import { useTheme } from '../contexts/ThemeContext';
-import { useWallpaper } from '../contexts/WallpaperContext';
+import { useDarkMode } from '../contexts/DarkModeContext';
 
 interface GitHubPanelProps {
   isOpen: boolean;
@@ -24,8 +23,7 @@ interface GitHubPanelProps {
 type PanelView = 'accounts' | 'repos' | 'files' | 'editor';
 
 export default function GitHubPanel({ isOpen, onClose }: GitHubPanelProps) {
-  const { config } = useTheme();
-  const { settings } = useWallpaper();
+  const { config } = useDarkMode();
   const {
     accounts, activeAccount, repos, currentRepo, branches,
     files, currentFile, isLoading, error,
@@ -160,7 +158,7 @@ export default function GitHubPanel({ isOpen, onClose }: GitHubPanelProps) {
           <motion.div
             initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
             onClick={onClose} className="fixed inset-0 z-40"
-            style={{ background: 'rgba(0,0,0,0.45)', backdropFilter: 'blur(2px)' }}
+            style={{ background: 'rgba(0,0,0,0.45)',}}
           />
           <motion.div
             initial={{ x: 420, opacity: 0 }} animate={{ x: 0, opacity: 1 }} exit={{ x: 420, opacity: 0 }}
@@ -168,9 +166,7 @@ export default function GitHubPanel({ isOpen, onClose }: GitHubPanelProps) {
             className="fixed right-0 top-0 h-screen flex flex-col z-50"
             style={{
               width: 400,
-              background: `rgba(10,10,16,${settings.panelOpacity * 0.98})`,
-              backdropFilter: `blur(${settings.blurAmount}px)`,
-              WebkitBackdropFilter: `blur(${settings.blurAmount}px)`,
+              background: '#101116',
               borderLeft: `1px solid rgba(${accentRgb},0.15)`,
               boxShadow: `-12px 0 50px rgba(0,0,0,0.6)`,
             }}

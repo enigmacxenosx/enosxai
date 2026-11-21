@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import "@testing-library/jest-dom/vitest";
 import { cleanup, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { ThemeProvider } from "@/contexts/ThemeContext";
+import { DarkModeProvider } from "@/contexts/DarkModeContext";
 import PluginsDialog from "./PluginsDialog";
 
 vi.mock("@/hooks/useGitHub", () => ({
@@ -15,9 +15,9 @@ vi.mock("@/hooks/useGitHub", () => ({
 
 function renderCatalog() {
   return render(
-    <ThemeProvider>
+    <DarkModeProvider>
       <PluginsDialog open onClose={vi.fn()} />
-    </ThemeProvider>,
+    </DarkModeProvider>,
   );
 }
 

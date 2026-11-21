@@ -19,21 +19,6 @@ export default defineConfig({
   },
   projects: [
     { name: "chromium", use: { browserName: "chromium" } },
-    {
-      name: "firefox-theme",
-      testMatch: "**/theme-switching.spec.ts",
-      use: { browserName: "firefox" },
-    },
-    {
-      name: "webkit-theme",
-      testMatch: "**/theme-switching.spec.ts",
-      use: { browserName: "webkit" },
-    },
-    {
-      name: "iphone-theme",
-      testMatch: "**/theme-switching.spec.ts",
-      use: { ...devices["iPhone 13"] },
-    },
   ],
   webServer: {
     command: "pnpm dev --host 127.0.0.1 --port 4173",

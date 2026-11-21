@@ -15,7 +15,7 @@
  */
 import { motion, AnimatePresence } from "framer-motion";
 import { Bug, BookOpen, Terminal, Palette, Database, FileText } from "lucide-react";
-import { useTheme } from "@/contexts/ThemeContext";
+import { useDarkMode } from "@/contexts/DarkModeContext";
 import { useActiveWindow, type AppType } from "@/contexts/WindowContext";
 
 interface ContextAction {
@@ -98,7 +98,7 @@ interface ContextualActionBarProps {
 }
 
 export default function ContextualActionBar({ onAction }: ContextualActionBarProps) {
-  const { config } = useTheme();
+  const { config } = useDarkMode();
   const { activeWindow } = useActiveWindow();
 
   const action = APP_ACTIONS[activeWindow.appType];
@@ -136,8 +136,6 @@ export default function ContextualActionBar({ onAction }: ContextualActionBarPro
             background: `rgba(${action.colorRgb}, 0.12)`,
             border: `1px solid rgba(${action.colorRgb}, 0.35)`,
             color: action.color,
-            backdropFilter: "blur(12px)",
-            WebkitBackdropFilter: "blur(12px)",
             boxShadow: `0 0 10px rgba(${action.colorRgb}, 0.15)`,
             cursor: "pointer",
           }}

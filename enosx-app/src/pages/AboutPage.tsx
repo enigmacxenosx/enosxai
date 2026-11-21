@@ -38,7 +38,7 @@ export default function AboutPage() {
     {
       icon: Palette,
       title: "Design",
-      description: 'Next-gen glassmorphic UI with unboxed chats and expanded layouts.',
+      description: 'Next-gen dark UI with unboxed chats and expanded layouts.',
       color: "#FF0080",
     },
   ];
@@ -63,8 +63,6 @@ export default function AboutPage() {
               background: "rgba(5, 8, 14, 0.72)",
               borderColor: "rgba(0, 242, 255, 0.22)",
               color: "rgba(255,255,255,0.9)",
-              backdropFilter: "blur(16px)",
-              WebkitBackdropFilter: "blur(16px)",
             }}
           >
             <ArrowLeft size={16} />
@@ -79,8 +77,6 @@ export default function AboutPage() {
               background: "rgba(5, 8, 14, 0.72)",
               borderColor: "rgba(112, 0, 255, 0.24)",
               color: "#00F2FF",
-              backdropFilter: "blur(16px)",
-              WebkitBackdropFilter: "blur(16px)",
               letterSpacing: "-0.02em",
             }}
           >
@@ -167,20 +163,18 @@ export default function AboutPage() {
             style={{
               background: "rgba(0, 242, 255, 0.04)",
               borderColor: "rgba(0, 242, 255, 0.15)",
-              backdropFilter: "blur(20px)",
-              WebkitBackdropFilter: "blur(20px)",
             }}
           >
             <p
               className="text-lg leading-relaxed"
               style={{ color: "rgba(255,255,255,0.75)" }}
             >
-              Enosx Technologies was born out of a simple necessity: the need for 
-              an AI that doesn't just "chat," but operates. Founded by Enosh, 
-              the vision was a system that breathes with the OS—a fluid, 
-              iridescent interface powered by high-performance architecture. 
-              Today, ENOSX AI is a multi-modal powerhouse, capable of generating 
-              art, analyzing the web, and automating complex workflows with 
+              Enosx Technologies was born out of a simple necessity: the need for
+              an AI that doesn't just "chat," but operates. Founded by Enosh,
+              the vision was a system that breathes with the OS—a fluid,
+              iridescent interface powered by high-performance architecture.
+              Today, ENOSX AI is a multi-modal powerhouse, capable of generating
+              art, analyzing the web, and automating complex workflows with
               unparalleled speed.
             </p>
           </div>
@@ -207,9 +201,9 @@ export default function AboutPage() {
               { title: "Document Engine", desc: "Export complex insights to professional PDF or Markdown." },
               { title: "Glass UI v2", desc: "Spacious, unboxed chat interface designed for focus." }
             ].map((cap, i) => (
-              <div 
+              <div
                 key={i}
-                className="p-5 rounded-xl border border-white/10 bg-white/5 backdrop-blur-md"
+                className="p-5 rounded-xl border border-white/10 bg-white/5"
               >
                 <h4 className="font-bold text-[#00F2FF] mb-1">{cap.title}</h4>
                 <p className="text-sm text-white/60">{cap.desc}</p>
@@ -237,8 +231,6 @@ export default function AboutPage() {
             style={{
               background: "linear-gradient(135deg, rgba(255, 215, 0, 0.08), rgba(255, 140, 0, 0.04))",
               borderColor: "rgba(255, 215, 0, 0.2)",
-              backdropFilter: "blur(20px)",
-              WebkitBackdropFilter: "blur(20px)",
             }}
           >
             <div className="flex items-start gap-6 mb-6">
@@ -280,10 +272,10 @@ export default function AboutPage() {
               className="text-lg leading-relaxed"
               style={{ color: "rgba(255,255,255,0.75)" }}
             >
-              Enosh leads the design and architectural direction of the ENOSX 
-              ecosystem. His philosophy is simple: Speed is UX. By leveraging 
-              high-performance inference engines and a glassmorphic design 
-              language, Enosh has turned the standard desktop into an intelligent 
+              Enosh leads the design and architectural direction of the ENOSX
+              ecosystem. His philosophy is simple: Speed is UX. By leveraging
+              high-performance inference engines and a dark design
+              language, Enosh has turned the standard desktop into an intelligent
               workspace.
             </p>
           </div>
@@ -316,7 +308,7 @@ export default function AboutPage() {
                   whileInView={{ opacity: 1, y: 0 }}
                   transition={{ delay: index * 0.08, duration: 0.45 }}
                   viewport={{ once: true }}
-                  className="rounded-2xl border p-5 backdrop-blur-xl transition-transform hover:-translate-y-1"
+                  className="rounded-2xl border p-5 transition-transform hover:-translate-y-1"
                   style={{ background: "rgba(8, 12, 20, 0.66)", borderColor: `${accent}35` }}
                 >
                   <div className="mb-4 flex items-center gap-3">
@@ -367,8 +359,6 @@ export default function AboutPage() {
                   style={{
                     background: `rgba(${tech.color === "#00F2FF" ? "0, 242, 255" : tech.color === "#7000FF" ? "112, 0, 255" : "255, 0, 128"}, 0.06)`,
                     borderColor: `${tech.color}40`,
-                    backdropFilter: "blur(12px)",
-                    WebkitBackdropFilter: "blur(12px)",
                   }}
                 >
                   <div className="mb-4">

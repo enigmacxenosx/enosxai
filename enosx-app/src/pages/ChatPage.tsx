@@ -1,6 +1,6 @@
 /*
  * ENOSX XAI agent — ChatPage (Enhanced)
- * Design: "Crimson Matrix" — Cyberpunk Glassmorphism
+ * Design: "Crimson Matrix" — Cyberpunk Dark surface
  * Layout: Left floating acrylic sidebar + right bento chat area + floating pill command bar
  */
 
@@ -46,7 +46,7 @@ import { useKnowledgeBank } from "@/hooks/useKnowledgeBank";
 import { ActionActivityStatus, AssistantAction, Conversation, Message } from "@/lib/types";
 import { getFollowUpSuggestions } from "@/lib/followUpSuggestions";
 import { createConversationBranch } from "@/lib/conversationBranching";
-import { useTheme } from "@/contexts/ThemeContext";
+import { useDarkMode } from "@/contexts/DarkModeContext";
 import { useCompactMode } from "@/hooks/useCompactMode";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useDeviceType } from "@/hooks/useDeviceType";
@@ -79,7 +79,6 @@ import {
 // Declare global window interface for settings handler
 declare global {
   interface Window {
-    __openBackgroundPicker?: () => void;
   }
 }
 
@@ -246,7 +245,7 @@ async function loadGitHubConnectorContext(): Promise<string> {
 }
 
 export default function ChatPage() {
-  const { config } = useTheme();
+  const { config } = useDarkMode();
   const { user, isAuthenticated, updateProfile } = useAuth();
   const [conversations, setConversations] = useState<Conversation[]>(() => {
     const owner = user?.provider === "guest" || !user ? "guest" : user.id;
@@ -912,7 +911,7 @@ export default function ChatPage() {
       const companyFacts = identity.companyFacts.map(fact => `- ${fact}`).join('\n');
       const companyFaqs = identity.companyFaqs.map(faq => `- Q: ${faq.question}\n  A: ${faq.answer}`).join('\n');
       const userPersonalization = user
-        ? `### Signed-in user context\n- Name: ${user.displayName || "Not provided"}\n- Email: ${user.email || "Not provided"}\n- Preferred language: ${user.language || "Not specified"}\n- Primary workflow: ${user.useCase || "Not specified"}\n- AI personality preference: ${user.aiPersonality || "Not specified"}\n- Theme preference: ${user.theme || "Not specified"}\n\nUse this profile and personalization context to make relevant answers more helpful. Address the user by name naturally when appropriate, respect their language and personality preferences, and use their email only when directly relevant. Do not unnecessarily repeat or expose personal details.`
+        ? `### Signed-in user context\n- Name: ${user.displayName || "Not provided"}\n- Email: ${user.email || "Not provided"}\n- Preferred language: ${user.language || "Not specified"}\n- Primary workflow: ${user.useCase || "Not specified"}\n- AI personality preference: ${user.aiPersonality || "Not specified"}\n\nUse this profile and personalization context to make relevant answers more helpful. Address the user by name naturally when appropriate, respect their language and personality preferences, and use their email only when directly relevant. Do not unnecessarily repeat or expose personal details.`
         : "### User context\nThe user is not signed in; do not assume personal profile details.";
       
             const systemPrompt: Message = {

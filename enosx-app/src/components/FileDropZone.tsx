@@ -1,13 +1,13 @@
 /*
  * ENOSX AI — FileDropZone
  * Drag-and-drop file input with glassy overlay and tactile feedback
- * Features: glassmorphism, animated drop zone, file preview, upload animation
+ * Features: dark surface, animated drop zone, file preview, upload animation
  */
 
 import { useState, useRef, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Upload, Image as ImageIcon, FileText } from "lucide-react";
-import { useTheme } from "@/contexts/ThemeContext";
+import { useDarkMode } from "@/contexts/DarkModeContext";
 import { useTactileSounds } from "@/hooks/useTactileSounds";
 import { toast } from "sonner";
 import { showError } from "@/lib/errorReporting";
@@ -19,7 +19,7 @@ interface FileDropZoneProps {
 }
 
 export default function FileDropZone({ onFileSelected, isActive = true, currentFileCount }: FileDropZoneProps) {
-  const { config } = useTheme();
+  const { config } = useDarkMode();
   const [isDragActive, setIsDragActive] = useState(false);
   const dropZoneRef = useRef<HTMLDivElement>(null);
   const { playPop } = useTactileSounds({ enabled: true, volume: 0.4 });
@@ -86,8 +86,6 @@ export default function FileDropZone({ onFileSelected, isActive = true, currentF
           className="fixed inset-0 z-40 pointer-events-auto"
           style={{
             background: `rgba(${config.accentRgb}, 0.05)`,
-            backdropFilter: "blur(40px)",
-            WebkitBackdropFilter: "blur(40px)",
           }}
         >
           {/* Drop Zone Card */}
@@ -102,8 +100,6 @@ export default function FileDropZone({ onFileSelected, isActive = true, currentF
               className="rounded-3xl p-12 flex flex-col items-center gap-4 border-2 border-dashed"
               style={{
                 background: `rgba(${config.accentRgb}, 0.08)`,
-                backdropFilter: "blur(24px)",
-                WebkitBackdropFilter: "blur(24px)",
                 borderColor: config.accent,
                 boxShadow: `0 0 40px ${config.accent}, inset 0 0 40px rgba(${config.accentRgb}, 0.1)`,
               }}

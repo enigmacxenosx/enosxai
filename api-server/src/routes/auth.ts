@@ -51,8 +51,6 @@ async function ensureTable() {
         language TEXT DEFAULT 'English',
         notifications BOOLEAN DEFAULT true,
         compact_mode BOOLEAN DEFAULT false,
-        theme TEXT,
-        wallpaper TEXT,
         created_at TIMESTAMPTZ DEFAULT NOW(),
         updated_at TIMESTAMPTZ DEFAULT NOW(),
         role TEXT DEFAULT 'user'
@@ -152,7 +150,7 @@ router.post("/auth/upsert", async (req: Request, res: Response) => {
 // ── PUT /auth/update ──────────────────────────────────────────────────────────
 router.put("/auth/update", async (req: Request, res: Response) => {
   try {
-    const { id, displayName, aiPersonality, language, notifications, compactMode, theme, wallpaper } = req.body;
+    const { id, displayName, aiPersonality, language, notifications, compactMode } = req.body;
     if (!id) {
       res.status(400).json({ message: "User ID required" });
       return;
@@ -164,11 +162,9 @@ router.put("/auth/update", async (req: Request, res: Response) => {
          language = COALESCE($4, language),
          notifications = COALESCE($5, notifications),
          compact_mode = COALESCE($6, compact_mode),
-         theme = COALESCE($7, theme),
-         wallpaper = COALESCE($8, wallpaper),
          updated_at = NOW()
        WHERE id = $1`,
-      [id, displayName, aiPersonality, language, notifications, compactMode, theme, wallpaper]
+      [id, displayName, aiPersonality, language, notifications, compactMode]
     );
     const rows = await queryNeon("SELECT * FROM enosx_users WHERE id = $1", [id]);
     res.json({ user: mapUser(rows[0]) });
@@ -299,8 +295,6 @@ function mapUser(row: any) {
     language: row.language,
     notifications: row.notifications,
     compactMode: row.compact_mode,
-    theme: row.theme,
-    wallpaper: row.wallpaper,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   };

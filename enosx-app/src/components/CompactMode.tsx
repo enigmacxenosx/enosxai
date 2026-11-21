@@ -7,7 +7,7 @@
 import { useState, useRef } from "react";
 import { motion } from "framer-motion";
 import { X, Maximize2, Minimize2, GripVertical } from "lucide-react";
-import { useTheme } from "@/contexts/ThemeContext";
+import { useDarkMode } from "@/contexts/DarkModeContext";
 
 interface CompactModeProps {
   isOpen: boolean;
@@ -22,7 +22,7 @@ export default function CompactMode({
   onMaximize,
   children,
 }: CompactModeProps) {
-  const { config } = useTheme();
+  const { config } = useDarkMode();
   const [position, setPosition] = useState({ x: window.innerWidth - 420, y: 100 });
   const dragRef = useRef<HTMLDivElement>(null);
 
@@ -64,8 +64,6 @@ export default function CompactMode({
         width: 400,
         height: 500,
         background: config.surface,
-        backdropFilter: "blur(24px)",
-        WebkitBackdropFilter: "blur(24px)",
         border: `1px solid rgba(${config.accentRgb}, 0.2)`,
         boxShadow: `0 20px 60px rgba(0,0,0,0.6), 0 0 0 1px rgba(${config.accentRgb}, 0.1)`,
       }}

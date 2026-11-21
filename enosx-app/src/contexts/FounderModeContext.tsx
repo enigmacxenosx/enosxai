@@ -6,7 +6,6 @@ interface FounderModeContextType {
   experimentalEffects: {
     glitchShader: boolean;
     pulseIntensity: number;
-    customThemes: boolean;
     advancedVisuals: boolean;
   };
 }
@@ -35,7 +34,6 @@ export function FounderModeProvider({ children }: { children: ReactNode }) {
   const experimentalEffects = {
     glitchShader: isEnabled,
     pulseIntensity: isEnabled ? 1.5 : 1,
-    customThemes: isEnabled,
     advancedVisuals: isEnabled,
   };
 

@@ -9,7 +9,7 @@ import { motion } from "framer-motion";
 import { Search, MessageSquare, X } from "lucide-react";
 import { ConversationSearchMatch } from "@/hooks/useConversationSearch";
 import { Conversation } from "@/lib/types";
-import { useTheme } from "@/contexts/ThemeContext";
+import { useDarkMode } from "@/contexts/DarkModeContext";
 
 interface ConversationSearchDialogProps {
   isOpen: boolean;
@@ -32,7 +32,7 @@ export default function ConversationSearchDialog({
   onSelect,
   onOpenLeadCapture,
 }: ConversationSearchDialogProps) {
-  const { config } = useTheme();
+  const { config } = useDarkMode();
   const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -60,7 +60,7 @@ export default function ConversationSearchDialog({
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
       className="fixed inset-0 z-[100] flex items-start justify-center pt-[12vh] px-4"
-      style={{ background: "rgba(0, 0, 0, 0.55)", backdropFilter: "blur(4px)" }}
+      style={{ background: "rgba(0, 0, 0, 0.55)",}}
       onClick={onClose}
     >
       <motion.div

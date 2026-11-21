@@ -7,7 +7,7 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Search, Zap, MessageSquare, Settings, HelpCircle } from "lucide-react";
-import { useTheme } from "@/contexts/ThemeContext";
+import { useDarkMode } from "@/contexts/DarkModeContext";
 
 interface GlobalOverlayProps {
   isOpen: boolean;
@@ -23,7 +23,7 @@ const QUICK_ACTIONS = [
 ];
 
 export default function GlobalOverlay({ isOpen, onClose, onSearch }: GlobalOverlayProps) {
-  const { config } = useTheme();
+  const { config } = useDarkMode();
   const [query, setQuery] = useState("");
 
   useEffect(() => {
@@ -52,8 +52,6 @@ export default function GlobalOverlay({ isOpen, onClose, onSearch }: GlobalOverl
         className="fixed inset-0 z-50 flex items-start justify-center pt-20"
         style={{
           background: "rgba(0,0,0,0.5)",
-          backdropFilter: "blur(8px)",
-          WebkitBackdropFilter: "blur(8px)",
         }}
       >
         <motion.div
@@ -65,8 +63,6 @@ export default function GlobalOverlay({ isOpen, onClose, onSearch }: GlobalOverl
           className="w-full max-w-2xl rounded-2xl overflow-hidden"
           style={{
             background: config.surface,
-            backdropFilter: "blur(24px)",
-            WebkitBackdropFilter: "blur(24px)",
             border: `1px solid rgba(${config.accentRgb}, 0.2)`,
             boxShadow: `0 20px 60px rgba(0,0,0,0.8)`,
           }}

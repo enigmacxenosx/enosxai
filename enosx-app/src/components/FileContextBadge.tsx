@@ -1,6 +1,6 @@
 import { motion, AnimatePresence } from "framer-motion";
 import { File, X, Image as ImageIcon, FileText } from "lucide-react";
-import { useTheme } from "@/contexts/ThemeContext";
+import { useDarkMode } from "@/contexts/DarkModeContext";
 import { FileContext } from "@/hooks/useFileContext";
 
 interface FileContextBadgeProps {
@@ -10,7 +10,7 @@ interface FileContextBadgeProps {
 }
 
 export default function FileContextBadge({ fileContext, onRemove, onClear }: FileContextBadgeProps) {
-  const { config } = useTheme();
+  const { config } = useDarkMode();
 
   if (!fileContext.isLoaded || fileContext.files.length === 0) return null;
 
@@ -31,8 +31,6 @@ export default function FileContextBadge({ fileContext, onRemove, onClear }: Fil
               style={{
                 background: "rgba(255, 255, 255, 0.05)",
                 borderColor: "rgba(255, 255, 255, 0.1)",
-                backdropFilter: "blur(12px)",
-                WebkitBackdropFilter: "blur(12px)",
               }}
             >
               {isImage ? (

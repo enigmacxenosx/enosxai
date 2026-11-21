@@ -24,7 +24,7 @@ import { VoiceState, type Attachment } from "@/lib/types";
 import ConnectorPicker from "./ConnectorPicker";
 import VoiceVisualizer from "./VoiceVisualizer";
 import { getModelTierRecommendation } from "@/lib/modelTierPolicy";
-import { useTheme } from "@/contexts/ThemeContext";
+import { useDarkMode } from "@/contexts/DarkModeContext";
 
 export type AIMode = "ex-core" | "ex-pro" | "enosh-mind";
 
@@ -74,7 +74,7 @@ export function AIModePicker({ aiMode, onChange, className = "" }: { aiMode: AIM
   const [modeOpen, setModeOpen] = useState(false);
   const modeRef = useRef<HTMLDivElement>(null);
   const currentMode = AI_MODES.find((mode) => mode.id === aiMode) ?? AI_MODES[0];
-  const { config } = useTheme();
+  const { config } = useDarkMode();
 
   useEffect(() => {
     function handleOutside(event: MouseEvent) {
@@ -92,7 +92,7 @@ export function AIModePicker({ aiMode, onChange, className = "" }: { aiMode: AIM
       </motion.button>
       <AnimatePresence>
         {modeOpen && (
-          <motion.div initial={{ opacity: 0, y: -4, scale: 0.97 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: -4, scale: 0.97 }} transition={{ duration: 0.15 }} className="absolute left-0 top-full z-[60] mt-2 flex w-[min(274px,calc(100vw-5rem))] flex-col gap-1 rounded-[18px] p-2.5" style={{ background: config.isDark ? "rgba(30,31,35,0.88)" : "rgba(255,255,255,0.97)", border: `1px solid ${config.isDark ? "rgba(255,255,255,0.14)" : config.border}`, backdropFilter: "blur(20px)", WebkitBackdropFilter: "blur(20px)", boxShadow: config.isDark ? "0 12px 36px rgba(0,0,0,0.46)" : "0 16px 40px rgba(21,25,35,0.16)" }} role="menu" aria-label="Choose AI mode">
+          <motion.div initial={{ opacity: 0, y: -4, scale: 0.97 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: -4, scale: 0.97 }} transition={{ duration: 0.15 }} className="absolute left-0 top-full z-[60] mt-2 flex w-[min(274px,calc(100vw-5rem))] flex-col gap-1 rounded-[18px] p-2.5" style={{ background: config.isDark ? "rgba(30,31,35,0.88)" : "rgba(255,255,255,0.97)", border: `1px solid ${config.isDark ? "rgba(255,255,255,0.14)" : config.border}`, boxShadow: config.isDark ? "0 12px 36px rgba(0,0,0,0.46)" : "0 16px 40px rgba(21,25,35,0.16)" }} role="menu" aria-label="Choose AI mode">
             <p className="px-2.5 pb-1 pt-1 text-[11px] font-semibold uppercase tracking-[0.12em]" style={{ color: config.textMuted }}>Send with</p>
             {AI_MODES.map((mode) => {
               const selected = aiMode === mode.id;

@@ -114,7 +114,7 @@ export default function EthicalHackingQuiz({ isOpen, onClose }: EthicalHackingQu
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          className="fixed inset-0 z-[110] flex items-center justify-center bg-slate-950/75 px-4 py-8 backdrop-blur-md"
+          className="fixed inset-0 z-[110] flex items-center justify-center bg-slate-950/75 px-4 py-8"
           role="dialog"
           aria-modal="true"
           aria-labelledby="ethical-hacking-quiz-title"

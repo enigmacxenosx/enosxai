@@ -1,7 +1,7 @@
 /*
  * ENOSX AI — ContextIndicator
  * Displays the currently active application and provides context awareness feedback
- * Features: app icon, real-time detection, glassmorphism badge
+ * Features: app icon, real-time detection, dark surface badge
  */
 
 import { motion } from "framer-motion";
@@ -16,7 +16,7 @@ import {
   Image,
   Zap,
 } from "lucide-react";
-import { useTheme } from "@/contexts/ThemeContext";
+import { useDarkMode } from "@/contexts/DarkModeContext";
 import { useActiveWindow, type AppType } from "@/contexts/WindowContext";
 
 const APP_ICONS: Record<AppType, React.ReactNode> = {
@@ -50,7 +50,7 @@ const APP_COLORS: Record<AppType, string> = {
 };
 
 export default function ContextIndicator() {
-  const { config } = useTheme();
+  const { config } = useDarkMode();
   const { activeWindow } = useActiveWindow();
 
   return (
@@ -61,8 +61,6 @@ export default function ContextIndicator() {
       className="flex items-center gap-2 px-3 py-1.5 rounded-full"
       style={{
         background: `rgba(${config.accentRgb}, 0.08)`,
-        backdropFilter: "blur(12px)",
-        WebkitBackdropFilter: "blur(12px)",
         border: `1px solid rgba(${config.accentRgb}, 0.15)`,
       }}
     >

@@ -1,12 +1,12 @@
 /*
  * ENOSX AI — CommandChainProgress
  * Real-time visualization of command chain execution
- * Features: step counter, progress bar, action details, glassmorphism
+ * Features: step counter, progress bar, action details, dark surface
  */
 
 import { motion, AnimatePresence } from "framer-motion";
 import { CheckCircle2, AlertCircle, Zap, Clock } from "lucide-react";
-import { useTheme } from "@/contexts/ThemeContext";
+import { useDarkMode } from "@/contexts/DarkModeContext";
 import type { ChainProgress, SystemAction } from "@/hooks/useCommandChain";
 
 interface CommandChainProgressProps {
@@ -31,7 +31,7 @@ function getActionLabel(action: SystemAction): string {
 }
 
 export default function CommandChainProgress({ progress }: CommandChainProgressProps) {
-  const { config } = useTheme();
+  const { config } = useDarkMode();
 
   if (!progress.isExecuting && progress.totalSteps === 0) {
     return null;
@@ -49,8 +49,6 @@ export default function CommandChainProgress({ progress }: CommandChainProgressP
         className="fixed bottom-6 right-6 w-96 max-w-[calc(100vw-48px)] rounded-2xl p-4 z-50"
         style={{
           background: `rgba(${config.accentRgb}, 0.08)`,
-          backdropFilter: "blur(24px)",
-          WebkitBackdropFilter: "blur(24px)",
           border: `1px solid rgba(${config.accentRgb}, 0.2)`,
           boxShadow: `0 8px 32px rgba(${config.accentRgb}, 0.1)`,
         }}

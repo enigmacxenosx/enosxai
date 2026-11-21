@@ -7,7 +7,7 @@
 import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { X, Download, Maximize2, ImageOff, ExternalLink } from "lucide-react";
-import { useTheme } from "@/contexts/ThemeContext";
+import { useDarkMode } from "@/contexts/DarkModeContext";
 
 interface ImageDisplayProps {
   src: string;
@@ -18,7 +18,7 @@ interface ImageDisplayProps {
 }
 
 export default function ImageDisplay({ src, alt = "Generated image", caption, watermark = false }: ImageDisplayProps) {
-  const { config } = useTheme();
+  const { config } = useDarkMode();
   const [isExpanded, setIsExpanded] = useState(false);
   const [isLoaded, setIsLoaded] = useState(false);
   const [hasError, setHasError] = useState(false);
@@ -168,7 +168,7 @@ export default function ImageDisplay({ src, alt = "Generated image", caption, wa
             >
               <button
                 onClick={(e) => { e.stopPropagation(); setIsExpanded(true); }}
-                className="w-7 h-7 rounded-lg flex items-center justify-center backdrop-blur-sm transition-all duration-150"
+                className="w-7 h-7 rounded-lg flex items-center justify-center transition-all duration-150"
                 style={{
                   background: "rgba(0,0,0,0.5)",
                   border: "1px solid rgba(255,255,255,0.15)",
@@ -180,7 +180,7 @@ export default function ImageDisplay({ src, alt = "Generated image", caption, wa
               </button>
               <button
                 onClick={(e) => { e.stopPropagation(); handleDownload(); }}
-                className="w-7 h-7 rounded-lg flex items-center justify-center backdrop-blur-sm transition-all duration-150"
+                className="w-7 h-7 rounded-lg flex items-center justify-center transition-all duration-150"
                 style={{
                   background: "rgba(0,0,0,0.5)",
                   border: "1px solid rgba(255,255,255,0.15)",
@@ -213,7 +213,7 @@ export default function ImageDisplay({ src, alt = "Generated image", caption, wa
             exit={{ opacity: 0 }}
             transition={{ duration: 0.2 }}
             className="fixed inset-0 z-[100] flex items-center justify-center p-4"
-            style={{ background: "rgba(0,0,0,0.85)", backdropFilter: "blur(12px)" }}
+            style={{ background: "rgba(0,0,0,0.85)",}}
             onClick={() => setIsExpanded(false)}
           >
             <div className="relative max-w-[90vw] max-h-[90vh]" onClick={(e) => e.stopPropagation()}>

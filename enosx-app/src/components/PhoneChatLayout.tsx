@@ -200,7 +200,7 @@ export default function PhoneChatLayout({
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               onClick={() => setIsMobileSidebarOpen(false)}
-              className="fixed inset-0 z-40 bg-black/60 backdrop-blur-sm"
+              className="fixed inset-0 z-40 bg-black/60"
             />
             <motion.div
               initial={{ x: "-100%" }}

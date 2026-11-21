@@ -75,7 +75,7 @@ export default function LeadCaptureDialog({ isOpen, onClose, transcript, convers
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
       className="fixed inset-0 z-[100] flex items-center justify-center px-4"
-      style={{ background: "rgba(0, 0, 0, 0.55)", backdropFilter: "blur(4px)" }}
+      style={{ background: "rgba(0, 0, 0, 0.55)",}}
       onClick={onClose}
     >
       <motion.div

@@ -1,10 +1,8 @@
 # ENOSX AI Visual Story Studio
 
-## ENOSX AI Light and Dark Theme System
-- [ ] Make light and dark first-class persisted themes with readable semantic background, text, card, border, input, accent, and focus tokens.
-- [ ] Expose the theme control in the primary sidebar and keep switching immediate and reversible.
-- [ ] Adapt the global wallpaper overlay, sidebar chrome, browser color scheme, and toast notifications to the active mode.
-- [ ] Respect reduced-motion preferences for the new theme transitions and validate the frontend with typecheck and production build.
+## ENOSX AI Dark-only appearance
+- [x] Removed theme switching, wallpaper controls/assets, and glass-specific surfaces.
+- [x] Locked the application shell to dark mode.
 
 ## NVIDIA Image and Video Generation
 - [ ] Generate images using NVIDIA's hosted FLUX.2 Klein 4B endpoint by default; retain optional custom image endpoint overrides and keep all NVIDIA credentials server-side.

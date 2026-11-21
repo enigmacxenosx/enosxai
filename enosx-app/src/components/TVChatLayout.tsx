@@ -2,7 +2,7 @@ import React, { useEffect, useRef } from "react";
 import { motion } from "framer-motion";
 import { Mic, History, Plus, Settings, Volume2 } from "lucide-react";
 import { Conversation, Message, VoiceState, type ActionActivityStatus, type AssistantAction, type Attachment } from "@/lib/types";
-import { useTheme } from "@/contexts/ThemeContext";
+import { useDarkMode } from "@/contexts/DarkModeContext";
 import MessageBubble from "./MessageBubble";
 import CommandBar, { AIModePicker, type AIMode } from "./CommandBar";
 
@@ -61,7 +61,7 @@ export default function TVChatLayout({
   attachments = [],
   audioStream = null,
 }: TVChatLayoutProps) {
-  const { config } = useTheme();
+  const { config } = useDarkMode();
   const containerRef = useRef<HTMLDivElement>(null);
 
   // Auto-focus logic for TV remote navigation could be added here

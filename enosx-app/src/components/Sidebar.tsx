@@ -32,12 +32,10 @@ import {
   Puzzle,
 } from "lucide-react";
 import { Conversation } from "@/lib/types";
-import { useTheme } from "@/contexts/ThemeContext";
+import { useDarkMode } from "@/contexts/DarkModeContext";
 import BrandMark from "./BrandMark";
-import { useWallpaper } from "@/contexts/WallpaperContext";
 import { useAuth } from "@/contexts/AuthContext";
 import PluginsDialog from "./PluginsDialog";
-import ThemeSwitcher from "./ThemeSwitcher";
 
 interface SidebarProps {
   conversations: Conversation[];
@@ -90,8 +88,7 @@ export default function Sidebar({
   onMobileClose,
 }: SidebarProps) {
   const [showPlugins, setShowPlugins] = useState(false);
-  const { config } = useTheme();
-  const { settings } = useWallpaper();
+  const { config } = useDarkMode();
   const { user, isAuthenticated } = useAuth();
 
   const conversationSection = (conversation: Conversation) => {
@@ -180,11 +177,9 @@ export default function Sidebar({
       transition={{ type: "spring", stiffness: 300, damping: 30 }}
       className="neon-dashboard-sidebar relative flex-shrink-0 flex flex-col h-full overflow-hidden"
         style={{
-        background: `linear-gradient(180deg, rgba(${config.isDark ? "10,10,15" : "255,255,255"},${settings.panelOpacity * 0.98}) 0%, rgba(${config.isDark ? "12,12,18" : "248,250,255"},${settings.panelOpacity * 0.94}) 100%)`,
-        backdropFilter: `blur(${settings.blurAmount}px)`,
-        WebkitBackdropFilter: `blur(${settings.blurAmount}px)`,
+        background: "#0f1014",
         borderRight: `1px solid ${config.border}`,
-        boxShadow: config.isDark ? "18px 0 50px rgba(0,0,0,0.18)" : "18px 0 50px rgba(33,43,68,0.08)",
+        boxShadow: "18px 0 50px rgba(0,0,0,0.28)",
       }}
     >
       {/* Logo header — clicking the brand mark toggles sidebar */}
@@ -214,7 +209,7 @@ export default function Sidebar({
             </motion.span>
           )}
         </div>
-        {!collapsed && <div className="ml-auto"><ThemeSwitcher /></div>}
+
       </div>
 
       {/* Nav items */}
@@ -384,7 +379,7 @@ export default function Sidebar({
           className="fixed inset-0 z-50 flex"
           onClick={onMobileClose}
         >
-          <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
+          <div className="absolute inset-0 bg-black/60" />
           <motion.div
             key="mobile-sidebar-panel"
             initial={{ x: -300 }}

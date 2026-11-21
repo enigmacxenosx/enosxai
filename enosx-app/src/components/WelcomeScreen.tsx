@@ -5,7 +5,7 @@
 
 import { motion } from "framer-motion";
 import { BookOpen, CalendarDays, Code2, Lightbulb, PenLine, Images } from "lucide-react";
-import { useTheme } from "@/contexts/ThemeContext";
+import { useDarkMode } from "@/contexts/DarkModeContext";
 import BrandMark from "./BrandMark";
 
 interface WelcomeScreenProps {
@@ -43,7 +43,7 @@ export function WelcomeSuggestions({ onSuggestion, animateEntrance = true, varia
           whileHover={{ y: variant === "list" ? 0 : -2 }}
           whileTap={{ scale: 0.985 }}
           onClick={() => onSuggestion(prompt)}
-          className={`welcome-suggestion group inline-flex h-8 items-center gap-1.5 rounded-full border border-white/[0.12] bg-[#11131b]/80 px-3 text-left text-[12px] font-medium text-white/75 shadow-[0_4px_16px_rgba(0,0,0,0.12)] backdrop-blur-sm transition-colors hover:border-white/[0.22] hover:bg-white/[0.08] hover:text-white${variant === "list" ? " welcome-suggestion--list" : ""}`}
+          className={`welcome-suggestion group inline-flex h-8 items-center gap-1.5 rounded-full border border-white/[0.12] bg-[#11131b]/80 px-3 text-left text-[12px] font-medium text-white/75 shadow-[0_4px_16px_rgba(0,0,0,0.12)] transition-colors hover:border-white/[0.22] hover:bg-white/[0.08] hover:text-white${variant === "list" ? " welcome-suggestion--list" : ""}`}
         >
           <Icon size={14} strokeWidth={1.8} style={{ color }} />
           <span>{label}</span>
@@ -54,7 +54,7 @@ export function WelcomeSuggestions({ onSuggestion, animateEntrance = true, varia
 }
 
 export default function WelcomeScreen({ onSuggestion, isCompact, isComposerFlow = false, showSuggestions = true }: WelcomeScreenProps) {
-  const { config } = useTheme();
+  const { config } = useDarkMode();
 
   return (
     <div className={isComposerFlow ? "flex w-full flex-col items-center px-4 pb-4 pt-5 sm:px-6" : "phone-welcome-screen flex min-h-full flex-col items-center justify-center px-4 py-10 sm:px-6"}>

@@ -1,11 +1,11 @@
 /*
  * ENOSX AI — ActionTileGrid
  * Bento-style grid layout for system action tiles
- * Features: responsive grid, animated stagger, glassmorphism container
+ * Features: responsive grid, animated stagger, dark surface container
  */
 
 import { motion } from "framer-motion";
-import { useTheme } from "@/contexts/ThemeContext";
+import { useDarkMode } from "@/contexts/DarkModeContext";
 import ActionTile, { ActionTileData } from "./ActionTile";
 
 interface ActionTileGridProps {
@@ -14,7 +14,7 @@ interface ActionTileGridProps {
 }
 
 export default function ActionTileGrid({ tiles, onTileClick }: ActionTileGridProps) {
-  const { config } = useTheme();
+  const { config } = useDarkMode();
 
   if (tiles.length === 0) return null;
 
@@ -27,8 +27,6 @@ export default function ActionTileGrid({ tiles, onTileClick }: ActionTileGridPro
       className="w-full rounded-2xl p-4 mb-4"
       style={{
         background: `rgba(${config.accentRgb}, 0.03)`,
-        backdropFilter: "blur(12px)",
-        WebkitBackdropFilter: "blur(12px)",
         border: `1px solid rgba(${config.accentRgb}, 0.1)`,
       }}
     >

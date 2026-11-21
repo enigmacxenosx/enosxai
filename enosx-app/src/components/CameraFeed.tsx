@@ -57,7 +57,7 @@ export default function CameraFeed({
 
         {/* Status Overlay */}
         {!cameraState.isActive && (
-          <div className="absolute inset-0 flex items-center justify-center bg-black/60 backdrop-blur-sm">
+          <div className="absolute inset-0 flex items-center justify-center bg-black/60">
             <div className="text-center">
               <CameraOff size={48} style={{ color: accentColor }} className="mx-auto mb-3 opacity-60" />
               <p style={{ color: accentColor }} className="text-sm font-medium">

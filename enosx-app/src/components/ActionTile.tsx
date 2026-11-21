@@ -1,11 +1,11 @@
 /*
  * ENOSX AI — ActionTile
  * Interactive bento-style card for system actions and stats
- * Features: glassmorphism, real-time data, toggles, graphs
+ * Features: dark surface, real-time data, toggles, graphs
  */
 
 import { motion } from "framer-motion";
-import { useTheme } from "@/contexts/ThemeContext";
+import { useDarkMode } from "@/contexts/DarkModeContext";
 import { LucideIcon } from "lucide-react";
 
 export interface ActionTileData {
@@ -28,7 +28,7 @@ interface ActionTileProps {
 }
 
 export default function ActionTile({ data }: ActionTileProps) {
-  const { config } = useTheme();
+  const { config } = useDarkMode();
   const Icon = data.icon;
   const color = data.color || config.accent;
   const size = data.size || "medium";
@@ -51,8 +51,6 @@ export default function ActionTile({ data }: ActionTileProps) {
       className={`${sizeClasses[size]} rounded-2xl border cursor-pointer transition-all duration-300`}
       style={{
         background: `rgba(${config.accentRgb}, 0.06)`,
-        backdropFilter: "blur(20px)",
-        WebkitBackdropFilter: "blur(20px)",
         borderColor: `rgba(${config.accentRgb}, 0.15)`,
         boxShadow: `0 8px 32px rgba(${config.accentRgb}, 0.08)`,
       }}

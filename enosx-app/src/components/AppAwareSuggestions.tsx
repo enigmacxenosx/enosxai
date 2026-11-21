@@ -1,11 +1,11 @@
 /*
  * ENOSX AI — AppAwareSuggestions
  * Displays app-specific suggestion chips and action tiles
- * Features: dynamic suggestions based on active window, glassmorphism, smooth animations
+ * Features: dynamic suggestions based on active window, dark surface, smooth animations
  */
 
 import { motion } from "framer-motion";
-import { useTheme } from "@/contexts/ThemeContext";
+import { useDarkMode } from "@/contexts/DarkModeContext";
 import { useActiveWindow } from "@/contexts/WindowContext";
 import { useContextAwareMessages } from "@/hooks/useContextAwareMessages";
 
@@ -14,7 +14,7 @@ interface AppAwareSuggestionsProps {
 }
 
 export default function AppAwareSuggestions({ onSuggestionClick }: AppAwareSuggestionsProps) {
-  const { config } = useTheme();
+  const { config } = useDarkMode();
   const { activeWindow } = useActiveWindow();
   const { getAppSpecificSuggestions } = useContextAwareMessages();
 
@@ -55,8 +55,6 @@ export default function AppAwareSuggestions({ onSuggestionClick }: AppAwareSugge
               background: `rgba(${config.accentRgb}, 0.1)`,
               border: `1px solid rgba(${config.accentRgb}, 0.2)`,
               color: config.text,
-              backdropFilter: "blur(12px)",
-              WebkitBackdropFilter: "blur(12px)",
               cursor: "pointer",
             }}
           >

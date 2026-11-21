@@ -1,7 +1,7 @@
 import { Check, ChevronDown, ExternalLink, Filter, Plus, Puzzle, Search, X } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
-import { useTheme } from "@/contexts/ThemeContext";
+import { useDarkMode } from "@/contexts/DarkModeContext";
 import { useGitHub } from "@/hooks/useGitHub";
 import { CONNECTOR_CATALOG, type ConnectorCatalogItem } from "@/lib/connectorCatalog";
 import ConnectorLogo from "./ConnectorLogo";
@@ -55,7 +55,7 @@ function connectorMatches(connector: ConnectorCatalogItem, query: string) {
 }
 
 export default function PluginsDialog({ open, onClose }: PluginsDialogProps) {
-  const { config } = useTheme();
+  const { config } = useDarkMode();
   const { accounts: githubAccounts, connectWithOAuth, removeAccount } = useGitHub();
   const [activeTab, setActiveTab] = useState<TabName>("All");
   const [query, setQuery] = useState("");

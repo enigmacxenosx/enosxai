@@ -6,7 +6,7 @@
 
 import { motion } from "framer-motion";
 import { Zap } from "lucide-react";
-import { useTheme } from "@/contexts/ThemeContext";
+import { useDarkMode } from "@/contexts/DarkModeContext";
 import { VoiceState } from "@/lib/types";
 
 interface LipSyncOrbProps {
@@ -22,7 +22,7 @@ export default function LipSyncOrb({
   size = 48,
   audioFrequency = 0.5,
 }: LipSyncOrbProps) {
-  const { config } = useTheme();
+  const { config } = useDarkMode();
 
   const isListening = voiceState === "listening";
   const isSpeaking = voiceState === "speaking";

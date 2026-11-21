@@ -13,8 +13,7 @@ import { Streamdown } from "streamdown";
 import { Message, type ActionActivityStatus } from "@/lib/types";
 import { getMessageFeedback, submitMessageFeedback, type MessageFeedbackRating } from "@/lib/feedback";
 import type { FollowUpSuggestion } from "@/lib/followUpSuggestions";
-import { useTheme } from "@/contexts/ThemeContext";
-import { useWallpaper } from "@/contexts/WallpaperContext";
+import { useDarkMode } from "@/contexts/DarkModeContext";
 import { isImageUrl, resolveMediaUrl, type ResolvedMediaKind } from "@/lib/mediaUrls";
 import ImageDisplay from "./ImageDisplay";
 import AudioDisplay from "./AudioDisplay";
@@ -175,8 +174,7 @@ export default function MessageBubble({
   followUpPrompts,
   onFollowUp,
 }: MessageBubbleProps) {
-  const { config } = useTheme();
-  const { settings: wallpaperSettings } = useWallpaper();
+  const { config } = useDarkMode();
   const [actionStatus, setActionStatus] = useState<string | null>(null);
   const [isActivityVisible, setIsActivityVisible] = useState(Boolean(message.actionActivities?.length));
   const [rating, setRating] = useState<MessageFeedbackRating | null>(() => getMessageFeedback(message.id)?.rating ?? null);

@@ -6,7 +6,7 @@
 
 import { motion } from "framer-motion";
 import { Zap } from "lucide-react";
-import { useTheme } from "@/contexts/ThemeContext";
+import { useDarkMode } from "@/contexts/DarkModeContext";
 import { VoiceState } from "@/lib/types";
 
 interface FloatingOrbProps {
@@ -20,7 +20,7 @@ export default function FloatingOrb({
   isLoading,
   size = 32,
 }: FloatingOrbProps) {
-  const { config } = useTheme();
+  const { config } = useDarkMode();
 
   const isListening = voiceState === "listening";
   const isSpeaking = voiceState === "speaking";

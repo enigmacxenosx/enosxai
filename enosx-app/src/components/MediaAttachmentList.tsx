@@ -63,7 +63,7 @@ export default function MediaAttachmentList({ attachments }: { attachments: Atta
           role="dialog"
           aria-modal="true"
           aria-label={`Image ${activeIndex + 1} of ${images.length}: ${activeImage.name}`}
-          className="fixed inset-0 z-[120] flex items-center justify-center bg-black/90 p-4 backdrop-blur-md"
+          className="fixed inset-0 z-[120] flex items-center justify-center bg-black/90 p-4"
           onClick={() => setActiveIndex(null)}
           onKeyDown={(event) => {
             if (event.key === "Escape") setActiveIndex(null);

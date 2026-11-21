@@ -6,7 +6,7 @@
 
 import { motion, AnimatePresence } from "framer-motion";
 import { Image, Loader2 } from "lucide-react";
-import { useTheme } from "@/contexts/ThemeContext";
+import { useDarkMode } from "@/contexts/DarkModeContext";
 
 interface ImageGenButtonProps {
   isActive: boolean;
@@ -19,7 +19,7 @@ export default function ImageGenButton({
   onToggle,
   isGenerating,
 }: ImageGenButtonProps) {
-  const { config } = useTheme();
+  const { config } = useDarkMode();
 
   return (
     <motion.button

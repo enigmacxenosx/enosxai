@@ -12,7 +12,7 @@
 import { useState, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Sparkles, X, Loader2 } from "lucide-react";
-import { useTheme } from "@/contexts/ThemeContext";
+import { useDarkMode } from "@/contexts/DarkModeContext";
 
 interface ClipboardBadgeProps {
   copiedText: string;
@@ -29,7 +29,7 @@ export default function ClipboardBadge({
   onConsume,
   onSummarize,
 }: ClipboardBadgeProps) {
-  const { config } = useTheme();
+  const { config } = useDarkMode();
   const [isLoading, setIsLoading] = useState(false);
 
   const handleSummarize = useCallback(async () => {
@@ -59,8 +59,6 @@ export default function ClipboardBadge({
           className="fixed bottom-24 right-5 z-50 flex items-center gap-2 px-3 py-2 rounded-2xl cursor-pointer select-none"
           style={{
             background: `rgba(${config.accentRgb}, 0.12)`,
-            backdropFilter: "blur(18px)",
-            WebkitBackdropFilter: "blur(18px)",
             border: `1px solid rgba(${config.accentRgb}, 0.35)`,
             boxShadow: `0 0 18px rgba(${config.accentRgb}, 0.25), 0 4px 20px rgba(0,0,0,0.5)`,
           }}

@@ -7,6 +7,13 @@ describe("generateConversationTitle", () => {
       .toBe("Build a Simple Portfolio Website for My Design Work");
   });
 
+  it("removes longer lead-in phrases from chat names", () => {
+    expect(generateConversationTitle("I am trying to create a launch plan for my new product"))
+      .toBe("Create a Launch Plan for My New Product");
+    expect(generateConversationTitle("Could you please help me with a concise project brief?"))
+      .toBe("A Concise Project Brief");
+  });
+
   it("uses only the first sentence and removes ending punctuation", () => {
     expect(generateConversationTitle("I want to create a marketing plan for Enosx Technologies. Include a budget too."))
       .toBe("Create a Marketing Plan for Enosx Technologies");

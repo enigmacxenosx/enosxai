@@ -16,8 +16,9 @@ export function generateConversationTitle(firstMessage: string): string {
 
   title = title
     .replace(/^(?:hey|hi|hello)\s+(?:enosx(?:\s+ai)?|agent)[,\s:!-]*/i, "")
-    .replace(/^(?:please\s+)?(?:can|could|would)\s+you\s+(?:please\s+)?/i, "")
-    .replace(/^(?:please\s+)?(?:i want to|i need to|i would like to|i'd like to|help me to|help me)\s+/i, "")
+    .replace(/^(?:please\s+)?(?:can|could|would)\s+you(?:\s+please)?(?:\s+help\s+me)?(?:\s+with)?\s+/i, "")
+    .replace(/^(?:please\s+)?(?:i am|i'm|i’m)\s+(?:trying\s+to|looking\s+to|hoping\s+to)\s+/i, "")
+    .replace(/^(?:please\s+)?(?:i want to|i need to|i would like to|i'd like to|help me to|help me|i need help with|i need help)\s+/i, "")
     .replace(/^(?:how do i|how can i|how should i)\s+/i, "")
     .replace(/^please\s+/i, "");
 

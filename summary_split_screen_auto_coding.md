@@ -4,7 +4,7 @@
 
 ## What Was Built
 
-The ENOSX AI chat application now includes a Manus-style split-screen workspace in which the conversation lives on the left and the **Enosx Computer** (a full desktop-mode workspace with a Script Console, Browser Tools, Files, and an assistant panel) lives on the right. Everything requested has been implemented, type-checked, built, and pushed to GitHub.
+The ENOSX AI chat application now includes a Manus-style split-screen workspace in which the conversation lives on the left and the **Enosx Computer** (a full desktop-mode workspace with a Script Console, Browser Tools, Files, and an agent panel) lives on the right. Everything requested has been implemented, type-checked, built, and pushed to GitHub.
 
 | # | Requirement | Status | How It Works |
 |---|---|---|---|

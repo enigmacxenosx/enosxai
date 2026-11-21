@@ -3,7 +3,7 @@ import errorReportHandler from "../api-handlers/error-report";
 
 /**
  * ENOSX AI — /api/feedback
- * Collects 1–5 star ratings and optional notes on assistant responses so the
+ * Collects 1–5 star ratings and optional notes on agent responses so the
  * team can measure answer quality over time. Delivered by
  * email through Resend (RESEND_API_KEY + ERROR_REPORT_FROM). Feedback is
  * rate-limited per IP and never includes the user's full conversation.

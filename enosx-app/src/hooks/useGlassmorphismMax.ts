@@ -1,5 +1,5 @@
 /*
- * ENOSX AI Assistant — useGlassmorphismMax Hook
+ * ENOSX AI agent — useGlassmorphismMax Hook
  * Pro-exclusive setting for enhanced glassmorphism effects
  * Deeper blur, more realistic glass appearance, premium feel
  */

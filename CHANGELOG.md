@@ -89,7 +89,7 @@
 
 ## v0.1.16 — Personalized replies & notifications
 - Added signed-in name, email, language, personality, and theme preferences to the assistant's private per-request context, with guidance to use personal details only when relevant.
-- Completed assistant replies now generate a reply-specific system notification using the response text.
+- Completed agent replies now generate a reply-specific system notification using the response text.
 - Improved the synthesized EX notification chime so it resumes suspended browser audio contexts before playing.
 
 ## v0.1.15 — Readability & Settings refinements

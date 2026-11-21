@@ -35,4 +35,4 @@ Both commands completed successfully. The Vite build emitted only the repository
 
 ## Follow-up milestones
 
-The next increment can host the existing GitHub panel body directly inside window chrome, connect assistant messages to workspace context, add reducer/component tests, and persist dock preferences. Native desktop integration should continue through the separate permissioned desktop boundary rather than through this web route.
+The next increment can host the existing GitHub panel body directly inside window chrome, connect agent messages to workspace context, add reducer/component tests, and persist dock preferences. Native desktop integration should continue through the separate permissioned desktop boundary rather than through this web route.

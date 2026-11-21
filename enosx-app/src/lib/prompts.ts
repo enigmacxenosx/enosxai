@@ -13,7 +13,7 @@ const LEADERSHIP_CONTEXT = LEADERSHIP
   .map((member) => `- ${member.name} — ${member.role}: ${member.specialty}`)
   .join("\n");
 
-export const BASE_SYSTEM_PROMPT = `You are ENOSX AI (EX), an advanced multimodal AI assistant developed by Enosx Technologies. 
+export const BASE_SYSTEM_PROMPT = `You are ENOSX AI (EX), an advanced multimodal AI agent developed by Enosx Technologies.
 Your mission is to empower users with enterprise-grade intelligence and fluid, OS-integrated workflows.
 
 ### ENOSX protocol and values

@@ -507,7 +507,7 @@ export default function MessageBubble({
 
         {!isUser && !isStreaming && message.content.trim() && (
           <div className="mt-2 flex w-full flex-col gap-2">
-            <div className="flex min-h-7 flex-wrap items-center gap-x-2 gap-y-1 text-[11px]" aria-label="Assistant response actions">
+            <div className="flex min-h-7 flex-wrap items-center gap-x-2 gap-y-1 text-[11px]" aria-label="Agent response actions">
               <span style={{ color: config.textMuted }}>How was this result?</span>
               <div className="flex items-center gap-0.5" role="group" aria-label="Rate this response from 1 to 5 stars" onMouseLeave={() => setHoverRating(null)}>
                 {([1, 2, 3, 4, 5] as const).map((value) => {

@@ -1,5 +1,5 @@
 /*
- * ENOSX XAI Assistant — ChatPage (Enhanced)
+ * ENOSX XAI agent — ChatPage (Enhanced)
  * Design: "Crimson Matrix" — Cyberpunk Glassmorphism
  * Layout: Left floating acrylic sidebar + right bento chat area + floating pill command bar
  */
@@ -1021,7 +1021,7 @@ ${getAdminContext()}` : ""}`,
 
         },
         (result) => {
-          updateActivity(primaryActivityId, primaryActivityLabel, result?.success ? "succeeded" : "failed", result?.success ? "The assistant response finished." : result?.error || "The response did not complete.");
+          updateActivity(primaryActivityId, primaryActivityLabel, result?.success ? "succeeded" : "failed", result?.success ? "The agent response finished." : result?.error || "The response did not complete.");
           // Apply the final buffered chunk before cleaning the streamed reply.
           flushStreamToChat();
           const proposedActions = parseActions(streamedContent) as AssistantAction[];
@@ -1243,7 +1243,7 @@ ${getAdminContext()}` : ""}`,
     if (!container) return;
     // Scroll when a response starts/finishes or the conversation changes, not
     // on every streamed token. This keeps the chat viewport from rising while
-    // the assistant is writing.
+    // the agent is writing.
     const frame = window.requestAnimationFrame(() => {
       container.scrollTop = container.scrollHeight;
     });

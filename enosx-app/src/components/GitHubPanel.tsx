@@ -415,7 +415,7 @@ export default function GitHubPanel({ isOpen, onClose }: GitHubPanelProps) {
                     <span className="text-xs font-mono flex-1 truncate" style={{ color: 'rgba(255,255,255,0.8)' }}>{currentFile.path}</span>
                   </div>
 
-                  {/* AI Assistant */}
+                  {/* AI agent */}
                   <div className="space-y-2 p-3 rounded-xl" style={{ background: `rgba(${accentRgb},0.06)`, border: `1px solid rgba(${accentRgb},0.15)` }}>
                     <div className="flex items-center gap-1.5 text-xs font-semibold" style={{ color: accentColor }}>
                       <Sparkles size={12} />AI Edit Assistant

@@ -29,7 +29,7 @@ Clearly identify AI-authored text in public contributions, or use a separate bot
 
 ### Disabled by default / do not perform
 
-Do not change email addresses, password, username, SSH/GPG keys, passkeys, tokens, two-factor authentication, billing, payment methods, plans, OAuth app authorizations, account ownership, or repository ownership. Do not delete accounts, repositories, or gists; do not change a private repository to public. Do not create/revoke PATs or access recovery codes. Sensitive security, billing, and authentication operations require a separate first-party GitHub flow and fresh re-authentication; the assistant must not handle the credentials or codes.
+Do not change email addresses, password, username, SSH/GPG keys, passkeys, tokens, two-factor authentication, billing, payment methods, plans, OAuth app authorizations, account ownership, or repository ownership. Do not delete accounts, repositories, or gists; do not change a private repository to public. Do not create/revoke PATs or access recovery codes. Sensitive security, billing, and authentication operations require a separate first-party GitHub flow and fresh re-authentication; the agent must not handle the credentials or codes.
 
 ## Security and privacy rules
 

@@ -1,5 +1,5 @@
 /*
- * ENOSX AI Assistant — AboutPage
+ * ENOSX AI agent — AboutPage
  * Vision Manifesto: "Redefining the boundary between Human and OS"
  * Design: Vertical scroll reveals, ghosted E background, premium animations
  */

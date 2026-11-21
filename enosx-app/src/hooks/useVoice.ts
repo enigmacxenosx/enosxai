@@ -10,7 +10,7 @@ export interface SpeechSettings {
   rate: number;
   pitch: number;
   voiceProvider: "magpie" | "chatterbox";
-  /** Auto re-listen after the assistant finishes speaking. */
+  /** Auto re-listen after the agent finishes speaking. */
   continuousConversation: boolean;
   /** Start listening when the wake phrase is heard while the app is open. */
   wakePhrase: boolean;
@@ -397,7 +397,7 @@ export function useVoice() {
   );
 
   /**
-   * Continuous-conversation mode: after the assistant finishes speaking,
+   * Continuous-conversation mode: after the agent finishes speaking,
    * automatically start listening again. Uses a small delay so the browser
    * has released the audio device before re-requesting microphone access.
    */

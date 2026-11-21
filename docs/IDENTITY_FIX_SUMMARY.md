@@ -1,7 +1,7 @@
 # ENOSX AI Identity Fix Summary
 
 ## Issue Identified
-The ENOSX AI assistant was not consistently identifying itself across the application. The identity was fragmented and not clearly communicated in system prompts and UI elements.
+The ENOSX AI agent was not consistently identifying itself across the application. The identity was fragmented and not clearly communicated in system prompts and UI elements.
 
 ## Root Causes
 1. **Inconsistent naming**: The AI name was stored as lowercase "enosx ai" in constants

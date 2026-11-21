@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# ENOSX AI Assistant - Local Development Startup Script
+# ENOSX AI agent - Local Development Startup Script
 # This script starts both the API server and frontend service
 
 set -e
@@ -14,7 +14,7 @@ YELLOW='\033[1;33m'
 NC='\033[0m' # No Color
 
 echo -e "${GREEN}╔════════════════════════════════════════════════════════════╗${NC}"
-echo -e "${GREEN}║   ENOSX AI Assistant - Development Startup Script          ║${NC}"
+echo -e "${GREEN}║   ENOSX AI agent - Development Startup Script          ║${NC}"
 echo -e "${GREEN}╚════════════════════════════════════════════════════════════╝${NC}"
 
 # Check if pnpm is installed

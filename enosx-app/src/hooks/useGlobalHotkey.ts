@@ -1,5 +1,5 @@
 /*
- * ENOSX AI Assistant — useGlobalHotkey Hook
+ * ENOSX AI agent — useGlobalHotkey Hook
  * Global keyboard shortcut handler for Alt+Space to summon the app
  * Manages window visibility and focus state
  */

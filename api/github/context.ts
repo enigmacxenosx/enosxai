@@ -1,5 +1,5 @@
 // Vercel Serverless Function: GET /api/github/context
-// Fetches repository metadata + README so the assistant can reason about the repo.
+// Fetches repository metadata + README so the agent can reason about the repo.
 // Optional: set GITHUB_TOKEN in env to raise GitHub rate limits / access private repos.
 
 import type { VercelRequest, VercelResponse } from "@vercel/node";

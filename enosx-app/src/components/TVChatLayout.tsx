@@ -150,7 +150,7 @@ export default function TVChatLayout({
           <div className="bg-gradient-to-br from-purple-900/20 to-blue-900/20 rounded-[40px] border border-white/10 p-10 flex-1">
             <h3 className="text-3xl font-bold mb-6 flex items-center gap-4">
               <span className="w-3 h-3 rounded-full bg-cyan-400 animate-pulse" />
-              Voice Assistant
+              Voice Agent
             </h3>
             <div className="flex flex-col items-center justify-center h-full pb-10">
               <motion.button

@@ -107,7 +107,7 @@ export default function VoiceSettingsPanel({ settings, onUpdate }: VoiceSettings
         <div className="flex-1">
           <p className="text-xs text-white/70">Continuous conversation</p>
           <p className="text-[11px] text-white/40 leading-relaxed mt-0.5">
-            After the assistant speaks, it automatically starts listening again.
+            After the agent speaks, it automatically starts listening again.
           </p>
         </div>
         <Switch checked={settings.continuousConversation} onChange={(value) => onUpdate({ continuousConversation: value })} />

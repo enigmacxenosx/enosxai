@@ -221,7 +221,7 @@ export default function ProfilePanel({ isOpen, onClose, onOpenAdminConsole, onOp
                     {view === 'models' ? 'Offline models'
                       : view === 'appearance' ? 'Appearance & Theme'
                       : view === 'privacy' ? 'Privacy & Security'
-                      : view === 'voice' ? 'Voice Assistant'
+                      : view === 'voice' ? 'Voice Agent'
                       : view === 'connectors' ? 'Manage connectors'
                       : user?.displayName ?? 'Profile'}
                   </div>
@@ -422,7 +422,7 @@ export default function ProfilePanel({ isOpen, onClose, onOpenAdminConsole, onOp
                         <Mic size={14} style={{ color: accentColor }} />
                       </div>
                       <div className="flex-1 text-left">
-                        <div className="text-sm font-medium" style={{ color: 'rgba(255,255,255,0.85)' }}>Voice Assistant</div>
+                        <div className="text-sm font-medium" style={{ color: 'rgba(255,255,255,0.85)' }}>Voice Agent</div>
                         <div className="text-xs" style={{ color: 'rgba(255,255,255,0.35)' }}>Speech, speed, and hands-free mode</div>
                       </div>
                       <ChevronRight size={14} style={{ color: 'rgba(255,255,255,0.3)' }} />
@@ -469,7 +469,7 @@ export default function ProfilePanel({ isOpen, onClose, onOpenAdminConsole, onOp
               {/* ── VOICE VIEW ── */}
               {view === 'voice' && (
                 <div className="neon-settings-view px-5 py-5 space-y-4">
-                  <div className="text-xs font-bold tracking-wider" style={{ color: 'rgba(255,255,255,0.35)' }}>VOICE ASSISTANT</div>
+                  <div className="text-xs font-bold tracking-wider" style={{ color: 'rgba(255,255,255,0.35)' }}>VOICE AGENT</div>
                   <div className="rounded-xl" style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)' }}>
                     <VoiceSettingsPanel settings={speechSettings} onUpdate={updateSpeechSettings} />
                   </div>

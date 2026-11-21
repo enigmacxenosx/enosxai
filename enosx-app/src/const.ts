@@ -5,7 +5,7 @@ export const AI_NAME = "ENOSX AI";
 export const AI_SHORT_NAME = "EX";
 export const ORGANIZATION_NAME = "Enosx Technologies";
 export const WEBSITE_URL = "https://enosxtech.vercel.app";
-export const MISSION = "Make software feel instant by building multimodal AI assistants and commerce experiences that work with the operating environment, not beside it.";
+export const MISSION = "Make software feel instant by building multimodal AI agents and commerce experiences that work with the operating environment, not beside it.";
 export const STORY = "Founded in Nairobi, Kenya in 2024, Enosx Technologies builds products around the conviction that latency is a design flaw. Its work spans the ENOSX AI intelligent workspace and the Enosx Tech Store.";
 export const FOUNDER_VISION = "Speed is UX. Every interaction should be quicker than the thought that started it; this principle drives Enosx Technologies' product decisions.";
 

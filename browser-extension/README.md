@@ -22,7 +22,7 @@ The app may queue one `click_element` or `fill_form` proposal after the user rev
 - Remove the staged page and verify it is not added to a message.
 - Queue a test click on a harmless button; verify the action is shown in the extension only on the matching page and runs only after the popup approval.
 - Queue a test fill on a non-sensitive field; verify the preview shows the exact value, filling does not submit, and the queue is one-shot.
-- Verify the originating assistant message shows “Waiting for approval” after queueing and remains there until the extension reports an outcome.
+- Verify the originating agent message shows “Waiting for approval” after queueing and remains there until the extension reports an outcome.
 - Approve a harmless click and verify the activity changes to succeeded with wording that confirms dispatch, not the website's resulting state; force a failed target and verify it changes to failed.
 - Cancel a queued action in the popup and verify the originating activity changes to cancelled; closing the popup without approval must leave it waiting.
 - Verify password fields, unsupported controls, a different URL, and expired actions cannot run.

@@ -1,6 +1,6 @@
 import { expect, test } from "@playwright/test";
 
-test("assistant replies offer follow-ups, star ratings, and independent conversation branches", async ({ page }) => {
+test("agent replies offer follow-ups, star ratings, and independent conversation branches", async ({ page }) => {
   const timestamp = "2026-11-19T10:00:00.000Z";
   await page.addInitScript((createdAt) => {
     const conversation = {

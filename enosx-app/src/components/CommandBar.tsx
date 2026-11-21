@@ -24,6 +24,7 @@ import { VoiceState, type Attachment } from "@/lib/types";
 import ConnectorPicker from "./ConnectorPicker";
 import VoiceVisualizer from "./VoiceVisualizer";
 import { getModelTierRecommendation } from "@/lib/modelTierPolicy";
+import { useTheme } from "@/contexts/ThemeContext";
 
 export type AIMode = "ex-core" | "ex-pro" | "enosh-mind";
 
@@ -73,6 +74,7 @@ export function AIModePicker({ aiMode, onChange, className = "" }: { aiMode: AIM
   const [modeOpen, setModeOpen] = useState(false);
   const modeRef = useRef<HTMLDivElement>(null);
   const currentMode = AI_MODES.find((mode) => mode.id === aiMode) ?? AI_MODES[0];
+  const { config } = useTheme();
 
   useEffect(() => {
     function handleOutside(event: MouseEvent) {
@@ -90,28 +92,28 @@ export function AIModePicker({ aiMode, onChange, className = "" }: { aiMode: AIM
       </motion.button>
       <AnimatePresence>
         {modeOpen && (
-          <motion.div initial={{ opacity: 0, y: -4, scale: 0.97 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: -4, scale: 0.97 }} transition={{ duration: 0.15 }} className="absolute left-0 top-full z-[60] mt-2 flex w-[min(274px,calc(100vw-5rem))] flex-col gap-1 rounded-[18px] p-2.5" style={{ background: "rgba(30,31,35,0.72)", border: "1px solid rgba(255,255,255,0.14)", backdropFilter: "blur(20px)", WebkitBackdropFilter: "blur(20px)", boxShadow: "0 12px 36px rgba(0,0,0,0.46)" }} role="menu" aria-label="Choose AI mode">
-            <p className="px-2.5 pb-1 pt-1 text-[11px] font-semibold uppercase tracking-[0.12em] text-white/50">Send with</p>
+          <motion.div initial={{ opacity: 0, y: -4, scale: 0.97 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: -4, scale: 0.97 }} transition={{ duration: 0.15 }} className="absolute left-0 top-full z-[60] mt-2 flex w-[min(274px,calc(100vw-5rem))] flex-col gap-1 rounded-[18px] p-2.5" style={{ background: config.isDark ? "rgba(30,31,35,0.88)" : "rgba(255,255,255,0.97)", border: `1px solid ${config.isDark ? "rgba(255,255,255,0.14)" : config.border}`, backdropFilter: "blur(20px)", WebkitBackdropFilter: "blur(20px)", boxShadow: config.isDark ? "0 12px 36px rgba(0,0,0,0.46)" : "0 16px 40px rgba(21,25,35,0.16)" }} role="menu" aria-label="Choose AI mode">
+            <p className="px-2.5 pb-1 pt-1 text-[11px] font-semibold uppercase tracking-[0.12em]" style={{ color: config.textMuted }}>Send with</p>
             {AI_MODES.map((mode) => {
               const selected = aiMode === mode.id;
               return (
-                <motion.button type="button" key={mode.id} whileHover={{ backgroundColor: "rgba(255,255,255,0.06)" }} whileTap={{ scale: 0.98 }} onClick={() => { onChange(mode.id); setModeOpen(false); }} className="flex items-center gap-2.5 rounded-lg border border-transparent px-2.5 py-2.5 text-left transition-all" style={{ background: selected ? "rgba(255,255,255,0.025)" : "transparent" }} role="menuitemradio" aria-checked={selected}>
+                <motion.button type="button" key={mode.id} whileHover={{ backgroundColor: config.isDark ? "rgba(255,255,255,0.06)" : "rgba(21,25,35,0.045)" }} whileTap={{ scale: 0.98 }} onClick={() => { onChange(mode.id); setModeOpen(false); }} className="flex items-center gap-2.5 rounded-lg border px-2.5 py-2.5 text-left transition-all" style={{ background: selected ? (config.isDark ? "rgba(255,255,255,0.04)" : "rgba(21,25,35,0.045)") : "transparent", borderColor: selected ? mode.borderColor : "transparent" }} role="menuitemradio" aria-checked={selected}>
                   <span className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ background: mode.color, boxShadow: `0 0 8px ${mode.color}66` }} />
-                  <span className="flex min-w-0 flex-1 flex-col gap-0.5"><span className="text-[13px] font-semibold text-white/90">{mode.label}</span><span className="text-[11px] font-normal leading-4 text-white/50">{mode.description}</span></span>
+                  <span className="flex min-w-0 flex-1 flex-col gap-0.5"><span className="text-[13px] font-semibold" style={{ color: config.text }}>{mode.label}</span><span className="text-[11px] font-normal leading-4" style={{ color: config.textMuted }}>{mode.description}</span></span>
                   {selected && <Check size={14} className="shrink-0" style={{ color: mode.color }} />}
                 </motion.button>
               );
             })}
-            <div className="mt-1 border-t border-white/10 px-2.5 pt-2">
-              <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-white/40">Best tier by action</p>
-              <div className="mt-1.5 grid grid-cols-2 gap-x-3 gap-y-1 text-[10px] leading-4 text-white/50">
-                <span>Everyday, summary, draft</span><strong className="font-semibold text-violet-300">{TIER_GUIDE.everyday}</strong>
-                <span>Code, research, GitHub, files</span><strong className="font-semibold text-fuchsia-300">{TIER_GUIDE.technical}</strong>
-                <span>Strategy, science, high-risk</span><strong className="font-semibold text-cyan-300">{TIER_GUIDE.strategic}</strong>
+            <div className="mt-1 border-t px-2.5 pt-2" style={{ borderColor: config.border }}>
+              <p className="text-[10px] font-semibold uppercase tracking-[0.12em]" style={{ color: config.textMuted }}>Best tier by action</p>
+              <div className="mt-1.5 grid grid-cols-2 gap-x-3 gap-y-1 text-[10px] leading-4" style={{ color: config.textMuted }}>
+                <span>Everyday, summary, draft</span><strong className="font-semibold" style={{ color: config.isDark ? "#c4b5fd" : "#6d28d9" }}>{TIER_GUIDE.everyday}</strong>
+                <span>Code, research, GitHub, files</span><strong className="font-semibold" style={{ color: config.isDark ? "#e879f9" : "#a21caf" }}>{TIER_GUIDE.technical}</strong>
+                <span>Strategy, science, high-risk</span><strong className="font-semibold" style={{ color: config.isDark ? "#67e8f9" : "#0e7490" }}>{TIER_GUIDE.strategic}</strong>
               </div>
-              <p className="mt-1.5 text-[10px] leading-4 text-white/35">Guidance is configurable product policy, not a guarantee of correctness.</p>
+              <p className="mt-1.5 text-[10px] leading-4" style={{ color: config.textMuted }}>Guidance is configurable product policy, not a guarantee of correctness.</p>
             </div>
-            <p className="mt-1.5 border-t border-white/10 px-2.5 pt-2 text-[11px] text-white/45">Current: {currentMode.label}</p>
+            <p className="mt-1.5 border-t px-2.5 pt-2 text-[11px]" style={{ borderColor: config.border, color: config.textMuted }}>Current: {currentMode.label}</p>
           </motion.div>
         )}
       </AnimatePresence>

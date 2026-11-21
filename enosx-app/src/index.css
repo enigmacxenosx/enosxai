@@ -2105,3 +2105,28 @@ body.light .enosx-composer {
     transition: none !important;
   }
 }
+
+/* The main chat shell predates the semantic theme tokens and hard-coded a
+   dark surface and white text. Keep its existing dark styling, but let the
+   selected light theme provide readable surfaces and foregrounds. */
+.light .premium-chat-shell {
+  background: var(--enosx-bg, #f4f6fb);
+  color: var(--enosx-text, #151923);
+}
+.light .premium-chat-shell .text-white {
+  color: var(--enosx-text, #151923) !important;
+}
+.light .premium-chat-shell [class*="text-white/"] {
+  color: var(--enosx-text-muted, rgba(21, 25, 35, 0.58)) !important;
+}
+.light .premium-composer-dock {
+  background: linear-gradient(
+    180deg,
+    transparent 0%,
+    color-mix(in srgb, var(--enosx-bg, #f4f6fb) 72%, transparent) 35%,
+    color-mix(in srgb, var(--enosx-bg, #f4f6fb) 96%, transparent) 100%
+  );
+}
+.light .premium-chat-shell textarea::placeholder {
+  color: rgba(21, 25, 35, 0.48);
+}

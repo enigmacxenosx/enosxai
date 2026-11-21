@@ -18,7 +18,7 @@ interface WelcomeScreenProps {
 interface WelcomeSuggestionsProps {
   onSuggestion: (text: string) => void;
   animateEntrance?: boolean;
-  variant?: "chips" | "list";
+  variant?: "list";
 }
 
 const STARTERS = [
@@ -30,9 +30,9 @@ const STARTERS = [
   { label: "Draft something", prompt: "Help me draft a clear, polished version of this idea.", icon: PenLine, color: "#8de6d1" },
 ];
 
-export function WelcomeSuggestions({ onSuggestion, animateEntrance = true, variant = "chips" }: WelcomeSuggestionsProps) {
+export function WelcomeSuggestions({ onSuggestion, animateEntrance = true, variant = "list" }: WelcomeSuggestionsProps) {
   return (
-    <div className={`welcome-suggestions gap-2${variant === "list" ? " welcome-suggestions--list" : ""}`} aria-label="Suggested prompts">
+    <div className={`welcome-suggestions gap-2 welcome-suggestions--list`} aria-label="Suggested prompts">
       {STARTERS.map(({ label, prompt, icon: Icon, color }, index) => (
         <motion.button
           key={label}
@@ -40,10 +40,10 @@ export function WelcomeSuggestions({ onSuggestion, animateEntrance = true, varia
           initial={{ opacity: 0, y: animateEntrance ? 8 : 0 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.08 + index * 0.05, duration: 0.3 }}
-          whileHover={{ y: variant === "list" ? 0 : -2 }}
+          whileHover={{ x: 2 }}
           whileTap={{ scale: 0.985 }}
           onClick={() => onSuggestion(prompt)}
-          className={`welcome-suggestion group inline-flex h-8 items-center gap-1.5 rounded-full border border-white/[0.12] bg-[#11131b]/80 px-3 text-left text-[12px] font-medium text-white/75 shadow-[0_4px_16px_rgba(0,0,0,0.12)] transition-colors hover:border-white/[0.22] hover:bg-white/[0.08] hover:text-white${variant === "list" ? " welcome-suggestion--list" : ""}`}
+          className="welcome-suggestion group inline-flex h-9 items-center gap-2 border-b border-white/[0.12] px-2 text-left text-[12px] font-medium text-white/75 transition-colors hover:border-white/[0.28] hover:text-white welcome-suggestion--list"
         >
           <Icon size={14} strokeWidth={1.8} style={{ color }} />
           <span>{label}</span>

@@ -16,7 +16,7 @@ export const COMPANY_FACTS = [
   "Enosh Yeswa sets product direction across ENOSX AI and the Enosx Tech Store.",
   "ENOSX AI is Enosx Technologies' multimodal AI workspace, combining chat, attachments, optional connectors, voice, online research, media tools, conversation history, memory, and document export.",
   "The Enosx Tech Store is Enosx Technologies' storefront for technology products and digital services.",
-  "Enosx Technologies uses an in-house Aero-Glass design language that combines semi-transparent surfaces, backdrop blur, and iridescent neon accents.",
+  "Enosx Technologies uses an focused dark interface with clear hierarchy and restrained crimson accents.",
 ] as const;
 
 export const ENOSX_AI_TIER_FACTS = [
@@ -41,7 +41,7 @@ export const COMPANY_FAQS = [
   },
   {
     question: "What product approach connects the Enosx portfolio?",
-    answer: "The company builds its products in-house around speed-first engineering and the Aero-Glass visual design language.",
+    answer: "The company builds its products in-house around speed-first engineering and a permanent dark visual system.",
   },
 ] as const;
 

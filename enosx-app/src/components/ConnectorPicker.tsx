@@ -9,7 +9,7 @@ import { useGitHub } from "@/hooks/useGitHub";
 interface ConnectorPickerProps {
   selectedConnectorIds: string[];
   onToggleConnector: (connectorId: string) => void;
-  /** "compact" renders the icon-only pill used inside the reference message bar. */
+  /** "compact" renders the icon-only compact control used inside the reference message bar. */
   trigger?: "default" | "compact";
 }
 
@@ -20,7 +20,7 @@ const KIND_FILTERS: Array<"All" | ConnectorKind> = [
   "API",
 ];
 
-/** Order shown in the compact bar pill when nothing is selected yet. */
+/** Order shown in the compact bar control when nothing is selected yet. */
 const DEFAULT_CONNECTOR_IDS = ["github", "email", "vercel"];
 
 function kindColor(kind: ConnectorKind) {
@@ -169,17 +169,17 @@ export default function ConnectorPicker({
           aria-expanded={open}
           aria-haspopup="dialog"
           aria-label={selectedCount > 0 ? `Connectors (${selectedCount} selected)` : "Connectors"}
-          className={`enosx-pill enosx-pill--connectors${selectedCount > 0 ? " is-active" : ""}`}
+          className={`enosx-control enosx-control--connectors${selectedCount > 0 ? " is-active" : ""}`}
           title="Choose connectors for this chat"
         >
           {(selectedConnectors.length > 0 ? selectedConnectors.slice(0, 3) : defaultConnectors).map(
             (connector) => (
-              <span key={connector.id} className="enosx-pill__logo">
+              <span key={connector.id} className="enosx-control__logo">
                 <ConnectorLogo name={connector.name} accent={kindColor(connector.kind)} size={16} plain />
               </span>
             ),
           )}
-          <span className="enosx-pill__count">
+          <span className="enosx-control__count">
             +{selectedCount > 0 ? selectedCount : defaultConnectors.length}
           </span>
         </motion.button>
@@ -192,7 +192,7 @@ export default function ConnectorPicker({
         aria-expanded={open}
         aria-haspopup="dialog"
         aria-label="Connectors"
-        className="group flex h-8 items-center gap-1.5 rounded-full px-2.5 transition-all"
+        className="group flex h-8 items-center gap-1.5 rounded-md px-2.5 transition-all"
         style={{
           background:
             selectedCount > 0

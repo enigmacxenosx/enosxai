@@ -2,7 +2,7 @@ import React from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Gauge, Menu, X } from "lucide-react";
 import Sidebar from "./Sidebar";
-import MessageBubble from "./MessageBubble";
+import MessageRow from "./MessageRow";
 import CommandBar, { AIModePicker, type AIMode } from "./CommandBar";
 import { WelcomeSuggestions } from "./WelcomeScreen";
 import BrandMark from "./BrandMark";
@@ -151,7 +151,7 @@ export default function PhoneChatLayout({
         ) : (
           <div className="flex flex-col gap-6 px-4 py-4 pb-32">
             {messages.map((msg, idx) => (
-              <MessageBubble
+              <MessageRow
                 key={msg.id}
                 message={msg}
                 index={idx}

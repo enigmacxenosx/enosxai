@@ -1,7 +1,7 @@
 /*
  * ENOSX XAI agent — ChatPage (Enhanced)
  * Design: "Crimson Matrix" — Cyberpunk Dark surface
- * Layout: Left floating acrylic sidebar + right bento chat area + floating pill command bar
+ * Layout: Dark sidebar + focused chat area + flat command bar
  */
 
 import { useState, useRef, useEffect, useCallback } from "react";
@@ -10,13 +10,12 @@ import { nanoid } from "nanoid";
 import { toast } from "sonner";
 import { showError } from "@/lib/errorReporting";
 import Sidebar from "@/components/Sidebar";
-import MessageBubble from "@/components/MessageBubble";
+import MessageRow from "@/components/MessageRow";
 import CommandBar, { AI_MODES, AIModePicker, type AIMode } from "@/components/CommandBar";
-import AppAwareSuggestions from "@/components/AppAwareSuggestions";
 import WelcomeScreen, { WelcomeSuggestions } from "@/components/WelcomeScreen";
 import ConversationSearchDialog from "@/components/ConversationSearchDialog";
 import FileDropZone from "@/components/FileDropZone";
-import FileContextBadge from "@/components/FileContextBadge";
+import FileContextPanel from "@/components/FileContextPanel";
 import GodModeTerminal from "@/components/GodModeTerminal";
 import GodModeSecurityBanner from "@/components/GodModeSecurityBanner";
 import EthicalHackingQuiz from "@/components/EthicalHackingQuiz";
@@ -39,7 +38,6 @@ import { useActiveWindow } from "@/contexts/WindowContext";
 import { useFileContext } from "@/hooks/useFileContext";
 import { analyzeFile } from "@/lib/fileAnalysis";
 import { generateZipArchive, isZipGenerationRequest } from "@/lib/zip";
-import { useClipboardListener } from "@/hooks/useClipboardListener";
 import { useGodMode } from "@/hooks/useGodMode";
 import { useMemoryBank } from "@/hooks/useMemoryBank";
 import { useKnowledgeBank } from "@/hooks/useKnowledgeBank";
@@ -1482,21 +1480,21 @@ ${getAdminContext()}` : ""}`,
               role="status"
               aria-label={`${analytics.totalTokensUsed.toLocaleString()} tokens used`}
               title="Lifetime tokens used in this browser. Provider-reported counts are used when available; otherwise the app estimates from text length. No usage limit is shown."
-              className="hidden items-center gap-1.5 rounded-full bg-white/[0.035] px-2.5 py-1.5 text-[11px] font-medium text-white/45 sm:flex"
+              className="hidden items-center gap-1.5 rounded-md bg-white/[0.035] px-2.5 py-1.5 text-[11px] font-medium text-white/45 sm:flex"
             >
               <Gauge size={13} className="text-violet-300/70" />
               <span>{analytics.totalTokensUsed.toLocaleString()}</span>
               <span className="hidden sm:inline">tokens</span>
             </div>
             <div className="hidden items-center gap-1 sm:flex" aria-label="Conversation actions">
-              <button type="button" onClick={() => void handleShareConversation()} disabled={!activeConversation?.messages.length} title="Share conversation" aria-label="Share conversation" className="rounded-full p-2 text-white/45 transition hover:bg-white/[0.06] hover:text-white disabled:cursor-not-allowed disabled:opacity-30"><Share2 size={14} /></button>
-              <button type="button" onClick={() => void handleCopyConversation()} disabled={!activeConversation?.messages.length} title="Copy conversation" aria-label="Copy conversation" className="rounded-full p-2 text-white/45 transition hover:bg-white/[0.06] hover:text-white disabled:cursor-not-allowed disabled:opacity-30"><Copy size={14} /></button>
+              <button type="button" onClick={() => void handleShareConversation()} disabled={!activeConversation?.messages.length} title="Share conversation" aria-label="Share conversation" className="rounded-md p-2 text-white/45 transition hover:bg-white/[0.06] hover:text-white disabled:cursor-not-allowed disabled:opacity-30"><Share2 size={14} /></button>
+              <button type="button" onClick={() => void handleCopyConversation()} disabled={!activeConversation?.messages.length} title="Copy conversation" aria-label="Copy conversation" className="rounded-md p-2 text-white/45 transition hover:bg-white/[0.06] hover:text-white disabled:cursor-not-allowed disabled:opacity-30"><Copy size={14} /></button>
             </div>
             {screenGuiderActive && (
               <motion.div 
                 initial={{ opacity: 0, scale: 0.8 }}
                 animate={{ opacity: 1, scale: 1 }}
-                className="flex items-center gap-2 px-3 py-1 rounded-full bg-red-500/10 border border-red-500/20 text-[10px] font-bold text-red-400"
+                className="flex items-center gap-2 px-3 py-1 rounded-md bg-red-500/10 border border-red-500/20 text-[10px] font-bold text-red-400"
               >
                 <div className="w-1.5 h-1.5 rounded-full bg-red-500 animate-ping" />
                 SCREEN GUIDE ACTIVE
@@ -1527,7 +1525,7 @@ ${getAdminContext()}` : ""}`,
                 className="mx-auto max-w-[820px] space-y-10 py-8 sm:py-10"
               >
                 {activeConversation.messages.map((msg, idx) => (
-                  <MessageBubble
+                  <MessageRow
                     key={msg.id}
                     message={msg}
                     index={idx}
@@ -1606,14 +1604,13 @@ ${getAdminContext()}` : ""}`,
               </div>
             )}
 
-            {/* File context badges */}
-            <FileContextBadge
+            {/* Attached files */}
+            <FileContextPanel
               fileContext={fileContext}
               onRemove={removeFile}
               onClear={clearFiles}
             />
 
-            {!hasComposerDraft && <AppAwareSuggestions onSuggestionClick={(suggestion) => void handleSendTracked(suggestion, activeMode)} />}
 
             <CommandBar
               onSend={handleSendTracked}

@@ -98,7 +98,6 @@ export default function AboutPage() {
             color: "rgba(0, 242, 255, 0.08)",
             letterSpacing: "-0.05em",
             textShadow: "0 0 60px rgba(0, 242, 255, 0.15)",
-            filter: "blur(1px)",
           }}
         >
           E
@@ -171,8 +170,8 @@ export default function AboutPage() {
             >
               Enosx Technologies was born out of a simple necessity: the need for
               an AI that doesn't just "chat," but operates. Founded by Enosh,
-              the vision was a system that breathes with the OS—a fluid,
-              iridescent interface powered by high-performance architecture.
+              the vision was a system that breathes with the OS—a focused,
+              dark interface powered by high-performance architecture.
               Today, ENOSX AI is a multi-modal powerhouse, capable of generating
               art, analyzing the web, and automating complex workflows with
               unparalleled speed.
@@ -199,7 +198,7 @@ export default function AboutPage() {
               { title: "Imagine Mode", desc: "Server-side NVIDIA image generation for fast visual exploration." },
               { title: "Web Intelligence", desc: "Real-time search and deep-scraping for factual precision." },
               { title: "Document Engine", desc: "Export complex insights to professional PDF or Markdown." },
-              { title: "Glass UI v2", desc: "Spacious, unboxed chat interface designed for focus." }
+              { title: "Dark-first workspace", desc: "A focused, permanently dark interface designed for clarity." }
             ].map((cap, i) => (
               <div
                 key={i}

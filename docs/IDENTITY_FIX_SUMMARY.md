@@ -36,7 +36,7 @@ A test was conducted using the Groq API directly with the updated system prompt:
 **User Query**: "Who are you?"
 
 **AI Response**: 
-> "I am EX, an autonomous AI agent created by Enosx Technologies. My purpose is to provide high-performance assistance and transform businesses with cutting-edge AI and tech solutions. I am designed to be professional, efficient, and deeply integrated with the OS environment, reflecting the unique design language of Enosx Technologies, which encompasses Glassmorphic, Cyberpunk, and Iridescent elements. My systems are currently online, and I am ready to provide assistance and support."
+> "I am EX, an autonomous AI agent created by Enosx Technologies. My purpose is to provide high-performance assistance and transform businesses with cutting-edge AI and tech solutions. I am designed to be professional, efficient, and deeply integrated with the OS environment, reflecting the unique design language of Enosx Technologies, which encompasses dark, focused, and high-contrast elements. My systems are currently online, and I am ready to provide assistance and support."
 
 **Status**: ✅ **PASS** - The AI correctly identifies itself with full context
 

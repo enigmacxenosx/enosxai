@@ -35,6 +35,10 @@
 
 Desktop availability depends on the published release assets for your operating system. Check the release page for current downloads.
 
+## Interface appearance
+
+ENOSX AI uses a permanent dark mode. Theme switching, wallpaper controls, wallpaper assets, glass overlays, chip effects, and message-bubble surfaces have been removed from the application. Suggestions, attached files, actions, and messages use flat, rectangular controls with clear borders and spacing. The dark palette is initialized by `enosx-app/src/contexts/DarkModeContext.tsx` and applies consistently across every route.
+
 ## Technology and repository layout
 
 The project is a pnpm monorepo built around React, Vite, and TypeScript. It includes Vercel serverless API functions, shared libraries, and a Tauri desktop shell.

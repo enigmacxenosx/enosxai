@@ -140,7 +140,7 @@ export default function ConnectorsSettingsPanel({ accentColor, accentRgb }: Conn
 
       <button type="button" onClick={() => setShowSupportedDetails((visible) => !visible)} aria-expanded={showSupportedDetails} className="flex w-full items-center justify-between rounded-xl border border-white/[0.07] bg-white/[0.025] px-3 py-2.5 text-left transition hover:bg-white/[0.05]">
         <span className="flex items-center gap-2 text-xs font-medium text-white/75"><Plus size={15} style={{ color: accentColor }} />Add connectors</span>
-        <span className="rounded-full px-2 py-0.5 text-[10px] text-white/50" style={{ background: `rgba(${accentRgb},0.12)` }}>4 supported</span>
+        <span className="rounded-md px-2 py-0.5 text-[10px] text-white/50" style={{ background: `rgba(${accentRgb},0.12)` }}>4 supported</span>
       </button>
       {showSupportedDetails && <p className="rounded-lg border border-white/[0.06] bg-black/20 px-3 py-2 text-[10px] leading-relaxed text-white/45">ENOSX currently supports GitHub, Vercel, Shopify, and Google account identity. Other services are not connected by this app yet.</p>}
 
@@ -157,7 +157,7 @@ export default function ConnectorsSettingsPanel({ accentColor, accentRgb }: Conn
               <div className="min-w-0 flex-1">
                 <div className="flex items-center gap-2">
                   <span className="truncate text-xs font-medium text-white/90">{connector.id === "email" ? "Email (Google)" : connector.name}</span>
-                  <span className="hidden rounded-full border border-white/10 px-1.5 py-0.5 text-[9px] text-white/40 sm:inline">{connector.kind}</span>
+                  <span className="hidden rounded-md border border-white/10 px-1.5 py-0.5 text-[9px] text-white/40 sm:inline">{connector.kind}</span>
                 </div>
                 <div className="mt-0.5 flex items-center gap-1 text-[10px]" style={{ color: statusColor }}>
                   {status === "unavailable" || status === "needs-setup" ? <AlertCircle size={10} /> : isConnected ? <Check size={10} /> : status === "loading" ? <Loader2 size={10} className="animate-spin" /> : null}

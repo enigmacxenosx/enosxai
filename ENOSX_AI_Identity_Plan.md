@@ -6,12 +6,12 @@ ENOSX AI is an advanced, multimodal AI agent developed by Enosx Technologies. Fo
 ## 2. Brand Identity and Vision
 The ENOSX brand is built on the premise of seamless integration between artificial intelligence and the user's operating environment. It is not merely a chatbot but an intelligent workspace designed to breathe with the OS.
 
-The vision of ENOSX AI is to provide a fluid, iridescent interface powered by high-performance architecture. By leveraging high-performance inference engines and a distinct glassmorphic design language, ENOSX transforms the standard desktop into an intelligent workspace. The brand positions itself at the intersection of cutting-edge AI technology and premium, futuristic user interface design.
+The vision of ENOSX AI is to provide a fluid, iridescent interface powered by high-performance architecture. By leveraging high-performance inference engines and a distinct dark-first design language, ENOSX transforms the standard desktop into an intelligent workspace. The brand positions itself at the intersection of cutting-edge AI technology and premium, futuristic user interface design.
 
 ## 3. Visual Identity System
 
 ### 3.1. Logo and Typography
-The primary logo of ENOSX AI is a stylized letterform "E" featuring a gradient transitioning from red at the top, through silver/metal in the body, to blue circuit traces at the bottom. For the application's splash screen and loading states, a secondary logo is utilized: bold black "EX" text inside a dark, glassmorphic rounded-square box with a distinct cyan glow.
+The primary logo of ENOSX AI is a stylized letterform "E" featuring a gradient transitioning from red at the top, through silver/metal in the body, to blue circuit traces at the bottom. For the application's splash screen and loading states, a secondary logo is utilized: bold black "EX" text inside a dark, dark rounded-square box with a distinct cyan glow.
 
 The typography system pairs **Manrope** for headings and high-emphasis display text with **Plus Jakarta Sans** for body copy and interface controls. Their confident geometric forms give the product a refined, contemporary voice while preserving clear readability. **JetBrains Mono** is reserved for code, terminals, and technical data.
 
@@ -26,7 +26,7 @@ The default ENOSX AI palette uses deep graphite surfaces, cool pearl text, and a
 | **Soft Lavender Line** | `rgba(193,197,255,0.12)` | Subtle borders and separators |
 | **Cyan / Crimson** | `#00F2FF` / `#DC143C` | Retained for optional themes and brand artwork |
 
-### 3.3. Design Language: "Premium Aero-Glass"
+### 3.3. Design Language: "Focused Dark Workspace"
 The interface keeps ENOSX AI's layered glass identity but makes it more restrained and polished: graphite surfaces, thin cool-toned borders, soft indigo emphasis, and controlled shadows replace constant high-intensity neon. Moderate translucency and blur maintain depth while letting the user's chosen wallpapers (such as Lavender Field, Neon City, Galaxy Tech, or EX Circuits) remain visible. Motion is purposeful and subtle, supporting a fast, focused workspace rather than competing with its content.
 
 ## 4. AI Personality and Modes
@@ -67,4 +67,4 @@ ENOSX AI distinguishes itself from standard chatbots through a suite of deeply i
 - **Persistent Memory:** A local memory bank allows the AI to retain context and preferences across different conversation sessions.
 
 ## 6. Conclusion
-The ENOSX AI identity is a cohesive blend of futuristic aesthetics, high-performance utility, and adaptable intelligence. By adhering to the "Aero-Glass" design language and maintaining a user-centric philosophy ("Speed is UX"), Enosx Technologies has created an ecosystem that transcends traditional AI agents, offering a true digital partner for modern computing environments.
+The ENOSX AI identity is a cohesive blend of futuristic aesthetics, high-performance utility, and adaptable intelligence. By adhering to the focused dark design language and maintaining a user-centric philosophy ("Speed is UX"), Enosx Technologies has created an ecosystem that transcends traditional AI agents, offering a true digital partner for modern computing environments.

@@ -1,5 +1,5 @@
 /*
- * ENOSX AI — MessageBubble
+ * ENOSX AI — MessageRow
  * Unboxed animated messages with streaming text, markdown, voice playback,
  * and inline image display for both user attachments and AI-generated images.
  * Features: fade-in spring, streaming cursor, copy, speak,
@@ -20,7 +20,7 @@ import AudioDisplay from "./AudioDisplay";
 import VideoDisplay from "./VideoDisplay";
 import MediaAttachmentList from "./MediaAttachmentList";
 
-interface MessageBubbleProps {
+interface MessageRowProps {
   message: Message;
   index: number;
   onSpeak: (text: string) => void;
@@ -160,7 +160,7 @@ function ImageGeneratingIndicator({ accent, isVideo = false }: { accent: string;
   );
 }
 
-export default function MessageBubble({
+export default function MessageRow({
   message,
   index,
   onSpeak,
@@ -173,7 +173,7 @@ export default function MessageBubble({
   branchDisabled,
   followUpPrompts,
   onFollowUp,
-}: MessageBubbleProps) {
+}: MessageRowProps) {
   const { config } = useDarkMode();
   const [actionStatus, setActionStatus] = useState<string | null>(null);
   const [isActivityVisible, setIsActivityVisible] = useState(Boolean(message.actionActivities?.length));

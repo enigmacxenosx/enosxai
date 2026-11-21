@@ -1,6 +1,6 @@
 /*
  * ENOSX AI — FileDropZone
- * Drag-and-drop file input with glassy overlay and tactile feedback
+ * Drag-and-drop file input with a clear dark overlay and tactile feedback
  * Features: dark surface, animated drop zone, file preview, upload animation
  */
 

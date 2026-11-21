@@ -388,7 +388,7 @@
     animation: rainbow-border 4s linear infinite;
   }
 
-  /* ── Theme-aware scrollbar ── */
+  /* ── Dark-mode scrollbar ── */
   ::-webkit-scrollbar-thumb {
     background: rgba(var(--enosx-accent-rgb, 220, 20, 60), 0.25);
   }
@@ -419,9 +419,6 @@
     --text-primary: #e8e8f0;
     --text-secondary: #8888a8;
     --text-muted-new: #55556a;
-    --user-bubble: #1e1a3a;
-    --user-border: #3d3680;
-    --ai-bubble: #15151e;
   }
 
   /* ── Prose markdown styles for AI responses ── */
@@ -724,12 +721,12 @@
       height: 42px;
     }
 
-    .phone-composer-dock .enosx-pill {
+    .phone-composer-dock .enosx-control {
       height: 42px;
       padding-inline: 9px;
     }
 
-    .phone-composer-dock .enosx-pill__label {
+    .phone-composer-dock .enosx-control__label {
       display: none;
     }
 
@@ -762,13 +759,6 @@
       min-height: 38px !important;
     }
 
-    .phone-composer-dock button.composer-chip {
-      width: auto !important;
-      height: auto !important;
-      min-width: 0 !important;
-      min-height: 30px !important;
-      padding: 6px 10px !important;
-    }
 
     .phone-composer-dock .prompt-suggestions-row {
       gap: 4px;
@@ -776,17 +766,7 @@
       padding-right: 0;
     }
 
-    .phone-composer-dock .prompt-suggestions-row .composer-chip {
-      min-height: 24px !important;
-      padding: 4px 7px !important;
-      font-size: 9px !important;
-      gap: 4px;
-    }
 
-    .phone-composer-dock .prompt-suggestions-row .composer-chip svg {
-      width: 10px;
-      height: 10px;
-    }
 
     .phone-composer-dock textarea::placeholder {
       color: rgba(255,255,255,0.42);
@@ -802,7 +782,7 @@
       }
 
       .phone-composer-dock .enosx-icon,
-      .phone-composer-dock .enosx-pill {
+      .phone-composer-dock .enosx-control {
         width: 38px;
         height: 38px;
         min-width: 38px;
@@ -826,7 +806,7 @@
 }
 
 
-  /* Shared dashboard/settings neon glass language */
+  /* Shared dashboard/settings dark visual language */
   .neon-dashboard-stage {
     height: 100vh;
     height: 100dvh;
@@ -969,7 +949,7 @@
   .auth-neon-input { min-height: 50px; border-radius: 15px !important; }
   .auth-primary-button { background-size: 180% 180% !important; animation: auth-neon-breathe 3.2s ease-in-out infinite, auth-gradient-shift 6s ease-in-out infinite; }
   .auth-primary-button:hover { background-position: 100% 0 !important; box-shadow: 0 14px 35px rgba(83,132,255,.42), inset 0 1px 0 rgba(255,255,255,.32) !important; }
-  /* Let the glass scene span the complete form instead of stopping at the hero. */
+  /* Let the dark scene span the complete form instead of stopping at the hero. */
   .auth-neon-shell.auth-form-layout { background: transparent; }
   .auth-neon-shell.auth-form-layout::before { inset: 7px; border-radius: 25px; border-color: rgba(161,236,255,.16); box-shadow: inset 0 1px 0 rgba(255,255,255,.12), 0 0 26px rgba(65,188,255,.12); }
   .auth-live-stage > .auth-hero-visual { position: absolute !important; inset: 0; z-index: 0 !important; height: auto; margin: 0; border: 0; border-radius: inherit; background: radial-gradient(circle at 8% 26%, rgba(15,207,255,.25), transparent 31%), radial-gradient(circle at 95% 43%, rgba(238,71,255,.25), transparent 30%), linear-gradient(155deg, rgba(35,42,78,.95), rgba(8,9,23,.98) 54%, rgba(18,9,43,.98)); box-shadow: inset 0 -120px 120px rgba(3,4,16,.45); pointer-events: none; animation: none; }
@@ -1284,7 +1264,7 @@
 }
 
 
-/* ── Premium Enosx AI theme: Manrope + Plus Jakarta Sans ─────────────── */
+/* ── Premium Enosx AI typography and dark palette ───────────────────── */
 :root {
   --font-body: "Plus Jakarta Sans", "Segoe UI", system-ui, sans-serif;
   --font-display: "Manrope", "Segoe UI", system-ui, sans-serif;
@@ -1298,9 +1278,6 @@
   --text-primary: #f2f3fb;
   --text-secondary: #a0a4bc;
   --text-muted-new: #747a94;
-  --user-bubble: rgba(85, 88, 170, 0.24);
-  --user-border: rgba(150, 151, 255, 0.3);
-  --ai-bubble: rgba(23, 25, 38, 0.92);
 }
 
 /* Dark-only application surface refinements. */
@@ -1342,9 +1319,6 @@
   --text-primary: #f1f2f8;
   --text-secondary: #a4a7bb;
   --text-muted-new: #747a90;
-  --user-bubble: rgba(89, 92, 180, 0.24);
-  --user-border: rgba(150, 151, 255, 0.28);
-  --ai-bubble: rgba(23, 25, 37, 0.94);
 }
 
 html, body, #root {
@@ -1403,7 +1377,7 @@ code, pre, kbd, samp, .font-mono {
 }
 
 
-/* Default-theme surface refinements: restrained motion, softer borders, clear focus. */
+/* Dark-only surface refinements: restrained motion, softer borders, clear focus. */
 .manus .rainbow-glow,
 .manus .rainbow-glow-border,
 .manus .rainbow-thinking-dot {
@@ -1571,7 +1545,7 @@ code, pre, kbd, samp, .font-mono {
   --bar-line: #2e3037;
   --bar-text: #f1f2f6;
   --bar-muted: #8c90a0;
-  --bar-chip: #2a2c33;
+  --bar-control: #2a2c33;
   --bar-accent: #8b8bff;
   --bar-send: #f1f2f6;
   --bar-send-fg: #14161f;
@@ -1582,17 +1556,7 @@ code, pre, kbd, samp, .font-mono {
   padding: 18px 18px 14px;
   transition: border-color 0.15s ease, box-shadow 0.2s ease;
 }
-html.light .enosx-composer,
-body.light .enosx-composer {
-  --bar-bg: #ffffff;
-  --bar-line: #dcdfe8;
-  --bar-text: #14161f;
-  --bar-muted: #6b7084;
-  --bar-chip: #eceef5;
-  --bar-accent: #5b5bf0;
-  --bar-send: #14161f;
-  --bar-send-fg: #ffffff;
-}
+
 .enosx-composer:focus-within { border-color: var(--bar-accent); }
 .enosx-composer--listening { box-shadow: 0 0 0 3px rgba(139, 139, 255, 0.18); }
 
@@ -1642,12 +1606,12 @@ body.light .enosx-composer {
   cursor: pointer;
   transition: background-color 0.15s ease, color 0.15s ease;
 }
-.enosx-icon:hover { background: var(--bar-chip); }
+.enosx-icon:hover { background: var(--bar-control); }
 .enosx-icon--plain { border-color: transparent; color: var(--bar-muted); }
 .enosx-icon--plain:hover { color: var(--bar-text); }
 .enosx-icon--plain.is-active { color: var(--bar-accent); }
 
-.enosx-pill {
+.enosx-control {
   flex: none;
   display: flex;
   align-items: center;
@@ -1655,7 +1619,7 @@ body.light .enosx-composer {
   height: 36px;
   padding: 0 12px;
   border: 1px solid var(--bar-line);
-  border-radius: 18px;
+  border-radius: 6px;
   background: transparent;
   color: var(--bar-muted);
   font-family: inherit;
@@ -1664,19 +1628,19 @@ body.light .enosx-composer {
   cursor: pointer;
   transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease;
 }
-.enosx-pill:hover { background: var(--bar-chip); }
-.enosx-pill svg { color: var(--bar-text); }
-.enosx-pill--device { color: var(--bar-text); }
-.enosx-pill__logo { display: inline-flex; align-items: center; justify-content: center; }
-.enosx-pill__count { margin-left: 2px; font-size: 12px; font-weight: 600; color: var(--bar-text); }
-.enosx-pill--connectors.is-active { border-color: var(--bar-accent); }
+.enosx-control:hover { background: var(--bar-control); }
+.enosx-control svg { color: var(--bar-text); }
+.enosx-control--device { color: var(--bar-text); }
+.enosx-control__logo { display: inline-flex; align-items: center; justify-content: center; }
+.enosx-control__count { margin-left: 2px; font-size: 12px; font-weight: 600; color: var(--bar-text); }
+.enosx-control--connectors.is-active { border-color: var(--bar-accent); }
 
 .enosx-send {
   flex: none;
   display: flex;
   align-items: center;
   height: 36px;
-  border-radius: 18px;
+  border-radius: 6px;
   background: var(--bar-send);
   color: var(--bar-send-fg);
   overflow: hidden;
@@ -1738,7 +1702,7 @@ body.light .enosx-composer {
   text-align: left;
   cursor: pointer;
 }
-.enosx-menu__item:hover { background: var(--bar-chip); }
+.enosx-menu__item:hover { background: var(--bar-control); }
 .enosx-menu__copy { display: flex; flex: 1; min-width: 0; flex-direction: column; gap: 2px; }
 .enosx-menu__title { font-weight: 600; }
 .enosx-menu__hint { color: var(--bar-muted); font-size: 11px; font-weight: 400; }
@@ -1753,8 +1717,8 @@ body.light .enosx-composer {
 }
 
 @media (max-width: 520px) {
-  .enosx-pill { padding: 0 10px; }
-  .enosx-pill__label { display: none; }
+  .enosx-control { padding: 0 10px; }
+  .enosx-control__label { display: none; }
 }
 
 /* ===================================================================   ENOSX AI phone reference layout
@@ -1951,7 +1915,7 @@ body.light .enosx-composer {
 .phone-reference-composer-dock .enosx-composer {
   padding: 15px 14px 12px;
   border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 30px;
+  border-radius: 8px;
   background: rgba(30, 30, 37, 0.97);
   box-shadow: 0 12px 34px rgba(0, 0, 0, 0.36), inset 0 1px 0 rgba(255, 255, 255, 0.06);
 }
@@ -1969,20 +1933,20 @@ body.light .enosx-composer {
   margin-top: 10px;
 }
 .phone-reference-composer-dock .enosx-icon,
-.phone-reference-composer-dock .enosx-pill {
+.phone-reference-composer-dock .enosx-control {
   width: 38px;
   min-width: 38px;
   height: 38px;
   padding: 0;
   justify-content: center;
 }
-.phone-reference-composer-dock .enosx-pill--connectors {
+.phone-reference-composer-dock .enosx-control--connectors {
   width: 76px;
   min-width: 76px;
   justify-content: flex-start;
   padding: 0 8px;
 }
-.phone-reference-composer-dock .enosx-pill--connectors .enosx-pill__count {
+.phone-reference-composer-dock .enosx-control--connectors .enosx-control__count {
   margin-left: 1px;
 }
 .phone-reference-composer-dock .enosx-send,

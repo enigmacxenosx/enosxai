@@ -3,6 +3,9 @@
 ## ENOSX AI Dark-only appearance
 - [x] Removed theme switching, wallpaper controls/assets, and glass-specific surfaces.
 - [x] Locked the application shell to dark mode.
+- [x] Removed chip, pill, badge, and message-bubble effects and deleted the unused visual components.
+- [x] Flattened prompt, attachment, action, and composer controls while preserving their behavior.
+- [x] Updated README and product copy to document the permanent dark visual system.
 
 ## NVIDIA Image and Video Generation
 - [ ] Generate images using NVIDIA's hosted FLUX.2 Klein 4B endpoint by default; retain optional custom image endpoint overrides and keep all NVIDIA credentials server-side.

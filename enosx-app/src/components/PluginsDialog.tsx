@@ -289,7 +289,7 @@ export default function PluginsDialog({ open, onClose }: PluginsDialogProps) {
                     return <article key={connector.id} className="flex min-h-[90px] min-w-0 items-center gap-3 rounded-xl border border-white/[0.085] bg-[#1c1c1c] p-3 transition hover:border-white/[0.16]">
                       <span className="grid h-10 w-10 shrink-0 place-items-center rounded-lg border border-white/[0.08] bg-white/[0.045]"><ConnectorLogo name={connector.name} accent="#18181b" size={24} /></span>
                       <div className="min-w-0 flex-1">
-                        <div className="flex flex-wrap items-center gap-1.5"><h4 className="text-[13px] font-semibold text-white/90">{connectorTitle(connector)}</h4><span className="rounded-full bg-white/[0.06] px-1.5 py-0.5 text-[9px] text-white/45">{connector.kind}</span></div>
+                        <div className="flex flex-wrap items-center gap-1.5"><h4 className="text-[13px] font-semibold text-white/90">{connectorTitle(connector)}</h4><span className="rounded-md bg-white/[0.06] px-1.5 py-0.5 text-[9px] text-white/45">{connector.kind}</span></div>
                         <p className="mt-1 line-clamp-2 text-[11px] leading-relaxed text-white/48">{CONNECTOR_DESCRIPTIONS[connector.id]}</p>
                         <p className="mt-1 text-[10px] text-white/30">By {CONNECTOR_PROVIDERS[connector.id]}</p>
                       </div>

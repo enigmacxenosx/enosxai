@@ -3,13 +3,13 @@ import { File, X, Image as ImageIcon, FileText } from "lucide-react";
 import { useDarkMode } from "@/contexts/DarkModeContext";
 import { FileContext } from "@/hooks/useFileContext";
 
-interface FileContextBadgeProps {
+interface FileContextPanelProps {
   fileContext: FileContext;
   onRemove: (id: string) => void;
   onClear: () => void;
 }
 
-export default function FileContextBadge({ fileContext, onRemove, onClear }: FileContextBadgeProps) {
+export default function FileContextPanel({ fileContext, onRemove, onClear }: FileContextPanelProps) {
   const { config } = useDarkMode();
 
   if (!fileContext.isLoaded || fileContext.files.length === 0) return null;
@@ -27,7 +27,7 @@ export default function FileContextBadge({ fileContext, onRemove, onClear }: Fil
               initial={{ opacity: 0, scale: 0.8, y: 10 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.8, y: 10 }}
-              className="group relative flex items-center gap-2 px-3 py-1.5 rounded-full border transition-all duration-200"
+              className="group relative flex items-center gap-2 px-3 py-1.5 rounded-md border transition-colors duration-200"
               style={{
                 background: "rgba(255, 255, 255, 0.05)",
                 borderColor: "rgba(255, 255, 255, 0.1)",
@@ -47,7 +47,7 @@ export default function FileContextBadge({ fileContext, onRemove, onClear }: Fil
 
               <button
                 onClick={() => onRemove(file.id)}
-                className="ml-1 p-0.5 rounded-full hover:bg-white/10 transition-colors"
+                className="ml-1 p-0.5 rounded-sm hover:bg-white/10 transition-colors"
                 style={{ color: config.textMuted }}
               >
                 <X size={12} />
@@ -67,7 +67,7 @@ export default function FileContextBadge({ fileContext, onRemove, onClear }: Fil
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           onClick={onClear}
-          className="px-3 py-1.5 rounded-full text-[10px] font-bold hover:bg-white/5 transition-colors"
+          className="px-3 py-1.5 rounded-md text-[10px] font-bold hover:bg-white/5 transition-colors"
           style={{ color: config.accent, border: `1px solid rgba(${config.accentRgb}, 0.2)` }}
         >
           CLEAR ALL

@@ -4,7 +4,7 @@ This document describes the current product and verified code behavior. Provider
 
 ## Enosx Technologies
 
-Enosx Technologies was founded in Nairobi, Kenya, in 2024 by Enosh Yeswa, its Founder and Chief Executive Officer. The company's stated product principle is “Speed is UX.” Its product portfolio includes ENOSX AI and the Enosx Tech Store, which offers technology products and digital services. The brand uses an Aero-Glass visual direction with translucent surfaces, blur, and iridescent accents.
+Enosx Technologies was founded in Nairobi, Kenya, in 2024 by Enosh Yeswa, its Founder and Chief Executive Officer. The company's stated product principle is “Speed is UX.” Its product portfolio includes ENOSX AI and the Enosx Tech Store, which offers technology products and digital services. The product uses a focused dark visual direction with opaque surfaces, clear hierarchy, and restrained crimson accents.
 
 Official company website: <https://enosxtech.vercel.app>.
 

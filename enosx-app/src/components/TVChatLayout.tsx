@@ -3,7 +3,7 @@ import { motion } from "framer-motion";
 import { Mic, History, Plus, Settings, Volume2 } from "lucide-react";
 import { Conversation, Message, VoiceState, type ActionActivityStatus, type AssistantAction, type Attachment } from "@/lib/types";
 import { useDarkMode } from "@/contexts/DarkModeContext";
-import MessageBubble from "./MessageBubble";
+import MessageRow from "./MessageRow";
 import CommandBar, { AIModePicker, type AIMode } from "./CommandBar";
 
 interface TVChatLayoutProps {
@@ -129,7 +129,7 @@ export default function TVChatLayout({
           ) : (
             <div className="flex flex-col gap-12">
               {messages.map((msg, idx) => (
-                <MessageBubble
+                <MessageRow
                   key={msg.id}
                   message={msg}
                   index={idx}

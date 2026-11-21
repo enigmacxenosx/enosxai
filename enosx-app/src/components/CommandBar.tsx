@@ -86,7 +86,7 @@ export function AIModePicker({ aiMode, onChange, className = "" }: { aiMode: AIM
 
   return (
     <div className="relative" ref={modeRef}>
-      <motion.button type="button" whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }} onClick={() => setModeOpen((open) => !open)} className={`flex items-center gap-2 rounded-full px-3 py-1.5 text-[11px] font-semibold whitespace-nowrap transition-all ${className}`} style={{ background: currentMode.bgColor, color: currentMode.color }} aria-haspopup="menu" aria-expanded={modeOpen} title={`AI mode: ${currentMode.label}`}>
+      <motion.button type="button" whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }} onClick={() => setModeOpen((open) => !open)} className={`flex items-center gap-2 rounded-md px-3 py-1.5 text-[11px] font-semibold whitespace-nowrap transition-all ${className}`} style={{ background: currentMode.bgColor, color: currentMode.color }} aria-haspopup="menu" aria-expanded={modeOpen} title={`AI mode: ${currentMode.label}`}>
         <span className="h-2 w-2 rounded-full" style={{ background: currentMode.color, boxShadow: `0 0 10px ${currentMode.color}88` }} />
         {currentMode.label}<ChevronDown size={12} style={{ transform: modeOpen ? "rotate(180deg)" : "rotate(0deg)", transition: "transform 0.2s ease" }} />
       </motion.button>
@@ -175,14 +175,14 @@ function WorkspacePicker({ onOpenChange }: WorkspacePickerProps) {
       <button
         type="button"
         onClick={() => setOpen((value) => !value)}
-        className="enosx-pill enosx-pill--device"
+        className="enosx-control enosx-control--device"
         aria-haspopup="menu"
         aria-expanded={open}
         aria-label={`Workspace: ${current.label}`}
         title={`Workspace: ${current.label}`}
       >
         <Cloud size={16} />
-        <span className="enosx-pill__label">{current.label}</span>
+        <span className="enosx-control__label">{current.label}</span>
       </button>
       <AnimatePresence>
         {open && (

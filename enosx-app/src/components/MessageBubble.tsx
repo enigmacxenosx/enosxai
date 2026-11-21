@@ -361,7 +361,7 @@ export default function MessageBubble({
       <div className={`flex min-w-0 max-w-[92%] flex-col gap-1 ${isUser ? "items-end" : "items-start"}`}>
         <motion.div
           transition={{ type: "spring", stiffness: 400, damping: 30 }}
-          className={`relative w-full transition-all duration-300 ${!isUser && (isEmpty || isStreaming) ? 'rainbow-glow' : ''}`}
+          className={`relative w-full transition-all duration-300 ${!isUser && (isEmpty || isStreaming) ? 'response-glow' : ''}`}
           style={{
             background: "transparent",
             border: "0",
@@ -400,7 +400,9 @@ export default function MessageBubble({
                     <MediaAttachmentList attachments={message.attachments} />
                   )}
                   {/* Agent content with inline image support */}
-                  {renderContentWithMedia(message.content, config.accent, isStreaming)}
+                  <div className={!isEmpty ? "assistant-response-text" : undefined}>
+                    {renderContentWithMedia(message.content, config.accent, isStreaming)}
+                  </div>
                   {message.proposedActions && message.proposedActions.length > 0 && (
                     <div className="flex flex-col gap-2 rounded-xl border border-cyan-300/20 bg-cyan-400/[0.06] p-3">
                       <div className="flex items-center gap-2 text-xs font-semibold tracking-wide text-cyan-100">

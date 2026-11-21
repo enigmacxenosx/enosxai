@@ -6,7 +6,7 @@ function titleCase(value: string): string {
     if (word.length > 1 && word === word.toLocaleUpperCase()) return word;
     const lower = word.toLocaleLowerCase();
     if (index > 0 && SMALL_TITLE_WORDS.has(lower)) return lower;
-    return lower.replace(/(^|[-'])\p{L}/gu, (part) => part.toLocaleUpperCase());
+    return lower.replace(/(^|-)\p{L}/gu, (part) => part.toLocaleUpperCase());
   }).join(" ");
 }
 
@@ -17,13 +17,21 @@ export function generateConversationTitle(firstMessage: string): string {
   title = title
     .replace(/^(?:hey|hi|hello)\s+(?:enosx(?:\s+ai)?|agent)[,\s:!-]*/i, "")
     .replace(/^(?:please\s+)?(?:can|could|would)\s+you(?:\s+please)?(?:\s+help\s+me)?(?:\s+with)?\s+/i, "")
+    .replace(/^(?:i was wondering if|i wonder if)\s+(?:you could|you can|you would)\s+/i, "")
+    .replace(/^(?:please\s+)?(?:could you|can you|would you)\s+(?:help me\s+)?(?:to\s+)?/i, "")
     .replace(/^(?:please\s+)?(?:i am|i'm|i’m)\s+(?:trying\s+to|looking\s+to|hoping\s+to)\s+/i, "")
     .replace(/^(?:please\s+)?(?:i want to|i need to|i would like to|i'd like to|help me to|help me|i need help with|i need help)\s+/i, "")
+    .replace(/^(?:please\s+)?(?:give me|tell me|show me)\s+(?:how to|about)?\s*/i, "")
+    .replace(/^(?:i have a question about|i have a question on)\s+/i, "")
     .replace(/^(?:how do i|how can i|how should i)\s+/i, "")
     .replace(/^please\s+/i, "");
 
   const firstSentence = title.split(/(?<=[.!?])\s+/)[0] || title;
-  title = firstSentence.replace(/[.!?]+$/g, "").trim();
+  title = firstSentence
+    .replace(/[.!?,;:…]+$/g, "")
+    .replace(/[—–-]+$/g, "")
+    .replace(/^["“”'`]+|["“”'`]+$/g, "")
+    .trim();
   if (!title) return "New Chat";
 
   const words = title.split(/\s+/);

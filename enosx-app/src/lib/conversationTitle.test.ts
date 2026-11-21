@@ -14,6 +14,15 @@ describe("generateConversationTitle", () => {
       .toBe("A Concise Project Brief");
   });
 
+  it("cleans common question prefixes and trailing punctuation", () => {
+    expect(generateConversationTitle("I was wondering if you could explain Kenya's startup tax rules..."))
+      .toBe("Explain Kenya's Startup Tax Rules");
+    expect(generateConversationTitle("Please give me a three-step morning routine!!!"))
+      .toBe("A Three-Step Morning Routine");
+    expect(generateConversationTitle("I have a question about remote team rituals —"))
+      .toBe("Remote Team Rituals");
+  });
+
   it("uses only the first sentence and removes ending punctuation", () => {
     expect(generateConversationTitle("I want to create a marketing plan for Enosx Technologies. Include a budget too."))
       .toBe("Create a Marketing Plan for Enosx Technologies");

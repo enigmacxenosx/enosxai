@@ -1481,6 +1481,11 @@ code, pre, kbd, samp, .font-mono {
 .welcome-chat-layout .welcome-suggestions-dock {
   padding-top: 1rem;
 }
+@media (min-width: 768px) {
+  .welcome-screen-heading {
+    display: none;
+  }
+}
 .premium-chat-shell textarea::placeholder {
   color: rgba(255, 255, 255, 0.34);
 }

@@ -66,7 +66,7 @@ export default function WelcomeScreen({ onSuggestion, isCompact, isComposerFlow 
       >
         <div className={`${isComposerFlow || !showSuggestions ? "mb-0" : "mb-8"} flex items-center justify-center gap-3`}>
           <BrandMark size={isCompact ? 30 : 34} className="flex-shrink-0" />
-          <h2 className="min-w-0 text-left text-xl font-semibold tracking-[-0.03em] sm:text-2xl" style={{ color: config.text }}>
+          <h2 className="welcome-screen-heading min-w-0 text-left text-xl font-semibold tracking-[-0.03em] sm:text-2xl" style={{ color: config.text }}>
             What would you like to work on?
           </h2>
         </div>

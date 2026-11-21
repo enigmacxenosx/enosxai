@@ -5,7 +5,7 @@
  * hook, so they apply immediately without a restart.
  */
 
-import { Volume2, Waves, Mic, Zap } from "lucide-react";
+import { Volume2, Mic, Zap } from "lucide-react";
 import { SpeechSettings } from "@/hooks/useVoice";
 import { Switch } from "@/components/Switch";
 
@@ -90,16 +90,9 @@ export default function VoiceSettingsPanel({ settings, onUpdate }: VoiceSettings
         display={settings.rate.toFixed(1)}
         onChange={(rate) => onUpdate({ rate })}
       />
-      <SliderRow
-        icon={<Waves size={14} />}
-        label="Voice pitch"
-        value={settings.pitch}
-        min={0}
-        max={2}
-        step={0.1}
-        display={settings.pitch.toFixed(1)}
-        onChange={(pitch) => onUpdate({ pitch })}
-      />
+      <div className="px-4 pb-2 text-[11px] leading-relaxed text-white/35">
+        Voice pitch is controlled by the selected NVIDIA voice. Speech speed now applies immediately and preserves the voice’s natural pitch.
+      </div>
       <div className="flex items-center gap-3 px-4 py-2.5">
         <span className="w-7 h-7 rounded-md bg-white/5 flex items-center justify-center text-white/60 shrink-0">
           <Mic size={14} />

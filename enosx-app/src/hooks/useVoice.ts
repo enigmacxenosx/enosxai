@@ -17,7 +17,7 @@ export interface SpeechSettings {
 }
 
 const DEFAULT_SPEECH_SETTINGS: SpeechSettings = {
-  rate: 1,
+  rate: 1.15,
   pitch: 1,
   voiceProvider: "magpie",
   continuousConversation: false,
@@ -32,7 +32,7 @@ export function loadSpeechSettings(): SpeechSettings {
     if (raw) {
       const parsed = JSON.parse(raw);
       return {
-        rate: Math.min(2, Math.max(0.5, Number(parsed.rate) || 1)),
+        rate: Math.min(2, Math.max(0.5, Number(parsed.rate) || 1.15)),
         pitch: Math.min(2, Math.max(0, Number(parsed.pitch) || 1)),
         voiceProvider: parsed.voiceProvider === "chatterbox" ? "chatterbox" : "magpie",
         continuousConversation: Boolean(parsed.continuousConversation),
@@ -125,7 +125,7 @@ function cleanSpeechText(text: string) {
     .trim();
 }
 
-function splitIntoSpeechChunks(text: string, maximumLength = 100) {
+function splitIntoSpeechChunks(text: string, maximumLength = 280) {
   const sentences = text.match(/[^.!?]+[.!?]+|[^.!?]+$/g) ?? [text];
   const chunks: string[] = [];
   let currentChunk = "";
@@ -431,7 +431,7 @@ export function useVoice() {
       const chunks = splitIntoSpeechChunks(cleanText);
 
       try {
-        setVoiceState("speaking");
+        setVoiceState("processing");
         const fetchChunk = async (index: number) => {
           const response = await fetch(VOICE_SERVICE_URL, {
             method: "POST",
@@ -447,7 +447,17 @@ export function useVoice() {
           return audioBlob;
         };
 
-        let prefetchedChunk: Promise<{ audioBlob?: Blob; error?: unknown }> | null = null;
+        const fetchChunkResult = (index: number): Promise<{ audioBlob?: Blob; error?: unknown }> => fetchChunk(index).then(
+          (blob) => ({ audioBlob: blob }),
+          (error) => ({ error }),
+        );
+        const firstChunk = fetchChunkResult(0);
+        // Begin the second request while the first clip is being downloaded and played.
+        // This removes most of the silence between clips without requiring a new
+        // streaming format from the TTS provider.
+        let prefetchedChunk: Promise<{ audioBlob?: Blob; error?: unknown }> | null = chunks.length > 1
+          ? fetchChunkResult(1)
+          : null;
         const playChunk = async (index: number) => {
           if (requestId !== speechRequestIdRef.current) return;
           if (index >= chunks.length) {
@@ -456,19 +466,18 @@ export function useVoice() {
             return;
           }
 
-          const result = prefetchedChunk
-            ? await prefetchedChunk
-            : { audioBlob: await fetchChunk(index) };
-          prefetchedChunk = null;
+          const result = index === 0
+            ? await firstChunk
+            : prefetchedChunk
+              ? await prefetchedChunk
+              : { audioBlob: await fetchChunk(index) };
+          if (index > 0) prefetchedChunk = null;
           if (result.error) throw result.error;
           const audioBlob = result.audioBlob!;
           if (requestId !== speechRequestIdRef.current) return;
 
-          if (index + 1 < chunks.length) {
-            prefetchedChunk = fetchChunk(index + 1).then(
-              (blob) => ({ audioBlob: blob }),
-              (error) => ({ error })
-            );
+          if (index + 1 < chunks.length && !prefetchedChunk) {
+            prefetchedChunk = fetchChunkResult(index + 1);
           }
 
           const objectUrl = URL.createObjectURL(
@@ -476,6 +485,16 @@ export function useVoice() {
           );
           const audio = new Audio(objectUrl);
           audio.preload = "auto";
+          audio.playbackRate = settingsRef.current.rate;
+          const pitchPreservingAudio = audio as HTMLAudioElement & {
+            preservesPitch?: boolean;
+            mozPreservesPitch?: boolean;
+            webkitPreservesPitch?: boolean;
+          };
+          pitchPreservingAudio.preservesPitch = true;
+          pitchPreservingAudio.mozPreservesPitch = true;
+          pitchPreservingAudio.webkitPreservesPitch = true;
+          setVoiceState("speaking");
           audioRef.current = audio;
           audio.onended = () => {
             if (audioRef.current !== audio || requestId !== speechRequestIdRef.current) return;

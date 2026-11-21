@@ -17,6 +17,13 @@ describe("getOnlineMediaSearch", () => {
     expect(getOnlineMediaSearch("Generate an image of a red fox")).toBeNull();
   });
 
+  it("searches online for a requested Jerusalem Cross picture", () => {
+    expect(getOnlineMediaSearch("Can you show me a picture of the Jerusalem Cross?")).toEqual({
+      type: "images",
+      query: "picture of the Jerusalem Cross",
+    });
+  });
+
   it("routes a general music request to playable video search", () => {
     expect(getOnlineMediaSearch("Play some music")).toEqual({
       type: "videos",

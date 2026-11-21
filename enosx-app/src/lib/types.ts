@@ -10,6 +10,16 @@ export interface Attachment {
   url?: string;
 }
 
+export type ActionActivityStatus = "running" | "waiting_for_approval" | "succeeded" | "failed" | "cancelled";
+
+export interface ActionActivity {
+  id: string;
+  label: string;
+  status: ActionActivityStatus;
+  detail?: string;
+  updatedAt?: string;
+}
+
 export interface Message {
   id: string;
   role: "user" | "assistant" | "system";
@@ -18,6 +28,7 @@ export interface Message {
   isStreaming?: boolean;
   reasoningStatus?: string;
   reasoningSteps?: string[];
+  actionActivities?: ActionActivity[];
   attachments?: Attachment[];
   proposedActions?: AssistantAction[];
 }

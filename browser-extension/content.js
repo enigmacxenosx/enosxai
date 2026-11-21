@@ -37,11 +37,13 @@ window.addEventListener("message", async (event) => {
   const request = event.data;
   if (!request || request.source !== "enosx-ai-app" || request.type !== "QUEUE_BROWSER_ACTION") return;
   const requestId = typeof request.requestId === "string" ? request.requestId : "";
+  const activityId = typeof request.activityId === "string" && /^[A-Za-z0-9_-]{1,100}$/.test(request.activityId) ? request.activityId : "";
 
   try {
     const result = await chrome.runtime.sendMessage({
       type: "ENOSX_QUEUE_BROWSER_ACTION",
       action: request.action,
+      activityId,
     });
     postToApp("BROWSER_ACTION_QUEUE_RESULT", { requestId, result });
   } catch {

@@ -6,7 +6,7 @@ import MessageBubble from "./MessageBubble";
 import CommandBar, { AIModePicker, type AIMode } from "./CommandBar";
 import { WelcomeSuggestions } from "./WelcomeScreen";
 import BrandMark from "./BrandMark";
-import { Conversation, Message, VoiceState, type Attachment } from "@/lib/types";
+import { Conversation, Message, VoiceState, type ActionActivityStatus, type AssistantAction, type Attachment } from "@/lib/types";
 
 interface PhoneChatLayoutProps {
   conversations: Conversation[];
@@ -33,6 +33,8 @@ interface PhoneChatLayoutProps {
   isFreeMode?: boolean;
   onFilesSelected?: (files: File[]) => void;
   onUpscaleVideo?: (file: File) => void;
+  onExecuteProposedAction?: (action: AssistantAction, messageId: string) => void;
+  onActionActivity?: (messageId: string, activityId: string, label: string, status: ActionActivityStatus, detail: string) => void;
   attachments?: Attachment[];
   audioStream?: MediaStream | null;
   onSettingsClick?: () => void;
@@ -68,6 +70,8 @@ export default function PhoneChatLayout({
   isFreeMode = false,
   onFilesSelected,
   onUpscaleVideo,
+  onExecuteProposedAction,
+  onActionActivity,
   attachments = [],
   audioStream = null,
   onSettingsClick,
@@ -154,6 +158,8 @@ export default function PhoneChatLayout({
                 onSpeak={speak}
                 onStopSpeak={stopSpeaking}
                 isSpeaking={voiceState === "speaking"}
+                onExecuteProposedAction={onExecuteProposedAction}
+                onActionActivity={onActionActivity}
               />
             ))}
             <div ref={messagesEndRef} />

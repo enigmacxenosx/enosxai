@@ -1,7 +1,7 @@
 import React, { useEffect, useRef } from "react";
 import { motion } from "framer-motion";
 import { Mic, History, Plus, Settings, Volume2 } from "lucide-react";
-import { Conversation, Message, VoiceState, type Attachment } from "@/lib/types";
+import { Conversation, Message, VoiceState, type ActionActivityStatus, type AssistantAction, type Attachment } from "@/lib/types";
 import { useTheme } from "@/contexts/ThemeContext";
 import MessageBubble from "./MessageBubble";
 import CommandBar, { AIModePicker, type AIMode } from "./CommandBar";
@@ -28,6 +28,8 @@ interface TVChatLayoutProps {
   isFreeMode?: boolean;
   onFilesSelected?: (files: File[]) => void;
   onUpscaleVideo?: (file: File) => void;
+  onExecuteProposedAction?: (action: AssistantAction, messageId: string) => void;
+  onActionActivity?: (messageId: string, activityId: string, label: string, status: ActionActivityStatus, detail: string) => void;
   attachments?: Attachment[];
   audioStream?: MediaStream | null;
 }
@@ -54,6 +56,8 @@ export default function TVChatLayout({
   isFreeMode = false,
   onFilesSelected,
   onUpscaleVideo,
+  onExecuteProposedAction,
+  onActionActivity,
   attachments = [],
   audioStream = null,
 }: TVChatLayoutProps) {
@@ -132,6 +136,8 @@ export default function TVChatLayout({
                   onSpeak={speak}
                   onStopSpeak={stopSpeaking}
                   isSpeaking={voiceState === "speaking"}
+                  onExecuteProposedAction={onExecuteProposedAction}
+                  onActionActivity={onActionActivity}
                 />
               ))}
               <div ref={messagesEndRef} />

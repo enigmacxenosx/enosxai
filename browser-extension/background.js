@@ -61,6 +61,7 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
       }
       const queued = {
         id: crypto.randomUUID(),
+        activityId: typeof message.activityId === "string" && /^[A-Za-z0-9_-]{1,100}$/.test(message.activityId) ? message.activityId : "",
         action: message.action,
         queuedAt: Date.now(),
         expiresAt: Date.now() + ACTION_TTL_MS,
@@ -94,7 +95,9 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
   if (message?.type === "ENOSX_STORE_BROWSER_ACTION_RESULT") {
     if (!message.result || typeof message.result.message !== "string" || typeof message.result.url !== "string"
       || !["click_element", "fill_form"].includes(message.result.actionType)
-      || typeof message.result.completedAt !== "string") {
+      || typeof message.result.completedAt !== "string"
+      || (message.result.status !== undefined && !["succeeded", "failed", "cancelled"].includes(message.result.status))
+      || (message.result.activityId !== undefined && (typeof message.result.activityId !== "string" || message.result.activityId.length > 100))) {
       sendResponse({ ok: false });
       return;
     }

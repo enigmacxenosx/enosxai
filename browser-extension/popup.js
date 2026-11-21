@@ -17,6 +17,32 @@ const cancelButton = document.getElementById("cancel-action");
 let currentAction = null;
 let currentTab = null;
 
+async function reportActionOutcome(status, message) {
+  if (!currentAction?.action) return;
+  const result = {
+    activityId: currentAction.activityId || "",
+    status,
+    actionType: currentAction.action.type,
+    url: currentAction.action.url,
+    message: String(message || "Browser action finished.").slice(0, 500),
+    completedAt: new Date().toISOString(),
+  };
+  try {
+    await chrome.runtime.sendMessage({ type: "ENOSX_STORE_BROWSER_ACTION_RESULT", result });
+    const appTabs = await chrome.tabs.query({ url: APP_URLS });
+    const appTab = appTabs.find((tab) => tab.id);
+    if (appTab?.id) {
+      try {
+        await chrome.tabs.sendMessage(appTab.id, { type: "ENOSX_DELIVER_BROWSER_ACTION_RESULT" });
+      } catch {
+        // Keep the one-time result in extension session storage for the next app load.
+      }
+    }
+  } catch {
+    // The approved browser action remains visible in the extension even if the app is unavailable.
+  }
+}
+
 function setStatus(text) {
   statusNode.textContent = text;
 }
@@ -240,36 +266,26 @@ async function executeApprovedAction() {
     });
     const actionResult = result?.result;
     if (!actionResult?.ok) throw new Error(actionResult?.error || "The action did not complete.");
-    await chrome.runtime.sendMessage({ type: "ENOSX_CLEAR_PENDING_BROWSER_ACTION" });
-    await chrome.runtime.sendMessage({
-      type: "ENOSX_STORE_BROWSER_ACTION_RESULT",
-      result: {
-        actionType: currentAction.action.type,
-        url: currentAction.action.url,
-        message: actionResult.result || "Approved browser action completed.",
-        completedAt: new Date().toISOString(),
-      },
-    });
-    const appTabs = await chrome.tabs.query({ url: APP_URLS });
-    const appTab = appTabs.find((tab) => tab.id);
-    if (appTab?.id) {
-      try {
-        await chrome.tabs.sendMessage(appTab.id, { type: "ENOSX_DELIVER_BROWSER_ACTION_RESULT" });
-      } catch {
-        // Keep the one-time result in extension session storage for the next app load.
-      }
+    await reportActionOutcome("succeeded", actionResult.result || "Approved browser action completed.");
+    try {
+      await chrome.runtime.sendMessage({ type: "ENOSX_CLEAR_PENDING_BROWSER_ACTION" });
+    } catch {
+      // The action already ran; do not downgrade its reported outcome if cleanup fails.
     }
     setStatus(actionResult.result || "Approved action completed.");
     actionCard.hidden = true;
     currentAction = null;
   } catch (error) {
-    setStatus(error instanceof Error ? error.message : "The action failed.");
+    const message = error instanceof Error ? error.message : "The action failed.";
+    await reportActionOutcome("failed", message);
+    setStatus(message);
     approveButton.disabled = false;
     cancelButton.disabled = false;
   }
 }
 
 async function cancelPendingAction() {
+  await reportActionOutcome("cancelled", "Canceled by the user before execution.");
   await chrome.runtime.sendMessage({ type: "ENOSX_CLEAR_PENDING_BROWSER_ACTION" });
   currentAction = null;
   actionCard.hidden = true;

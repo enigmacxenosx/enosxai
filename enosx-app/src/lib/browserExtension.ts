@@ -12,6 +12,8 @@ export interface BrowserActionResult {
   url: string;
   message: string;
   completedAt: string;
+  activityId?: string;
+  status?: "succeeded" | "failed" | "cancelled";
 }
 
 export const SHARED_BROWSER_PAGE_EVENT = "enosx-browser-page-shared";
@@ -42,6 +44,7 @@ export function sanitizeBrowserActionResult(value: unknown): BrowserActionResult
   const result = value as Record<string, unknown>;
   if (result.actionType !== "click_element" && result.actionType !== "fill_form") return null;
   if (typeof result.url !== "string" || typeof result.message !== "string" || typeof result.completedAt !== "string") return null;
+  if (result.status !== undefined && !["succeeded", "failed", "cancelled"].includes(String(result.status))) return null;
   try {
     const url = new URL(result.url);
     if (!/^https?:$/.test(url.protocol) || url.username || url.password) return null;
@@ -50,6 +53,8 @@ export function sanitizeBrowserActionResult(value: unknown): BrowserActionResult
       url: url.toString().slice(0, 2048),
       message: result.message.slice(0, 500),
       completedAt: result.completedAt.slice(0, 40),
+      ...(typeof result.activityId === "string" && /^[A-Za-z0-9_-]{1,100}$/.test(result.activityId) ? { activityId: result.activityId } : {}),
+      status: result.status === "failed" || result.status === "cancelled" ? result.status : "succeeded",
     };
   } catch {
     return null;
@@ -101,7 +106,7 @@ export function installBrowserExtensionBridge(
   return () => window.removeEventListener("message", onMessage);
 }
 
-export function queueBrowserAction(action: AssistantAction): Promise<{ ok: boolean; error?: string }> {
+export function queueBrowserAction(action: AssistantAction, activityId?: string): Promise<{ ok: boolean; error?: string }> {
   const validationError = validateBrowserAction(action);
   if (validationError) return Promise.resolve({ ok: false, error: validationError });
   const requestId = crypto.randomUUID();
@@ -126,6 +131,7 @@ export function queueBrowserAction(action: AssistantAction): Promise<{ ok: boole
       window.removeEventListener("message", onMessage);
     };
     window.addEventListener("message", onMessage);
-    window.postMessage({ source: "enosx-ai-app", type: "QUEUE_BROWSER_ACTION", requestId, action }, window.location.origin);
+    const safeActivityId = typeof activityId === "string" && /^[A-Za-z0-9_-]{1,100}$/.test(activityId) ? activityId : undefined;
+    window.postMessage({ source: "enosx-ai-app", type: "QUEUE_BROWSER_ACTION", requestId, action, ...(safeActivityId ? { activityId: safeActivityId } : {}) }, window.location.origin);
   });
 }

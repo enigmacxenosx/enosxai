@@ -43,7 +43,7 @@ import { useClipboardListener } from "@/hooks/useClipboardListener";
 import { useGodMode } from "@/hooks/useGodMode";
 import { useMemoryBank } from "@/hooks/useMemoryBank";
 import { useKnowledgeBank } from "@/hooks/useKnowledgeBank";
-import { AssistantAction, Conversation, Message } from "@/lib/types";
+import { ActionActivityStatus, AssistantAction, Conversation, Message } from "@/lib/types";
 import { getFollowUpSuggestions } from "@/lib/followUpSuggestions";
 import { createConversationBranch } from "@/lib/conversationBranching";
 import { useTheme } from "@/contexts/ThemeContext";
@@ -64,6 +64,8 @@ import { generateConversationTitle } from "@/lib/conversationTitle";
 import { ChevronDown, Copy, Eye, Gauge, Menu, Share2 } from "lucide-react";
 import { copyTranscript } from "@/lib/shareConversation";
 import { getOnlineMediaSearch, getWebsiteStudyUrl, searchOnlineMedia, studyWebsite } from "@/lib/onlineResearch";
+import { isImageGenerationRequest } from "@/lib/mediaIntent";
+import { normalizeActionActivities, upsertActionActivity } from "@/lib/actionActivity";
 import { isGitHubActionsStatusRequest, loadGitHubActionsDiagnostic } from "@/lib/githubActions";
 import { installBrowserExtensionBridge, queueBrowserAction, type SharedBrowserPage } from "@/lib/browserExtension";
 import {
@@ -91,11 +93,6 @@ interface WaitingMessage {
   text: string;
   aiMode?: AIMode;
   selectedConnectorIds?: string[];
-}
-
-function isImageGenerationRequest(text: string): boolean {
-  if (/\b(?:online|internet|web)\b/i.test(text) && /\b(?:image|picture|photo|video|clip|movie)s?\b/i.test(text)) return false;
-  return /\b(?:generate|create|make|draw|paint|render|illustrate|design)\b.{0,120}\b(?:image|picture|illustration|artwork|logo|icon|avatar)\b/i.test(text);
 }
 
 function isVideoGenerationRequest(text: string): boolean {
@@ -126,6 +123,7 @@ function normalizeConversation(raw: any): Conversation | null {
           content: String(message.content ?? ""),
           timestamp: new Date(message.timestamp ?? now),
           reasoningSteps: Array.isArray(message.reasoningSteps) ? message.reasoningSteps.filter((step: unknown): step is string => typeof step === "string").slice(0, 8) : undefined,
+          actionActivities: normalizeActionActivities(message.actionActivities),
           attachments: message.attachments ?? undefined,
           proposedActions: message.proposedActions ?? message.proposed_actions ?? undefined,
         }))
@@ -271,6 +269,20 @@ export default function ChatPage() {
   const [sharedBrowserPage, setSharedBrowserPage] = useState<SharedBrowserPage | null>(null);
 
   useEffect(() => installBrowserExtensionBridge(setSharedBrowserPage, (result) => {
+    if (result.activityId && result.status) {
+      setConversations((current) => current.map((conversation) => ({
+        ...conversation,
+        messages: conversation.messages.map((message) => message.actionActivities?.some((activity) => activity.id === result.activityId)
+          ? { ...message, actionActivities: upsertActionActivity(message.actionActivities, {
+              id: result.activityId!,
+              label: result.actionType === "click_element" ? "Approve and run browser click" : "Approve and fill browser form",
+              status: result.status!,
+              detail: result.message,
+              updatedAt: result.completedAt,
+            }) }
+          : message),
+      })));
+    }
     toast.info(`Browser action on ${new URL(result.url).hostname}: ${result.message}`);
   }), []);
 
@@ -492,9 +504,11 @@ export default function ChatPage() {
       id: nanoid(), role: "user", content: `Upscale this video with NVIDIA Video Super Resolution: ${file.name}`,
       timestamp: new Date(),
     };
+    const activityId = nanoid();
     const assistantMessage: Message = {
       id: nanoid(), role: "assistant", content: `Enhancing **${file.name}** with NVIDIA Video Super Resolution…`,
       timestamp: new Date(), isStreaming: true,
+      actionActivities: [{ id: activityId, label: "Upscale video", status: "running", detail: "Sending the video to NVIDIA Video Super Resolution.", updatedAt: new Date().toISOString() }],
     };
     const assistantId = assistantMessage.id;
     setConversations((current) => current.map((conversation) => conversation.id === targetConvId
@@ -507,7 +521,13 @@ export default function ChatPage() {
       : `Video upscaling failed: ${result.error || "The NVIDIA VSR service did not return a result."}`;
     setConversations((current) => current.map((conversation) => conversation.id === targetConvId
       ? { ...conversation, messages: conversation.messages.map((message) => message.id === assistantId
-        ? { ...message, content, isStreaming: false }
+        ? { ...message, content, isStreaming: false, actionActivities: upsertActionActivity(message.actionActivities, {
+            id: activityId,
+            label: "Upscale video",
+            status: result.url ? "succeeded" : "failed",
+            detail: result.url ? "The enhanced video is ready to download." : result.error || "The VSR service did not return a result.",
+            updatedAt: new Date().toISOString(),
+          }) }
         : message), updatedAt: new Date() }
       : conversation));
   }, [upscaleVideo]);
@@ -652,12 +672,30 @@ export default function ChatPage() {
       if (pageContextForMessage) setSharedBrowserPage(null);
 
       const assistantId = nanoid();
+      const primaryActivityId = nanoid();
+      const primaryActivityLabel = shouldGenerateVideo ? "Generate video"
+        : shouldGenerateImage ? "Generate image"
+          : shouldGenerateZip ? "Create ZIP archive" : "Prepare and write response";
       const assistantMessage: Message = {
         id: assistantId,
         role: "assistant",
         content: shouldGenerateVideo ? "🎬 Generating your video..." : shouldGenerateImage ? "🖼️ Generating your image..." : shouldGenerateZip ? "📦 Creating your ZIP archive..." : "",
         timestamp: new Date(),
         isStreaming: shouldGenerateImage || shouldGenerateVideo || shouldGenerateZip,
+        actionActivities: [{
+          id: primaryActivityId,
+          label: primaryActivityLabel,
+          status: "running",
+          detail: shouldGenerateVideo ? "Starting video generation." : shouldGenerateImage ? "Starting image generation." : shouldGenerateZip ? "Preparing the requested archive." : "Preparing request context.",
+          updatedAt: new Date().toISOString(),
+        }],
+      };
+      const updateActivity = (id: string, label: string, status: ActionActivityStatus, detail: string) => {
+        setConversations((current) => current.map((conversation) => conversation.id === targetConvId
+          ? { ...conversation, messages: conversation.messages.map((message) => message.id === assistantId
+              ? { ...message, actionActivities: upsertActionActivity(message.actionActivities, { id, label, status, detail, updatedAt: new Date().toISOString() }) }
+              : message) }
+          : conversation));
       };
 
       if (shouldGenerateVideo) {
@@ -667,6 +705,7 @@ export default function ChatPage() {
             : c)
         );
         const videoResult = await generateVideo(text, inputImage);
+        updateActivity(primaryActivityId, primaryActivityLabel, videoResult?.url ? "succeeded" : "failed", videoResult?.url ? "Video generation completed." : videoResult?.error || "No video was returned.");
         const content = videoResult?.url
           ? `Here's the video I generated for you:\n\n[Generated Video](${videoResult.url})`
           : `Video generation failed: ${videoResult?.error || "NVIDIA returned no video. Please try again later."}`;
@@ -695,6 +734,7 @@ export default function ChatPage() {
 
         // FLUX Kontext accepts a prompt alone or a prompt plus one optional input image.
         const imgResult = await generateImage(text, inputImage);
+        updateActivity(primaryActivityId, primaryActivityLabel, imgResult?.url ? "succeeded" : "failed", imgResult?.url ? "Image generation completed." : imgResult?.error || "No image was returned.");
         if (imgResult && imgResult.url) {
           const imageMarkdown = imgResult.revised_prompt
             ? `Here's the image I generated for you:\n\n![Generated Image](${imgResult.url})\n\n*Prompt: ${imgResult.revised_prompt}*`
@@ -737,8 +777,10 @@ export default function ChatPage() {
             ? { ...c, messages: [...c.messages, userMessage, assistantMessage], updatedAt: new Date() }
             : c)
         );
+        updateActivity(primaryActivityId, primaryActivityLabel, "running", "Creating the ZIP archive.");
         try {
           const zipAttachment = await generateZipArchive(userMessage.attachments || []);
+          updateActivity(primaryActivityId, primaryActivityLabel, "succeeded", "ZIP archive created and attached to this reply.");
           setConversations((prev) =>
             prev.map((c) => c.id === targetConvId
               ? {
@@ -753,6 +795,7 @@ export default function ChatPage() {
           return "ZIP archive created successfully.";
         } catch (error) {
           const message = error instanceof Error ? error.message : "Unable to create the ZIP archive.";
+          updateActivity(primaryActivityId, primaryActivityLabel, "failed", message);
           setConversations((prev) =>
             prev.map((c) => c.id === targetConvId
               ? { ...c, messages: c.messages.map((m) => m.id === assistantId ? { ...m, content: `ZIP creation failed: ${message}`, isStreaming: false } : m), updatedAt: new Date() }
@@ -789,28 +832,51 @@ export default function ChatPage() {
       // prompt may contribute runtime context.
       const githubSelected = (selectedConnectorIds ?? []).includes("github");
       const githubCiRequested = githubSelected && isGitHubActionsStatusRequest(userMessage.content);
+      const githubActivityId = nanoid();
+      if (githubCiRequested) updateActivity(githubActivityId, "Check GitHub Actions", "running", "Fetching the selected repository’s exact commit and workflow run details.");
       const updateGitHubProgress = (status: string) => setConversations((prev) => prev.map((conversation) =>
         conversation.id === targetConvId
-          ? { ...conversation, messages: conversation.messages.map((message) => message.id === assistantId ? { ...message, reasoningStatus: status, reasoningSteps: [...(message.reasoningSteps ?? []), status] } : message) }
+          ? { ...conversation, messages: conversation.messages.map((message) => message.id === assistantId
+              ? { ...message, reasoningStatus: status, reasoningSteps: [...(message.reasoningSteps ?? []), status], actionActivities: upsertActionActivity(message.actionActivities, { id: githubActivityId, label: "Check GitHub Actions", status: "running", detail: status, updatedAt: new Date().toISOString() }) }
+              : message) }
           : conversation,
       ));
       const githubActionsContext = githubCiRequested
         ? await loadGitHubActionsDiagnostic(userMessage.content, updateGitHubProgress)
         : "";
+      if (githubCiRequested) updateActivity(githubActivityId, "Check GitHub Actions", githubActionsContext.includes('"unavailable"') ? "failed" : "succeeded", githubActionsContext.includes('"unavailable"') ? "GitHub did not provide complete diagnostic evidence." : "GitHub diagnostic evidence loaded.");
+      const githubContextActivityId = nanoid();
+      if (githubSelected && !githubCiRequested) updateActivity(githubContextActivityId, "Load selected GitHub context", "running", "Reading only the GitHub context selected for this prompt.");
       const githubContext = githubSelected && !githubCiRequested
         ? await loadGitHubConnectorContext()
         : "";
+      if (githubSelected && !githubCiRequested) {
+        const githubContextUnavailable = /could not be loaded|no GitHub account is connected/i.test(githubContext);
+        updateActivity(githubContextActivityId, "Load selected GitHub context", githubContextUnavailable ? "failed" : "succeeded", githubContextUnavailable ? "Selected GitHub context could not be loaded." : "Selected GitHub context loaded.");
+      }
       const connectorContext = selectedConnectorNames.length
         ? `### Selected Connectors\nThe user selected these connector services for this chat: ${selectedConnectorNames.join(", ")}. Treat them as requested context. Use a connector only when its capability is actually available to the runtime; if it is not connected, state that clearly instead of claiming an external action was completed.`
         : "";
       const mediaSearchRequest = getOnlineMediaSearch(userMessage.content);
       const websiteStudyUrl = getWebsiteStudyUrl(userMessage.content);
-      const [onlineMediaResult, websiteStudyResult] = await Promise.all([
-        mediaSearchRequest
-          ? searchOnlineMedia(mediaSearchRequest)
-          : Promise.resolve({ context: "", issue: null }),
-        websiteStudyUrl ? studyWebsite(websiteStudyUrl) : Promise.resolve(null),
-      ]);
+      const mediaActivityId = nanoid();
+      const websiteActivityId = nanoid();
+      if (mediaSearchRequest) updateActivity(mediaActivityId, "Search online media", "running", `Searching for ${mediaSearchRequest.type} matching “${mediaSearchRequest.query}”.`);
+      if (websiteStudyUrl) updateActivity(websiteActivityId, "Study webpage", "running", `Reading ${websiteStudyUrl}`);
+      const onlineMediaPromise = mediaSearchRequest
+        ? searchOnlineMedia(mediaSearchRequest).then((result) => {
+            const unavailable = Boolean(result.issue && /unavailable|could not be loaded/i.test(result.issue));
+            updateActivity(mediaActivityId, "Search online media", unavailable ? "failed" : "succeeded", result.issue || (result.context ? "Online media results loaded." : "Search completed with no matching results."));
+            return result;
+          })
+        : Promise.resolve({ context: "", issue: null });
+      const websiteStudyPromise = websiteStudyUrl
+        ? studyWebsite(websiteStudyUrl).then((result) => {
+            updateActivity(websiteActivityId, "Study webpage", result.issue ? "failed" : "succeeded", result.issue || `Read ${result.text.length.toLocaleString()} characters from the page.`);
+            return result;
+          })
+        : Promise.resolve(null);
+      const [onlineMediaResult, websiteStudyResult] = await Promise.all([onlineMediaPromise, websiteStudyPromise]);
       const websiteStudyReference = websiteStudyResult?.text
         ? JSON.stringify({ title: websiteStudyResult.title, url: websiteStudyResult.url, text: websiteStudyResult.text })
         : "";
@@ -898,6 +964,7 @@ ${getAdminContext()}` : ""}`,
 
       let streamedContent = "";
       const updateReasoningStatus = (status: string) => {
+        updateActivity(primaryActivityId, primaryActivityLabel, "running", status);
         setConversations((prev) => prev.map((c) => c.id === targetConvId ? { ...c, messages: c.messages.map((m) => m.id === assistantId ? { ...m, reasoningStatus: status, isStreaming: status !== "Answer ready" } : m) } : c));
       };
       let pendingRenderChunk = "";
@@ -933,7 +1000,8 @@ ${getAdminContext()}` : ""}`,
           queueStreamRender();
 
         },
-        () => {
+        (result) => {
+          updateActivity(primaryActivityId, primaryActivityLabel, result?.success ? "succeeded" : "failed", result?.success ? "The assistant response finished." : result?.error || "The response did not complete.");
           // Apply the final buffered chunk before cleaning the streamed reply.
           flushStreamToChat();
           const proposedActions = parseActions(streamedContent) as AssistantAction[];
@@ -990,19 +1058,45 @@ ${getAdminContext()}` : ""}`,
     [sendMessage, speak, autoSpeak, user, fileContext.isLoaded, getFileContextMessage, getMemoryContext, getSkillContext, getKnowledgeContext, addMemory, addEntry, enrichMessageWithContext, activeWindow, clearFiles, parseActions, speechSettings.continuousConversation, scheduleListenAgain, enqueueWaitingMessage, sharedBrowserPage]
   );
 
-  const handleExecuteProposedAction = useCallback(async (action: AssistantAction) => {
+  const handleExecuteProposedAction = useCallback(async (action: AssistantAction, messageId: string) => {
     if (action.type !== "click_element" && action.type !== "fill_form") return;
     const summary = action.type === "click_element"
       ? `Click this control: ${action.selector || "(missing selector)"}`
       : `Fill ${action.fields?.length || 0} field(s): ${(action.fields || []).map((field) => `${field.selector} = ${field.value}`).join("; ")}`;
     const accepted = window.confirm(`Queue one browser action for review?\n\n${summary}\n\nTarget: ${action.url || "(missing URL)"}\n\nThis will not run yet. You must open the target page and approve it again in the ENOSX AI Browser Bridge popup. A click may submit a form; inspect the target carefully.`);
     if (!accepted) return;
-    const result = await queueBrowserAction(action);
+    const activityId = nanoid();
+    const sourceConversationId = conversationsRef.current.find((conversation) => conversation.messages.some((message) => message.id === messageId))?.id;
+    const updateBrowserActivity = (status: "running" | "waiting_for_approval" | "failed", detail: string) => {
+      setConversations((current) => current.map((conversation) => conversation.id === sourceConversationId
+        ? { ...conversation, messages: conversation.messages.map((message) => message.id === messageId
+            ? { ...message, actionActivities: upsertActionActivity(message.actionActivities, {
+                id: activityId,
+                label: action.type === "click_element" ? "Approve and run browser click" : "Approve and fill browser form",
+                status,
+                detail,
+                updatedAt: new Date().toISOString(),
+              }) }
+            : message) }
+        : conversation));
+    };
+    updateBrowserActivity("running", "Sending the proposed action to the Browser Bridge.");
+    const result = await queueBrowserAction(action, activityId);
     if (!result.ok) {
+      updateBrowserActivity("failed", result.error || "The Browser Bridge could not queue the action.");
       toast.error(result.error || "Browser action was not queued.");
       return;
     }
+    updateBrowserActivity("waiting_for_approval", "Waiting for you to review and approve this exact action in the extension popup.");
     toast.success("Action queued for review. Open the matching page and approve it in the browser extension before it runs.");
+  }, []);
+
+  const handleActionActivity = useCallback((messageId: string, activityId: string, label: string, status: ActionActivityStatus, detail: string) => {
+    setConversations((current) => current.map((conversation) => conversation.messages.some((message) => message.id === messageId)
+      ? { ...conversation, messages: conversation.messages.map((message) => message.id === messageId
+          ? { ...message, actionActivities: upsertActionActivity(message.actionActivities, { id: activityId, label, status, detail, updatedAt: new Date().toISOString() }) }
+          : message) }
+      : conversation));
   }, []);
 
   const createNewChat = useCallback(() => {
@@ -1201,6 +1295,8 @@ ${getAdminContext()}` : ""}`,
           isFreeMode={isFreeMode}
           onFilesSelected={handleFilesSelected}
           onUpscaleVideo={handleUpscaleVideo}
+          onExecuteProposedAction={handleExecuteProposedAction}
+          onActionActivity={handleActionActivity}
           attachments={fileContext.files}
           audioStream={microphoneStream}
         />
@@ -1240,6 +1336,8 @@ ${getAdminContext()}` : ""}`,
           isFreeMode={isFreeMode}
           onFilesSelected={handleFilesSelected}
           onUpscaleVideo={handleUpscaleVideo}
+          onExecuteProposedAction={handleExecuteProposedAction}
+          onActionActivity={handleActionActivity}
           attachments={fileContext.files}
           audioStream={microphoneStream}
           onSettingsClick={() => setShowProfilePanel(true)}
@@ -1416,6 +1514,7 @@ ${getAdminContext()}` : ""}`,
                     followUpPrompts={msg.id === latestMessage?.id ? latestFollowUps : undefined}
                     onFollowUp={(prompt) => void handleSendTracked(prompt, activeMode)}
                     onExecuteProposedAction={handleExecuteProposedAction}
+                    onActionActivity={handleActionActivity}
                   />
                 ))}
                 {isLoading && (

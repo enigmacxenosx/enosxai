@@ -51,13 +51,18 @@ describe("sanitizeBrowserActionResult", () => {
       url: "https://example.com/profile",
       message: "x".repeat(700),
       completedAt: "2026-11-21T00:00:00.000Z",
+      activityId: "browser_action_01",
+      status: "failed",
     });
     expect(result?.url).toBe("https://example.com/profile");
     expect(result?.message).toHaveLength(500);
+    expect(result?.activityId).toBe("browser_action_01");
+    expect(result?.status).toBe("failed");
   });
 
   it("rejects unsafe targets and invalid shapes", () => {
     expect(sanitizeBrowserActionResult({ actionType: "click_element", url: "javascript:alert(1)", message: "done", completedAt: "now" })).toBeNull();
     expect(sanitizeBrowserActionResult({ actionType: "open_url", url: "https://example.com", message: "done", completedAt: "now" })).toBeNull();
+    expect(sanitizeBrowserActionResult({ actionType: "click_element", url: "https://example.com", message: "done", completedAt: "now", status: "pending" })).toBeNull();
   });
 });

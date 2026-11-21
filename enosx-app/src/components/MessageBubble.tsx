@@ -8,9 +8,9 @@
 
 import { useState, useEffect, useRef } from "react";
 import { motion } from "framer-motion";
-import { Volume2, VolumeX, RotateCcw, ExternalLink, FileSearch, ListTree, ShieldCheck, Film, GitBranch, Star } from "lucide-react";
+import { Volume2, VolumeX, RotateCcw, ExternalLink, FileSearch, ListTree, ShieldCheck, Film, GitBranch, Star, CheckCircle2, CircleAlert, Clock3, Loader2, XCircle } from "lucide-react";
 import { Streamdown } from "streamdown";
-import { Message } from "@/lib/types";
+import { Message, type ActionActivityStatus } from "@/lib/types";
 import { getMessageFeedback, submitMessageFeedback, type MessageFeedbackRating } from "@/lib/feedback";
 import type { FollowUpSuggestion } from "@/lib/followUpSuggestions";
 import { useTheme } from "@/contexts/ThemeContext";
@@ -27,7 +27,8 @@ interface MessageBubbleProps {
   isSpeaking: boolean;
   onRedoResponse?: (messageId: string) => void;
   /** Optional handler for proposed actions (e.g. workspace mode runs open_url in-pane). */
-  onExecuteProposedAction?: (action: NonNullable<Message["proposedActions"]>[number]) => void;
+  onExecuteProposedAction?: (action: NonNullable<Message["proposedActions"]>[number], messageId: string) => void;
+  onActionActivity?: (messageId: string, activityId: string, label: string, status: ActionActivityStatus, detail: string) => void;
   onBranchFromHere?: (messageId: string) => void;
   branchDisabled?: boolean;
   followUpPrompts?: FollowUpSuggestion[];
@@ -231,6 +232,7 @@ export default function MessageBubble({
   isSpeaking,
   onRedoResponse,
   onExecuteProposedAction,
+  onActionActivity,
   onBranchFromHere,
   branchDisabled,
   followUpPrompts,
@@ -254,6 +256,30 @@ export default function MessageBubble({
       </ol>
     </details>
   ) : null;
+  const actionActivityTimeline = !isUser && message.actionActivities?.length ? (
+    <section className="w-full max-w-xl rounded-lg border border-white/10 bg-white/[0.025] px-3 py-2" aria-label="Live action progress" aria-live="polite">
+      <h3 className="mb-1 text-[10px] font-semibold uppercase tracking-wider text-white/55">Workflow activity</h3>
+      <ol className="space-y-1.5">
+        {message.actionActivities.map((activity) => {
+          const Icon = activity.status === "running" ? Loader2
+            : activity.status === "waiting_for_approval" ? Clock3
+              : activity.status === "succeeded" ? CheckCircle2
+                : activity.status === "cancelled" ? XCircle : CircleAlert;
+          const statusLabel = activity.status === "waiting_for_approval" ? "Waiting for approval" : activity.status.replaceAll("_", " ");
+          return (
+            <li key={activity.id} className="flex items-start gap-2 text-[11px] leading-relaxed text-white/75">
+              <Icon size={13} className={`mt-0.5 shrink-0 ${activity.status === "running" ? "animate-spin text-cyan-200" : activity.status === "succeeded" ? "text-emerald-300" : activity.status === "failed" ? "text-rose-300" : "text-amber-200"}`} />
+              <span className="min-w-0 flex-1">
+                <span className="font-medium text-white/85">{activity.label}</span>
+                <span className="ml-1.5 capitalize text-white/45">{statusLabel}</span>
+                {activity.detail && <span className="block text-white/50">{activity.detail}</span>}
+              </span>
+            </li>
+          );
+        })}
+      </ol>
+    </section>
+  ) : null;
 
   // Check for an active image or video generation request.
   const isGeneratingMedia = !isUser && (message.content.includes("🖼️") || message.content.includes("🎬")) && isStreaming;
@@ -270,24 +296,35 @@ export default function MessageBubble({
   };
 
   const handleProposedAction = async (action: NonNullable<Message["proposedActions"]>[number]) => {
+    const activityId = crypto.randomUUID().replace(/-/g, "");
+    const reportActivity = (label: string, status: ActionActivityStatus, detail: string) => {
+      onActionActivity?.(message.id, activityId, label, status, detail);
+    };
     // Interactions are queued for the extension and require a second, per-action
     // approval in its popup on the matching target page.
     if (onExecuteProposedAction && (action.type === "click_element" || action.type === "fill_form")) {
-      onExecuteProposedAction(action);
+      onExecuteProposedAction(action, message.id);
       return;
     }
     if (action.type === "open_url" && action.url) {
+      const label = "Open proposed link";
+      reportActivity(label, "running", "Opening the proposed public link in a new tab.");
       try {
         const url = new URL(action.url);
         if (url.protocol !== "https:" && url.protocol !== "http:") throw new Error("Unsupported link");
-        window.open(url.toString(), "_blank", "noopener,noreferrer");
+        const opened = window.open(url.toString(), "_blank", "noopener,noreferrer");
+        if (!opened) throw new Error("The browser blocked the new tab.");
+        reportActivity(label, "succeeded", "Opened the link in a new tab.");
         setActionStatus("Opened in a new tab.");
-      } catch {
+      } catch (error) {
+        reportActivity(label, "failed", error instanceof Error ? error.message : "This proposed link is not a valid public URL.");
         setActionStatus("This proposed link is not a valid public URL.");
       }
       return;
     }
     if ((action.type === "read_webpage" || action.type === "extract_links") && action.url) {
+      const label = action.type === "read_webpage" ? "Read proposed webpage" : "Extract webpage links";
+      reportActivity(label, "running", `Requesting ${action.url}`);
       setActionStatus("Reading website…");
       try {
         const response = await fetch("/api/browser/action", {
@@ -297,17 +334,34 @@ export default function MessageBubble({
         });
         const payload = await response.json().catch(() => ({}));
         if (!response.ok) throw new Error(payload.error || "Web reading request failed");
-        setActionStatus(action.type === "read_webpage" ? `Read: ${payload.title || action.url}` : `Found ${payload.links?.length ?? 0} links.`);
+        const detail = action.type === "read_webpage" ? `Read: ${payload.title || action.url}` : `Found ${payload.links?.length ?? 0} links.`;
+        reportActivity(label, "succeeded", detail);
+        setActionStatus(detail);
       } catch (error) {
-        setActionStatus(error instanceof Error ? error.message : "Unable to complete web reading request.");
+        const detail = error instanceof Error ? error.message : "Unable to complete web reading request.";
+        reportActivity(label, "failed", detail);
+        setActionStatus(detail);
       }
       return;
     }
     if (action.url) {
-      window.open(action.url, "_blank", "noopener,noreferrer");
-      setActionStatus("Opened for your review. No website changes were made.");
+      const label = action.type === "launch_app" ? `Open ${action.app || "app"}` : "Open proposed target";
+      reportActivity(label, "running", "Opening the target for your review; no website change will be made.");
+      try {
+        const url = new URL(action.url);
+        if (url.protocol !== "http:" && url.protocol !== "https:") throw new Error("Only public HTTP(S) links are supported.");
+        const opened = window.open(url.toString(), "_blank", "noopener,noreferrer");
+        if (!opened) throw new Error("The browser blocked the new tab.");
+        reportActivity(label, "succeeded", "Opened for your review. No website changes were made.");
+        setActionStatus("Opened for your review. No website changes were made.");
+      } catch (error) {
+        const detail = error instanceof Error ? error.message : "The target could not be opened.";
+        reportActivity(label, "failed", detail);
+        setActionStatus(detail);
+      }
       return;
     }
+    reportActivity("Review proposed action", "failed", "This proposal needs a configured desktop or browser provider.");
     setActionStatus("This proposal needs a configured desktop or browser provider.");
   };
 
@@ -343,6 +397,7 @@ export default function MessageBubble({
             <div className="flex flex-col gap-2">
               <span className="sr-only" role="status">{message.reasoningStatus || "Analyzing your request…"}</span>
               {githubDiagnosticTrace}
+              {actionActivityTimeline}
             </div>
           ) : (
             <div className="relative">
@@ -423,6 +478,7 @@ export default function MessageBubble({
                     <ImageGeneratingIndicator accent={config.accent} isVideo={isGeneratingVideo} />
                   )}
                   {githubDiagnosticTrace}
+                  {actionActivityTimeline}
                 </div>
               )}
               {isStreaming && message.content && (

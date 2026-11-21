@@ -80,7 +80,7 @@ export function useEnosxAI() {
     async (
       messages: Message[],
       onChunk: (chunk: string) => void,
-      onDone: () => void,
+      onDone: (result?: { success: boolean; error?: string }) => void,
       options?: ChatOptions,
       onReasoningStatus?: (status: string) => void,
     ) => {
@@ -111,7 +111,7 @@ export function useEnosxAI() {
             totalTokens: estimateRequestTokens(messages, answer || "The local model returned an empty response. Please try again."),
             estimated: true,
           });
-          onDone();
+          onDone({ success: Boolean(answer), ...(answer ? {} : { error: "The local model returned an empty response." }) });
           return;
         }
 
@@ -236,7 +236,7 @@ export function useEnosxAI() {
           estimated: providerTokenCount === null,
         });
 
-        onDone();
+        onDone({ success: true });
       } catch (err) {
         const errorMessage = err instanceof Error ? err.message : "Unknown error";
         const friendlyError = usingLocalModel ? `Local model error: ${errorMessage}` : getFriendlyErrorMessage(errorMessage);
@@ -245,7 +245,7 @@ export function useEnosxAI() {
         console.error("[useEnosxAI] Error:", errorMessage);
 
         onChunk(friendlyError);
-        onDone();
+        onDone({ success: false, error: friendlyError });
       } finally {
         window.clearTimeout(requestTimeout);
         setIsLoading(false);

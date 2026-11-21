@@ -30,3 +30,11 @@
 - [x] Cross-check the run's workflow ID against repository workflow metadata and clearly distinguish successful, failed, queued/in-progress, missing, and inaccessible runs without inventing a cause.
 - [x] Display diagnostic progress through commit resolution, run matching, job/step inspection, and workflow metadata verification; do not send any GitHub token and never perform GitHub writes or change OAuth scopes.
 - [x] Keep GitHub API content bounded and explicitly labeled untrusted; validate the helper's matching, result-shaping, and failure behavior with focused tests.
+
+## Direct Image Generation and Shared Workflow Activity
+- [x] Route direct image-creation prompts from ordinary chat to the server-backed image generator without requiring Image mode; keep online image search and instructional prompts on their existing paths.
+- [x] Show a shared per-message live activity timeline for image/video generation, ZIP creation, selected GitHub work, online-media search, webpage study, and assistant response generation, with outcomes based on returned results.
+- [x] Include proposed Browser Bridge actions in the same timeline; retain the chat confirmation and per-action extension approval, and keep queued work in “waiting for approval” until the extension reports success, failure, or cancellation.
+- [x] Normalize and bound persisted activity history; add focused unit tests for image-intent routing, event updates, and correlated browser outcomes.
+- [x] Re-run all frontend unit tests, repository typechecks, production builds, and extension syntax checks; review the complete diff.
+- [ ] Verify GitHub CI and Vercel deployment status after pushing this change to `main`.

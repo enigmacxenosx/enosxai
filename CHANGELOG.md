@@ -1,3 +1,10 @@
+## v0.1.33 — Inline media previews & live workflow status
+
+- Added inline playback for direct online audio and video URLs, plus supported YouTube/Vimeo video embeds and Spotify/SoundCloud audio previews.
+- Extended online media search to return video and music-track results with playable preview links and source links.
+- Replaced the boxed workflow progress timeline with a live status statement that disappears when the action finishes.
+- Added regression coverage for valid, malformed, and spoofed provider URLs so unsupported links stay out of embedded players.
+
 ## v0.1.32 — Mobile chat, composer & connected tools
 
 - Improved the phone chat layout across narrow screens, including compact AI mode tabs, clearer touch targets, and a message composer that stays within a 320 px viewport.

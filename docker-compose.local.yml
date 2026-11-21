@@ -1,0 +1,22 @@
+services:
+  local-openai-compatible:
+    image: vllm/vllm-openai:latest
+    profiles: [llm]
+    ports: ["8000:8000"]
+    environment:
+      HF_TOKEN: ${HF_TOKEN:-}
+    command: ["--model", "nvidia/nemotron-3.5-bolt-e4b", "--host", "0.0.0.0"]
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+  local-ollama:
+    image: ollama/ollama:latest
+    profiles: [ollama]
+    ports: ["11434:11434"]
+    volumes: ["ollama:/root/.ollama"]
+volumes:
+  ollama:

@@ -13,6 +13,16 @@ build/
 *.tsbuildinfo
 .tsbuildinfo
 
+# Python runtime
+__pycache__/
+*.py[cod]
+.venv/
+
+# Enosx runtime data and generated assets
+data/enosx_memory/
+output/images/
+output/charts/
+
 # IDE
 .vscode/
 .idea/

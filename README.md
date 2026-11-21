@@ -118,6 +118,29 @@ A healthy response includes `ok` and an `aiConfigured` status flag; it never ret
 - Developer security-learning flows are intended for authorized lab contexts.
 - Optional error reports contain technical diagnostics, not conversation text or uploaded file contents.
 
+## Enosx Master Orchestrator service
+
+This repository also contains a standalone Python orchestration layer for advanced Enosx deployments. It is intentionally separate from the existing React/Vercel application so current product behavior remains compatible while Enosx gains an asynchronous, multi-agent backend.
+
+The top-level `EnosxNemotronBrain` exposes exactly eight high-level capabilities: five department routers, live web search, persistent vector memory, and a Python execution sandbox. The 34 specialist workers are kept behind those routers and are dispatched with `asyncio.gather(..., return_exceptions=True)`, bounded by `MAX_CONCURRENT_REQUESTS=10`. The brain's system prompt enforces memory-first retrieval, live-search and code-sandbox escalation, parallel decomposition, transparent synthesis, and memory write-back.
+
+### Python service setup
+
+```bash
+cp .env.example .env
+python -m venv .venv && . .venv/bin/activate
+pip install -r requirements.txt
+python test_parallel.py --mock
+```
+
+The mock test requires no API keys and verifies all 34 workers, parallel routing, memory recall, and sandbox execution. Add `NVIDIA_API_KEYS` as a comma-separated list, `TAVILY_API_KEY`, and optionally `OPENROUTER_API_KEY` to `.env` for live operation. The key rotator advances across NVIDIA keys, transient requests retry with exponential backoff, and each model follows the configured NVIDIA → OpenRouter → local endpoint chain. Never commit `.env` or live credentials.
+
+### Adapters
+
+Run the direct SDK from Python with `from orchestrator import EnosxNemotronBrain`. Run the REST/Webhook adapter with `uvicorn api_server:app --host 0.0.0.0 --port 8080`; it provides `/v1/chat/completions`, `/v1/memory/ingest`, `/v1/enosx/dispatch` (SSE), `/healthz`, and static `/output` files. Run the MCP adapter with `python mcp_server.py`; select `MCP_TRANSPORT=stdio` or `MCP_TRANSPORT=sse`. Lightweight local fallback templates are in `docker-compose.local.yml`.
+
+The Python service files are `config.py`, `orchestrator.py`, `mcp_server.py`, `api_server.py`, `tools/`, and `workers/`. The existing ENOSX web application and its provider routes remain unchanged.
+
 ## License
 
 **Proprietary.** © 2024–2026 Enosx Technologies. All rights reserved. See repository terms before reuse or redistribution.

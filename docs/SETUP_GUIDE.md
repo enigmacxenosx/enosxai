@@ -60,7 +60,7 @@ pnpm dev
 
 Do not place a provider key in a `VITE_` variable. For a production-like deployment, configure the key in the server environment rather than a checked-in `.env` file.
 
-The recommended model routing is `meta/muse-glimmer-30b` for EX Core and EX Pro, and `stepfun-ai/step-5-preview` for ENOSH MIND. Use `meta/muse-glimmer-30b` for vision requests because it accepts both text and images.
+The recommended model routing matches the live product tiers: `meta/muse-glimmer-30b` for ENOSX One (EX Core) and ENOSX Studio (EX Pro), and `nvidia/nemotron-3-ultra-550b-a55b` for ENOSX Nexus (ENOSH MIND). Use `meta/muse-glimmer-30b` for vision requests because it accepts both text and images.
 
 ## Vercel Deployment
 

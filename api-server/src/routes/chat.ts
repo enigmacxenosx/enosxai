@@ -9,16 +9,16 @@ const chatRouter = Router();
 
 const MODE_MODELS: Record<string, { text: string; vision: string }> = {
   "ex-core": {
-    text: process.env.NVIDIA_EX_CORE_MODEL || process.env.NVIDIA_MODEL || "openai/gpt-oss-20b",
-    vision: process.env.NVIDIA_EX_CORE_VISION_MODEL || process.env.NVIDIA_VISION_MODEL || "meta/llama-3_2-90b-vision-instruct",
+    text: process.env.NVIDIA_EX_CORE_MODEL || process.env.NVIDIA_MODEL || "meta/muse-glimmer-30b",
+    vision: process.env.NVIDIA_EX_CORE_VISION_MODEL || process.env.NVIDIA_VISION_MODEL || "meta/muse-glimmer-30b",
   },
   "ex-pro": {
-    text: process.env.NVIDIA_EX_PRO_MODEL || process.env.NVIDIA_KIMI_MODEL || "moonshotai/kimi-k3",
-    vision: process.env.NVIDIA_EX_PRO_VISION_MODEL || process.env.NVIDIA_VISION_MODEL || "meta/llama-3_2-90b-vision-instruct",
+    text: process.env.NVIDIA_EX_PRO_MODEL || process.env.NVIDIA_MODEL || "meta/muse-glimmer-30b",
+    vision: process.env.NVIDIA_EX_PRO_VISION_MODEL || process.env.NVIDIA_VISION_MODEL || "meta/muse-glimmer-30b",
   },
   "enosh-mind": {
-    text: process.env.NVIDIA_ENOSH_MIND_MODEL || process.env.NVIDIA_KIMI_MODEL || "moonshotai/kimi-k3",
-    vision: process.env.NVIDIA_ENOSH_MIND_VISION_MODEL || process.env.NVIDIA_VISION_MODEL || "meta/llama-3_2-90b-vision-instruct",
+    text: process.env.NVIDIA_ENOSH_MIND_MODEL || "nvidia/nemotron-3-ultra-550b-a55b",
+    vision: process.env.NVIDIA_ENOSH_MIND_VISION_MODEL || process.env.NVIDIA_VISION_MODEL || "meta/muse-glimmer-30b",
   },
 };
 

@@ -8,12 +8,11 @@
  */
 import type { VercelRequest, VercelResponse } from "@vercel/node";
 import { evaluateSafetyGuard } from "../lib/server/safetyGuard";
+import { formatSseContentChunks, hasConfiguredNvidiaKeys, MAIN_SUPERVISOR_MODEL, runNemotronOrchestrator } from "../api-handlers/nemotron-orchestrator";
 
-// NOTE: maxDuration intentionally omitted. An explicit per-function override can
-// conflict with the project-wide Vercel runtime configuration and cause
-// FUNCTION_INVOCATION_FAILED (HTTP 500) on deployment. The default serverless
-// timeout is sufficient for a single synchronous NVIDIA completion call
-// with one short retry.
+// Vercel's project-wide configuration gives API functions 60 seconds. The
+// orchestrator enforces a 42-second end-to-end budget to leave time for SSE
+// completion before the browser client's 50-second request timeout.
 
 const SYSTEM_PROMPT = `You are ENOSX AI, a multimodal AI workspace developed by Enosx Technologies. Respond in the user's requested language when reasonably possible, and be transparent about language or knowledge limits.
 
@@ -153,7 +152,6 @@ const MAX_MESSAGE_CHARS = 20_000;
 // bounding the payload sent to the provider so a single huge thread cannot
 // overflow the model context window or inflate latency/cost.
 const MAX_HISTORY_CHARS = 60_000;
-const PROVIDER_RETRY_STATUSES = new Set([408, 429, 500, 502, 503, 504]);
 
 // --- Response cache -------------------------------------------------------
 // Identical requests (same mode, model, system context, and message history)
@@ -228,44 +226,6 @@ function assembleStreamedText(state: { text: string; remainder: string; failed: 
 // --- Safety guard ---------------------------------------------------------
 // Deterministic server-side protections for the highest-risk categories are
 // shared with the Express backend through lib/server/safetyGuard.
-
-async function fetchNvidiaWithRetry(url: string, apiKey: string, body: unknown) {
-  for (let attempt = 0; attempt < 2; attempt += 1) {
-    try {
-      const response = await fetch(url, {
-        method: "POST",
-        signal: AbortSignal.timeout(45_000),
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${apiKey}`,
-        },
-        body: JSON.stringify(body),
-      });
-      if (response.ok || !PROVIDER_RETRY_STATUSES.has(response.status) || attempt === 1) return response;
-    } catch (error) {
-      if (attempt === 1) throw error;
-    }
-    await new Promise((resolve) => setTimeout(resolve, 400));
-  }
-
-  throw new Error("The AI provider did not return a response.");
-}
-
-async function fetchOrchestrator(url: string, body: unknown, aiMode: string) {
-  const endpoint = `${url.replace(/\/$/, "")}/v1/chat/completions`;
-  const headers: Record<string, string> = {
-    "Content-Type": "application/json",
-    "X-Enosx-AI-Mode": aiMode,
-  };
-  const secret = process.env.ENOSX_ORCHESTRATOR_SECRET?.trim();
-  if (secret) headers.Authorization = `Bearer ${secret}`;
-  return fetch(endpoint, {
-    method: "POST",
-    signal: AbortSignal.timeout(50_000),
-    headers,
-    body: JSON.stringify(body),
-  });
-}
 
 function trimMessageContent(content: unknown) {
   if (typeof content === "string") return content.slice(0, MAX_MESSAGE_CHARS);
@@ -400,24 +360,6 @@ function shapeMessages(messages: any[]) {
   return valid;
 }
 
-const MODE_MODELS: Record<string, { text: string; vision: string }> = {
-  // Defaults are overridable per deployment so model changes never require a code change.
-  "ex-core": {
-    text: process.env.NVIDIA_EX_CORE_MODEL || process.env.NVIDIA_MODEL || "meta/muse-glimmer-30b",
-    vision: process.env.NVIDIA_EX_CORE_VISION_MODEL || process.env.NVIDIA_VISION_MODEL || "meta/muse-glimmer-30b",
-  },
-  "ex-pro": {
-    text: process.env.NVIDIA_EX_PRO_MODEL || process.env.NVIDIA_MODEL || "meta/muse-glimmer-30b",
-    vision: process.env.NVIDIA_EX_PRO_VISION_MODEL || process.env.NVIDIA_VISION_MODEL || "meta/muse-glimmer-30b",
-  },
-  "enosh-mind": {
-    text: process.env.NVIDIA_ENOSH_MIND_MODEL || "nvidia/nemotron-3-ultra-550b-a55b",
-    // ENOSH MIND is text-only. Image requests are routed to EX Pro before
-    // model selection, so this value is only a defensive fallback.
-    vision: process.env.NVIDIA_EX_PRO_VISION_MODEL || process.env.NVIDIA_VISION_MODEL || "meta/muse-glimmer-30b",
-  },
-};
-
 const sendMockResponse = (res: VercelResponse, message: string) => {
   res.setHeader("Content-Type", "text/event-stream; charset=utf-8");
   res.setHeader("Cache-Control", "no-cache, no-transform");
@@ -430,29 +372,6 @@ const sendMockResponse = (res: VercelResponse, message: string) => {
   // Keep the frontend's SSE contract while returning one buffered response.
   return res.status(200).send(`data: ${data}\n\ndata: [DONE]\n\n`);
 };
-
-function normalizeOrchestratorSseEvent(event: string) {
-  const lines = event.split("\n");
-  return lines.map((line) => {
-    if (!line.startsWith("data: ")) return line;
-    const raw = line.slice(6).trim();
-    if (!raw || raw === "[DONE]") return line;
-    try {
-      const parsed = JSON.parse(raw);
-      const choice = parsed?.choices?.[0];
-      const legacyContent = choice?.message?.content;
-      if (typeof legacyContent !== "string" || !legacyContent.trim()) return line;
-      return `data: ${JSON.stringify({
-        id: parsed.id || "enosx-chat",
-        object: "chat.completion.chunk",
-        model: parsed.model,
-        choices: [{ index: choice.index ?? 0, delta: { role: "assistant", content: legacyContent }, finish_reason: null }],
-      })}`;
-    } catch {
-      return line;
-    }
-  }).join("\n");
-}
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   const requestStartedAt = Date.now();
@@ -516,68 +435,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       return sendMockResponse(res, guardedResponse.response);
     }
 
-    const orchestratorUrl = process.env.ENOSX_ORCHESTRATOR_URL?.trim();
-    if (orchestratorUrl) {
-      try {
-        const orchestratorResponse = await fetchOrchestrator(orchestratorUrl, {
-          ...body,
-          messages: messagesWithAttachments,
-          stream: true,
-          metadata: { ...(body.metadata || {}), aiMode },
-        }, aiMode);
-        if (orchestratorResponse.ok && orchestratorResponse.body) {
-          const contentType = orchestratorResponse.headers.get("content-type") || "";
-          if (/text\/event-stream/i.test(contentType)) {
-            res.setHeader("Content-Type", contentType || "text/event-stream; charset=utf-8");
-            res.setHeader("Cache-Control", "no-cache, no-transform");
-            res.setHeader("Connection", "keep-alive");
-            const reader = orchestratorResponse.body.getReader();
-            const decoder = new TextDecoder();
-            let buffer = "";
-            while (true) {
-              const { done, value } = await reader.read();
-              if (done) {
-                buffer += decoder.decode();
-                if (buffer.trim()) res.write(normalizeOrchestratorSseEvent(buffer));
-                break;
-              }
-              buffer += decoder.decode(value, { stream: true });
-              const events = buffer.split("\n\n");
-              buffer = events.pop() ?? "";
-              for (const event of events) {
-                if (event.trim()) res.write(`${normalizeOrchestratorSseEvent(event)}\n\n`);
-              }
-            }
-            res.end();
-            return;
-          }
-          const orchestratorBody: any = await orchestratorResponse.json().catch(() => null);
-          const jsonContent = orchestratorBody?.choices?.[0]?.message?.content
-            ?? orchestratorBody?.choices?.[0]?.delta?.content
-            ?? orchestratorBody?.answer;
-          if (typeof jsonContent === "string" && jsonContent.trim()) return sendMockResponse(res, jsonContent);
-          console.warn("[API] Orchestrator JSON response did not contain assistant content:", orchestratorBody);
-          return res.status(502).json({ error: "The orchestrator returned an empty response.", code: "EMPTY_ORCHESTRATOR_RESPONSE" });
-        }
-        if (![502, 503, 504].includes(orchestratorResponse.status)) {
-          const detail = await orchestratorResponse.text().catch(() => "");
-          return res.status(orchestratorResponse.status).send(detail || "The Enosx orchestrator rejected the request.");
-        }
-        console.warn("[API] Orchestrator unavailable; falling back to the TypeScript NVIDIA handler:", orchestratorResponse.status);
-      } catch (error) {
-        console.warn("[API] Orchestrator bridge failed; falling back to the TypeScript NVIDIA handler:", error);
-      }
-    }
-
-    // Server-side key only. A browser-exposed key (VITE_ prefix) must never
-    // be forwarded to NVIDIA API; if only the legacy VITE_ variable is set,
-    // treat the configuration as missing.
-    const apiKey = process.env.NVIDIA_API_KEY?.trim();
-
-    if (!apiKey) {
+    // NVIDIA keys are server-only. NVIDIA_API_KEYS may rotate a list; a
+    // browser-exposed VITE_ key is never accepted here.
+    if (!hasConfiguredNvidiaKeys()) {
       console.error("[API] NVIDIA_API_KEY is not configured.");
       return res.status(503).json({
-        error: "NVIDIA_API_KEY is not configured on the server",
+        error: "NVIDIA_API_KEY or NVIDIA_API_KEYS is not configured on the server",
         status: "CONFIGURATION_ERROR",
       });
     }
@@ -635,13 +498,12 @@ You are running in ENOSH MIND (highest intelligence) mode. Operate as a rigorous
       ...conversationMessages,
     ];
 
-    const modeModels = MODE_MODELS[effectiveModelMode] || MODE_MODELS["ex-core"];
-    const model = hasImages ? modeModels.vision : modeModels.text;
-    const nvidiaApiUrl = `${(process.env.NVIDIA_API_BASE_URL || "https://integrate.api.nvidia.com/v1").replace(/\/$/, "")}/chat/completions`;
-
-    // Serve identical non-visual requests from cache, or join an identical
-    // request that is already in flight, before touching the provider.
-    const cacheKey = hasImages ? "" : hashRequestKey(`${model}|${JSON.stringify(chatMessages)}`);
+    // Search-eligible requests bypass the short local cache so live information
+    // is refreshed. Identical ordinary text requests still share/cached results.
+    const shouldSearchLive = /\b(latest|current|today|tonight|this week|this month|recent|news|weather|stock price|exchange rate|live|search the web|search online|look up online|browse the web)\b/i.test(lastUserText);
+    const cacheKey = hasImages || shouldSearchLive
+      ? ""
+      : hashRequestKey(`${MAIN_SUPERVISOR_MODEL}|${aiMode}|${JSON.stringify(chatMessages)}`);
     if (cacheKey) {
       const cachedResponse = readCachedResponse(cacheKey);
       if (cachedResponse) {
@@ -670,87 +532,45 @@ You are running in ENOSH MIND (highest intelligence) mode. Operate as a rigorous
       if (pendingCacheKey) pendingChatRequests.delete(pendingCacheKey);
     };
 
-    console.log("[API] Sending request to NVIDIA API with", chatMessages.length, "messages and model", model);
+    console.log("[API] Starting native Nemotron orchestration with", chatMessages.length, "messages; mode", aiMode, "images", hasImages);
+    res.setHeader("Content-Type", "text/event-stream; charset=utf-8");
+    res.setHeader("Cache-Control", "no-cache, no-transform");
+    res.setHeader("Connection", "keep-alive");
+    res.status(200);
+    (res as any).flushHeaders?.();
+    res.write(": enosx native orchestration started\n\n");
 
-    const nvidiaResponse = await fetchNvidiaWithRetry(nvidiaApiUrl, apiKey, {
-      model,
+    const content = await runNemotronOrchestrator({
       messages: chatMessages,
-      stream: true,
-      max_tokens: aiMode === "enosh-mind" ? 4096 : aiMode === "ex-pro" ? 3072 : 2048,
-      temperature: 0.7,
-      reasoning_effort: aiMode === "enosh-mind" ? "high" : aiMode === "ex-pro" ? "medium" : "low",
+      systemContent,
+      aiMode,
+      hasImages,
+      onProgress: (phase) => {
+        res.write(`: enosx ${phase}\n\n`);
+      },
     });
-
-    console.log("[API] NVIDIA API response status:", nvidiaResponse.status);
-
-    if (!nvidiaResponse.ok) {
-      const errorText = await nvidiaResponse.text().catch(() => "Unknown error");
-      console.error("[API] NVIDIA API error:", nvidiaResponse.status, errorText);
-      finishPending(null);
-      return res.status(503).json({
-        error: "The AI service is temporarily unavailable. Please try again in a moment.",
-        code: "PROVIDER_UNAVAILABLE",
-      });
-    }
-
-    if (nvidiaResponse.body) {
-      res.setHeader("Content-Type", "text/event-stream; charset=utf-8");
-      res.setHeader("Cache-Control", "no-cache, no-transform");
-      res.setHeader("Connection", "keep-alive");
-      const reader = nvidiaResponse.body.getReader();
-      const decoder = new TextDecoder();
-      const captured = { text: "", remainder: "", failed: false };
-      try {
-        while (true) {
-          const { done, value } = await reader.read();
-          if (done) break;
-          const chunk = decoder.decode(value, { stream: true });
-          res.write(chunk);
-          if (cacheKey) assembleStreamedText(captured, chunk);
-        }
-      } catch (streamError) {
-        console.error("[API] NVIDIA stream timed out or failed:", streamError);
-        res.write(`data: ${JSON.stringify({ error: { message: "The NVIDIA response timed out. Please try again." } })}\n\ndata: [DONE]\n\n`);
-        finishPending(null);
-        res.end();
-        return;
-      }
-      if (cacheKey && !captured.failed && captured.text.trim()) {
-        writeCachedResponse(cacheKey, captured.text);
-        finishPending(captured.text);
-      } else {
-        finishPending(null);
-      }
-      console.log("[API] Streamed response in", Date.now() - requestStartedAt, "ms; cached:", Boolean(cacheKey && !captured.failed && captured.text.trim()));
-      res.end();
-      return;
-    }
-
-    let responseData: any;
-    try {
-      responseData = await nvidiaResponse.json();
-    } catch (parseError) {
-      console.error("[API] Invalid JSON response from NVIDIA API:", parseError);
-      finishPending(null);
-      return res.status(502).json({ error: "The AI service returned an invalid response. Please try again.", code: "INVALID_PROVIDER_RESPONSE" });
-    }
-
-    const content = responseData?.choices?.[0]?.message?.content;
-    if (typeof content !== "string" || content.length === 0) {
-      console.error("[API] NVIDIA API response did not contain assistant content:", responseData);
-      finishPending(null);
-      return res.status(502).json({ error: "No response received from the AI service. Please try again.", code: "EMPTY_PROVIDER_RESPONSE" });
-    }
 
     if (cacheKey) writeCachedResponse(cacheKey, content);
     finishPending(content);
-    return sendMockResponse(res, content);
+    for (const chunk of formatSseContentChunks(content)) {
+      res.write(`data: ${JSON.stringify({ choices: [{ delta: { content: chunk } }] })}\n\n`);
+    }
+    res.write("data: [DONE]\n\n");
+    console.log("[API] Native orchestration completed in", Date.now() - requestStartedAt, "ms; cached:", Boolean(cacheKey));
+    res.end();
+    return;
   } catch (err) {
     console.error("[API] Unexpected error:", err);
     // Release any identical request waiting on this one so it can fail fast.
     pendingResolver.current?.(null);
     pendingResolver.current = null;
     if (pendingCacheKey) pendingChatRequests.delete(pendingCacheKey);
+
+    if (res.headersSent) {
+      res.write(`data: ${JSON.stringify({ error: { message: "The AI service is temporarily unavailable. Please try again shortly." } })}\n\ndata: [DONE]\n\n`);
+      res.end();
+      return;
+    }
 
     // Send a helpful message instead of crashing
     return res.status(503).json({

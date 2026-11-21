@@ -1,3 +1,9 @@
+## v0.1.35 — Current UI regression coverage
+
+- Updated Playwright coverage to match the current connector-based Plugins dialog instead of the removed asset-bundle plugin.
+- Updated the mobile welcome-suggestions regression to verify the current vertical phone-panel layout and bounded scrolling behavior.
+- Revalidated all 34 specialist workers, frontend tests, production build, orchestration tests, and the live deployment health endpoint.
+
 ## v0.1.34 — Orchestration self-awareness and release QA
 
 - Added an authoritative capability fact explaining the 34 typed specialist model entries behind five department routers, while preserving truthful runtime and provider limits.

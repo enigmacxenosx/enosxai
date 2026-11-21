@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import {
   ApiKeyRotator,
+  FAST_PATH_FALLBACK_MODEL,
   MAIN_SUPERVISOR_MODEL,
   SPECIALIST_MODELS,
   SYNTHESIS_FALLBACK_MODEL,
@@ -48,6 +49,55 @@ test("NVIDIA key parsing deduplicates values and the rotator cycles", () => {
   assert.deepEqual(keys, ["key-a", "key-b", "key-c"]);
   const rotator = new ApiKeyRotator(keys);
   assert.deepEqual(Array.from({ length: 5 }, () => rotator.next()), ["key-a", "key-b", "key-c", "key-a", "key-b"]);
+});
+
+test("simple conversational prompts use one streaming fast-path call", async () => {
+  const recorded: any[] = [];
+  const fetchImpl: typeof fetch = async (_input, init) => {
+    const body = JSON.parse(String(init?.body));
+    recorded.push(body);
+    return new Response([
+      "data: {\"choices\":[{\"delta\":{\"content\":\"Hello from ENOSX.\"}}]}\n\n",
+      "data: [DONE]\n\n",
+    ].join(""), { status: 200, headers: { "Content-Type": "text/event-stream" } });
+  };
+
+  const answer = await runNemotronOrchestrator({
+    messages: [{ role: "user", content: "hello" }],
+    systemContent: "Test system",
+    aiMode: "ex-core",
+    env: { NVIDIA_API_KEY: "key-one" },
+    fetchImpl,
+  });
+
+  assert.equal(answer, "Hello from ENOSX.");
+  assert.equal(recorded.length, 1);
+  assert.equal(recorded[0].model, MAIN_SUPERVISOR_MODEL);
+  assert.equal(recorded[0].stream, true);
+});
+
+test("simple fast path falls back to Nemotron Lightning when the primary fails", async () => {
+  const models: string[] = [];
+  const fetchImpl: typeof fetch = async (_input, init) => {
+    const body = JSON.parse(String(init?.body));
+    models.push(body.model);
+    if (body.model === MAIN_SUPERVISOR_MODEL) return jsonResponse({ error: "primary unavailable" }, 503);
+    return new Response("data: {\"choices\":[{\"delta\":{\"content\":\"Fallback hello.\"}}]}\n\ndata: [DONE]\n\n", {
+      status: 200,
+      headers: { "Content-Type": "text/event-stream" },
+    });
+  };
+
+  const answer = await runNemotronOrchestrator({
+    messages: [{ role: "user", content: "tell me about your capabilities" }],
+    systemContent: "Test system",
+    aiMode: "ex-core",
+    env: { NVIDIA_API_KEYS: "key-one,key-two" },
+    fetchImpl,
+  });
+
+  assert.equal(answer, "Fallback hello.");
+  assert.deepEqual(models, [MAIN_SUPERVISOR_MODEL, FAST_PATH_FALLBACK_MODEL]);
 });
 
 test("supervisor routing is parallel, capped at three subtasks and three specialists each", async () => {

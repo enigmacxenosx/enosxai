@@ -9,6 +9,7 @@
  */
 
 export const MAIN_SUPERVISOR_MODEL = "nvidia/nemotron-3.5-super-vl-120b-a12b";
+export const FAST_PATH_FALLBACK_MODEL = "nvidia/nemotron-3.5-lightning-30b-a3b";
 export const SYNTHESIS_FALLBACK_MODEL = "mistralai/mistral-large-4-1t-a52b";
 export const OFFICIAL_NVIDIA_API_BASE = "https://integrate.api.nvidia.com/v1";
 
@@ -260,6 +261,7 @@ const MAIN_REQUEST_TIMEOUT_MS = 10_000;
 const SPECIALIST_REQUEST_TIMEOUT_MS = 12_000;
 const SYNTHESIS_REQUEST_TIMEOUT_MS = 10_000;
 const SYNTHESIS_FALLBACK_REQUEST_TIMEOUT_MS = 8_000;
+const FAST_PATH_REQUEST_TIMEOUT_MS = 1_800;
 const SEARCH_TIMEOUT_MS = 3_000;
 
 type ChatRole = "system" | "user" | "assistant";
@@ -486,6 +488,13 @@ function safeErrorText(value: unknown, secrets: readonly string[]) {
   return text.replace(/[\r\n\t]+/g, " ").slice(0, 400);
 }
 
+function redactedProviderBody(value: string, secrets: readonly string[]) {
+  let text = value || "(empty response body)";
+  for (const secret of secrets) if (secret) text = text.split(secret).join("[REDACTED]");
+  text = text.replace(/bearer\s+[A-Za-z0-9._~+/=-]+/gi, "Bearer [REDACTED]");
+  return text.replace(/[\r\n\t]+/g, " ");
+}
+
 async function fetchJsonWithTimeout(
   fetchImpl: typeof fetch,
   url: string,
@@ -522,8 +531,7 @@ async function callChatCompletion(args: {
     args.timeoutMs,
   );
   if (!response.ok) {
-    const detail = await response.text().catch(() => "");
-    throw new Error(`HTTP ${response.status}: ${detail.slice(0, 700)}`);
+    throw new NvidiaProviderError(response.status, await response.text().catch(() => ""));
   }
   const payload: any = await response.json();
   const message = payload?.choices?.[0]?.message;
@@ -535,8 +543,85 @@ async function callChatCompletion(args: {
   return { payload, content: content.trim() };
 }
 
+class NvidiaProviderError extends Error {
+  constructor(readonly status: number, readonly body: string) {
+    super(`NVIDIA provider HTTP ${status}: ${body.slice(0, 700)}`);
+    this.name = "NvidiaProviderError";
+  }
+}
+
+async function callStreamingCompletion(args: {
+  fetchImpl: typeof fetch;
+  baseUrl: string;
+  key: string;
+  model: string;
+  messages: ChatMessage[];
+  timeoutMs: number;
+}) {
+  const response = await fetchJsonWithTimeout(
+    args.fetchImpl,
+    `${args.baseUrl}/chat/completions`,
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${args.key}`,
+        Accept: "text/event-stream",
+      },
+      body: JSON.stringify({ model: args.model, messages: args.messages, stream: true, temperature: 0.2, max_tokens: 1200 }),
+    },
+    args.timeoutMs,
+  );
+  if (!response.ok) {
+    throw new NvidiaProviderError(response.status, await response.text().catch(() => ""));
+  }
+  if (!response.body) return "";
+
+  const reader = response.body.getReader();
+  const decoder = new TextDecoder();
+  let buffer = "";
+  let content = "";
+  const consume = (line: string) => {
+    const data = line.trim();
+    if (!data.startsWith("data:")) return;
+    const payload = data.slice(5).trim();
+    if (!payload || payload === "[DONE]") return;
+    try {
+      const delta = JSON.parse(payload)?.choices?.[0]?.delta?.content;
+      if (typeof delta === "string") content += delta;
+    } catch {
+      // Ignore malformed keep-alive or provider extension frames.
+    }
+  };
+  while (true) {
+    const chunk = await reader.read();
+    buffer += decoder.decode(chunk.value || new Uint8Array(), { stream: !chunk.done });
+    const lines = buffer.split(/\r?\n/);
+    buffer = lines.pop() || "";
+    lines.forEach(consume);
+    if (chunk.done) break;
+  }
+  if (buffer) consume(buffer);
+  return content.trim();
+}
+
 function lastUserText(messages: ChatMessage[]) {
   return extractText(getLastUserMessage(messages)?.content).trim();
+}
+
+function isSimpleConversationalPrompt(text: string, hasImages: boolean) {
+  const normalized = text.trim().replace(/\s+/g, " ");
+  if (hasImages || !normalized || normalized.length > 240 || hasLiveSearchCue(normalized)) return false;
+  if (/\b(step[- ]by[- ]step|compare|analy[sz]e|debug|implement|build|write|calculate|plan|research|summari[sz]e|decompose|multiple|several)\b/i.test(normalized)) return false;
+  return /^(hello|hi|hey|hiya|good morning|good afternoon|good evening|how are you\??|what can you do\??|what are your capabilities\??|tell me about your capabilities\??|who are you\??|what is enosx\??)[.!? ]*$/i.test(normalized);
+}
+
+function logProviderFailure(label: string, error: unknown, secrets: readonly string[]) {
+  if (error instanceof NvidiaProviderError) {
+    console.warn(`[ENOSX orchestrator] ${label} failed: HTTP ${error.status}; NVIDIA error body: ${redactedProviderBody(error.body, secrets)}`);
+    return;
+  }
+  console.warn(`[ENOSX orchestrator] ${label} failed:`, safeErrorText(error, secrets));
 }
 
 function buildPlannerMessages(systemContent: string, messages: ChatMessage[], catalog: unknown[]) {
@@ -783,7 +868,7 @@ export async function runNemotronOrchestrator(options: OrchestratorOptions): Pro
   const start = now();
   const deadline = start + Math.min(options.maxDurationMs ?? MAX_ORCHESTRATION_MS, MAX_ORCHESTRATION_MS);
   const keys = parseNvidiaApiKeys(env);
-  if (!keys.length) throw new Error("NVIDIA_API_KEY is not configured on the server");
+  if (!keys.length) throw new Error("NVIDIA_API_KEY or NVIDIA_API_KEYS is not configured on the server");
   const rotator = new ApiKeyRotator(keys);
   const baseUrl = normalizeNvidiaApiBase(env.NVIDIA_API_BASE_URL);
   const secrets = [...keys, env.TAVILY_API_KEY || ""].filter(Boolean);
@@ -792,6 +877,34 @@ export async function runNemotronOrchestrator(options: OrchestratorOptions): Pro
   const limits = getModeLimits(options.aiMode);
   const tools = makeToolDefinitions(hasImages);
   const catalog = specialistCatalogDescription(hasImages);
+
+  // Greetings and capability questions do not benefit from decomposition. Keep
+  // them to one low-latency streamed provider request so Vercel can respond
+  // before the normal orchestration timeout budget is consumed.
+  if (isSimpleConversationalPrompt(userText, hasImages)) {
+    const directMessages = [
+      { role: "system" as const, content: `${options.systemContent}\n\nAnswer this simple conversational request directly and concisely. Do not use tools or describe hidden reasoning.` },
+      ...options.messages.filter((message) => message.role !== "system").slice(-4),
+    ];
+    options.onProgress?.("synthesizing");
+    for (const model of [MAIN_SUPERVISOR_MODEL, FAST_PATH_FALLBACK_MODEL]) {
+      try {
+        const content = await callStreamingCompletion({
+          fetchImpl,
+          baseUrl,
+          key: rotator.next(),
+          model,
+          messages: directMessages,
+          timeoutMs: Math.min(FAST_PATH_REQUEST_TIMEOUT_MS, remainingTime(deadline, now)),
+        });
+        if (content) return content;
+        console.warn(`[ENOSX orchestrator] Fast-path ${model} returned empty content.`);
+      } catch (error) {
+        logProviderFailure(`Fast-path ${model}`, error, secrets);
+      }
+    }
+    return deterministicFallback([], null, userText);
+  }
 
   options.onProgress?.("planning");
   let planPayload: any = null;
@@ -899,7 +1012,7 @@ export async function runNemotronOrchestrator(options: OrchestratorOptions): Pro
     });
     synthesized = result.content;
   } catch (error) {
-    console.warn("[ENOSX orchestrator] Primary synthesis failed:", safeErrorText(error, secrets));
+    logProviderFailure("Primary synthesis", error, secrets);
   }
 
   if (synthesized) return synthesized;
@@ -923,7 +1036,7 @@ export async function runNemotronOrchestrator(options: OrchestratorOptions): Pro
     });
     synthesized = fallback.content;
   } catch (error) {
-    console.warn("[ENOSX orchestrator] Fallback synthesis failed:", safeErrorText(error, secrets));
+    logProviderFailure("Fallback synthesis", error, secrets);
   }
 
   return synthesized || deterministicFallback(specialistResults, searchBundle, userText);

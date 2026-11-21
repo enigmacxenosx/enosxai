@@ -1,3 +1,9 @@
+## v0.1.34 — Orchestration self-awareness and release QA
+
+- Added an authoritative capability fact explaining the 34 typed specialist model entries behind five department routers, while preserving truthful runtime and provider limits.
+- Added a full Python mock-dispatch regression test covering all 34 specialist workers.
+- Added a root `pnpm test:orchestrator` command so orchestration tests use the declared workspace `tsx` dependency.
+
 ## v0.1.33 — Inline media previews & live workflow status
 
 - Added inline playback for direct online audio and video URLs, plus supported YouTube/Vimeo video embeds and Spotify/SoundCloud audio previews.

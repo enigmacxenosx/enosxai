@@ -25,4 +25,11 @@ describe("ENOSX product information core", () => {
     expect(facts).toContain("Provider configuration");
     expect(facts).toContain("unless the runtime returns evidence");
   });
+
+  it("describes the bounded 34-specialist orchestration layer accurately", () => {
+    const facts = ENOSX_AI_TIER_FACTS.join(" ");
+    expect(facts).toContain("34 typed specialist model entries");
+    expect(facts).toContain("five department routers");
+    expect(facts).toContain("never claim that every specialist ran without runtime evidence");
+  });
 });

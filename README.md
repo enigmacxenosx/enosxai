@@ -79,6 +79,7 @@ Configure local server environment variables for the API functions if you need h
 pnpm run typecheck
 pnpm --filter @workspace/enosx-app test:unit
 pnpm --filter @workspace/enosx-app build
+pnpm test:orchestrator
 ```
 
 The repository's CI workflow also type-checks the API services, runs browser regression tests, and checks the desktop shell. See [`.github/workflows/ci.yml`](.github/workflows/ci.yml).
@@ -126,7 +127,7 @@ A healthy response includes `ok` and an `aiConfigured` status flag; it never ret
 
 This repository also contains a standalone Python orchestration layer for advanced Enosx deployments. It is intentionally separate from the existing React/Vercel application so current product behavior remains compatible while Enosx gains an asynchronous, multi-agent backend.
 
-The top-level `EnosxNemotronBrain` exposes exactly eight high-level capabilities: five department routers, live web search, persistent vector memory, and a Python execution sandbox. The 34 specialist workers are kept behind those routers and are dispatched with `asyncio.gather(..., return_exceptions=True)`, bounded by `MAX_CONCURRENT_REQUESTS=10`. The brain's system prompt enforces memory-first retrieval, live-search and code-sandbox escalation, parallel decomposition, transparent synthesis, and memory write-back.
+The top-level `EnosxNemotronBrain` exposes exactly eight high-level capabilities: five department routers, live web search, persistent vector memory, and a Python execution sandbox. The 34 specialist workers are kept behind those routers and are dispatched with `asyncio.gather(..., return_exceptions=True)`, bounded by `MAX_CONCURRENT_REQUESTS=10`. The brain's system prompt enforces memory-first retrieval, live-search and code-sandbox escalation, parallel decomposition, transparent synthesis, and memory write-back. A full mock-dispatch regression test verifies that all 34 configured workers can be instantiated and return successful results without provider credentials; live specialist availability still depends on deployment configuration and provider reachability.
 
 ### Python service setup
 

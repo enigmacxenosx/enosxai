@@ -33,17 +33,24 @@ async def healthz(): return {"ok": True, "service": "enosx-orchestrator"}
 @app.post("/v1/chat/completions")
 async def chat(request: Request, payload: ChatRequest):
     _require_bridge_auth(request)
-    task = next((m.get("content", "") for m in reversed(payload.messages) if m.get("role") == "user"), "")
+    task_value = next((m.get("content", "") for m in reversed(payload.messages) if m.get("role") == "user"), "")
+    task = task_value if isinstance(task_value, str) else " ".join(
+        part.get("text", "") for part in task_value if isinstance(part, dict) and part.get("type") == "text"
+    ) if isinstance(task_value, list) else str(task_value or "")
     result = await EnosxNemotronBrain(mock=payload.mock).dispatch(task, mock=payload.mock)
-    body = {"id":"enosx-chat", "object":"chat.completion", "model":payload.model or result["model"], "choices":[{"index":0,"message":{"role":"assistant","content":result["answer"]},"finish_reason":"stop"}], "enosx":result}
-    if not payload.stream: return body
+    answer = result.get("answer") if isinstance(result, dict) else ""
+    if not isinstance(answer, str) or not answer.strip():
+        answer = "ENOSX completed the request, but the synthesis provider returned no summary."
+    body = {"id":"enosx-chat", "object":"chat.completion", "model":payload.model or result["model"], "choices":[{"index":0,"message":{"role":"assistant","content":answer},"finish_reason":"stop"}], "enosx":result}
+    if not payload.stream:
+        return body
     async def events():
-        chunk = {"id": body["id"], "object": "chat.completion.chunk", "model": body["model"], "choices": [{"index": 0, "delta": {"role": "assistant", "content": result["answer"]}, "finish_reason": None}]}
+        chunk = {"id": body["id"], "object": "chat.completion.chunk", "model": body["model"], "choices": [{"index": 0, "delta": {"role": "assistant", "content": answer}, "finish_reason": None}]}
         finish = {"id": body["id"], "object": "chat.completion.chunk", "model": body["model"], "choices": [{"index": 0, "delta": {}, "finish_reason": "stop"}]}
         yield f"data: {json.dumps(chunk)}\n\n"
         yield f"data: {json.dumps(finish)}\n\n"
         yield "data: [DONE]\n\n"
-    return StreamingResponse(events(), media_type="text/event-stream")
+    return StreamingResponse(events(), media_type="text/event-stream", headers={"Cache-Control": "no-cache, no-transform"})
 @app.post("/v1/memory/ingest")
 async def ingest(request: Request, file: UploadFile = File(...)):
     _require_bridge_auth(request)

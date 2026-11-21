@@ -517,9 +517,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             res.end();
             return;
           }
-          const orchestratorJson = await orchestratorResponse.json().catch(() => null);
-          const orchestratorText = orchestratorJson?.choices?.[0]?.message?.content;
-          if (typeof orchestratorText === "string" && orchestratorText.trim()) return sendMockResponse(res, orchestratorText);
+          const orchestratorBody: any = await orchestratorResponse.json().catch(() => null);
+          const jsonContent = orchestratorBody?.choices?.[0]?.message?.content
+            ?? orchestratorBody?.choices?.[0]?.delta?.content
+            ?? orchestratorBody?.answer;
+          if (typeof jsonContent === "string" && jsonContent.trim()) return sendMockResponse(res, jsonContent);
+          console.warn("[API] Orchestrator JSON response did not contain assistant content:", orchestratorBody);
           return res.status(502).json({ error: "The orchestrator returned an empty response.", code: "EMPTY_ORCHESTRATOR_RESPONSE" });
         }
         if (![502, 503, 504].includes(orchestratorResponse.status)) {

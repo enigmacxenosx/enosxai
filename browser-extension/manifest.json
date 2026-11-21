@@ -1,0 +1,30 @@
+{
+  "manifest_version": 3,
+  "name": "ENOSX AI Browser Bridge",
+  "version": "0.1.0",
+  "description": "Share the current page with ENOSX AI and review each browser action before it runs.",
+  "permissions": ["activeTab", "scripting", "storage", "tabs"],
+  "host_permissions": [
+    "https://enosxai.vercel.app/*",
+    "https://enosx.ai/*",
+    "http://localhost:5173/*",
+    "http://127.0.0.1:5173/*"
+  ],
+  "background": { "service_worker": "background.js" },
+  "action": {
+    "default_title": "ENOSX AI Browser Bridge",
+    "default_popup": "popup.html"
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "https://enosxai.vercel.app/*",
+        "https://enosx.ai/*",
+        "http://localhost:5173/*",
+        "http://127.0.0.1:5173/*"
+      ],
+      "js": ["content.js"],
+      "run_at": "document_idle"
+    }
+  ]
+}

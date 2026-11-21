@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>ENOSX AI Browser Bridge</title>
+    <link rel="stylesheet" href="popup.css">
+  </head>
+  <body>
+    <main>
+      <header>
+        <div class="mark" aria-hidden="true">E</div>
+        <div>
+          <h1>ENOSX AI</h1>
+          <p class="subtitle">Browser Bridge</p>
+        </div>
+      </header>
+      <p class="privacy">Only shares the visible page text after you click. Never reads passwords or cookies.</p>
+      <section class="card">
+        <h2>Share this page</h2>
+        <p>Send the current tab's title, URL, and visible text to an open ENOSX AI tab. It will not be sent to AI until you send a chat message.</p>
+        <button id="share-page" class="primary" type="button">Share current page</button>
+      </section>
+      <section id="action-card" class="card" hidden>
+        <h2>Action waiting for review</h2>
+        <p id="action-summary"></p>
+        <div id="action-target" class="target"></div>
+        <p id="action-warning" class="warning"></p>
+        <button id="approve-action" class="danger" type="button">Approve and run this action</button>
+        <button id="cancel-action" class="secondary" type="button">Cancel action</button>
+      </section>
+      <p id="status" role="status" aria-live="polite">Ready.</p>
+      <footer>Each action requires your approval here. Form filling never submits a form. Password fields are blocked.</footer>
+    </main>
+    <script src="popup.js"></script>
+  </body>
+</html>

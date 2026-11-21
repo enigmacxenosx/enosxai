@@ -261,8 +261,9 @@ export default function MessageBubble({
   };
 
   const handleProposedAction = async (action: NonNullable<Message["proposedActions"]>[number]) => {
-    // Workspace / split-screen mode runs actions in-pane instead of opening new tabs.
-    if (onExecuteProposedAction) {
+    // Interactions are queued for the extension and require a second, per-action
+    // approval in its popup on the matching target page.
+    if (onExecuteProposedAction && (action.type === "click_element" || action.type === "fill_form")) {
       onExecuteProposedAction(action);
       return;
     }
@@ -375,7 +376,9 @@ export default function MessageBubble({
                               ? "Extract links"
                               : action.type === "launch_app"
                                 ? `Launch ${action.app || "app"}`
-                                : "Review interaction";
+                                : action.type === "click_element" || action.type === "fill_form"
+                                  ? "Queue for browser review"
+                                  : "Review interaction";
                         const Icon = isLink ? ExternalLink : readOnly ? (action.type === "extract_links" ? ListTree : FileSearch) : ShieldCheck;
                         const videoMedia = isLink && action.url ? resolveMediaUrl(action.url) : null;
                         const imageUrl = isLink && action.url && isImageUrl(action.url) ? action.url : undefined;

@@ -37,7 +37,7 @@ export async function searchTavily(query: string, type: TavilySearchType, apiKey
   const payload: Record<string, unknown> = {
     query,
     search_depth: "basic",
-    max_results: 6,
+    max_results: 20,
     include_answer: false,
     include_images: type === "images",
     include_image_descriptions: type === "images",
@@ -67,16 +67,16 @@ export async function searchTavily(query: string, type: TavilySearchType, apiKey
       const pageUrl = safeHttpUrl(result.url);
       const pageTitle = cleanText(result.title, 180) || "Online image";
       const images = Array.isArray(result.images) ? result.images : [];
-      return images.slice(0, 2).flatMap((image) => {
+      return images.flatMap((image) => {
         const imageUrl = safeHttpUrl(image?.url);
         if (!imageUrl) return [];
         return [{ title: cleanText(image.description, 180) || pageTitle, url: pageUrl || imageUrl, imageUrl, source: pageUrl ? sourceName(pageUrl) : undefined }];
       });
     });
-    if (linkedImages.length) return linkedImages.slice(0, 6);
+    if (linkedImages.length) return linkedImages;
 
     // Tavily may return query-related images without their source-page association.
-    return (Array.isArray(data.images) ? data.images : []).slice(0, 6).flatMap((image) => {
+    return (Array.isArray(data.images) ? data.images : []).flatMap((image) => {
       const imageUrl = safeHttpUrl(image?.url);
       if (!imageUrl) return [];
       return [{ title: cleanText(image.description, 180) || "Online image", url: imageUrl, imageUrl }];

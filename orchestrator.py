@@ -88,10 +88,22 @@ def _clean_synthesis_text(value) -> str:
     return text
 
 
+def _safe_worker_error(error) -> str:
+    """Keep useful provider diagnostics while stripping credential material."""
+    text = str(error or "No provider error details returned.").strip()
+    for variable in ("NVIDIA_API_KEY", "NVIDIA_API_KEYS", "OPENROUTER_API_KEY", "TAVILY_API_KEY"):
+        for secret in os.getenv(variable, "").split(","):
+            secret = secret.strip()
+            if secret:
+                text = text.replace(secret, "[REDACTED]")
+    text = re.sub(r"(?i)(bearer\s+)[A-Za-z0-9._~+/=-]+", r"\1[REDACTED]", text)
+    return text[:300]
+
+
 def _fallback_synthesis(results) -> str:
-    """Guarantee a concise answer even when every synthesis endpoint is empty."""
+    """Return useful successes and per-worker diagnostics when synthesis is unavailable."""
     outputs = []
-    failures = 0
+    failures = []
     for department in results:
         if not isinstance(department, dict): continue
         for worker in department.get("results", []):
@@ -99,10 +111,19 @@ def _fallback_synthesis(results) -> str:
             if worker.get("ok"):
                 text = _clean_synthesis_text(worker.get("output") or worker.get("answer"))
                 if text and len(outputs) < 5: outputs.append(f"{worker.get('worker', 'worker')}: {text[:240]}")
-            else: failures += 1
+            else:
+                name = worker.get("worker", "worker")
+                model = worker.get("model")
+                label = f"{name} ({model})" if model else str(name)
+                failures.append(f"- {label}: {_safe_worker_error(worker.get('error'))}")
+
+    sections = []
     if outputs:
-        suffix = f" {failures} worker(s) reported an error." if failures else ""
-        return "Synthesis fallback completed from worker results:\n" + "\n".join(outputs) + suffix
-    return "Enosx completed the routing steps, but no provider returned usable synthesis text. Please try again."
+        sections.append("Synthesis fallback completed from worker results:\n" + "\n".join(outputs))
+    elif not failures:
+        return "Enosx completed the routing steps, but no provider returned usable synthesis text. Please try again."
+    if failures:
+        sections.append(f"{len(failures)} worker(s) reported an error:\n" + "\n".join(failures))
+    return "\n\n".join(sections)
 
 async def run(task: str, **kwargs): return await EnosxNemotronBrain(**{k:v for k,v in kwargs.items() if k == "mock"}).dispatch(task, **{k:v for k,v in kwargs.items() if k != "mock"})

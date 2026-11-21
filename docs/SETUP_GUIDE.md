@@ -35,6 +35,7 @@ ENOSX AI is a Vite/React frontend with Vercel serverless API functions. The chat
 | `NVIDIA_EX_PRO_MODEL` | Override the EX Pro text model |
 | `NVIDIA_ENOSH_MIND_MODEL` | Override the ENOSH MIND text model |
 | `NVIDIA_VISION_MODEL` | Override the shared vision model |
+| `NVIDIA_ENOSH_MIND_VISION_MODEL` | Override the ENOSH MIND/Nexus vision model |
 | `NVIDIA_API_BASE_URL` | Override the NVIDIA-compatible API base URL |
 | `GITHUB_TOKEN` | GitHub repository context features |
 | `VITE_FIREBASE_*` | Firebase authentication and cloud history |

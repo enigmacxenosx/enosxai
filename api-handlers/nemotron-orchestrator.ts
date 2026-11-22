@@ -304,10 +304,10 @@ export class ApiKeyRotator {
 }
 
 export function parseNvidiaApiKeys(env: Env = process.env) {
-  const raw = [env.NVIDIA_API_KEYS, env.NVIDIA_API_KEY]
+  const raw = [env.NVIDIA_API_KEYS, env.NVIDIA_API_KEY, env.VITE_NVIDIA_API_KEY]
     .filter((value): value is string => typeof value === "string" && Boolean(value.trim()))
     .join(",");
-  return Array.from(new Set(raw.split(/[\s,;]+/).map((key) => key.trim()).filter(Boolean)));
+  return Array.from(new Set(raw.split(/[\s,;]+/).map((key) => key.trim().replace(/^(?:['"])(.*)(?:['"])$/, "$1").trim()).filter(Boolean)));
 }
 
 export function hasConfiguredNvidiaKeys(env: Env = process.env) {
@@ -315,10 +315,13 @@ export function hasConfiguredNvidiaKeys(env: Env = process.env) {
 }
 
 export function normalizeNvidiaApiBase(value?: string) {
-  const trimmed = value?.trim().replace(/\/+$/, "");
-  if (!trimmed || /^https?:\/\/nvidia\.com(?:\/v1)?$/i.test(trimmed)) return OFFICIAL_NVIDIA_API_BASE;
-  if (/^https:\/\/integrate\.api\.nvidia\.com$/i.test(trimmed)) return `${trimmed}/v1`;
-  return trimmed;
+  const configured = value?.trim().replace(/\/+$/, "");
+  if (!configured || /^https?:\/\/nvidia\.com(?:\/v1)?$/i.test(configured) || /^nvidia\.com(?:\/v1)?$/i.test(configured)) {
+    return OFFICIAL_NVIDIA_API_BASE;
+  }
+  const normalized = /^https?:\/\//i.test(configured) ? configured : `https://${configured}`;
+  if (/^https:\/\/integrate\.api\.nvidia\.com$/i.test(normalized)) return `${normalized}/v1`;
+  return normalized;
 }
 
 function isChatEligible(id: SpecialistId, hasImages: boolean) {
@@ -613,7 +616,7 @@ function isSimpleConversationalPrompt(text: string, hasImages: boolean) {
   const normalized = text.trim().replace(/\s+/g, " ");
   if (hasImages || !normalized || normalized.length > 240 || hasLiveSearchCue(normalized)) return false;
   if (/\b(step[- ]by[- ]step|compare|analy[sz]e|debug|implement|build|write|calculate|plan|research|summari[sz]e|decompose|multiple|several)\b/i.test(normalized)) return false;
-  return /^(hello|hi|hey|hiya|good morning|good afternoon|good evening|how are you\??|what can you do\??|what are your capabilities\??|tell me about your capabilities\??|who are you\??|what is enosx\??)[.!? ]*$/i.test(normalized);
+  return /^(hello|hi|hey|hiya|good morning|good afternoon|good evening|how are you\??|what can you do\??|what are your capabilities\??|tell me about your capabilities\??|tell me more about your capabilities\??|who are you\??|what is enosx\??)[.!? ]*$/i.test(normalized);
 }
 
 function logProviderFailure(label: string, error: unknown, secrets: readonly string[]) {
@@ -836,14 +839,20 @@ function serializeResults(results: SpecialistResult[], search: SearchBundle | nu
   return JSON.stringify({ specialist_results: workerSection, live_search: search }, null, 2);
 }
 
-function deterministicFallback(results: SpecialistResult[], search: SearchBundle | null, userText: string) {
+function providerStatusFromError(error: unknown) {
+  const match = String(error instanceof Error ? error.message : error || "").match(/HTTP\s+(\d{3})/i);
+  return match ? Number(match[1]) : null;
+}
+
+function deterministicFallback(results: SpecialistResult[], search: SearchBundle | null, userText: string, providerStatus?: number | null) {
   const successes = results.filter((result) => result.ok && result.content).slice(0, 4);
   if (successes.length) {
     return `I couldn't complete the final synthesis, but these specialist findings are available:\n\n${successes.map((result) => `**${result.specialistId}:** ${result.content}`).join("\n\n")}`;
   }
   const searchResult = search?.results?.[0];
   if (searchResult) return `I couldn't complete the final synthesis. The live search returned: ${searchResult.title} — ${searchResult.url}\n\n${searchResult.snippet || ""}`;
-  return `I couldn't reach the synthesis models for this request. Please try again shortly. Your request was: ${userText.slice(0, 500) || "(no text supplied)"}`;
+  const diagnostic = providerStatus ? ` HTTP ${providerStatus}.` : "";
+  return `I couldn't reach the synthesis models for this request. Please try again shortly.${diagnostic} Your request was: ${userText.slice(0, 500) || "(no text supplied)"}`;
 }
 
 function buildSynthesisMessages(
@@ -877,6 +886,7 @@ export async function runNemotronOrchestrator(options: OrchestratorOptions): Pro
   const limits = getModeLimits(options.aiMode);
   const tools = makeToolDefinitions(hasImages);
   const catalog = specialistCatalogDescription(hasImages);
+  let lastProviderStatus: number | null = null;
 
   // Greetings and capability questions do not benefit from decomposition. Keep
   // them to one low-latency streamed provider request so Vercel can respond
@@ -887,7 +897,8 @@ export async function runNemotronOrchestrator(options: OrchestratorOptions): Pro
       ...options.messages.filter((message) => message.role !== "system").slice(-4),
     ];
     options.onProgress?.("synthesizing");
-    for (const model of [MAIN_SUPERVISOR_MODEL, FAST_PATH_FALLBACK_MODEL]) {
+    const fastPathModels = [MAIN_SUPERVISOR_MODEL, FAST_PATH_FALLBACK_MODEL, SYNTHESIS_FALLBACK_MODEL];
+    const attempts = await Promise.all(fastPathModels.map(async (model) => {
       try {
         const content = await callStreamingCompletion({
           fetchImpl,
@@ -897,13 +908,18 @@ export async function runNemotronOrchestrator(options: OrchestratorOptions): Pro
           messages: directMessages,
           timeoutMs: Math.min(FAST_PATH_REQUEST_TIMEOUT_MS, remainingTime(deadline, now)),
         });
-        if (content) return content;
+        if (content) return { content, status: null };
         console.warn(`[ENOSX orchestrator] Fast-path ${model} returned empty content.`);
       } catch (error) {
+        const status = providerStatusFromError(error);
         logProviderFailure(`Fast-path ${model}`, error, secrets);
+        return { content: "", status };
       }
-    }
-    return deterministicFallback([], null, userText);
+      return { content: "", status: null };
+    }));
+    const winner = attempts.find((attempt) => attempt.content);
+    if (winner?.content) return winner.content;
+    return deterministicFallback([], null, userText, attempts.find((attempt) => attempt.status)?.status ?? null);
   }
 
   options.onProgress?.("planning");
@@ -929,6 +945,7 @@ export async function runNemotronOrchestrator(options: OrchestratorOptions): Pro
     planContent = result.content;
   } catch (error) {
     console.warn("[ENOSX orchestrator] Supervisor planning failed; using bounded fallback routing:", safeErrorText(error, secrets));
+    lastProviderStatus ||= providerStatusFromError(error);
   }
 
   const toolCalls = extractToolCalls(planPayload);
@@ -957,6 +974,7 @@ export async function runNemotronOrchestrator(options: OrchestratorOptions): Pro
       if (!result.content) throw new Error("The specialist returned empty content.");
       return { task: plan.task, specialistId, model: spec.model, ok: true, content: result.content };
     } catch (error) {
+      lastProviderStatus ||= providerStatusFromError(error);
       return { task: plan.task, specialistId, model: spec.model, ok: false, error: safeErrorText(error, secrets) };
     }
   }));
@@ -1013,6 +1031,7 @@ export async function runNemotronOrchestrator(options: OrchestratorOptions): Pro
     synthesized = result.content;
   } catch (error) {
     logProviderFailure("Primary synthesis", error, secrets);
+    lastProviderStatus ||= providerStatusFromError(error);
   }
 
   if (synthesized) return synthesized;
@@ -1037,9 +1056,10 @@ export async function runNemotronOrchestrator(options: OrchestratorOptions): Pro
     synthesized = fallback.content;
   } catch (error) {
     logProviderFailure("Fallback synthesis", error, secrets);
+    lastProviderStatus ||= providerStatusFromError(error);
   }
 
-  return synthesized || deterministicFallback(specialistResults, searchBundle, userText);
+  return synthesized || deterministicFallback(specialistResults, searchBundle, userText, lastProviderStatus);
 }
 
 /** Convert a completed answer to OpenAI-compatible SSE content chunks. */

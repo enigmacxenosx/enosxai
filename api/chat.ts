@@ -435,13 +435,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       return sendMockResponse(res, guardedResponse.response);
     }
 
-    // NVIDIA keys are server-only. NVIDIA_API_KEYS may rotate a list; a
-    // browser-exposed VITE_ key is never accepted here.
+    // Support deployment environments that expose the configured server key
+    // under any of the documented names, including a legacy VITE_ name.
     if (!hasConfiguredNvidiaKeys()) {
-      console.error("[API] NVIDIA_API_KEY is not configured.");
-      return res.status(503).json({
-        error: "NVIDIA_API_KEY or NVIDIA_API_KEYS is not configured on the server",
-        status: "CONFIGURATION_ERROR",
+      console.error("[API] No NVIDIA API key was found in NVIDIA_API_KEYS, NVIDIA_API_KEY, or VITE_NVIDIA_API_KEY.");
+      return res.status(401).json({
+        error: "I couldn't reach the synthesis models for this request. Please try again shortly. HTTP 401",
+        status: "PROVIDER_UNAUTHORIZED",
       });
     }
 
